@@ -9,6 +9,9 @@ export const createUserSchema = z.object({
   profession: z.string().trim().optional().or(z.literal("")),
   position: z.string().trim().optional().or(z.literal("")),
   department: z.string().trim().optional().or(z.literal("")),
+  personnelType: z.enum(["ADMINISTRATIVO", "ASISTENCIAL"], {
+    message: "Selecciona el tipo de personal.",
+  }),
   role: z.enum(["ADMIN", "TUTOR", "STUDENT"]),
   password: z.string().min(8, "La contraseña temporal debe tener al menos 8 caracteres."),
 });
@@ -22,6 +25,9 @@ export const updateUserSchema = z.object({
   profession: z.string().trim().optional().or(z.literal("")),
   position: z.string().trim().optional().or(z.literal("")),
   department: z.string().trim().optional().or(z.literal("")),
+  personnelType: z.enum(["ADMINISTRATIVO", "ASISTENCIAL"], {
+    message: "Selecciona el tipo de personal.",
+  }),
   role: z.enum(["ADMIN", "TUTOR", "STUDENT"]),
   status: z.enum(["ACTIVE", "INACTIVE", "BLOCKED"]),
 });

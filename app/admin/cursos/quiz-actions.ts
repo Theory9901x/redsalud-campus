@@ -60,6 +60,12 @@ export async function createQuizAction(
     if (!module_ || module_.courseId !== courseId) {
       return { error: "El módulo seleccionado no pertenece a este curso." };
     }
+    // El aula solo muestra el primer cuestionario de cada módulo; un segundo
+    // quedaría oculto e imposible de aprobar, bloqueando el curso para siempre.
+    const existingQuiz = await prisma.quiz.findFirst({ where: { moduleId: data.moduleId }, select: { id: true } });
+    if (existingQuiz) {
+      return { error: "Este módulo ya tiene un cuestionario. Solo se admite uno por módulo." };
+    }
   }
 
   await prisma.quiz.create({
@@ -99,6 +105,13 @@ export async function updateQuizAction(
     const module_ = await prisma.courseModule.findUnique({ where: { id: data.moduleId }, select: { courseId: true } });
     if (!module_ || module_.courseId !== courseId) {
       return { error: "El módulo seleccionado no pertenece a este curso." };
+    }
+    const existingQuiz = await prisma.quiz.findFirst({
+      where: { moduleId: data.moduleId, id: { not: quizId } },
+      select: { id: true },
+    });
+    if (existingQuiz) {
+      return { error: "Este módulo ya tiene un cuestionario. Solo se admite uno por módulo." };
     }
   }
 
@@ -258,6 +271,13 @@ export async function deleteQuestionAction(questionId: string) {
 export async function reorderQuestionsAction(quizId: string, orderedQuestionIds: string[]) {
   const courseId = await quizCourseId(quizId);
   await requireCourseAccess(courseId);
+
+  // Un tutor autorizado en su propio curso no debe poder colar el id de una
+  // pregunta ajena para alterar su orden: se exige que todas pertenezcan a este quiz.
+  const validCount = await prisma.question.count({ where: { id: { in: orderedQuestionIds }, quizId } });
+  if (validCount !== orderedQuestionIds.length) {
+    throw new Error("Una o más preguntas no pertenecen a este cuestionario.");
+  }
 
   await prisma.$transaction([
     ...orderedQuestionIds.map((id, index) =>

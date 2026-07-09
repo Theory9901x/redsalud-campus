@@ -97,6 +97,7 @@ export default async function TutorCursoDetallePage({
                 durationHours: course.durationHours,
                 passingScore: course.passingScore,
                 enrollmentMode: course.enrollmentMode,
+                targetAudience: course.targetAudience,
                 isSequential: course.isSequential,
               }}
             />

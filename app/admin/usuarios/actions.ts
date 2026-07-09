@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -31,6 +32,7 @@ export async function createUserAction(
     profession: formData.get("profession"),
     position: formData.get("position"),
     department: formData.get("department"),
+    personnelType: formData.get("personnelType"),
     role: formData.get("role"),
     password: formData.get("password"),
   });
@@ -81,6 +83,7 @@ export async function updateUserAction(
     profession: formData.get("profession"),
     position: formData.get("position"),
     department: formData.get("department"),
+    personnelType: formData.get("personnelType"),
     role: formData.get("role"),
     status: formData.get("status"),
   });
@@ -132,9 +135,10 @@ export async function toggleUserStatusAction(userId: string) {
 const TEMP_PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
 
 function generateTempPassword(length = 10): string {
+  const bytes = randomBytes(length);
   let out = "";
   for (let i = 0; i < length; i++) {
-    out += TEMP_PASSWORD_CHARS[Math.floor(Math.random() * TEMP_PASSWORD_CHARS.length)];
+    out += TEMP_PASSWORD_CHARS[bytes[i] % TEMP_PASSWORD_CHARS.length];
   }
   return out;
 }

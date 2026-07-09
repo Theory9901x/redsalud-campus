@@ -64,8 +64,10 @@ export async function cancelEnrollmentAction(enrollmentId: string) {
 
 export async function reactivateEnrollmentAction(enrollmentId: string) {
   await requireAdmin();
-  await prisma.enrollment.update({
-    where: { id: enrollmentId },
+  // Solo tiene sentido reactivar una inscripción CANCELLED; una ya COMPLETED
+  // o FAILED no debe volver a ACTIVE (desincronizaría el certificado ya emitido).
+  await prisma.enrollment.updateMany({
+    where: { id: enrollmentId, status: "CANCELLED" },
     data: { status: "ACTIVE", enrolledAt: new Date(), completedAt: null },
   });
   revalidatePath("/admin/inscripciones");

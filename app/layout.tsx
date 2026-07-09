@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RedSalud Forma — Campus Virtual",
+  title: "RedSalud Te Forma — Campus Virtual",
   description: "Campus virtual de capacitación institucional de Red Salud Casanare E.S.E.",
 };
 

@@ -167,6 +167,13 @@ export async function reorderLessonsAction(moduleId: string, orderedLessonIds: s
   const courseId = await moduleCourseId(moduleId);
   await requireCourseAccess(courseId);
 
+  // Un tutor autorizado en su propio curso no debe poder colar el id de una
+  // lección ajena para alterar su orden: se exige que todas pertenezcan a este módulo.
+  const validCount = await prisma.lesson.count({ where: { id: { in: orderedLessonIds }, moduleId } });
+  if (validCount !== orderedLessonIds.length) {
+    throw new Error("Una o más lecciones no pertenecen a este módulo.");
+  }
+
   // Dos fases: primero valores negativos temporales para no chocar con la
   // restricción única (moduleId, sortOrder) mientras se reordena.
   await prisma.$transaction([

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { saveCertificateTemplateAsset } from "@/lib/storage";
 import { DEFAULT_CERTIFICATE_LAYOUT, type CertificateLayout } from "@/lib/certificate-template";
+import { certificateLayoutSchema } from "@/lib/validations/certificate-template";
 
 export type AssetUploadState = { error: string | null; url?: string };
 
@@ -18,11 +19,17 @@ async function getOrCreateDefaultTemplate() {
 
 export async function saveCertificateLayoutAction(layout: CertificateLayout): Promise<{ error: string | null }> {
   await requireAdmin();
+
+  const parsed = certificateLayoutSchema.safeParse(layout);
+  if (!parsed.success) {
+    return { error: "El diseño tiene datos inválidos y no se pudo guardar. Intenta de nuevo o usa \"Restablecer\"." };
+  }
+
   const template = await getOrCreateDefaultTemplate();
 
   await prisma.certificateTemplate.update({
     where: { id: template.id },
-    data: { layoutJson: layout as unknown as object },
+    data: { layoutJson: parsed.data as unknown as object },
   });
 
   revalidatePath("/admin/certificados/plantilla");

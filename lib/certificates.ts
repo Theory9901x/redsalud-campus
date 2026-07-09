@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { generateCertificateCode, generateValidationHash } from "@/lib/certificate-code";
 import { renderCertificatePdf } from "@/lib/certificate-pdf";
@@ -86,16 +87,29 @@ export async function issueCertificateIfEligible(enrollmentId: string) {
 
   // Se crea primero la fila (sin pdfUrl) para reservar el código único antes
   // de renderizar el PDF, que es lo más costoso y lo que más puede fallar.
-  const certificate = await prisma.certificate.create({
-    data: {
-      userId: enrollment.userId,
-      courseId: enrollment.courseId,
-      enrollmentId: enrollment.id,
-      certificateCode,
-      validationHash,
-    },
-    include: { user: true, course: true },
-  });
+  let certificate;
+  try {
+    certificate = await prisma.certificate.create({
+      data: {
+        userId: enrollment.userId,
+        courseId: enrollment.courseId,
+        enrollmentId: enrollment.id,
+        certificateCode,
+        validationHash,
+      },
+      include: { user: true, course: true },
+    });
+  } catch (error) {
+    // Dos llamadas concurrentes (p. ej. dos intentos de quiz que completan el
+    // curso casi al mismo tiempo) pueden pasar el chequeo `existing` de arriba
+    // antes de que la otra confirme su insert. La restricción única en
+    // enrollmentId hace perder a una de las dos con P2002: ya quedó emitido
+    // por la otra, así que no es un error real.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return;
+    }
+    throw error;
+  }
 
   const templateId = await renderAndSaveCertificate(certificate);
 

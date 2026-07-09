@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { slugify } from "@/lib/slug";
-import { COURSE_TYPE_LABELS, ENROLLMENT_MODE_LABELS } from "@/components/cursos/labels";
-import type { CourseType, EnrollmentMode, Role } from "@prisma/client";
+import { COURSE_TYPE_LABELS, ENROLLMENT_MODE_LABELS, COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
+import type { CourseType, EnrollmentMode, CourseAudience, Role } from "@prisma/client";
 
 export type CourseFormState = { error: string | null };
 
@@ -23,6 +23,7 @@ type CourseFormValues = {
   durationHours: number;
   passingScore: number;
   enrollmentMode: EnrollmentMode;
+  targetAudience: CourseAudience;
   isSequential: boolean;
   tutorId: string;
 };
@@ -37,6 +38,7 @@ const EMPTY_VALUES: CourseFormValues = {
   durationHours: 1,
   passingScore: 80,
   enrollmentMode: "OPEN",
+  targetAudience: "AMBOS",
   isSequential: true,
   tutorId: "",
 };
@@ -202,6 +204,26 @@ export function CourseForm({
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="targetAudience">Dirigido a</Label>
+          <select
+            id="targetAudience"
+            name="targetAudience"
+            required
+            defaultValue={values.targetAudience}
+            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+          >
+            {Object.entries(COURSE_AUDIENCE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Solo el personal de este tipo verá el curso en su catálogo (o todos, si eliges &quot;Todo el personal&quot;).
+          </p>
         </div>
 
         {isAdmin && (

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getAulaQuiz } from "@/lib/aula";
@@ -101,28 +102,39 @@ export async function submitQuizAttemptAction(
   const scorePercent = maxScore === 0 ? 0 : Math.round((totalScore / maxScore) * 100);
   const passed = scorePercent >= quiz.passingScore;
 
-  await prisma.$transaction(async (tx) => {
-    const attempt = await tx.quizAttempt.create({
-      data: {
-        userId,
-        quizId,
-        enrollmentId: enrollment.id,
-        attemptNumber,
-        score: scorePercent,
-        passed,
-        finishedAt: new Date(),
-      },
+  try {
+    await prisma.$transaction(async (tx) => {
+      const attempt = await tx.quizAttempt.create({
+        data: {
+          userId,
+          quizId,
+          enrollmentId: enrollment.id,
+          attemptNumber,
+          score: scorePercent,
+          passed,
+          finishedAt: new Date(),
+        },
+      });
+      await tx.quizAnswer.createMany({
+        data: answerRows.map((a) => ({
+          attemptId: attempt.id,
+          questionId: a.questionId,
+          selectedOptionIds: a.selectedOptionIds,
+          isCorrect: a.isCorrect,
+          scoreObtained: a.scoreObtained,
+        })),
+      });
     });
-    await tx.quizAnswer.createMany({
-      data: answerRows.map((a) => ({
-        attemptId: attempt.id,
-        questionId: a.questionId,
-        selectedOptionIds: a.selectedOptionIds,
-        isCorrect: a.isCorrect,
-        scoreObtained: a.scoreObtained,
-      })),
-    });
-  });
+  } catch (error) {
+    // Un doble envío (doble clic, reintento de red) puede pasar el chequeo de
+    // intentos restantes de arriba antes de que el otro confirme su insert.
+    // La restricción única (userId, quizId, attemptNumber) hace perder al más
+    // lento con P2002: para el usuario, es simplemente que ya no le quedan intentos.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return { error: "No te quedan intentos disponibles para este cuestionario." };
+    }
+    throw error;
+  }
 
   await recalculateEnrollmentProgress(enrollment.id);
 

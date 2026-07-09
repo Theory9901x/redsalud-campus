@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Award,
   BarChart3,
+  Bell,
   Settings,
   Activity,
   X,
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { href: "/admin/cursos", label: "Cursos", icon: BookOpen },
   { href: "/admin/inscripciones", label: "Inscripciones", icon: ClipboardList },
   { href: "/admin/certificados", label: "Certificados", icon: Award },
+  { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell },
   { href: "/admin/reportes", label: "Reportes", icon: BarChart3 },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings },
 ];
@@ -35,7 +37,7 @@ export function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => 
       )}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-transform duration-200 lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-transform duration-200 lg:sticky lg:top-0 lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -43,7 +45,7 @@ export function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => 
           <Activity className="h-6 w-6 text-sidebar-primary" strokeWidth={2.5} />
           <div className="flex-1">
             <p className="font-display text-base font-extrabold leading-none text-white">
-              RedSalud Forma
+              RedSalud Te Forma
             </p>
             <p className="mt-1 text-xs text-sidebar-foreground/60">Panel administrativo</p>
           </div>

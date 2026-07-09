@@ -19,6 +19,9 @@ export const courseSchema = z.object({
   durationHours: z.coerce.number().int().min(1, "La intensidad horaria debe ser mayor a 0."),
   passingScore: z.coerce.number().int().min(1).max(100),
   enrollmentMode: z.enum(["ASSIGNED", "OPEN"]),
+  targetAudience: z.enum(["ADMINISTRATIVO", "ASISTENCIAL", "AMBOS"], {
+    message: "Selecciona a qué personal va dirigido el curso.",
+  }),
   isSequential: z.coerce.boolean(),
   tutorId: z.string().trim().optional().or(z.literal("")),
 });

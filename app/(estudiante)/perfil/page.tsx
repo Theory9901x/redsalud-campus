@@ -1,9 +1,10 @@
-import { User, Mail, IdCard, Briefcase, Phone } from "lucide-react";
+import { User, Mail, IdCard, Briefcase, Phone, GraduationCap, Building2 } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getUserAvatarUrl } from "@/lib/avatar";
 import { AvatarUploader } from "@/components/student/avatar-uploader";
 import { ChangePasswordForm } from "@/components/student/change-password-form";
+import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
 
 export default async function PerfilPage() {
   const session = await auth();
@@ -16,7 +17,9 @@ export default async function PerfilPage() {
     { icon: IdCard, label: "Documento", value: `${user.documentType} ${user.documentNumber}` },
     { icon: Mail, label: "Correo", value: user.email },
     { icon: Phone, label: "Teléfono", value: user.phone || "—" },
-    { icon: Briefcase, label: "Profesión", value: user.profession || "—" },
+    { icon: GraduationCap, label: "Profesión", value: user.profession || "—" },
+    { icon: Briefcase, label: "Cargo", value: user.position || "—" },
+    { icon: Building2, label: "Tipo de personal", value: PERSONNEL_TYPE_LABELS[user.personnelType] },
   ];
 
   return (

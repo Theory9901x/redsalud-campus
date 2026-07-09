@@ -27,6 +27,7 @@ function parseCourseForm(formData: FormData) {
     durationHours: formData.get("durationHours"),
     passingScore: formData.get("passingScore"),
     enrollmentMode: formData.get("enrollmentMode"),
+    targetAudience: formData.get("targetAudience"),
     isSequential: formData.get("isSequential") === "on" || formData.get("isSequential") === "true",
     tutorId: formData.get("tutorId") ?? "",
   });
@@ -63,6 +64,7 @@ export async function createCourseAction(
         durationHours: data.durationHours,
         passingScore: data.passingScore,
         enrollmentMode: data.enrollmentMode,
+        targetAudience: data.targetAudience,
         isSequential: data.isSequential,
         tutorId,
       },
@@ -111,6 +113,7 @@ export async function updateCourseAction(
         durationHours: data.durationHours,
         passingScore: data.passingScore,
         enrollmentMode: data.enrollmentMode,
+        targetAudience: data.targetAudience,
         isSequential: data.isSequential,
         ...tutorUpdate,
       },

@@ -8,6 +8,10 @@ export const registerSchema = z
     email: z.string().trim().email("Correo electrónico inválido."),
     phone: z.string().trim().optional().or(z.literal("")),
     profession: z.string().trim().optional().or(z.literal("")),
+    position: z.string().trim().optional().or(z.literal("")),
+    personnelType: z.enum(["ADMINISTRATIVO", "ASISTENCIAL"], {
+      message: "Selecciona el tipo de personal.",
+    }),
     password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
     confirmPassword: z.string(),
   })

@@ -16,7 +16,7 @@ export default async function TutorLayout({ children }: { children: React.ReactN
         <div className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-primary" strokeWidth={2.5} />
           <div>
-            <p className="font-display text-base font-extrabold leading-none text-foreground">RedSalud Forma</p>
+            <p className="font-display text-base font-extrabold leading-none text-foreground">RedSalud Te Forma</p>
             <p className="mt-1 text-xs text-muted-foreground">
               Hola, {session.user.name} (Tutor)
             </p>

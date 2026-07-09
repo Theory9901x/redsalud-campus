@@ -1,4 +1,4 @@
-# RedSalud Forma — Campus Virtual (LMS) · Plan de construcción por fases
+# RedSalud Te Forma — Campus Virtual (LMS) · Plan de construcción por fases
 
 Plataforma de capacitación institucional para **Red Salud Casanare E.S.E.**: inducción, reinducción, plan de capacitaciones y certificación de cumplimiento.
 

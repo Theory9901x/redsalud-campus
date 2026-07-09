@@ -94,6 +94,13 @@ export async function deleteModuleAction(moduleId: string) {
 export async function reorderModulesAction(courseId: string, orderedModuleIds: string[]) {
   await requireCourseAccess(courseId);
 
+  // Un tutor autorizado en su propio curso no debe poder colar el id de un
+  // módulo ajeno para alterar su orden: se exige que todos pertenezcan a este curso.
+  const validCount = await prisma.courseModule.count({ where: { id: { in: orderedModuleIds }, courseId } });
+  if (validCount !== orderedModuleIds.length) {
+    throw new Error("Uno o más módulos no pertenecen a este curso.");
+  }
+
   // Dos fases: primero valores negativos temporales para no chocar con la
   // restricción única (courseId, sortOrder) mientras se reordena.
   await prisma.$transaction([

@@ -19,7 +19,7 @@ export default async function ValidarPage({
       <header className="flex items-center gap-2 border-b border-border bg-card px-4 py-3.5 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-primary" strokeWidth={2.5} />
-          <span className="font-display text-sm font-extrabold text-foreground">RedSalud Forma</span>
+          <span className="font-display text-sm font-extrabold text-foreground">RedSalud Te Forma</span>
         </Link>
       </header>
 

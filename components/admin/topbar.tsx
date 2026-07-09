@@ -4,15 +4,7 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { signOutAction } from "@/lib/auth-actions";
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
+import { initials } from "@/lib/initials";
 
 export function AdminTopbar({ userName, onMenuClick }: { userName: string; onMenuClick: () => void }) {
   return (

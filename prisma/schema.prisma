@@ -1,5 +1,5 @@
 // =====================================================================
-// RedSalud Forma — Campus Virtual · Esquema de base de datos (Prisma)
+// RedSalud Te Forma — Campus Virtual · Esquema de base de datos (Prisma)
 // Stack: Next.js 16 + Prisma + PostgreSQL
 // MVP: roles como enum · 3 tipos de pregunta · plantilla de certificado
 // simple (builder visual post-MVP)
@@ -36,6 +36,13 @@ enum DocumentType {
   PA // Pasaporte
 }
 
+// Clasificación laboral (distinta del Role de permisos): qué personal de la
+// EPS/E.S.E. es cada usuario, para filtrar qué cursos le corresponden.
+enum PersonnelType {
+  ADMINISTRATIVO
+  ASISTENCIAL
+}
+
 model User {
   id             String       @id @default(cuid())
   fullName       String
@@ -46,6 +53,7 @@ model User {
   profession     String?
   position       String? // cargo
   department     String? // dependencia o área
+  personnelType  PersonnelType @default(ADMINISTRATIVO)
   passwordHash   String
   role           Role         @default(STUDENT)
   status         UserStatus   @default(ACTIVE)
@@ -62,8 +70,13 @@ model User {
   mediaUploads   Media[]
   auditLogs      AuditLog[]
 
+  notificationsCreated  Notification[]     @relation("NotificationCreatedBy")
+  notificationsTargeted Notification[]     @relation("NotificationTargetUser")
+  notificationReads     NotificationRead[] @relation("NotificationReadBy")
+
   @@index([role, status])
   @@index([department])
+  @@index([personnelType])
 }
 
 // ------------------------------------------------------------------
@@ -87,6 +100,13 @@ enum CourseStatus {
 enum EnrollmentMode {
   ASSIGNED // solo asignación por admin
   OPEN     // el estudiante puede inscribirse
+}
+
+// A qué personal va dirigido el curso; filtra lo que cada estudiante ve en su catálogo.
+enum CourseAudience {
+  ADMINISTRATIVO
+  ASISTENCIAL
+  AMBOS
 }
 
 model CourseCategory {
@@ -114,6 +134,7 @@ model Course {
   tutor            User           @relation("CourseTutor", fields: [tutorId], references: [id])
   passingScore     Int            @default(80) // % mínimo global del curso
   enrollmentMode   EnrollmentMode @default(ASSIGNED)
+  targetAudience   CourseAudience @default(AMBOS)
   isSequential     Boolean        @default(true) // módulos se desbloquean en orden
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
@@ -125,6 +146,7 @@ model Course {
   certificates Certificate[]
 
   @@index([status, courseType])
+  @@index([status, targetAudience])
 }
 
 model CourseModule {
@@ -405,4 +427,53 @@ model AuditLog {
 
   @@index([entity, entityId])
   @@index([createdAt])
+}
+
+// ------------------------------------------------------------------
+// Centro de notificaciones
+// ------------------------------------------------------------------
+
+enum NotificationTargetType {
+  ALL // todos los usuarios
+  ROLE // todos los usuarios de un rol
+  USER // un único usuario
+}
+
+enum NotificationSeverity {
+  INFO
+  SUCCESS
+  WARNING
+  DANGER
+}
+
+model Notification {
+  id           String                  @id @default(cuid())
+  title        String
+  body         String
+  severity     NotificationSeverity    @default(INFO)
+  targetType   NotificationTargetType
+  targetRole   Role?
+  targetUserId String?
+  targetUser   User?                   @relation("NotificationTargetUser", fields: [targetUserId], references: [id], onDelete: Cascade)
+  createdById  String
+  createdBy    User                    @relation("NotificationCreatedBy", fields: [createdById], references: [id])
+  createdAt    DateTime                @default(now())
+
+  reads NotificationRead[]
+
+  @@index([targetType, targetRole])
+  @@index([targetUserId])
+  @@index([createdAt])
+}
+
+/** Estado de lectura por usuario; solo existe una fila una vez que el usuario la marca como leída. */
+model NotificationRead {
+  id             String       @id @default(cuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation("NotificationReadBy", fields: [userId], references: [id], onDelete: Cascade)
+  readAt         DateTime     @default(now())
+
+  @@unique([notificationId, userId])
 }

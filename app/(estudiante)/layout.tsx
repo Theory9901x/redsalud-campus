@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { StudentHeader } from "@/components/student/student-header";
+import { prisma } from "@/lib/prisma";
+import { StudentShell } from "@/components/student/student-shell";
 import { getUserAvatarUrl } from "@/lib/avatar";
+import { getNotificationsForUser } from "@/lib/notifications";
 
 export default async function EstudianteLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -9,12 +11,24 @@ export default async function EstudianteLayout({ children }: { children: React.R
     redirect("/login");
   }
 
-  const avatarUrl = await getUserAvatarUrl(session.user.id);
+  const [avatarUrl, settings, { notifications, unreadCount }, user] = await Promise.all([
+    getUserAvatarUrl(session.user.id),
+    prisma.institutionSettings.findUnique({ where: { id: "singleton" } }),
+    getNotificationsForUser(session.user.id, session.user.role),
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { position: true } }),
+  ]);
 
   return (
-    <div className="flex min-h-screen flex-1 flex-col bg-background">
-      <StudentHeader userName={session.user.name ?? ""} avatarUrl={avatarUrl} />
+    <StudentShell
+      userName={session.user.name ?? ""}
+      avatarUrl={avatarUrl}
+      logoUrl={settings?.logoUrl ?? null}
+      notifications={notifications}
+      unreadCount={unreadCount}
+      position={user?.position ?? null}
+      personnelType={session.user.personnelType}
+    >
       {children}
-    </div>
+    </StudentShell>
   );
 }

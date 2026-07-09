@@ -33,7 +33,7 @@ export function RegisterForm() {
       <div className="relative space-y-6">
       <div className="flex items-center gap-2 lg:hidden">
         <Activity className="h-6 w-6 text-primary" strokeWidth={2.5} />
-        <span className="font-display text-lg font-extrabold text-foreground">RedSalud Forma</span>
+        <span className="font-display text-lg font-extrabold text-foreground">RedSalud Te Forma</span>
       </div>
 
       <div>
@@ -86,6 +86,26 @@ export function RegisterForm() {
           <div className="space-y-1.5">
             <Label htmlFor="profession">Profesión (opcional)</Label>
             <Input id="profession" name="profession" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="position">Cargo (opcional)</Label>
+            <Input id="position" name="position" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="personnelType">Tipo de personal</Label>
+            <select
+              id="personnelType"
+              name="personnelType"
+              required
+              defaultValue="ADMINISTRATIVO"
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="ADMINISTRATIVO">Administrativo</option>
+              <option value="ASISTENCIAL">Asistencial</option>
+            </select>
           </div>
         </div>
 

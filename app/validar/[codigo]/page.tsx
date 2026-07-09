@@ -25,7 +25,7 @@ export default async function ValidarCodigoPage({
       <header className="flex items-center gap-2 border-b border-border bg-card px-4 py-3.5 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-primary" strokeWidth={2.5} />
-          <span className="font-display text-sm font-extrabold text-foreground">RedSalud Forma</span>
+          <span className="font-display text-sm font-extrabold text-foreground">RedSalud Te Forma</span>
         </Link>
       </header>
 
@@ -47,7 +47,7 @@ export default async function ValidarCodigoPage({
               <CheckCircle2 className="mx-auto h-12 w-12 text-success" />
               <div>
                 <h1 className="font-display text-xl font-extrabold text-foreground">Certificado válido</h1>
-                <p className="text-sm text-muted-foreground">Este certificado fue emitido por RedSalud Forma.</p>
+                <p className="text-sm text-muted-foreground">Este certificado fue emitido por RedSalud Te Forma.</p>
               </div>
               <dl className="space-y-2 text-left text-sm">
                 <div className="flex justify-between border-b border-border pb-2">

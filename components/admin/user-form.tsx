@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { UserFormState } from "@/app/admin/usuarios/actions";
-import type { DocumentType, Role, UserStatus } from "@prisma/client";
+import type { DocumentType, PersonnelType, Role, UserStatus } from "@prisma/client";
 
 const DOCUMENT_TYPES: { value: DocumentType; label: string }[] = [
   { value: "CC", label: "Cédula de ciudadanía" },
@@ -26,6 +26,11 @@ const STATUSES: { value: UserStatus; label: string }[] = [
   { value: "BLOCKED", label: "Bloqueado" },
 ];
 
+const PERSONNEL_TYPES: { value: PersonnelType; label: string }[] = [
+  { value: "ADMINISTRATIVO", label: "Administrativo" },
+  { value: "ASISTENCIAL", label: "Asistencial" },
+];
+
 type UserFormValues = {
   fullName: string;
   documentType: DocumentType;
@@ -35,6 +40,7 @@ type UserFormValues = {
   profession: string;
   position: string;
   department: string;
+  personnelType: PersonnelType;
   role: Role;
   status: UserStatus;
 };
@@ -48,6 +54,7 @@ const EMPTY_VALUES: UserFormValues = {
   profession: "",
   position: "",
   department: "",
+  personnelType: "ADMINISTRATIVO",
   role: "STUDENT",
   status: "ACTIVE",
 };
@@ -120,6 +127,23 @@ export function UserForm({
         <div className="space-y-1.5">
           <Label htmlFor="department">Dependencia / área</Label>
           <Input id="department" name="department" defaultValue={values.department} />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="personnelType">Tipo de personal</Label>
+          <select
+            id="personnelType"
+            name="personnelType"
+            required
+            defaultValue={values.personnelType}
+            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+          >
+            {PERSONNEL_TYPES.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-1.5">

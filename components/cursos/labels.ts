@@ -6,6 +6,7 @@ import type {
   EnrollmentMode,
   EnrollmentStatus,
   QuestionType,
+  CourseAudience,
 } from "@prisma/client";
 
 export const COURSE_TYPE_LABELS: Record<CourseType, string> = {
@@ -78,6 +79,19 @@ export const COURSE_STATUS_DOT: Record<CourseStatus, string> = {
 export const ENROLLMENT_MODE_LABELS: Record<EnrollmentMode, string> = {
   ASSIGNED: "Solo asignación",
   OPEN: "Abierto (autoinscripción)",
+};
+
+export const COURSE_AUDIENCE_LABELS: Record<CourseAudience, string> = {
+  ADMINISTRATIVO: "Administrativo",
+  ASISTENCIAL: "Asistencial",
+  AMBOS: "Todo el personal",
+};
+
+/** Clases para el chip discreto de audiencia en la tarjeta de curso. */
+export const COURSE_AUDIENCE_CLASSES: Record<CourseAudience, string> = {
+  ADMINISTRATIVO: "bg-primary/10 text-primary",
+  ASISTENCIAL: "bg-success/10 text-success",
+  AMBOS: "bg-secondary text-secondary-foreground",
 };
 
 export const ENROLLMENT_STATUS_LABELS: Record<EnrollmentStatus, string> = {

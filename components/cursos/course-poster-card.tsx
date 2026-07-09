@@ -14,6 +14,7 @@ export function CoursePosterCard({
   title,
   courseType,
   eyebrow,
+  audienceLabel,
   statusBadge,
   meta,
   progress,
@@ -24,6 +25,8 @@ export function CoursePosterCard({
   title: string;
   courseType: CourseType;
   eyebrow?: string | null;
+  /** Chip discreto (p. ej. "Asistencial"); solo pásalo cuando el curso no sea para todo el personal. */
+  audienceLabel?: string | null;
   statusBadge?: { label: string; dotClassName: string };
   meta: CoursePosterMeta[];
   progress?: number;
@@ -35,7 +38,7 @@ export function CoursePosterCard({
   return (
     <Link
       href={href}
-      className="surface-hover group relative flex aspect-[3/4] flex-col justify-end overflow-hidden rounded-2xl shadow-md shadow-black/15 ring-1 ring-black/5"
+      className="surface-hover group relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-2xl shadow-md shadow-black/15 ring-1 ring-black/5"
     >
       <div className="absolute inset-0">
         {imageUrl ? (
@@ -70,8 +73,15 @@ export function CoursePosterCard({
       )}
 
       <div className="relative z-10 space-y-1.5 p-4 text-white">
-        {eyebrow && (
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-white/70">{eyebrow}</p>
+        {(eyebrow || audienceLabel) && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {eyebrow && <p className="text-[11px] font-semibold uppercase tracking-wide text-white/70">{eyebrow}</p>}
+            {audienceLabel && (
+              <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/90">
+                {audienceLabel}
+              </span>
+            )}
+          </div>
         )}
         <h3 className="font-display text-lg font-extrabold leading-snug line-clamp-2">{title}</h3>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/80">
@@ -86,7 +96,7 @@ export function CoursePosterCard({
           <div className="pt-1.5">
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/25">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-primary to-teal-400"
+                className="h-full rounded-full bg-gradient-to-r from-primary to-success"
                 style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
               />
             </div>

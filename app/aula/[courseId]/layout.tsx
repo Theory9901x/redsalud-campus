@@ -28,7 +28,7 @@ export default async function AulaLayout({
         </Link>
         <div className="ml-auto flex items-center gap-2">
           <Activity className="h-5 w-5 text-primary" strokeWidth={2.5} />
-          <span className="font-display text-sm font-extrabold text-foreground">RedSalud Forma</span>
+          <span className="font-display text-sm font-extrabold text-foreground">RedSalud Te Forma</span>
         </div>
       </header>
 

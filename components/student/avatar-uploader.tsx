@@ -15,7 +15,16 @@ export function AvatarUploader({ avatarUrl }: { avatarUrl: string | null }) {
     <form action={formAction} className="flex items-center gap-4">
       <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted ring-2 ring-border">
         {avatarUrl ? (
-          <Image src={avatarUrl} alt="Foto de perfil" width={64} height={64} className="h-full w-full object-cover" />
+          // unoptimized: avatarUrl es una ruta privada (/api/media/[id]) protegida por sesión;
+          // el optimizador de next/image la pide desde el servidor sin cookies y recibe 401.
+          <Image
+            src={avatarUrl}
+            alt="Foto de perfil"
+            width={64}
+            height={64}
+            unoptimized
+            className="h-full w-full object-cover"
+          />
         ) : (
           <User className="h-7 w-7 text-muted-foreground" />
         )}

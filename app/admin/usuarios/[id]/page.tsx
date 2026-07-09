@@ -54,6 +54,7 @@ export default async function EditarUsuarioPage({
             profession: user.profession ?? "",
             position: user.position ?? "",
             department: user.department ?? "",
+            personnelType: user.personnelType,
             role: user.role,
             status: user.status,
           }}

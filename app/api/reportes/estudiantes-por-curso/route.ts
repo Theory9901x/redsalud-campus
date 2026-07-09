@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const courseId = searchParams.get("curso") || undefined;
 
   const enrollments = await prisma.enrollment.findMany({
-    where: courseId ? { courseId } : {},
+    where: { status: { not: "CANCELLED" }, ...(courseId ? { courseId } : {}) },
     orderBy: [{ course: { title: "asc" } }, { user: { fullName: "asc" } }],
     include: { user: true, course: { select: { title: true } } },
   });

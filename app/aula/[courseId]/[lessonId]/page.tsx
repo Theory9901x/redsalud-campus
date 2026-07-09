@@ -72,7 +72,16 @@ export default async function AulaLessonPage({
 
         {showFile && lesson.contentType === "IMAGE" && (
           <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted">
-            <Image src={lesson.fileUrl!} alt={lesson.title} fill sizes="(min-width: 768px) 700px, 100vw" className="object-contain" />
+            {/* unoptimized: fileUrl es una ruta privada (/api/media/[id]) protegida por sesión;
+                el optimizador de next/image la pide desde el servidor sin cookies y recibe 401. */}
+            <Image
+              src={lesson.fileUrl!}
+              alt={lesson.title}
+              fill
+              unoptimized
+              sizes="(min-width: 768px) 700px, 100vw"
+              className="object-contain"
+            />
           </div>
         )}
 

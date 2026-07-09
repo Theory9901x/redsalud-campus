@@ -14,7 +14,8 @@ import {
 import { RoleBadge } from "@/components/admin/role-badge";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { ToggleStatusButton } from "@/components/admin/toggle-status-button";
-import type { Prisma, Role, UserStatus } from "@prisma/client";
+import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
+import type { PersonnelType, Prisma, Role, UserStatus } from "@prisma/client";
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: "ADMIN", label: "Administrador" },
@@ -28,12 +29,17 @@ const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
   { value: "BLOCKED", label: "Bloqueado" },
 ];
 
+const PERSONNEL_TYPE_OPTIONS: { value: PersonnelType; label: string }[] = [
+  { value: "ADMINISTRATIVO", label: "Administrativo" },
+  { value: "ASISTENCIAL", label: "Asistencial" },
+];
+
 export default async function UsuariosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; role?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; role?: string; status?: string; personnelType?: string }>;
 }) {
-  const { q, role, status } = await searchParams;
+  const { q, role, status, personnelType } = await searchParams;
 
   const where: Prisma.UserWhereInput = {};
 
@@ -42,6 +48,7 @@ export default async function UsuariosPage({
       { fullName: { contains: q, mode: "insensitive" } },
       { documentNumber: { contains: q, mode: "insensitive" } },
       { email: { contains: q, mode: "insensitive" } },
+      { position: { contains: q, mode: "insensitive" } },
     ];
   }
   if (role) {
@@ -49,6 +56,9 @@ export default async function UsuariosPage({
   }
   if (status) {
     where.status = status as UserStatus;
+  }
+  if (personnelType) {
+    where.personnelType = personnelType as PersonnelType;
   }
 
   const users = await prisma.user.findMany({
@@ -77,15 +87,34 @@ export default async function UsuariosPage({
       >
         <div className="flex-1 min-w-[200px] space-y-1.5">
           <label htmlFor="q" className="text-xs font-medium text-muted-foreground">
-            Buscar por nombre, cédula o correo
+            Buscar por nombre, cédula, correo o cargo
           </label>
           <input
             id="q"
             name="q"
             defaultValue={q ?? ""}
-            placeholder="Ej. María Gutiérrez, 1015469107..."
+            placeholder="Ej. María Gutiérrez, 1015469107, Enfermera Jefe..."
             className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="personnelType" className="text-xs font-medium text-muted-foreground">
+            Tipo de personal
+          </label>
+          <select
+            id="personnelType"
+            name="personnelType"
+            defaultValue={personnelType ?? ""}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="">Todos</option>
+            {PERSONNEL_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-1.5">
@@ -129,7 +158,7 @@ export default async function UsuariosPage({
         <Button type="submit" variant="secondary">
           Filtrar
         </Button>
-        {(q || role || status) && (
+        {(q || role || status || personnelType) && (
           <Link href="/admin/usuarios" className={cn(buttonVariants({ variant: "ghost" }))}>
             Limpiar
           </Link>
@@ -143,6 +172,8 @@ export default async function UsuariosPage({
               <TableHead>Nombre</TableHead>
               <TableHead>Documento</TableHead>
               <TableHead>Correo</TableHead>
+              <TableHead>Cargo</TableHead>
+              <TableHead>Tipo de personal</TableHead>
               <TableHead>Rol</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
@@ -151,7 +182,7 @@ export default async function UsuariosPage({
           <TableBody>
             {users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                   No se encontraron usuarios con esos filtros.
                 </TableCell>
               </TableRow>
@@ -167,6 +198,8 @@ export default async function UsuariosPage({
                   {user.documentType} {user.documentNumber}
                 </TableCell>
                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                <TableCell className="text-muted-foreground">{user.position || "—"}</TableCell>
+                <TableCell className="text-muted-foreground">{PERSONNEL_TYPE_LABELS[user.personnelType]}</TableCell>
                 <TableCell>
                   <RoleBadge role={user.role} />
                 </TableCell>

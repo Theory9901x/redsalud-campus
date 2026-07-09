@@ -25,13 +25,29 @@ export async function enrollInCourseAction(
     return { error: "Este curso requiere que un administrador te asigne." };
   }
 
-  // upsert: si ya existe una inscripción CANCELLED (queda el registro para
-  // historial), reactivarla en vez de chocar con la restricción única.
-  await prisma.enrollment.upsert({
+  const existing = await prisma.enrollment.findUnique({
     where: { userId_courseId: { userId: session.user.id, courseId: course.id } },
-    update: { status: "ACTIVE", enrolledAt: new Date(), completedAt: null },
-    create: { userId: session.user.id, courseId: course.id, status: "ACTIVE" },
   });
+
+  if (existing && existing.status !== "CANCELLED") {
+    // Ya inscrito (ACTIVE/COMPLETED/FAILED): no-op idempotente, para no desincronizar
+    // el progreso o el certificado ya emitido ante un reenvío duplicado del formulario.
+    revalidatePath(`/cursos/${slug}`);
+    revalidatePath("/inicio");
+    return { error: null };
+  }
+
+  if (existing) {
+    // Solo se reactiva una inscripción CANCELLED previa; nunca una ya completada.
+    await prisma.enrollment.update({
+      where: { id: existing.id },
+      data: { status: "ACTIVE", enrolledAt: new Date(), completedAt: null },
+    });
+  } else {
+    await prisma.enrollment.create({
+      data: { userId: session.user.id, courseId: course.id, status: "ACTIVE" },
+    });
+  }
 
   revalidatePath(`/cursos/${slug}`);
   revalidatePath("/inicio");

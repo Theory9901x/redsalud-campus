@@ -91,6 +91,7 @@ export default async function AdminCursoDetallePage({
                 durationHours: course.durationHours,
                 passingScore: course.passingScore,
                 enrollmentMode: course.enrollmentMode,
+                targetAudience: course.targetAudience,
                 isSequential: course.isSequential,
                 tutorId: course.tutorId,
               }}

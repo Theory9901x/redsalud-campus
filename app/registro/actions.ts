@@ -19,6 +19,8 @@ export async function registerAction(_prevState: RegisterState, formData: FormDa
     email: formData.get("email"),
     phone: formData.get("phone") ?? "",
     profession: formData.get("profession") ?? "",
+    position: formData.get("position") ?? "",
+    personnelType: formData.get("personnelType"),
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
   });
@@ -39,6 +41,8 @@ export async function registerAction(_prevState: RegisterState, formData: FormDa
         email: data.email,
         phone: data.phone || null,
         profession: data.profession || null,
+        position: data.position || null,
+        personnelType: data.personnelType,
         passwordHash,
         role: "STUDENT",
         status: "ACTIVE",
