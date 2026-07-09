@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { CheckCircle2, Lock, FileText, Video, FileImage, Link2, Layers, ListChecks, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { staggerContainer, fadeSlideUp } from "@/lib/motion";
 import type { AulaModule, AulaQuiz } from "@/lib/aula";
 
 const CONTENT_ICONS: Record<string, typeof FileText> = {
@@ -77,9 +79,14 @@ export function AulaSidebar({
         <p className="mt-1 text-xs text-muted-foreground">{progress}% completado</p>
       </div>
 
-      <nav className="flex-1 space-y-4 p-3">
+      <motion.nav
+        variants={staggerContainer}
+        initial="hidden"
+        animate="show"
+        className="flex-1 space-y-4 p-3"
+      >
         {modules.map((module_, moduleIndex) => (
-          <div key={module_.id}>
+          <motion.div key={module_.id} variants={fadeSlideUp}>
             <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Módulo {moduleIndex + 1}: {module_.title}
             </p>
@@ -123,11 +130,11 @@ export function AulaSidebar({
               })}
               {module_.quiz && <QuizNavItem courseId={courseId} quiz={module_.quiz} pathname={pathname} />}
             </div>
-          </div>
+          </motion.div>
         ))}
 
         {finalQuizzes.length > 0 && (
-          <div>
+          <motion.div variants={fadeSlideUp}>
             <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Evaluación final
             </p>
@@ -136,9 +143,9 @@ export function AulaSidebar({
                 <QuizNavItem key={quiz.id} courseId={courseId} quiz={quiz} pathname={pathname} />
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
-      </nav>
+      </motion.nav>
     </aside>
   );
 }

@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Activity, ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
 import { getAulaData } from "@/lib/aula";
 import { AulaSidebar } from "@/components/aula/aula-sidebar";
+import { AulaHeader } from "@/components/aula/aula-header";
 
 export default async function AulaLayout({
   children,
@@ -21,16 +20,14 @@ export default async function AulaLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="flex items-center gap-3 border-b border-border bg-card px-4 py-3.5 sm:px-6">
-        <Link href="/inicio" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" />
-          Mi panel
-        </Link>
-        <div className="ml-auto flex items-center gap-2">
-          <Activity className="h-5 w-5 text-primary" strokeWidth={2.5} />
-          <span className="font-display text-sm font-extrabold text-foreground">RedSalud Te Forma</span>
-        </div>
-      </header>
+      <AulaHeader
+        courseId={courseId}
+        title={data.course.title}
+        imageUrl={data.course.imageUrl}
+        courseType={data.course.courseType}
+        durationHours={data.course.durationHours}
+        progress={data.enrollment.progressPercentage}
+      />
 
       <div className="flex flex-1 flex-col lg:flex-row">
         <AulaSidebar

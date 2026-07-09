@@ -58,14 +58,41 @@ export function NativeViewTransitions() {
       document.startViewTransition(() => {
         return new Promise<void>((resolve) => {
           router.push(target);
+
           // router.push dispara el fetch/render de la ruta de forma asíncrona
-          // (RSC): no hay una promesa que se resuelva justo cuando el nuevo
-          // contenido ya está pintado, así que se espera un par de frames
-          // como aproximación razonable. En el peor caso (conexión lenta) el
-          // navegador simplemente interpola contra el contenido viejo un
-          // instante más: se degrada a "sin animación visible", nunca a un
-          // error o una navegación rota.
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+          // (RSC): no hay una promesa que avise cuándo el contenido nuevo ya
+          // está montado. Un par de frames fijos NO alcanza -en rutas con
+          // compilación en frío (dev) o una conexión lenta, la navegación
+          // real puede tardar segundos-, y resolver antes de tiempo hace que
+          // el navegador capture el "después" con el DOM todavía a medio
+          // actualizar: la transición revienta con
+          // "Transition was aborted because of timeout in DOM update" y dejó
+          // estilos de la transición aplicados sobre contenido que nunca
+          // terminó de asentarse (el bug real detrás del título gigante que
+          // se vio en Momento 3). En vez de adivinar un tiempo fijo, se
+          // observan mutaciones reales del DOM y se resuelve cuando se
+          // asientan (300ms sin cambios nuevos), con un techo de seguridad
+          // para no acercarse nunca al timeout propio del navegador.
+          // Interceptar el click a mano también salta el reset de scroll que
+          // <Link> dispara normalmente en una navegación nueva: sin esto, la
+          // página nueva hereda el scroll de la vieja (p. ej. si el usuario
+          // se desplazó para ver la tarjeta que clickeó), dejando su propio
+          // encabezado fuera de vista por arriba.
+          let settleTimer: ReturnType<typeof setTimeout>;
+          const finish = () => {
+            observer.disconnect();
+            clearTimeout(settleTimer);
+            clearTimeout(ceilingTimer);
+            window.scrollTo(0, 0);
+            resolve();
+          };
+          const observer = new MutationObserver(() => {
+            clearTimeout(settleTimer);
+            settleTimer = setTimeout(finish, 300);
+          });
+          observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+          settleTimer = setTimeout(finish, 300);
+          const ceilingTimer = setTimeout(finish, 3000);
         });
       });
     }
