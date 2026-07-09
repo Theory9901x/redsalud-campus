@@ -134,7 +134,8 @@ export default async function AulaLessonPage({
         <form
           action={async () => {
             "use server";
-            await markLessonCompleteAction(courseId, lessonId);
+            const { certificateId } = await markLessonCompleteAction(courseId, lessonId);
+            if (certificateId) redirect(`/mi-aula/certificados/${certificateId}?justIssued=1`);
           }}
         >
           <Button type="submit" disabled={lessonMeta.completed} className="gap-1.5">

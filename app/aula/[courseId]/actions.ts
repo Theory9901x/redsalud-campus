@@ -6,7 +6,10 @@ import { prisma } from "@/lib/prisma";
 import { getAulaData } from "@/lib/aula";
 import { recalculateEnrollmentProgress } from "@/lib/lesson-progress";
 
-export async function markLessonCompleteAction(courseId: string, lessonId: string) {
+export async function markLessonCompleteAction(
+  courseId: string,
+  lessonId: string
+): Promise<{ certificateId: string | null }> {
   const session = await auth();
   if (!session?.user) throw new Error("No autenticado.");
   const userId = session.user.id;
@@ -30,9 +33,11 @@ export async function markLessonCompleteAction(courseId: string, lessonId: strin
     },
   });
 
-  await recalculateEnrollmentProgress(aulaData.enrollment.id);
+  const { certificateId } = await recalculateEnrollmentProgress(aulaData.enrollment.id);
 
   revalidatePath(`/aula/${courseId}`);
   revalidatePath("/inicio");
   revalidatePath("/mi-aula");
+
+  return { certificateId };
 }

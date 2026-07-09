@@ -8,13 +8,15 @@ import { issueCertificateIfEligible } from "@/lib/certificates";
  * cuestionario agota sus intentos sin aprobarse, el curso queda reprobado.
  * `finalScore` es el promedio de los mejores puntajes aprobados de cada quiz.
  */
-export async function recalculateEnrollmentProgress(enrollmentId: string) {
+export async function recalculateEnrollmentProgress(
+  enrollmentId: string
+): Promise<{ certificateId: string | null }> {
   const enrollment = await prisma.enrollment.findUniqueOrThrow({
     where: { id: enrollmentId },
     select: { id: true, userId: true, courseId: true, status: true, startedAt: true },
   });
 
-  if (enrollment.status === "CANCELLED") return;
+  if (enrollment.status === "CANCELLED") return { certificateId: null };
 
   const [totalRequired, completedRequired, quizzes] = await Promise.all([
     prisma.lesson.count({
@@ -80,6 +82,9 @@ export async function recalculateEnrollmentProgress(enrollmentId: string) {
   });
 
   if (justCompleted) {
-    await issueCertificateIfEligible(enrollmentId);
+    const certificateId = await issueCertificateIfEligible(enrollmentId);
+    return { certificateId };
   }
+
+  return { certificateId: null };
 }

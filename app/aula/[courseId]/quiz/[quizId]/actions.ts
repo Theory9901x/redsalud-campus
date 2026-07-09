@@ -22,6 +22,7 @@ export type QuizSubmitState = {
     passingScore: number;
     attemptsRemaining: number;
     feedback: QuizFeedbackItem[] | null;
+    certificateId: string | null;
   };
 };
 
@@ -136,7 +137,7 @@ export async function submitQuizAttemptAction(
     throw error;
   }
 
-  await recalculateEnrollmentProgress(enrollment.id);
+  const { certificateId } = await recalculateEnrollmentProgress(enrollment.id);
 
   // OJO: no revalidar la propia página del quiz aquí. Next.js refresca el
   // segmento actual tras un Server Action que llama revalidatePath sobre esa
@@ -155,6 +156,7 @@ export async function submitQuizAttemptAction(
       passingScore: quiz.passingScore,
       attemptsRemaining: Math.max(0, quiz.maxAttempts - attemptNumber),
       feedback: quiz.showResultsNow ? feedback : null,
+      certificateId,
     },
   };
 }

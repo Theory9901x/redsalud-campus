@@ -2,7 +2,8 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Clock, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Award, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { submitQuizAttemptAction, type QuizSubmitState } from "@/app/aula/[courseId]/quiz/[quizId]/actions";
@@ -46,6 +47,7 @@ export function QuizTakingForm({
   initialBestScore: number | null;
   initialAttemptsRemaining: number;
 }) {
+  const router = useRouter();
   const action = submitQuizAttemptAction.bind(null, courseId, quizId);
   const [state, formAction, pending] = useActionState(action, initialState);
   const formRef = useRef<HTMLFormElement>(null);
@@ -60,6 +62,24 @@ export function QuizTakingForm({
     const timer = setTimeout(() => setSecondsLeft((s) => (s === null ? null : s - 1)), 1000);
     return () => clearTimeout(timer);
   }, [secondsLeft, state.result]);
+
+  // Este cuestionario era lo último que faltaba para completar el curso: en
+  // vez del panel genérico de "aprobado", el momento real es la revelación
+  // del certificado -se navega ahí en cuanto el resultado llega, no se
+  // muestra primero un panel para reemplazarlo un instante después-.
+  const certificateId = state.result?.certificateId;
+  useEffect(() => {
+    if (certificateId) router.push(`/mi-aula/certificados/${certificateId}?justIssued=1`);
+  }, [certificateId, router]);
+
+  if (certificateId) {
+    return (
+      <div className="surface flex flex-col items-center gap-3 p-10 text-center">
+        <Award className="h-10 w-10 animate-pulse text-warning" />
+        <p className="text-sm font-medium text-muted-foreground">Preparando tu certificado...</p>
+      </div>
+    );
+  }
 
   // `state.result` (local a esta instancia del componente) tiene prioridad
   // sobre los props "initial*" que vienen del servidor: enviar la respuesta

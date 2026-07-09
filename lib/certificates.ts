@@ -71,11 +71,14 @@ async function renderAndSaveCertificate(certificate: {
  * Emite el certificado de una inscripción recién completada, si aún no
  * tiene uno. Se llama desde recalculateEnrollmentProgress justo cuando el
  * curso pasa a COMPLETED. Idempotente: si ya existe un certificado para
- * esta inscripción, no hace nada.
+ * esta inscripción, no hace nada. Devuelve el id del certificado (nuevo o
+ * preexistente) para que quien llama pueda redirigir a la pantalla de
+ * revelación; null solo si la emisión concurrente de otra petición falló
+ * en un punto donde no queda un id fiable que devolver.
  */
-export async function issueCertificateIfEligible(enrollmentId: string) {
+export async function issueCertificateIfEligible(enrollmentId: string): Promise<string | null> {
   const existing = await prisma.certificate.findUnique({ where: { enrollmentId }, select: { id: true } });
-  if (existing) return;
+  if (existing) return existing.id;
 
   const enrollment = await prisma.enrollment.findUniqueOrThrow({
     where: { id: enrollmentId },
@@ -106,7 +109,8 @@ export async function issueCertificateIfEligible(enrollmentId: string) {
     // enrollmentId hace perder a una de las dos con P2002: ya quedó emitido
     // por la otra, así que no es un error real.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return;
+      const winner = await prisma.certificate.findUnique({ where: { enrollmentId }, select: { id: true } });
+      return winner?.id ?? null;
     }
     throw error;
   }
@@ -117,6 +121,8 @@ export async function issueCertificateIfEligible(enrollmentId: string) {
     where: { id: certificate.id },
     data: { pdfUrl: `/api/certificados/${certificate.id}`, templateId },
   });
+
+  return certificate.id;
 }
 
 /** Vuelve a generar el archivo PDF de un certificado ya emitido (p. ej. si se perdió en disco o cambió la plantilla). */

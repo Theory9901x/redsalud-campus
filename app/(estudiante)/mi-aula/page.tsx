@@ -86,7 +86,11 @@ export default async function MiAulaPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {certificates.map((certificate) => (
-                <div key={certificate.id} className="surface flex items-center gap-4 p-5">
+                <Link
+                  key={certificate.id}
+                  href={`/mi-aula/certificados/${certificate.id}`}
+                  className="surface-hover surface flex items-center gap-4 p-5"
+                >
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning-foreground">
                     <Award className="h-6 w-6" />
                   </span>
@@ -96,15 +100,10 @@ export default async function MiAulaPage() {
                       {certificate.certificateCode} · {certificate.issuedAt.toLocaleDateString("es-CO")}
                     </p>
                   </div>
-                  {certificate.pdfUrl && (
-                    <Link
-                      href={certificate.pdfUrl}
-                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Link>
-                  )}
-                </div>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Download className="h-4 w-4" />
+                  </span>
+                </Link>
               ))}
             </div>
           )}

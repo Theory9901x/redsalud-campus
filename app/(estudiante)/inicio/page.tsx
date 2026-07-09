@@ -9,7 +9,7 @@ import { CoursePosterCard } from "@/components/cursos/course-poster-card";
 import { CourseCatalogBrowser } from "@/components/cursos/course-catalog-browser";
 import { AvatarProgressRing } from "@/components/student/avatar-progress-ring";
 import { EmptyState } from "@/components/brand/empty-state";
-import { ConstellationPattern } from "@/components/brand/dot-pattern";
+import { EcgPulse } from "@/components/brand/ecg-pulse";
 import { ENROLLMENT_STATUS_LABELS, ENROLLMENT_STATUS_DOT } from "@/components/cursos/labels";
 import { getUserAvatarUrl } from "@/lib/avatar";
 
@@ -51,43 +51,50 @@ export default async function InicioPage() {
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
       <StaggerSections className="space-y-10">
-      <section className="relative overflow-hidden rounded-3xl bg-navy px-6 py-8 text-white sm:px-10 sm:py-10">
-        <ConstellationPattern className="text-primary/40" />
+      {/*
+       * Momento signature 2: composición editorial asimétrica, no la banda
+       * navy centrada de siempre. El pulso ECG atraviesa toda la sección como
+       * protagonista (no un ícono de esquina) y se dibuja solo al cargar.
+       */}
+      <section className="relative isolate overflow-hidden rounded-3xl bg-navy px-6 py-12 text-white sm:px-10 sm:py-16 lg:py-20">
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             backgroundImage:
-              "radial-gradient(circle at 15% 20%, color-mix(in oklch, var(--primary) 30%, transparent), transparent 50%)",
+              "radial-gradient(circle at 8% -15%, color-mix(in oklch, var(--primary) 35%, transparent), transparent 55%), radial-gradient(circle at 100% 115%, color-mix(in oklch, var(--success) 22%, transparent), transparent 55%)",
           }}
         />
-        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
-          <AvatarProgressRing name={session!.user.name ?? ""} avatarUrl={avatarUrl} progress={overallProgress} />
+        <EcgPulse className="absolute inset-x-0 bottom-10 h-28 w-full text-primary/50 sm:bottom-14 sm:h-36 lg:h-44" />
 
-          <div className="flex-1">
-            <div className="flex items-center gap-2 text-white/70">
+        <div className="relative grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-end">
+          <div className="lg:col-span-8">
+            <div className="flex items-center gap-2 text-white/60">
               <Activity className="h-4 w-4 text-primary" />
-              <span className="text-xs font-semibold uppercase tracking-wide">Campus virtual</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.2em]">Campus virtual</span>
             </div>
-            <h1 className="text-display-lg mt-2 font-display font-extrabold">
-              Hola, {session!.user.name?.split(" ")[0]}
+            <h1 className="text-display-xl mt-3 font-display font-extrabold text-balance">
+              Hola, {session!.user.name?.split(" ")[0]}.
             </h1>
-            <p className="mt-1 max-w-lg text-sm text-white/70">
+            <p className="mt-4 max-w-lg text-base text-white/70">
               Este es tu espacio de formación institucional. Aquí verás tus cursos, tu avance y tus certificados.
             </p>
           </div>
 
-          <div className="flex gap-6 border-t border-white/15 pt-4 sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
-            <div>
-              <p className="font-display text-2xl font-extrabold">{activeCount}</p>
-              <p className="text-xs text-white/60">Activos</p>
-            </div>
-            <div>
-              <p className="font-display text-2xl font-extrabold">{completedCount}</p>
-              <p className="text-xs text-white/60">Completados</p>
-            </div>
-            <div>
-              <p className="font-display text-2xl font-extrabold">{certificateCount}</p>
-              <p className="text-xs text-white/60">Certificados</p>
+          <div className="flex items-center gap-5 lg:col-span-4 lg:justify-end">
+            <AvatarProgressRing name={session!.user.name ?? ""} avatarUrl={avatarUrl} progress={overallProgress} size={72} />
+            <div className="flex flex-col gap-3 border-l border-white/15 pl-5">
+              <div>
+                <p className="font-display text-2xl font-extrabold leading-none">{activeCount}</p>
+                <p className="mt-1 text-xs text-white/60">Activos</p>
+              </div>
+              <div>
+                <p className="font-display text-2xl font-extrabold leading-none">{completedCount}</p>
+                <p className="mt-1 text-xs text-white/60">Completados</p>
+              </div>
+              <div>
+                <p className="font-display text-2xl font-extrabold leading-none">{certificateCount}</p>
+                <p className="mt-1 text-xs text-white/60">Certificados</p>
+              </div>
             </div>
           </div>
         </div>
