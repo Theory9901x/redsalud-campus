@@ -39,7 +39,10 @@ export function CoursePosterCard({
   return (
     <Link
       href={href}
-      className="surface-hover group relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-2xl shadow-md shadow-black/15 ring-1 ring-black/5"
+      // @container: la densidad interna (qué meta se muestra) reacciona al
+      // ancho REAL de la tarjeta -grilla de 4 columnas, 2, carrusel o
+      // sidebar-, no al viewport completo.
+      className="surface-hover group @container relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-2xl shadow-md shadow-black/15 ring-1 ring-black/5"
     >
       <div className="absolute inset-0">
         {imageUrl ? (
@@ -94,7 +97,10 @@ export function CoursePosterCard({
         <h3 className="font-display text-lg font-extrabold leading-snug line-clamp-2">{title}</h3>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/80">
           {meta.map((item, index) => (
-            <span key={index} className="flex items-center gap-1">
+            // El segundo dato (p. ej. el nombre del tutor) se oculta cuando
+            // la tarjeta misma es angosta (grilla de 4 columnas): a ese ancho
+            // ambos datos juntos se amontonan y dejan de leerse bien.
+            <span key={index} className={cn("flex items-center gap-1", index > 0 && "hidden @xs:flex")}>
               <item.icon className="h-3.5 w-3.5" />
               {item.label}
             </span>

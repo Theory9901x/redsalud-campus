@@ -61,7 +61,7 @@ export function AuthShell({
         </div>
 
         <div className="relative z-10 mx-auto mt-12 max-w-md space-y-5 text-center animate-in fade-in slide-in-from-left-8 duration-700">
-          <h1 className="font-display text-5xl font-extrabold leading-tight">
+          <h1 className="text-display-xl font-display font-extrabold">
             Plataforma institucional de formación.
           </h1>
           <p className="text-base leading-relaxed text-white/75">

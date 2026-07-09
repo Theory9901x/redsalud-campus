@@ -68,7 +68,7 @@ export default async function InicioPage() {
               <Activity className="h-4 w-4 text-primary" />
               <span className="text-xs font-semibold uppercase tracking-wide">Campus virtual</span>
             </div>
-            <h1 className="mt-2 font-display text-2xl font-extrabold sm:text-3xl">
+            <h1 className="text-display-lg mt-2 font-display font-extrabold">
               Hola, {session!.user.name?.split(" ")[0]}
             </h1>
             <p className="mt-1 max-w-lg text-sm text-white/70">
@@ -105,7 +105,7 @@ export default async function InicioPage() {
           <div className="flex items-center gap-3">
             <span className="h-8 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-primary to-success" />
             <div>
-              <h2 className="font-display text-2xl font-extrabold text-foreground">Mis cursos</h2>
+              <h2 className="text-display-md font-display font-extrabold text-foreground">Mis cursos</h2>
               <p className="mt-0.5 text-sm text-muted-foreground">Los cursos en los que estás inscrito.</p>
             </div>
           </div>
@@ -148,7 +148,7 @@ export default async function InicioPage() {
           <div className="flex items-center gap-3">
             <span className="h-8 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-primary to-success" />
             <div>
-              <h2 className="font-display text-2xl font-extrabold text-foreground">Catálogo disponible</h2>
+              <h2 className="text-display-md font-display font-extrabold text-foreground">Catálogo disponible</h2>
               <p className="mt-0.5 text-sm text-muted-foreground">Cursos publicados por la institución.</p>
             </div>
           </div>
