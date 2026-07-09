@@ -63,6 +63,7 @@ export default async function MiAulaPage() {
                   ]}
                   progress={enrollment.progressPercentage}
                   progressLabel={`${enrollment.progressPercentage}% completado`}
+                  ctaLabel={enrollment.status === "COMPLETED" ? "Revisar curso" : "Continuar"}
                 />
               ))}
             </CourseGrid>

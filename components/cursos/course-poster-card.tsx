@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import type { LucideIcon } from "lucide-react";
+import { ArrowRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { COURSE_TYPE_ICONS, COURSE_TYPE_COLORS } from "@/components/cursos/labels";
 import { DotPattern } from "@/components/brand/dot-pattern";
@@ -20,6 +20,7 @@ export function CoursePosterCard({
   meta,
   progress,
   progressLabel,
+  ctaLabel = "Ver curso",
 }: {
   href: string;
   imageUrl: string | null;
@@ -32,6 +33,8 @@ export function CoursePosterCard({
   meta: CoursePosterMeta[];
   progress?: number;
   progressLabel?: string;
+  /** Texto del botón de acción ("Ver curso" / "Inscribirme" / "Continuar" / "Revisar curso" según el estado del llamador). */
+  ctaLabel?: string;
 }) {
   const TypeIcon = COURSE_TYPE_ICONS[courseType];
   const colors = COURSE_TYPE_COLORS[courseType];
@@ -117,6 +120,19 @@ export function CoursePosterCard({
             {progressLabel && <p className="mt-1 text-[11px] text-white/70">{progressLabel}</p>}
           </div>
         )}
+
+        {/*
+         * Botón de acción explícito: antes la tarjeta entera era clicable sin
+         * ningún indicio visual de qué pasaba al hacerlo ("click implícito").
+         * No es un elemento interactivo aparte -toda la tarjeta ya es el
+         * <Link>-, es la señal visual de que existe una acción clara.
+         * Gradiente de marca (primary->success) siempre, sin importar el
+         * color por tipo de curso: es LA acción, no un acento más.
+         */}
+        <span className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-lg bg-gradient-to-r from-primary to-success px-3 py-1.5 text-xs font-bold text-white shadow-lg shadow-primary/25 transition-transform duration-200 group-hover:translate-x-0.5">
+          {ctaLabel}
+          <ArrowRight className="h-3.5 w-3.5" />
+        </span>
       </div>
     </Link>
   );

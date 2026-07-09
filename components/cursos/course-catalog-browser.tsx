@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Clock, Layers, Search, User } from "lucide-react";
-import { CourseGrid } from "@/components/cursos/course-grid";
+import { motion, AnimatePresence } from "framer-motion";
+import { Clock, Layers, Search, ShieldAlert, User } from "lucide-react";
 import { CoursePosterCard } from "@/components/cursos/course-poster-card";
 import { EmptyState } from "@/components/brand/empty-state";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
@@ -22,11 +22,46 @@ export type CatalogCourseItem = {
   tutorName: string;
 };
 
+/** Grilla con reordenamiento animado (FLIP vía el `layout` de Framer Motion): al filtrar, las tarjetas que quedan se deslizan a su nueva posición, las que salen se desvanecen, las que entran aparecen escalonadas -- en vez de un simple recambio de contenido. `popLayout` saca del flujo a las que salen de inmediato, para que las que quedan puedan reacomodarse sin esperarlas. */
+function AnimatedCourseGrid({ courses }: { courses: CatalogCourseItem[] }) {
+  return (
+    <motion.div layout className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <AnimatePresence mode="popLayout">
+        {courses.map((course, index) => (
+          <motion.div
+            key={course.id}
+            layout
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.24) }}
+          >
+            <CoursePosterCard
+              href={course.href}
+              imageUrl={course.imageUrl}
+              title={course.title}
+              courseType={course.courseType}
+              eyebrow={course.categoryName}
+              audienceLabel={course.targetAudience === "AMBOS" ? null : COURSE_AUDIENCE_LABELS[course.targetAudience]}
+              meta={[
+                { icon: Clock, label: `${course.durationHours}h` },
+                { icon: User, label: course.tutorName },
+              ]}
+            />
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
 /**
  * Filtra en el cliente (sin navegación ni recarga): el catálogo institucional
  * es pequeño, así que traer todo una vez y filtrar en memoria evita el salto
  * de scroll que causaba el filtro anterior basado en searchParams + Link
- * (la navegación remontaba la página a través de loading.tsx).
+ * (la navegación remontaba la página a través de loading.tsx). Las
+ * animaciones de reordenamiento de abajo son puramente visuales sobre el
+ * mismo mecanismo: no reintroducen ese salto.
  */
 export function CourseCatalogBrowser({
   courses,
@@ -47,8 +82,13 @@ export function CourseCatalogBrowser({
     });
   }, [courses, categoria, q]);
 
+  // Los obligatorios se separan en su propio bloque con encabezado propio:
+  // no deben perderse mezclados en una grilla homogénea con el resto.
+  const obligatorios = useMemo(() => filtered.filter((c) => c.courseType === "OBLIGATORIO"), [filtered]);
+  const resto = useMemo(() => filtered.filter((c) => c.courseType !== "OBLIGATORIO"), [filtered]);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Barra de herramientas: buscador + filtros agrupados en su propia superficie, separada del grid. */}
       <div className="surface flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div className="flex items-center gap-2 rounded-full border border-border/80 bg-secondary/40 px-4 py-2 shadow-inner transition-shadow focus-within:border-primary/40 focus-within:ring-3 focus-within:ring-ring/20 sm:w-72 sm:shrink-0">
@@ -99,23 +139,31 @@ export function CourseCatalogBrowser({
           description="Ajusta la búsqueda o elige otra categoría."
         />
       ) : (
-        <CourseGrid>
-          {filtered.map((course) => (
-            <CoursePosterCard
-              key={course.id}
-              href={course.href}
-              imageUrl={course.imageUrl}
-              title={course.title}
-              courseType={course.courseType}
-              eyebrow={course.categoryName}
-              audienceLabel={course.targetAudience === "AMBOS" ? null : COURSE_AUDIENCE_LABELS[course.targetAudience]}
-              meta={[
-                { icon: Clock, label: `${course.durationHours}h` },
-                { icon: User, label: course.tutorName },
-              ]}
-            />
-          ))}
-        </CourseGrid>
+        <>
+          {obligatorios.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                  <ShieldAlert className="h-4 w-4" />
+                </span>
+                <div>
+                  <h2 className="font-display text-base font-extrabold text-foreground">Obligatorios pendientes</h2>
+                  <p className="text-xs text-muted-foreground">Cursos de cumplimiento requerido por la institución.</p>
+                </div>
+              </div>
+              <AnimatedCourseGrid courses={obligatorios} />
+            </div>
+          )}
+
+          {resto.length > 0 && (
+            <div className="space-y-4">
+              {obligatorios.length > 0 && (
+                <h2 className="font-display text-base font-extrabold text-foreground">Resto del catálogo</h2>
+              )}
+              <AnimatedCourseGrid courses={resto} />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -21,8 +21,11 @@ export function EmptyState({
         className
       )}
     >
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-        <Icon className="h-7 w-7 text-primary" strokeWidth={1.75} />
+      <div
+        className="flex h-14 w-14 items-center justify-center rounded-2xl text-primary shadow-inner"
+        style={{ background: "linear-gradient(135deg in oklch, color-mix(in oklch, var(--primary) 16%, transparent), color-mix(in oklch, var(--success) 12%, transparent))" }}
+      >
+        <Icon className="h-7 w-7" strokeWidth={1.75} />
       </div>
       <h3 className="font-display text-base font-bold text-foreground">{title}</h3>
       {description && <p className="max-w-sm text-sm text-muted-foreground">{description}</p>}

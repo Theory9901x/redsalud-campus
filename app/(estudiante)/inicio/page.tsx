@@ -142,6 +142,7 @@ export default async function InicioPage() {
                   ]}
                   progress={enrollment.progressPercentage}
                   progressLabel={`${enrollment.progressPercentage}% completado`}
+                  ctaLabel={enrollment.status === "COMPLETED" ? "Revisar curso" : "Continuar"}
                 />
               ))}
             </CourseGrid>
