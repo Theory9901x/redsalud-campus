@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
-import { Activity } from "lucide-react";
+import { Activity, BookOpen, CalendarRange } from "lucide-react";
 
 export default async function TutorLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -33,6 +34,22 @@ export default async function TutorLayout({ children }: { children: React.ReactN
           </Button>
         </form>
       </header>
+      <nav className="flex items-center gap-1 border-b border-border bg-card px-6 py-2">
+        <Link
+          href="/tutor"
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <BookOpen className="h-4 w-4" />
+          Mis cursos
+        </Link>
+        <Link
+          href="/tutor/planes-capacitacion"
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <CalendarRange className="h-4 w-4" />
+          Planes de capacitación
+        </Link>
+      </nav>
       <main className="flex-1 p-6">{children}</main>
     </div>
   );

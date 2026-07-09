@@ -28,3 +28,15 @@ export async function requireCourseAccess(courseId: string) {
   }
   return session;
 }
+
+/** Verifica que el usuario sea ADMIN, o TUTOR responsable del plan. Lanza si no cumple. */
+export async function requireTrainingPlanAccess(planId: string) {
+  const session = await requireTutorOrAdmin();
+  if (session.user.role === "ADMIN") return session;
+
+  const plan = await prisma.trainingPlan.findUnique({ where: { id: planId }, select: { tutorId: true } });
+  if (!plan || plan.tutorId !== session.user.id) {
+    throw new Error("No autorizado: no eres el tutor responsable de este plan.");
+  }
+  return session;
+}

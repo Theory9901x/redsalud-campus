@@ -12,6 +12,7 @@ import {
   Bell,
   Settings,
   Activity,
+  CalendarRange,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/usuarios", label: "Usuarios", icon: Users },
   { href: "/admin/cursos", label: "Cursos", icon: BookOpen },
+  { href: "/admin/planes-capacitacion", label: "Planes de capacitación", icon: CalendarRange },
   { href: "/admin/inscripciones", label: "Inscripciones", icon: ClipboardList },
   { href: "/admin/certificados", label: "Certificados", icon: Award },
   { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell },

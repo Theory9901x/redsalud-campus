@@ -69,6 +69,7 @@ model User {
   certificates   Certificate[]
   mediaUploads   Media[]
   auditLogs      AuditLog[]
+  trainingPlansAsTutor TrainingPlan[] @relation("TrainingPlanTutor")
 
   notificationsCreated  Notification[]     @relation("NotificationCreatedBy")
   notificationsTargeted Notification[]     @relation("NotificationTargetUser")
@@ -144,6 +145,7 @@ model Course {
   quizzes      Quiz[]
   enrollments  Enrollment[]
   certificates Certificate[]
+  trainingActivities TrainingActivity[]
 
   @@index([status, courseType])
   @@index([status, targetAudience])
@@ -476,4 +478,74 @@ model NotificationRead {
   readAt         DateTime     @default(now())
 
   @@unique([notificationId, userId])
+}
+
+// ------------------------------------------------------------------
+// Plan de capacitaciones (Etapa 1: cronograma y plan)
+// ------------------------------------------------------------------
+
+enum TrainingPlanStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+/**
+ * Gestionado por TUTOR (sus propios planes) y ADMIN (todos, sin límite,
+ * incluyendo crear en nombre de un tutor). Una sola UI para ambos roles;
+ * el alcance se filtra por rol en las queries, no se duplica la vista.
+ */
+model TrainingPlan {
+  id               String             @id @default(cuid())
+  title            String
+  year             Int
+  description      String?
+  targetDepartment String // mismo texto libre que User.department: sin modelo Department separado
+  tutorId          String
+  tutor            User               @relation("TrainingPlanTutor", fields: [tutorId], references: [id])
+  status           TrainingPlanStatus @default(DRAFT)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  activities TrainingActivity[]
+
+  @@index([tutorId])
+  @@index([targetDepartment])
+}
+
+enum TrainingActivityType {
+  COURSE // vinculada a un curso existente de la plataforma
+  EXTERNAL_EVENT // evento externo presencial, sin curso asociado
+}
+
+/**
+ * Ciclo de vida real de la jornada (Etapa 6): BORRADOR -> ABIERTA (visible
+ * a estudiantes del área, admite respuestas) -> CERRADA (participación
+ * congelada, indicadores consolidados). El campo se define ahora; el flujo
+ * de habilitar/cerrar se construye en su propia etapa.
+ */
+enum TrainingActivityStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+model TrainingActivity {
+  id             String                 @id @default(cuid())
+  planId         String
+  plan           TrainingPlan           @relation(fields: [planId], references: [id], onDelete: Cascade)
+  title          String
+  type           TrainingActivityType
+  courseId       String? // requerido solo cuando type = COURSE (validado en la acción, no en el esquema)
+  course         Course?                @relation(fields: [courseId], references: [id])
+  startDate      DateTime
+  endDate        DateTime?
+  targetAudience CourseAudience         @default(AMBOS) // reutiliza el enum de Course, misma semántica
+  isRequired     Boolean                @default(true)
+  status         TrainingActivityStatus @default(DRAFT)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([planId])
+  @@index([courseId])
 }
