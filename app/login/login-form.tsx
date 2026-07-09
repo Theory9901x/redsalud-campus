@@ -104,8 +104,12 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
             type="submit"
             disabled={pending}
             className={cn(
+              // El Button base ya trae transition-all + la firma de movimiento
+              // (duration-(--duration-signature-fast)/ease-(--ease-signature));
+              // repetir "duration-300" acá la pisaba en silencio (tailwind-merge
+              // resuelve el conflicto quedándose con el último de la cadena).
               "h-11 w-full gap-2 rounded-xl bg-gradient-to-r from-primary to-success text-white shadow-md",
-              "transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:opacity-95 active:translate-y-0 active:scale-[0.98]"
+              "hover:-translate-y-0.5 hover:shadow-lg hover:opacity-95 active:translate-y-0 active:scale-[0.98]"
             )}
           >
             {pending ? (

@@ -6,6 +6,7 @@ import { Clock, Layers, Search, ShieldAlert, User } from "lucide-react";
 import { CoursePosterCard } from "@/components/cursos/course-poster-card";
 import { EmptyState } from "@/components/brand/empty-state";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
+import { SIGNATURE_EASE, SIGNATURE_DURATION } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import type { CourseType, CourseAudience } from "@prisma/client";
 
@@ -34,7 +35,7 @@ function AnimatedCourseGrid({ courses }: { courses: CatalogCourseItem[] }) {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92 }}
-            transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.24) }}
+            transition={{ duration: SIGNATURE_DURATION, ease: SIGNATURE_EASE, delay: Math.min(index * 0.04, 0.24) }}
           >
             <CoursePosterCard
               href={course.href}

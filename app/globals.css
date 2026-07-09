@@ -98,6 +98,22 @@
   --sidebar-accent-foreground: oklch(100% 0 0);
   --sidebar-border: oklch(30.83% 0.0546 247.43);
   --sidebar-ring: oklch(68.52% 0.1312 233.93);
+
+  /*
+   * Firma de movimiento de RedSalud Te Forma: una única curva y escala de
+   * duración reutilizadas en toda la plataforma -CSS y Framer Motion
+   * (ver lib/motion.ts, misma curva)-, en vez de valores de transición
+   * sueltos por componente. Ease-out pronunciado: arranca rápido y se
+   * asienta con precisión, se siente decidido, no rebotón ni "gamer".
+   * "signature" = la duración de referencia (revelar contenido, entrar a
+   * una vista); "fast" es la fracción para micro-interacciones (hover,
+   * foco) que deben sentirse inmediatas, no la misma duración que un
+   * cambio de vista completo.
+   */
+  --ease-signature: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-signature-fast: 0.2s;
+  --duration-signature: 0.4s;
+  --duration-signature-slow: 0.6s;
 }
 
 .dark {
@@ -191,7 +207,9 @@
   }
 
   .surface-hover {
-    @apply transition-all duration-300;
+    transition-property: all;
+    transition-duration: var(--duration-signature);
+    transition-timing-function: var(--ease-signature);
   }
   .surface-hover:hover {
     @apply -translate-y-0.5;
