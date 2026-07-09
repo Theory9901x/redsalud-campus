@@ -53,7 +53,13 @@ export default async function InicioPage() {
       <StaggerSections className="space-y-10">
       <section className="relative overflow-hidden rounded-3xl bg-navy px-6 py-8 text-white sm:px-10 sm:py-10">
         <ConstellationPattern className="text-primary/40" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(43,166,222,0.3),transparent_50%)]" />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 15% 20%, color-mix(in oklch, var(--primary) 30%, transparent), transparent 50%)",
+          }}
+        />
         <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
           <AvatarProgressRing name={session!.user.name ?? ""} avatarUrl={avatarUrl} progress={overallProgress} />
 

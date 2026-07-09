@@ -70,7 +70,7 @@ export default async function CursoDetallePage({
                 alt={course.title}
                 fill
                 sizes="(min-width: 1024px) 800px, 100vw"
-                className="object-cover"
+                className="fade-edge object-cover"
                 priority
               />
             ) : (

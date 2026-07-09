@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, User, GraduationCap, LogOut, ChevronDown } from "lucide-react";
 import { signOutAction } from "@/lib/auth-actions";
@@ -39,8 +40,16 @@ export function StudentHeader({
   const personnelTypeLabel = PERSONNEL_TYPE_LABELS[personnelType];
   const subtitle = position ? `${position} · ${personnelTypeLabel}` : personnelTypeLabel;
 
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+    <header className="header-glass sticky top-0 z-30" data-scrolled={scrolled}>
       <div className="flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <button
           type="button"

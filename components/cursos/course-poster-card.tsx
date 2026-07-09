@@ -47,7 +47,7 @@ export function CoursePosterCard({
             alt={title}
             fill
             sizes="(min-width: 1280px) 300px, (min-width: 640px) 45vw, 90vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="fade-edge object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <div className={cn("relative h-full w-full bg-gradient-to-br", colors.gradient)}>

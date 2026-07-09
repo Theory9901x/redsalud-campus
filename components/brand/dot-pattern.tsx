@@ -1,7 +1,7 @@
 export function DotPattern({ className = "" }: { className?: string }) {
   return (
     <svg
-      className={`pointer-events-none absolute inset-0 h-full w-full ${className}`}
+      className={`pointer-events-none fade-pattern absolute inset-0 h-full w-full ${className}`}
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
@@ -23,7 +23,7 @@ export function ConstellationPattern({ className = "" }: { className?: string })
   ];
   return (
     <svg
-      className={`pointer-events-none absolute inset-0 h-full w-full ${className}`}
+      className={`pointer-events-none fade-pattern absolute inset-0 h-full w-full ${className}`}
       viewBox="0 0 700 320"
       preserveAspectRatio="xMidYMid slice"
       fill="none"

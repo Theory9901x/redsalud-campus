@@ -185,6 +185,42 @@
     background: linear-gradient(to right in oklch, var(--primary), var(--success));
   }
 
+  /*
+   * Header con estado "vidrio": sólido en el tope de la página (no hay nada
+   * detrás que justifique el desenfoque) y con backdrop-filter sutil solo
+   * una vez que el usuario ha hecho scroll y hay contenido pasando debajo.
+   * El estado lo alterna un pequeño listener de scroll en el componente
+   * cliente (data-scrolled), no CSS puro, porque el umbral debe reaccionar
+   * a la posición real, no a una duración o distancia de scroll fija.
+   */
+  .header-glass {
+    @apply bg-card border-b border-border transition-[background-color,box-shadow] duration-300;
+  }
+  .header-glass[data-scrolled="true"] {
+    background-color: color-mix(in oklch, var(--card) 72%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    backdrop-filter: blur(14px) saturate(160%);
+    box-shadow: 0 1px 2px 0 color-mix(in oklch, var(--navy) 6%, transparent),
+      0 8px 24px -12px color-mix(in oklch, var(--navy) 20%, transparent);
+  }
+
+  /*
+   * Desvanece los bordes de una imagen real (foto de curso) en vez de
+   * cortarla en seco contra el marco: un viñeteado radial muy abierto, casi
+   * imperceptible salvo en la esquina, para que se sienta encuadrado y no
+   * recortado.
+   */
+  .fade-edge {
+    mask-image: radial-gradient(ellipse at center, black 82%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 82%, transparent 100%);
+  }
+
+  /* Igual que .fade-edge pero para patrones decorativos (puntos, constelación): se apagan hacia el borde en vez de cortar en una rejilla dura. */
+  .fade-pattern {
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 85%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 85%);
+  }
+
   /* Flotación sutil continua para tarjetas decorativas (login, landing). */
   .animate-float {
     animation: float 6s ease-in-out infinite;
