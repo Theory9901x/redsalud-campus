@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Inter, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
-import { ScrollDrivenStyles } from "@/components/brand/scroll-driven-styles";
+import { NativeCssBypass } from "@/components/brand/native-css-bypass";
+import { NativeViewTransitions } from "@/components/brand/native-view-transitions";
 import "./globals.css";
 
 const inter = Inter({
@@ -36,9 +37,10 @@ export default function RootLayout({
       className={`${inter.variable} ${bricolage.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        <ScrollDrivenStyles />
+        <NativeCssBypass />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        <NativeViewTransitions />
         {children}
         <Toaster richColors position="top-right" />
       </body>

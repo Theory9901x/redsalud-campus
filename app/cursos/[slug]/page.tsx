@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/brand/empty-state";
 import { DotPattern } from "@/components/brand/dot-pattern";
 import { EnrollButton } from "@/components/cursos/enroll-button";
+import { coursePhotoTransitionName } from "@/lib/view-transition-names";
 import {
   COURSE_TYPE_LABELS,
   COURSE_TYPE_ICONS,
@@ -71,6 +72,7 @@ export default async function CursoDetallePage({
                 fill
                 sizes="(min-width: 1024px) 800px, 100vw"
                 className="fade-edge object-cover"
+                style={{ viewTransitionName: coursePhotoTransitionName(`/cursos/${slug}`) }}
                 priority
               />
             ) : (

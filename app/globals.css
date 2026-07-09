@@ -301,6 +301,13 @@
 }
 
 /*
+ * Los pseudo-elementos ::view-transition-*() (ver ScrollDrivenStyles) NO
+ * viven aquí por la misma razón que animation-timeline: view()/scroll(): esa
+ * sintaxis funcional en selectores tampoco la parsea todavía Lightning CSS y
+ * también se descarta en silencio durante el build.
+ */
+
+/*
  * Las reglas de animation-timeline: view()/scroll() NO viven aquí: Lightning
  * CSS (el motor de Tailwind v4) todavía no sabe parsear esa sintaxis y las
  * descarta en silencio durante el build -sin error visible en

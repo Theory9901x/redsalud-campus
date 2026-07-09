@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { COURSE_TYPE_ICONS, COURSE_TYPE_COLORS } from "@/components/cursos/labels";
 import { DotPattern } from "@/components/brand/dot-pattern";
+import { coursePhotoTransitionName } from "@/lib/view-transition-names";
 import type { CourseType } from "@prisma/client";
 
 export type CoursePosterMeta = { icon: LucideIcon; label: string };
@@ -42,12 +43,19 @@ export function CoursePosterCard({
     >
       <div className="absolute inset-0">
         {imageUrl ? (
+          // Mismo view-transition-name que la portada del detalle del curso
+          // (cursos/[slug]/page.tsx): el navegador morfea la miniatura hacia
+          // la imagen de portada al navegar, en vez de un corte seco entre
+          // dos fotos distintas. CSS puro (sin el componente <ViewTransition>
+          // de React, que requiere una versión canary que este proyecto no
+          // usa) -- ver components/brand/native-view-transitions.tsx.
           <Image
             src={imageUrl}
             alt={title}
             fill
             sizes="(min-width: 1280px) 300px, (min-width: 640px) 45vw, 90vw"
             className="fade-edge object-cover transition-transform duration-300 group-hover:scale-105"
+            style={{ viewTransitionName: coursePhotoTransitionName(href) }}
           />
         ) : (
           <div className={cn("relative h-full w-full bg-gradient-to-br", colors.gradient)}>
