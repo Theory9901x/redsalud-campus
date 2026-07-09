@@ -42,6 +42,7 @@ export default async function AulaLessonPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      <div className="reading-progress" aria-hidden="true" />
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {lessonMeta.completed ? "Completada" : "Lección"}

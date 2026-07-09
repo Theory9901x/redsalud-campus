@@ -15,7 +15,9 @@ export function StaggerGrid({ children, className }: { children: React.ReactNode
       className={cn("grid", className)}
     >
       {Children.map(children, (child) => (
-        <motion.div variants={fadeSlideUp}>{child}</motion.div>
+        <motion.div variants={fadeSlideUp} className="view-fade-in">
+          {child}
+        </motion.div>
       ))}
     </motion.div>
   );

@@ -299,3 +299,12 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
 }
+
+/*
+ * Las reglas de animation-timeline: view()/scroll() NO viven aquí: Lightning
+ * CSS (el motor de Tailwind v4) todavía no sabe parsear esa sintaxis y las
+ * descarta en silencio durante el build -sin error visible en
+ * `npm run build`-, junto con cualquier @keyframes que solo ellas usan. Ese
+ * bloque se sirve sin procesar desde app/layout.tsx (ver ScrollDrivenStyles)
+ * para que llegue al navegador tal cual se escribió.
+ */
