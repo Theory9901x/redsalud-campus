@@ -161,20 +161,21 @@
   /*
    * Tipografía fluida: interpola entre móvil y escritorio de forma continua
    * (clamp(mín, preferido, máx)) en vez de saltar entre tamaños fijos por
-   * breakpoint. El término "preferido" usa vw para que escale con el
-   * viewport real, no con pasos discretos de Tailwind (text-2xl -> text-3xl).
+   * breakpoint. El punto es la interpolación SUAVE, no un tamaño mayor: el
+   * máximo de cada clase coincide con el tamaño fijo que reemplaza
+   * (text-5xl/text-3xl/text-2xl), nunca lo supera.
    */
   .text-display-xl {
-    font-size: clamp(2.25rem, 1.55rem + 2.9vw, 3.75rem);
-    line-height: 1.05;
-  }
-  .text-display-lg {
-    font-size: clamp(1.75rem, 1.35rem + 1.7vw, 2.75rem);
+    font-size: clamp(1.875rem, 1.5rem + 2vw, 3rem);
     line-height: 1.1;
   }
+  .text-display-lg {
+    font-size: clamp(1.375rem, 1.1rem + 1.2vw, 1.875rem);
+    line-height: 1.15;
+  }
   .text-display-md {
-    font-size: clamp(1.375rem, 1.15rem + 0.9vw, 1.875rem);
-    line-height: 1.2;
+    font-size: clamp(1.125rem, 1rem + 0.6vw, 1.5rem);
+    line-height: 1.25;
   }
   .section-pad {
     padding-block: clamp(1.5rem, 1.1rem + 1.6vw, 2.5rem);

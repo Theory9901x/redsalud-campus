@@ -64,7 +64,8 @@ export default async function InicioPage() {
               "radial-gradient(circle at 8% -15%, color-mix(in oklch, var(--primary) 35%, transparent), transparent 55%), radial-gradient(circle at 100% 115%, color-mix(in oklch, var(--success) 22%, transparent), transparent 55%)",
           }}
         />
-        <EcgPulse className="absolute inset-x-0 bottom-10 h-28 w-full text-primary/50 sm:bottom-14 sm:h-36 lg:h-44" />
+        {/* Banda delgada pegada al borde inferior: decorativa, no debe competir con el texto de arriba. */}
+        <EcgPulse className="absolute inset-x-0 bottom-3 h-10 w-full text-primary/30 sm:bottom-4 sm:h-12 lg:h-14" />
 
         <div className="relative grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-end">
           <div className="lg:col-span-8">
@@ -72,7 +73,7 @@ export default async function InicioPage() {
               <Activity className="h-4 w-4 text-primary" />
               <span className="text-xs font-semibold uppercase tracking-[0.2em]">Campus virtual</span>
             </div>
-            <h1 className="text-display-xl mt-3 font-display font-extrabold text-balance">
+            <h1 className="text-display-lg mt-3 font-display font-extrabold text-balance">
               Hola, {session!.user.name?.split(" ")[0]}.
             </h1>
             <p className="mt-4 max-w-lg text-base text-white/70">
