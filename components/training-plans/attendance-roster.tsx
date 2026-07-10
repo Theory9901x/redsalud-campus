@@ -14,9 +14,12 @@ export type AttendanceRosterItem = {
 export function AttendanceRoster({
   activityId,
   roster,
+  locked = false,
 }: {
   activityId: string;
   roster: AttendanceRosterItem[];
+  /** Etapa 6: la jornada cerró, la participación queda congelada — se oculta la acción de marcar asistencia. */
+  locked?: boolean;
 }) {
   if (roster.length === 0) {
     return (
@@ -45,7 +48,7 @@ export function AttendanceRoster({
               <TableHead>Nombre</TableHead>
               <TableHead>Documento</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
+              {!locked && <TableHead className="text-right">Acciones</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -64,11 +67,13 @@ export function AttendanceRoster({
                     {user.attended ? "Asistió" : "No asistió"}
                   </span>
                 </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end">
-                    <AttendanceToggleButton activityId={activityId} userId={user.id} attended={user.attended} />
-                  </div>
-                </TableCell>
+                {!locked && (
+                  <TableCell className="text-right">
+                    <div className="flex justify-end">
+                      <AttendanceToggleButton activityId={activityId} userId={user.id} attended={user.attended} />
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

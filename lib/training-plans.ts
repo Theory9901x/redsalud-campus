@@ -153,6 +153,25 @@ export async function getActivityAttendanceRoster(activity: {
   return users.map((u) => ({ ...u, attended: attendedMap.get(u.id) ?? false }));
 }
 
+/**
+ * Lista nominal del personal objetivo con su estado de completitud, para
+ * actividades con curso vinculado (Etapa 6: al cerrar la jornada, el
+ * no-adherente se registra NOMINALMENTE, no solo como % agregado).
+ */
+export async function getActivityCompletionRoster(activity: {
+  courseId: string;
+  targetAudience: CourseAudience;
+  plan: { targetDepartment: string };
+}) {
+  const users = await getTargetAudienceUsers(activity.plan.targetDepartment, activity.targetAudience);
+  const completed = await prisma.enrollment.findMany({
+    where: { courseId: activity.courseId, userId: { in: users.map((u) => u.id) }, status: "COMPLETED" },
+    select: { userId: true },
+  });
+  const completedIds = new Set(completed.map((e) => e.userId));
+  return users.map((u) => ({ ...u, completed: completedIds.has(u.id) }));
+}
+
 /** Cumplimiento del plan: promedio de adherencia entre las actividades que sí tienen audiencia objetivo. */
 export async function getPlanAdherenceSummary(plan: {
   targetDepartment: string;

@@ -558,6 +558,8 @@ model TrainingActivity {
   targetAudience CourseAudience         @default(AMBOS) // reutiliza el enum de Course, misma semántica
   isRequired     Boolean                @default(true)
   status         TrainingActivityStatus @default(DRAFT)
+  enabledAt      DateTime? // Etapa 6: cuándo pasó a ABIERTA
+  closedAt       DateTime? // Etapa 6: cuándo se cerró (participación congelada desde ese momento)
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
 

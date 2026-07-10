@@ -133,6 +133,11 @@ export async function uploadTrainingActivityDocumentAction(
 export async function setAttendanceAction(activityId: string, userId: string, attended: boolean) {
   const { session, planId } = await requireTrainingActivityAccess(activityId);
 
+  const activity = await prisma.trainingActivity.findUniqueOrThrow({ where: { id: activityId }, select: { status: true } });
+  if (activity.status === "CLOSED") {
+    throw new Error("La jornada ya cerró: la participación está congelada y no admite más cambios.");
+  }
+
   await prisma.trainingAttendance.upsert({
     where: { activityId_userId: { activityId, userId } },
     update: { attended, registeredBy: session.user.id, registeredAt: new Date() },
@@ -141,4 +146,38 @@ export async function setAttendanceAction(activityId: string, userId: string, at
 
   revalidatePath(`/admin/planes-capacitacion/${planId}/actividades/${activityId}`);
   revalidatePath(`/tutor/planes-capacitacion/${planId}/actividades/${activityId}`);
+}
+
+/**
+ * Etapa 6: ciclo de vida de la jornada. Habilitar = pasar de BORRADOR a
+ * ABIERTA (visible a los estudiantes del área, admite respuestas). Cerrar es
+ * manual y explícito: desde ese momento la participación queda congelada y
+ * los indicadores son definitivos. No hay reapertura: cerrado es terminal.
+ */
+export async function enableActivityAction(basePath: string, planId: string, activityId: string) {
+  await requireTrainingActivityAccess(activityId);
+
+  const activity = await prisma.trainingActivity.findUniqueOrThrow({ where: { id: activityId }, select: { status: true } });
+  if (activity.status !== "DRAFT") {
+    throw new Error("Solo se puede habilitar una jornada que está en borrador.");
+  }
+
+  await prisma.trainingActivity.update({ where: { id: activityId }, data: { status: "OPEN", enabledAt: new Date() } });
+
+  revalidatePath(`${basePath}/${planId}`);
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+}
+
+export async function closeActivityAction(basePath: string, planId: string, activityId: string) {
+  await requireTrainingActivityAccess(activityId);
+
+  const activity = await prisma.trainingActivity.findUniqueOrThrow({ where: { id: activityId }, select: { status: true } });
+  if (activity.status !== "OPEN") {
+    throw new Error("Solo se puede cerrar una jornada que está abierta.");
+  }
+
+  await prisma.trainingActivity.update({ where: { id: activityId }, data: { status: "CLOSED", closedAt: new Date() } });
+
+  revalidatePath(`${basePath}/${planId}`);
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
 }

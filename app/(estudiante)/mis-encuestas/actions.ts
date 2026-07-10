@@ -29,9 +29,10 @@ export async function submitSurveyResponseAction(
     select: { department: true, personnelType: true },
   });
 
-  const { survey, alreadyAnswered } = await getSurveyForStudent(surveyId, userId, user.department, user.personnelType);
+  const { survey, alreadyAnswered, activityClosed } = await getSurveyForStudent(surveyId, userId, user.department, user.personnelType);
   if (!survey) return { error: "Esta encuesta no está disponible para ti." };
   if (alreadyAnswered) return { error: "Ya respondiste esta encuesta." };
+  if (activityClosed) return { error: "La jornada de esta actividad ya cerró. Ya no se admiten respuestas." };
 
   const answersRaw = formData.get("answersJson");
   let answers: Record<string, AnswerDraft>;

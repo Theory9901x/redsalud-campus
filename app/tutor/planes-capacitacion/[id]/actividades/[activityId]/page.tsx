@@ -6,9 +6,14 @@ import {
   getTrainingActivityDetail,
   getActivityAdherence,
   getActivityAttendanceRoster,
+  getActivityCompletionRoster,
 } from "@/lib/training-plans";
 import { getSurveysForActivity } from "@/lib/surveys";
-import { uploadTrainingActivityDocumentAction } from "@/app/admin/planes-capacitacion/actions";
+import {
+  uploadTrainingActivityDocumentAction,
+  enableActivityAction,
+  closeActivityAction,
+} from "@/app/admin/planes-capacitacion/actions";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -17,6 +22,8 @@ import { TrainingDocumentList } from "@/components/training-plans/training-docum
 import { TrainingDocumentUploadForm } from "@/components/training-plans/training-document-upload-form";
 import { ActivityAdherencePanel } from "@/components/training-plans/activity-adherence-panel";
 import { AttendanceRoster } from "@/components/training-plans/attendance-roster";
+import { ActivityLifecycleActions } from "@/components/training-plans/activity-lifecycle-actions";
+import { NonAdherentList } from "@/components/training-plans/non-adherent-list";
 import { SurveyList } from "@/components/training-plans/survey-list";
 import {
   TRAINING_ACTIVITY_TYPE_LABELS,
@@ -26,6 +33,7 @@ import {
 
 const BASE_PATH = "/tutor/planes-capacitacion";
 const DATE_FORMAT = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" });
+const DATETIME_FORMAT = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "numeric", minute: "2-digit" });
 
 export default async function TutorActividadDetallePage({
   params,
@@ -44,13 +52,24 @@ export default async function TutorActividadDetallePage({
     targetAudience: activity.targetAudience,
     plan: { targetDepartment: activity.plan.targetDepartment },
   };
-  const [adherence, roster, surveys] = await Promise.all([
+  const isClosed = activity.status === "CLOSED";
+
+  const [adherence, roster, completionRoster, surveys] = await Promise.all([
     getActivityAdherence(activityForAdherence),
     activity.courseId ? Promise.resolve(null) : getActivityAttendanceRoster(activityForAdherence),
+    activity.courseId && isClosed
+      ? getActivityCompletionRoster({ ...activityForAdherence, courseId: activity.courseId })
+      : Promise.resolve(null),
     getSurveysForActivity(activityId),
   ]);
 
+  const nonAdherentUsers = activity.courseId
+    ? (completionRoster ?? []).filter((u) => !u.completed)
+    : (roster ?? []).filter((u) => !u.attended);
+
   const uploadDocumentAction = uploadTrainingActivityDocumentAction.bind(null, BASE_PATH, id, activityId);
+  const enableAction = enableActivityAction.bind(null, BASE_PATH, id, activityId);
+  const closeAction = closeActivityAction.bind(null, BASE_PATH, id, activityId);
 
   return (
     <div className="space-y-6">
@@ -81,9 +100,17 @@ export default async function TutorActividadDetallePage({
               )}
             </p>
           </div>
-          <Badge className={TRAINING_ACTIVITY_STATUS_CLASSES[activity.status]}>
-            {TRAINING_ACTIVITY_STATUS_LABELS[activity.status]}
-          </Badge>
+          <div className="flex flex-col items-end gap-2">
+            <Badge className={TRAINING_ACTIVITY_STATUS_CLASSES[activity.status]}>
+              {TRAINING_ACTIVITY_STATUS_LABELS[activity.status]}
+            </Badge>
+            <ActivityLifecycleActions
+              status={activity.status}
+              closedAtLabel={activity.closedAt ? DATETIME_FORMAT.format(activity.closedAt) : null}
+              onEnable={enableAction}
+              onClose={closeAction}
+            />
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
@@ -104,8 +131,9 @@ export default async function TutorActividadDetallePage({
         {activity.courseId ? (
           <ActivityAdherencePanel adherence={adherence} />
         ) : (
-          <AttendanceRoster activityId={activity.id} roster={roster!} />
+          <AttendanceRoster activityId={activity.id} roster={roster!} locked={isClosed} />
         )}
+        {isClosed && <NonAdherentList users={nonAdherentUsers} />}
       </div>
 
       <div className="space-y-3">

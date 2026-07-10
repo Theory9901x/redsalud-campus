@@ -160,20 +160,25 @@ export async function getSurveysForUser(userId: string) {
 export async function getSurveyForStudent(surveyId: string, userId: string, userDepartment: string | null, personnelType: PersonnelType) {
   const survey = await prisma.survey.findUnique({
     where: { id: surveyId },
-    include: { questions: questionInclude },
+    include: { questions: questionInclude, trainingActivity: { select: { status: true } } },
   });
-  if (!survey) return { survey: null, alreadyAnswered: false };
+  if (!survey) return { survey: null, alreadyAnswered: false, activityClosed: false };
 
   const matchesAudience =
     !!userDepartment &&
     userDepartment.trim().toLowerCase() === survey.targetDepartment.trim().toLowerCase() &&
     (survey.targetAudience === "AMBOS" || survey.targetAudience === personnelType);
-  if (!matchesAudience) return { survey: null, alreadyAnswered: false };
+  if (!matchesAudience) return { survey: null, alreadyAnswered: false, activityClosed: false };
 
   const existingResponse = await prisma.surveyResponse.findUnique({
     where: { surveyId_userId: { surveyId, userId } },
     select: { id: true },
   });
 
-  return { survey, alreadyAnswered: !!existingResponse };
+  return {
+    survey,
+    alreadyAnswered: !!existingResponse,
+    // Etapa 6: si la encuesta es de una actividad puntual y esa jornada ya cerró, no se admiten más respuestas.
+    activityClosed: survey.trainingActivity?.status === "CLOSED",
+  };
 }

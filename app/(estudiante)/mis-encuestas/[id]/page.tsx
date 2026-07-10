@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Lock } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getSurveyForStudent } from "@/lib/surveys";
@@ -17,7 +17,7 @@ export default async function MisEncuestasDetallePage({ params }: { params: Prom
     select: { department: true, personnelType: true },
   });
 
-  const { survey, alreadyAnswered } = await getSurveyForStudent(id, userId, user.department, user.personnelType);
+  const { survey, alreadyAnswered, activityClosed } = await getSurveyForStudent(id, userId, user.department, user.personnelType);
   if (!survey) notFound();
 
   return (
@@ -37,6 +37,14 @@ export default async function MisEncuestasDetallePage({ params }: { params: Prom
           </span>
           <h1 className="font-display text-lg font-bold text-foreground">Ya respondiste esta encuesta</h1>
           <p className="text-sm text-muted-foreground">Gracias por tu opinión. Solo se admite una respuesta por persona.</p>
+        </div>
+      ) : activityClosed ? (
+        <div className="surface flex flex-col items-center gap-3 p-10 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+            <Lock className="h-7 w-7" />
+          </span>
+          <h1 className="font-display text-lg font-bold text-foreground">Esta jornada ya cerró</h1>
+          <p className="text-sm text-muted-foreground">La actividad terminó y ya no se admiten respuestas.</p>
         </div>
       ) : (
         <SurveyAnswerForm
