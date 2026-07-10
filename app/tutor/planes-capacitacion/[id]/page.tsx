@@ -1,12 +1,16 @@
 import { notFound } from "next/navigation";
-import { CalendarRange, Building2, User } from "lucide-react";
+import { CalendarRange, Building2, User, FileText } from "lucide-react";
 import { requireTrainingPlanAccess } from "@/lib/auth-helpers";
 import { getTrainingPlanDetail, getLinkableCourses } from "@/lib/training-plans";
-import { createTrainingActivityAction } from "@/app/admin/planes-capacitacion/actions";
+import { createTrainingActivityAction, uploadTrainingPlanDocumentAction } from "@/app/admin/planes-capacitacion/actions";
 import { Badge } from "@/components/ui/badge";
 import { TrainingActivityTimeline } from "@/components/training-plans/training-activity-timeline";
 import { TrainingActivityForm } from "@/components/training-plans/training-activity-form";
+import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
+import { TrainingDocumentUploadForm } from "@/components/training-plans/training-document-upload-form";
 import { TRAINING_PLAN_STATUS_LABELS, TRAINING_PLAN_STATUS_CLASSES } from "@/components/training-plans/labels";
+
+const BASE_PATH = "/tutor/planes-capacitacion";
 
 export default async function TutorPlanCapacitacionDetallePage({
   params,
@@ -19,7 +23,8 @@ export default async function TutorPlanCapacitacionDetallePage({
   const [plan, courses] = await Promise.all([getTrainingPlanDetail(id), getLinkableCourses()]);
   if (!plan) notFound();
 
-  const addActivityAction = createTrainingActivityAction.bind(null, "/tutor/planes-capacitacion", id);
+  const addActivityAction = createTrainingActivityAction.bind(null, BASE_PATH, id);
+  const uploadDocumentAction = uploadTrainingPlanDocumentAction.bind(null, BASE_PATH, id);
 
   return (
     <div className="space-y-6">
@@ -53,7 +58,7 @@ export default async function TutorPlanCapacitacionDetallePage({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-3 lg:col-span-2">
           <h2 className="font-display text-lg font-bold text-foreground">Cronograma</h2>
-          <TrainingActivityTimeline activities={plan.activities} />
+          <TrainingActivityTimeline activities={plan.activities} basePath={BASE_PATH} planId={id} />
         </div>
 
         <div className="surface h-fit space-y-4 p-5 lg:sticky lg:top-6">
@@ -61,6 +66,17 @@ export default async function TutorPlanCapacitacionDetallePage({
             Agregar actividad
           </h2>
           <TrainingActivityForm action={addActivityAction} courses={courses} />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-lg font-bold text-foreground">Documentos del plan</h2>
+        </div>
+        <TrainingDocumentList documents={plan.documents} />
+        <div className="surface p-4">
+          <TrainingDocumentUploadForm action={uploadDocumentAction} />
         </div>
       </div>
     </div>

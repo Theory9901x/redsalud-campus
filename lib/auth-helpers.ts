@@ -40,3 +40,13 @@ export async function requireTrainingPlanAccess(planId: string) {
   }
   return session;
 }
+
+/** Igual que requireTrainingPlanAccess, resolviendo primero el plan dueño de la actividad. */
+export async function requireTrainingActivityAccess(activityId: string) {
+  const activity = await prisma.trainingActivity.findUnique({ where: { id: activityId }, select: { planId: true } });
+  if (!activity) {
+    throw new Error("Actividad no encontrada.");
+  }
+  const session = await requireTrainingPlanAccess(activity.planId);
+  return { session, planId: activity.planId };
+}

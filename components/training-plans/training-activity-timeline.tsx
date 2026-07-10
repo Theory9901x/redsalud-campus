@@ -41,7 +41,16 @@ function groupByMonth(activities: TrainingActivityTimelineItem[]) {
   }));
 }
 
-export function TrainingActivityTimeline({ activities }: { activities: TrainingActivityTimelineItem[] }) {
+export function TrainingActivityTimeline({
+  activities,
+  basePath,
+  planId,
+}: {
+  activities: TrainingActivityTimelineItem[];
+  /** "/admin/planes-capacitacion" o "/tutor/planes-capacitacion": el título enlaza al detalle de la actividad (documentos, Etapa 2). */
+  basePath: string;
+  planId: string;
+}) {
   if (activities.length === 0) {
     return (
       <EmptyState
@@ -73,7 +82,12 @@ export function TrainingActivityTimeline({ activities }: { activities: TrainingA
 
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-display text-sm font-bold text-foreground">{activity.title}</p>
+                      <Link
+                        href={`${basePath}/${planId}/actividades/${activity.id}`}
+                        className="font-display text-sm font-bold text-foreground hover:underline"
+                      >
+                        {activity.title}
+                      </Link>
                       {activity.isRequired && (
                         <span className="flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
                           <Lock className="h-3 w-3" />

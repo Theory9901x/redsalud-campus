@@ -414,7 +414,16 @@ model Media {
   uploader   User     @relation(fields: [uploadedBy], references: [id])
   createdAt  DateTime @default(now())
 
+  // Documentos del plan de capacitaciones (Etapa 2): mismo modelo genérico
+  // que ya usan lecciones y avatares, no un modelo de documento nuevo.
+  trainingPlanId     String?
+  trainingPlan       TrainingPlan?     @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+  trainingActivityId String?
+  trainingActivity   TrainingActivity? @relation(fields: [trainingActivityId], references: [id], onDelete: Cascade)
+
   @@index([folder])
+  @@index([trainingPlanId])
+  @@index([trainingActivityId])
 }
 
 model AuditLog {
@@ -508,6 +517,7 @@ model TrainingPlan {
   updatedAt        DateTime           @updatedAt
 
   activities TrainingActivity[]
+  documents  Media[]
 
   @@index([tutorId])
   @@index([targetDepartment])
@@ -545,6 +555,8 @@ model TrainingActivity {
   status         TrainingActivityStatus @default(DRAFT)
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
+
+  documents Media[]
 
   @@index([planId])
   @@index([courseId])

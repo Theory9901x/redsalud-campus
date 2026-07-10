@@ -17,6 +17,11 @@ export async function getTrainingPlans(role: Role, userId: string) {
   });
 }
 
+const documentInclude = {
+  orderBy: { createdAt: "desc" as const },
+  include: { uploader: { select: { fullName: true } } },
+};
+
 export async function getTrainingPlanDetail(id: string) {
   return prisma.trainingPlan.findUnique({
     where: { id },
@@ -26,6 +31,19 @@ export async function getTrainingPlanDetail(id: string) {
         orderBy: { startDate: "asc" },
         include: { course: { select: { id: true, title: true, slug: true } } },
       },
+      documents: documentInclude,
+    },
+  });
+}
+
+/** Actividad puntual con su plan (para el encabezado) y sus documentos propios (Etapa 2). */
+export async function getTrainingActivityDetail(activityId: string) {
+  return prisma.trainingActivity.findUnique({
+    where: { id: activityId },
+    include: {
+      plan: { select: { id: true, title: true, tutorId: true } },
+      course: { select: { id: true, title: true, slug: true } },
+      documents: documentInclude,
     },
   });
 }

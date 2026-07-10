@@ -70,8 +70,15 @@ export async function saveCertificatePdf(buffer: Buffer, certificateId: string):
 /**
  * Guarda un archivo privado fuera de /public, registrado como Media.
  * Solo se puede leer a través de la ruta autenticada /api/media/[id].
+ * `extra` permite asociar el registro a su dueño real (plan/actividad de
+ * capacitación, etc.) sin crear un modelo de documento distinto por caso.
  */
-async function savePrivateFile(file: File, folder: string, uploadedBy: string) {
+async function savePrivateFile(
+  file: File,
+  folder: string,
+  uploadedBy: string,
+  extra?: { trainingPlanId?: string; trainingActivityId?: string }
+) {
   const id = randomUUID();
   const fileName = sanitizeFileName(file.name);
   const dir = path.join(PRIVATE_UPLOADS_ROOT, folder);
@@ -89,6 +96,7 @@ async function savePrivateFile(file: File, folder: string, uploadedBy: string) {
       folder,
       fileUrl: `/api/media/${id}`,
       uploadedBy,
+      ...extra,
     },
   });
 }
@@ -104,6 +112,16 @@ export async function saveLessonFile(file: File, lessonId: string, uploadedBy: s
  */
 export async function saveAvatarImage(file: File, userId: string) {
   return savePrivateFile(file, `avatars/${userId}`, userId);
+}
+
+/** Documento adjunto a un plan de capacitación (Etapa 2). */
+export async function saveTrainingPlanDocument(file: File, planId: string, uploadedBy: string) {
+  return savePrivateFile(file, `training-plans/${planId}`, uploadedBy, { trainingPlanId: planId });
+}
+
+/** Documento adjunto a una actividad puntual del plan (Etapa 2). */
+export async function saveTrainingActivityDocument(file: File, activityId: string, uploadedBy: string) {
+  return savePrivateFile(file, `training-activities/${activityId}`, uploadedBy, { trainingActivityId: activityId });
 }
 
 export function privateMediaDiskPath(folder: string, fileName: string) {

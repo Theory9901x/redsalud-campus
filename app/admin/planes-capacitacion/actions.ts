@@ -3,11 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireTutorOrAdmin, requireTrainingPlanAccess } from "@/lib/auth-helpers";
+import { requireTutorOrAdmin, requireTrainingPlanAccess, requireTrainingActivityAccess } from "@/lib/auth-helpers";
+import { saveTrainingPlanDocument, saveTrainingActivityDocument } from "@/lib/storage";
 import { trainingPlanSchema, trainingActivitySchema } from "@/lib/validations/training-plan";
 
 export type TrainingPlanFormState = { error: string | null };
 export type TrainingActivityFormState = { error: string | null };
+export type TrainingDocumentFormState = { error: string | null };
 
 export async function createTrainingPlanAction(
   basePath: string,
@@ -85,5 +87,44 @@ export async function createTrainingActivityAction(
   });
 
   revalidatePath(`${basePath}/${planId}`);
+  return { error: null };
+}
+
+export async function uploadTrainingPlanDocumentAction(
+  basePath: string,
+  planId: string,
+  _prevState: TrainingDocumentFormState,
+  formData: FormData
+): Promise<TrainingDocumentFormState> {
+  const session = await requireTrainingPlanAccess(planId);
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Selecciona un archivo." };
+  }
+
+  await saveTrainingPlanDocument(file, planId, session.user.id);
+
+  revalidatePath(`${basePath}/${planId}`);
+  return { error: null };
+}
+
+export async function uploadTrainingActivityDocumentAction(
+  basePath: string,
+  planId: string,
+  activityId: string,
+  _prevState: TrainingDocumentFormState,
+  formData: FormData
+): Promise<TrainingDocumentFormState> {
+  const { session } = await requireTrainingActivityAccess(activityId);
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Selecciona un archivo." };
+  }
+
+  await saveTrainingActivityDocument(file, activityId, session.user.id);
+
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
   return { error: null };
 }
