@@ -18,7 +18,7 @@ export function SurveyForm({
   scopeLabel,
 }: {
   action: (prevState: SurveyFormState, formData: FormData) => Promise<SurveyFormState>;
-  defaultTargetDepartment: string;
+  defaultTargetDepartment: string | null;
   defaultTargetAudience: "ADMINISTRATIVO" | "ASISTENCIAL" | "AMBOS";
   /** Explica a quién queda asignada por defecto (plan completo o solo la actividad). */
   scopeLabel: string;
@@ -47,7 +47,12 @@ export function SurveyForm({
 
         <div className="space-y-1.5">
           <Label htmlFor="survey-department">Dependencia objetivo</Label>
-          <Input id="survey-department" name="targetDepartment" required defaultValue={defaultTargetDepartment} />
+          <Input
+            id="survey-department"
+            name="targetDepartment"
+            placeholder="Vacío = todo el personal"
+            defaultValue={defaultTargetDepartment ?? ""}
+          />
         </div>
 
         <div className="space-y-1.5">

@@ -48,7 +48,7 @@ export default async function TutorEncuestaDetallePage({
         <div className="mt-4 flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Building2 className="h-4 w-4 text-primary" />
-            {survey.targetDepartment}
+            {survey.targetDepartment ?? "Todo el personal"}
           </span>
           <span className="flex items-center gap-1.5">
             <Users2 className="h-4 w-4 text-primary" />

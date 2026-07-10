@@ -50,7 +50,7 @@ export type TrainingPlanReportSections = {
 };
 
 export type TrainingPlanReportInput = {
-  plan: { title: string; year: number; targetDepartment: string; tutorName: string; status: string };
+  plan: { title: string; year: number; targetDepartment: string | null; tutorName: string; status: string };
   overallPercentage: number | null;
   surveyResponseRate: number | null;
   statusCounts: { label: string; count: number; color: string }[];
@@ -66,7 +66,7 @@ function ResumenSection({ input }: { input: TrainingPlanReportInput }) {
           Año: <Text style={styles.metaValue}>{input.plan.year}</Text>
         </Text>
         <Text style={styles.metaItem}>
-          Dependencia: <Text style={styles.metaValue}>{input.plan.targetDepartment}</Text>
+          Dependencia: <Text style={styles.metaValue}>{input.plan.targetDepartment ?? "Todo el personal"}</Text>
         </Text>
         <Text style={styles.metaItem}>
           Tutor: <Text style={styles.metaValue}>{input.plan.tutorName}</Text>

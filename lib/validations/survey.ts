@@ -3,7 +3,8 @@ import { z } from "zod";
 export const surveySchema = z.object({
   title: z.string().trim().min(3, "El título es obligatorio."),
   description: z.string().trim().optional().or(z.literal("")),
-  targetDepartment: z.string().trim().min(2, "El proceso/área objetivo es obligatorio."),
+  // Vacío = dirigida a todo el personal, sin importar el área/proceso.
+  targetDepartment: z.string().trim().optional().or(z.literal("")),
   targetAudience: z.enum(["ADMINISTRATIVO", "ASISTENCIAL", "AMBOS"], {
     message: "Selecciona a qué personal va dirigida la encuesta.",
   }),

@@ -92,7 +92,7 @@ export default async function AdminPlanCapacitacionDetallePage({
           </span>
           <span className="flex items-center gap-1.5">
             <Building2 className="h-4 w-4 text-primary" />
-            {plan.targetDepartment}
+            {plan.targetDepartment ?? "Todo el personal"}
           </span>
           <span className="flex items-center gap-1.5">
             <Gauge className="h-4 w-4 text-primary" />
@@ -154,7 +154,7 @@ export default async function AdminPlanCapacitacionDetallePage({
               </div>
               <div>
                 <dt className="text-xs font-medium text-muted-foreground">Dependencia objetivo</dt>
-                <dd className="text-sm text-foreground">{plan.targetDepartment}</dd>
+                <dd className="text-sm text-foreground">{plan.targetDepartment ?? "Todo el personal"}</dd>
               </div>
               <div>
                 <dt className="text-xs font-medium text-muted-foreground">Tutor responsable</dt>

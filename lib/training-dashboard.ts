@@ -18,7 +18,7 @@ const PERSONNEL_TYPE_LABELS: Record<(typeof PERSONNEL_TYPES)[number], string> = 
  * le mide.
  */
 export async function getPersonnelTypeBreakdown(
-  plans: { targetDepartment: string; activities: { id: string; courseId: string | null; targetAudience: CourseAudience }[] }[]
+  plans: { targetDepartment: string | null; activities: { id: string; courseId: string | null; targetAudience: CourseAudience }[] }[]
 ) {
   const totals = { ADMINISTRATIVO: { sum: 0, count: 0 }, ASISTENCIAL: { sum: 0, count: 0 } };
 
@@ -83,10 +83,11 @@ export async function getTrainingDashboardData(role: Role, userId: string) {
     for (const result of summary.perActivity) {
       if (result.totalExpected === 0) continue;
 
-      const deptEntry = departmentAgg.get(plan.targetDepartment) ?? { sum: 0, count: 0 };
+      const departmentKey = plan.targetDepartment ?? "Todo el personal";
+      const deptEntry = departmentAgg.get(departmentKey) ?? { sum: 0, count: 0 };
       deptEntry.sum += result.percentage;
       deptEntry.count += 1;
-      departmentAgg.set(plan.targetDepartment, deptEntry);
+      departmentAgg.set(departmentKey, deptEntry);
 
       const activity = plan.activities.find((a) => a.id === result.activityId);
       if (!activity) continue;

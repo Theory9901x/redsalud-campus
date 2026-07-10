@@ -41,7 +41,7 @@ export async function getSurveysForActivity(activityId: string) {
 }
 
 async function withTargetCounts<
-  T extends { targetDepartment: string; targetAudience: CourseAudience; _count: { responses: number } }
+  T extends { targetDepartment: string | null; targetAudience: CourseAudience; _count: { responses: number } }
 >(surveys: T[]) {
   return Promise.all(
     surveys.map(async (survey) => {
@@ -135,18 +135,29 @@ export async function getSurveyResults(surveyId: string) {
   };
 }
 
-/** Encuestas asignadas al usuario (audiencia objetivo), separadas en pendientes/respondidas. */
-export async function getSurveysForUser(userId: string) {
+/**
+ * Encuestas asignadas al usuario (audiencia objetivo), separadas en
+ * pendientes/respondidas. `planId` acota a un solo plan (vista de detalle del
+ * estudiante); sin él, trae todas las encuestas que le aplican.
+ */
+export async function getSurveysForUser(userId: string, planId?: string) {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
     select: { department: true, personnelType: true },
   });
-  if (!user.department) return { pending: [], answered: [] };
 
   const surveys = await prisma.survey.findMany({
     where: {
-      targetDepartment: { equals: user.department, mode: "insensitive" },
-      OR: [{ targetAudience: "AMBOS" }, { targetAudience: user.personnelType }],
+      AND: [
+        ...(planId ? [{ trainingPlanId: planId }] : []),
+        {
+          OR: [
+            { targetDepartment: null },
+            ...(user.department ? [{ targetDepartment: { equals: user.department, mode: "insensitive" as const } }] : []),
+          ],
+        },
+        { OR: [{ targetAudience: "AMBOS" }, { targetAudience: user.personnelType }] },
+      ],
     },
     orderBy: { createdAt: "desc" },
     include: {
@@ -171,10 +182,11 @@ export async function getSurveyForStudent(surveyId: string, userId: string, user
   });
   if (!survey) return { survey: null, alreadyAnswered: false, activityClosed: false };
 
+  const matchesDepartment =
+    !survey.targetDepartment ||
+    (!!userDepartment && userDepartment.trim().toLowerCase() === survey.targetDepartment.trim().toLowerCase());
   const matchesAudience =
-    !!userDepartment &&
-    userDepartment.trim().toLowerCase() === survey.targetDepartment.trim().toLowerCase() &&
-    (survey.targetAudience === "AMBOS" || survey.targetAudience === personnelType);
+    matchesDepartment && (survey.targetAudience === "AMBOS" || survey.targetAudience === personnelType);
   if (!matchesAudience) return { survey: null, alreadyAnswered: false, activityClosed: false };
 
   const existingResponse = await prisma.surveyResponse.findUnique({

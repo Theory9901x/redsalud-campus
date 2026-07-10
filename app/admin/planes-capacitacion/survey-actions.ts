@@ -43,7 +43,7 @@ export async function createSurveyAction(
       trainingActivityId: activityId,
       title: data.title,
       description: data.description || null,
-      targetDepartment: data.targetDepartment,
+      targetDepartment: data.targetDepartment || null,
       targetAudience: data.targetAudience,
       createdBy: session.user.id,
     },

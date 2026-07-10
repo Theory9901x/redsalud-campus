@@ -153,7 +153,7 @@ export function TrainingDashboardView({
                       </Link>
                       <p className="text-xs text-muted-foreground">{plan.year}</p>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{plan.targetDepartment}</TableCell>
+                    <TableCell className="text-muted-foreground">{plan.targetDepartment ?? "Todo el personal"}</TableCell>
                     <TableCell>
                       <Badge className={TRAINING_PLAN_STATUS_CLASSES[plan.status]}>
                         {TRAINING_PLAN_STATUS_LABELS[plan.status]}

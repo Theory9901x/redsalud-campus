@@ -515,7 +515,7 @@ model TrainingPlan {
   title            String
   year             Int
   description      String?
-  targetDepartment String // mismo texto libre que User.department: sin modelo Department separado
+  targetDepartment String? // mismo texto libre que User.department: sin modelo Department separado; null = todo el personal, cualquier área
   tutorId          String
   tutor            User               @relation("TrainingPlanTutor", fields: [tutorId], references: [id])
   status           TrainingPlanStatus @default(DRAFT)
@@ -621,7 +621,8 @@ model Survey {
   trainingActivity   TrainingActivity? @relation(fields: [trainingActivityId], references: [id], onDelete: Cascade)
 
   // Audiencia objetivo (Etapa 3, mismo mecanismo): dependencia + tipo de personal.
-  targetDepartment String
+  // targetDepartment null = todo el personal, cualquier área.
+  targetDepartment String?
   targetAudience   CourseAudience @default(AMBOS)
 
   createdBy String

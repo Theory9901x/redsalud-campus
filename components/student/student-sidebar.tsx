@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, GraduationCap, Layers, Award, User, X, Activity, ClipboardList } from "lucide-react";
+import { LayoutDashboard, GraduationCap, Layers, Award, User, X, Activity, ClipboardList, CalendarRange } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -17,6 +17,14 @@ const NAV_ITEMS = [
     match: "/mi-aula",
     hash: "#mis-certificados",
     exact: true,
+  },
+  {
+    href: "/mis-capacitaciones",
+    label: "Mis capacitaciones",
+    icon: CalendarRange,
+    match: "/mis-capacitaciones",
+    hash: "",
+    exact: false,
   },
   { href: "/mis-encuestas", label: "Mis encuestas", icon: ClipboardList, match: "/mis-encuestas", hash: "", exact: false },
   { href: "/perfil", label: "Perfil", icon: User, match: "/perfil", hash: "", exact: true },

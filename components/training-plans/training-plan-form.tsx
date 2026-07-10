@@ -48,15 +48,17 @@ export function TrainingPlanForm({
           <Input
             id="targetDepartment"
             name="targetDepartment"
-            required
             list="departamentos-existentes"
-            placeholder="Ej: Enfermería"
+            placeholder="Ej: Enfermería (vacío = todo el personal)"
           />
           <datalist id="departamentos-existentes">
             {departments.map((dept) => (
               <option key={dept} value={dept} />
             ))}
           </datalist>
+          <p className="text-xs text-muted-foreground">
+            Déjalo vacío para dirigir el plan a todo el personal, sin importar el área.
+          </p>
         </div>
 
         <div className="space-y-1.5 sm:col-span-2">

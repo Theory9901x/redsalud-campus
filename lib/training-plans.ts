@@ -36,6 +36,45 @@ export async function getTrainingPlanDetail(id: string) {
   });
 }
 
+/**
+ * Planes que le aplican a un estudiante: sin dependencia (todo el personal) o
+ * con la misma dependencia que el usuario. Solo lectura, sin acciones de
+ * edición — es el mismo criterio de audiencia que ya usan encuestas y
+ * adherencia (targetAudienceUserWhere), visto desde el lado del estudiante.
+ */
+export async function getTrainingPlansForStudent(userId: string) {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { department: true } });
+
+  return prisma.trainingPlan.findMany({
+    where: {
+      OR: [
+        { targetDepartment: null },
+        ...(user.department ? [{ targetDepartment: { equals: user.department, mode: "insensitive" as const } }] : []),
+      ],
+    },
+    orderBy: [{ year: "desc" }, { createdAt: "desc" }],
+    include: {
+      tutor: { select: { fullName: true } },
+      _count: { select: { activities: true } },
+    },
+  });
+}
+
+/** Detalle de un plan para el estudiante: null si el plan no existe o no le aplica (dependencia distinta). */
+export async function getTrainingPlanDetailForStudent(id: string, userId: string) {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { department: true } });
+
+  const plan = await getTrainingPlanDetail(id);
+  if (!plan) return null;
+
+  const matchesDepartment =
+    !plan.targetDepartment ||
+    (!!user.department && user.department.trim().toLowerCase() === plan.targetDepartment.trim().toLowerCase());
+  if (!matchesDepartment) return null;
+
+  return plan;
+}
+
 /** Actividad puntual con su plan (para el encabezado) y sus documentos propios (Etapa 2). */
 export async function getTrainingActivityDetail(activityId: string) {
   return prisma.trainingActivity.findUnique({
@@ -53,21 +92,22 @@ export async function getTrainingActivityDetail(activityId: string) {
 // ------------------------------------------------------------------
 
 /**
- * Personal objetivo real de un plan/actividad/encuesta: estudiantes activos de
- * la dependencia dada, filtrados por tipo de personal si la audiencia no es
- * "Ambos". Fuente única reutilizada por adherencia (Etapa 3) y encuestas
- * (Etapa 4): no se duplica el criterio de "a quién va dirigido esto".
+ * Personal objetivo real de un plan/actividad/encuesta: estudiantes activos,
+ * filtrados por dependencia si se definió una (null = todo el personal, sin
+ * importar el área) y por tipo de personal si la audiencia no es "Ambos".
+ * Fuente única reutilizada por adherencia (Etapa 3) y encuestas (Etapa 4):
+ * no se duplica el criterio de "a quién va dirigido esto".
  */
-export function targetAudienceUserWhere(targetDepartment: string, targetAudience: CourseAudience) {
+export function targetAudienceUserWhere(targetDepartment: string | null, targetAudience: CourseAudience) {
   return {
     role: "STUDENT" as const,
     status: "ACTIVE" as const,
-    department: { equals: targetDepartment, mode: "insensitive" as const },
+    ...(targetDepartment ? { department: { equals: targetDepartment, mode: "insensitive" as const } } : {}),
     ...(targetAudience === "AMBOS" ? {} : { personnelType: targetAudience === "ADMINISTRATIVO" ? ("ADMINISTRATIVO" as const) : ("ASISTENCIAL" as const) }),
   };
 }
 
-export async function getTargetAudienceUserIds(targetDepartment: string, targetAudience: CourseAudience) {
+export async function getTargetAudienceUserIds(targetDepartment: string | null, targetAudience: CourseAudience) {
   const users = await prisma.user.findMany({
     where: targetAudienceUserWhere(targetDepartment, targetAudience),
     select: { id: true },
@@ -76,7 +116,7 @@ export async function getTargetAudienceUserIds(targetDepartment: string, targetA
 }
 
 /** Lista nominal (nombre + documento) del personal objetivo, ordenada alfabéticamente. */
-export async function getTargetAudienceUsers(targetDepartment: string, targetAudience: CourseAudience) {
+export async function getTargetAudienceUsers(targetDepartment: string | null, targetAudience: CourseAudience) {
   return prisma.user.findMany({
     where: targetAudienceUserWhere(targetDepartment, targetAudience),
     select: { id: true, fullName: true, documentNumber: true },
@@ -95,7 +135,7 @@ type ActivityForAdherence = {
   id: string;
   courseId: string | null;
   targetAudience: CourseAudience;
-  plan: { targetDepartment: string };
+  plan: { targetDepartment: string | null };
 };
 
 /**
@@ -140,7 +180,7 @@ export async function getActivityAdherence(activity: ActivityForAdherence): Prom
 export async function getActivityAttendanceRoster(activity: {
   id: string;
   targetAudience: CourseAudience;
-  plan: { targetDepartment: string };
+  plan: { targetDepartment: string | null };
 }) {
   const [users, attendance] = await Promise.all([
     getTargetAudienceUsers(activity.plan.targetDepartment, activity.targetAudience),
@@ -161,7 +201,7 @@ export async function getActivityAttendanceRoster(activity: {
 export async function getActivityCompletionRoster(activity: {
   courseId: string;
   targetAudience: CourseAudience;
-  plan: { targetDepartment: string };
+  plan: { targetDepartment: string | null };
 }) {
   const users = await getTargetAudienceUsers(activity.plan.targetDepartment, activity.targetAudience);
   const completed = await prisma.enrollment.findMany({
@@ -174,7 +214,7 @@ export async function getActivityCompletionRoster(activity: {
 
 /** Cumplimiento del plan: promedio de adherencia entre las actividades que sí tienen audiencia objetivo. */
 export async function getPlanAdherenceSummary(plan: {
-  targetDepartment: string;
+  targetDepartment: string | null;
   activities: { id: string; courseId: string | null; targetAudience: CourseAudience }[];
 }) {
   const perActivity = await Promise.all(

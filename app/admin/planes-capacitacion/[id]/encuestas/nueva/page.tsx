@@ -25,7 +25,7 @@ export default async function AdminNuevaEncuestaPage({
   });
   if (!plan) notFound();
 
-  let scopeLabel = `Encuesta general del plan "${plan.title}", dirigida a ${plan.targetDepartment}.`;
+  let scopeLabel = `Encuesta general del plan "${plan.title}", dirigida a ${plan.targetDepartment ?? "todo el personal"}.`;
   let defaultAudience: "ADMINISTRATIVO" | "ASISTENCIAL" | "AMBOS" = "AMBOS";
 
   if (actividad) {

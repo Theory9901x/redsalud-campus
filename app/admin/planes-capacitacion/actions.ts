@@ -43,7 +43,7 @@ export async function createTrainingPlanAction(
       title: data.title,
       year: data.year,
       description: data.description || null,
-      targetDepartment: data.targetDepartment,
+      targetDepartment: data.targetDepartment || null,
       tutorId,
     },
   });

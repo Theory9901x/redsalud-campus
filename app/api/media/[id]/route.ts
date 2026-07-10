@@ -37,6 +37,27 @@ async function isTrainingPlanTutor(folder: string, userId: string) {
   return plan?.tutorId === userId;
 }
 
+/** Documento de un plan/actividad: autorizado el estudiante al que va dirigido (misma dependencia o comodín "todo el personal"). */
+async function isTargetedStudentForTraining(folder: string, userId: string) {
+  const planMatch = folder.match(/^training-plans\/([^/]+)$/);
+  const activityMatch = folder.match(/^training-activities\/([^/]+)$/);
+
+  const planId = planMatch
+    ? planMatch[1]
+    : activityMatch
+      ? (await prisma.trainingActivity.findUnique({ where: { id: activityMatch[1] }, select: { planId: true } }))?.planId
+      : null;
+  if (!planId) return false;
+
+  const plan = await prisma.trainingPlan.findUnique({ where: { id: planId }, select: { targetDepartment: true } });
+  if (!plan) return false;
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, status: true, department: true } });
+  if (!user || user.role !== "STUDENT" || user.status !== "ACTIVE") return false;
+  if (!plan.targetDepartment) return true;
+  return !!user.department && user.department.trim().toLowerCase() === plan.targetDepartment.trim().toLowerCase();
+}
+
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
@@ -54,8 +75,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const isAdmin = session.user.role === "ADMIN";
   const isEnrolled = !isAdmin && !isOwner && (await isEnrolledInLessonCourse(media.folder ?? "", session.user.id));
   const isPlanTutor = !isAdmin && !isOwner && !isEnrolled && (await isTrainingPlanTutor(media.folder ?? "", session.user.id));
+  const isTargetedStudent =
+    !isAdmin && !isOwner && !isEnrolled && !isPlanTutor && (await isTargetedStudentForTraining(media.folder ?? "", session.user.id));
 
-  if (!isAdmin && !isOwner && !isEnrolled && !isPlanTutor) {
+  if (!isAdmin && !isOwner && !isEnrolled && !isPlanTutor && !isTargetedStudent) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 

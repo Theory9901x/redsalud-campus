@@ -4,7 +4,8 @@ export const trainingPlanSchema = z.object({
   title: z.string().trim().min(3, "El título es obligatorio."),
   year: z.coerce.number().int().min(2000).max(2100),
   description: z.string().trim().optional().or(z.literal("")),
-  targetDepartment: z.string().trim().min(2, "El proceso/área objetivo es obligatorio."),
+  // Vacío = dirigido a todo el personal, sin importar el área/proceso.
+  targetDepartment: z.string().trim().optional().or(z.literal("")),
   tutorId: z.string().trim().optional().or(z.literal("")),
 });
 

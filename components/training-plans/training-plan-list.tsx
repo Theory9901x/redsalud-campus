@@ -10,7 +10,7 @@ export type TrainingPlanListItem = {
   id: string;
   title: string;
   year: number;
-  targetDepartment: string;
+  targetDepartment: string | null;
   status: TrainingPlanStatus;
   tutor: { fullName: string };
   _count: { activities: number };
@@ -58,7 +58,7 @@ export function TrainingPlanList({
                 </Link>
               </TableCell>
               <TableCell className="text-muted-foreground">{plan.year}</TableCell>
-              <TableCell className="text-muted-foreground">{plan.targetDepartment}</TableCell>
+              <TableCell className="text-muted-foreground">{plan.targetDepartment ?? "Todo el personal"}</TableCell>
               {showTutorColumn && <TableCell className="text-muted-foreground">{plan.tutor.fullName}</TableCell>}
               <TableCell className="text-center text-muted-foreground">{plan._count.activities}</TableCell>
               <TableCell>

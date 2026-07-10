@@ -15,7 +15,7 @@ export async function GET() {
   const rows = planRows.map((p) => [
     p.title,
     p.year,
-    p.targetDepartment,
+    p.targetDepartment ?? "Todo el personal",
     TRAINING_PLAN_STATUS_LABELS[p.status],
     p.activityCount,
     p.overallPercentage !== null ? `${p.overallPercentage}%` : "Sin datos",
