@@ -86,6 +86,7 @@ export default async function AdminCursoDetallePage({
                 slug: course.slug,
                 shortDescription: course.shortDescription,
                 fullDescription: course.fullDescription ?? "",
+                instructions: course.instructions ?? "",
                 categoryId: course.categoryId ?? "",
                 courseType: course.courseType,
                 durationHours: course.durationHours,

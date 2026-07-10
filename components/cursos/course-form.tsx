@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { RichTextEditor } from "@/components/cursos/rich-text-editor";
 import { slugify } from "@/lib/slug";
 import { COURSE_TYPE_LABELS, ENROLLMENT_MODE_LABELS, COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import type { CourseType, EnrollmentMode, CourseAudience, Role } from "@prisma/client";
@@ -18,6 +19,7 @@ type CourseFormValues = {
   slug: string;
   shortDescription: string;
   fullDescription: string;
+  instructions: string;
   categoryId: string;
   courseType: CourseType;
   durationHours: number;
@@ -33,6 +35,7 @@ const EMPTY_VALUES: CourseFormValues = {
   slug: "",
   shortDescription: "",
   fullDescription: "",
+  instructions: "",
   categoryId: "",
   courseType: "CAPACITACION",
   durationHours: 1,
@@ -123,6 +126,15 @@ export function CourseForm({
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="fullDescription">Descripción completa</Label>
           <Textarea id="fullDescription" name="fullDescription" rows={5} defaultValue={values.fullDescription} />
+        </div>
+
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label>Instrucciones para el estudiante</Label>
+          <RichTextEditor name="instructions" defaultValue={values.instructions} />
+          <p className="text-xs text-muted-foreground">
+            Cómo avanzar, requisitos de aprobación y qué esperar del curso. Se muestra en una sección propia del
+            detalle público, solo si tiene contenido.
+          </p>
         </div>
 
         <div className="space-y-1.5">

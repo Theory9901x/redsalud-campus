@@ -1,4 +1,4 @@
-import { Compass, RotateCcw, GraduationCap, ShieldAlert, Sparkles } from "lucide-react";
+import { Compass, RotateCcw, GraduationCap, ShieldAlert, Sparkles, FileText, Video, File, Image, Link2, Layers } from "lucide-react";
 import type {
   CourseType,
   CourseStatus,
@@ -123,6 +123,16 @@ export const LESSON_CONTENT_TYPE_LABELS: Record<LessonContentType, string> = {
   IMAGE: "Imagen",
   LINK: "Enlace externo",
   MIXED: "Mixto",
+};
+
+/** Ícono por tipo de contenido, para identificar de un vistazo cada lección en el temario. */
+export const LESSON_CONTENT_TYPE_ICONS: Record<LessonContentType, typeof FileText> = {
+  TEXT: FileText,
+  YOUTUBE: Video,
+  PDF: File,
+  IMAGE: Image,
+  LINK: Link2,
+  MIXED: Layers,
 };
 
 export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {

@@ -14,6 +14,7 @@ export const courseSchema = z.object({
     .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "El slug solo puede tener minúsculas, números y guiones."),
   shortDescription: z.string().trim().min(10, "La descripción corta es obligatoria."),
   fullDescription: z.string().trim().optional().or(z.literal("")),
+  instructions: z.string().trim().optional().or(z.literal("")),
   categoryId: z.string().trim().optional().or(z.literal("")),
   courseType: z.enum(["INDUCCION", "REINDUCCION", "CAPACITACION", "OBLIGATORIO", "COMPLEMENTARIO"]),
   durationHours: z.coerce.number().int().min(1, "La intensidad horaria debe ser mayor a 0."),
