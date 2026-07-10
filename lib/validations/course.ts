@@ -36,7 +36,7 @@ export const moduleSchema = z.object({
 export const lessonSchema = z.object({
   title: z.string().trim().min(2, "El título de la lección es obligatorio."),
   description: z.string().trim().optional().or(z.literal("")),
-  contentType: z.enum(["TEXT", "YOUTUBE", "PDF", "IMAGE", "LINK", "MIXED"]),
+  contentType: z.enum(["TEXT", "YOUTUBE", "VIDEO", "PDF", "IMAGE", "LINK", "MIXED"]),
   contentBody: z.string().trim().optional().or(z.literal("")),
   videoUrl: z.string().trim().optional().or(z.literal("")),
   externalUrl: z.string().trim().optional().or(z.literal("")),

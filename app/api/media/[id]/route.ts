@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -37,7 +37,7 @@ async function isTrainingPlanTutor(folder: string, userId: string) {
   return plan?.tutorId === userId;
 }
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
 
@@ -59,13 +59,57 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 
+  const filePath = privateMediaDiskPath(media.folder ?? "", media.fileName);
+
+  let fileSize: number;
   try {
-    const buffer = await readFile(privateMediaDiskPath(media.folder ?? "", media.fileName));
+    fileSize = (await stat(filePath)).size;
+  } catch {
+    return NextResponse.json({ error: "Archivo no encontrado en disco." }, { status: 404 });
+  }
+
+  // Soporte de rango de bytes para que <video> pueda buscar/adelantar sin
+  // descargar el archivo completo primero (necesario para VIDEO, inocuo para el resto).
+  const range = request.headers.get("range");
+  if (range) {
+    const match = range.match(/^bytes=(\d*)-(\d*)$/);
+    const start = match?.[1] ? Number(match[1]) : 0;
+    const end = match?.[2] ? Number(match[2]) : fileSize - 1;
+
+    if (!match || start > end || start >= fileSize || end >= fileSize) {
+      return new NextResponse(null, {
+        status: 416,
+        headers: { "Content-Range": `bytes */${fileSize}` },
+      });
+    }
+
+    try {
+      const buffer = await readFile(filePath);
+      const chunk = buffer.subarray(start, end + 1);
+      return new NextResponse(new Uint8Array(chunk), {
+        status: 206,
+        headers: {
+          "Content-Type": media.fileType,
+          "Content-Disposition": `inline; filename="${encodeURIComponent(media.fileName)}"`,
+          "Cache-Control": "private, max-age=0, no-cache",
+          "Accept-Ranges": "bytes",
+          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+          "Content-Length": String(chunk.byteLength),
+        },
+      });
+    } catch {
+      return NextResponse.json({ error: "Archivo no encontrado en disco." }, { status: 404 });
+    }
+  }
+
+  try {
+    const buffer = await readFile(filePath);
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": media.fileType,
         "Content-Disposition": `inline; filename="${encodeURIComponent(media.fileName)}"`,
         "Cache-Control": "private, max-age=0, no-cache",
+        "Accept-Ranges": "bytes",
       },
     });
   } catch {

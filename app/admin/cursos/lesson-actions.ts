@@ -28,6 +28,10 @@ async function moduleCourseId(moduleId: string) {
 }
 
 const MAX_LESSON_FILE_SIZE = 20 * 1024 * 1024;
+// El video no se sube por streaming (se carga completo en memoria antes de
+// guardarlo, ver lib/storage.ts), así que este tope es una limitación
+// práctica del pipeline actual, no una decisión de producto.
+const MAX_LESSON_VIDEO_SIZE = 200 * 1024 * 1024;
 
 async function attachLessonFile(
   formData: FormData,
@@ -36,7 +40,8 @@ async function attachLessonFile(
   uploadedBy: string
 ): Promise<{ error: string | null }> {
   const file = formData.get("file");
-  if (!(contentType === "PDF" || contentType === "IMAGE") || !(file instanceof File) || file.size === 0) {
+  const acceptsFile = contentType === "PDF" || contentType === "IMAGE" || contentType === "VIDEO";
+  if (!acceptsFile || !(file instanceof File) || file.size === 0) {
     return { error: null };
   }
 
@@ -46,8 +51,14 @@ async function attachLessonFile(
   if (contentType === "IMAGE" && !file.type.startsWith("image/")) {
     return { error: "El archivo debe ser una imagen." };
   }
-  if (file.size > MAX_LESSON_FILE_SIZE) {
+  if (contentType === "VIDEO" && !file.type.startsWith("video/")) {
+    return { error: "El archivo debe ser un video." };
+  }
+  if (contentType !== "VIDEO" && file.size > MAX_LESSON_FILE_SIZE) {
     return { error: "El archivo no puede pesar más de 20 MB." };
+  }
+  if (contentType === "VIDEO" && file.size > MAX_LESSON_VIDEO_SIZE) {
+    return { error: "El video no puede pesar más de 200 MB." };
   }
 
   try {

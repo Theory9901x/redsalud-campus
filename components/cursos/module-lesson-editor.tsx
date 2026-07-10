@@ -23,11 +23,6 @@ import {
   ChevronRight,
   Plus,
   Pencil,
-  FileText,
-  Video,
-  FileImage,
-  Link2,
-  Layers,
   ListChecks,
   Clock,
 } from "lucide-react";
@@ -38,7 +33,11 @@ import { LessonFormDialog } from "@/components/cursos/lesson-form-dialog";
 import { QuizFormDialog } from "@/components/cursos/quiz-form-dialog";
 import { QuestionFormDialog } from "@/components/cursos/question-form-dialog";
 import { DeleteConfirmButton } from "@/components/cursos/delete-confirm-button";
-import { LESSON_CONTENT_TYPE_LABELS, QUESTION_TYPE_LABELS } from "@/components/cursos/labels";
+import {
+  LESSON_CONTENT_TYPE_LABELS,
+  LESSON_CONTENT_TYPE_ICONS,
+  QUESTION_TYPE_LABELS,
+} from "@/components/cursos/labels";
 import {
   createModuleAction,
   updateModuleAction,
@@ -103,15 +102,6 @@ type QuizItem = {
   randomizeAnswers: boolean;
   showResultsNow: boolean;
   questions: QuestionItem[];
-};
-
-const CONTENT_ICONS: Record<LessonContentType, React.ElementType> = {
-  TEXT: FileText,
-  YOUTUBE: Video,
-  PDF: FileText,
-  IMAGE: FileImage,
-  LINK: Link2,
-  MIXED: Layers,
 };
 
 export function ModuleLessonEditor({
@@ -420,7 +410,7 @@ function SortableModuleCard({
 
 function SortableLessonRow({ lesson }: { lesson: LessonItem }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lesson.id });
-  const Icon = CONTENT_ICONS[lesson.contentType];
+  const Icon = LESSON_CONTENT_TYPE_ICONS[lesson.contentType];
 
   const style = {
     transform: CSS.Transform.toString(transform),

@@ -175,6 +175,7 @@ model CourseModule {
 enum LessonContentType {
   TEXT
   YOUTUBE
+  VIDEO // archivo de video subido al storage privado del proyecto (no YouTube)
   PDF
   IMAGE
   LINK

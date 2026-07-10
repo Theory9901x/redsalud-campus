@@ -35,7 +35,8 @@ export default async function AulaLessonPage({
     lessonIndex < data.flattenedLessons.length - 1 ? data.flattenedLessons[lessonIndex + 1] : null;
 
   const showText = lesson.contentType === "TEXT" || lesson.contentType === "MIXED";
-  const showVideo = lesson.contentType === "YOUTUBE" || lesson.contentType === "MIXED";
+  const showYoutube = lesson.contentType === "YOUTUBE" || lesson.contentType === "MIXED";
+  const showVideoFile = lesson.contentType === "VIDEO" && lesson.fileUrl;
   const showFile = (lesson.contentType === "PDF" || lesson.contentType === "IMAGE" || lesson.contentType === "MIXED") && lesson.fileUrl;
   const showLink = (lesson.contentType === "LINK" || lesson.contentType === "MIXED") && lesson.externalUrl;
   const embedUrl = lesson.videoUrl ? getYoutubeEmbedUrl(lesson.videoUrl) : null;
@@ -59,8 +60,8 @@ export default async function AulaLessonPage({
           />
         )}
 
-        {showVideo && embedUrl && (
-          <div className="aspect-video w-full overflow-hidden rounded-xl">
+        {showYoutube && embedUrl && (
+          <div className="aspect-video w-full overflow-hidden rounded-xl border border-border shadow-sm">
             <iframe
               src={embedUrl}
               title={lesson.title}
@@ -71,8 +72,17 @@ export default async function AulaLessonPage({
           </div>
         )}
 
+        {showVideoFile && (
+          <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-black shadow-sm">
+            {/* fileUrl apunta a /api/media/[id], que ahora soporta Range/206 para permitir buscar/adelantar. */}
+            <video controls className="h-full w-full" src={lesson.fileUrl!}>
+              Tu navegador no soporta la reproducción de este video.
+            </video>
+          </div>
+        )}
+
         {showFile && lesson.contentType === "IMAGE" && (
-          <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted">
+          <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
             {/* unoptimized: fileUrl es una ruta privada (/api/media/[id]) protegida por sesión;
                 el optimizador de next/image la pide desde el servidor sin cookies y recibe 401. */}
             <Image
@@ -88,7 +98,7 @@ export default async function AulaLessonPage({
 
         {showFile && lesson.contentType !== "IMAGE" && (
           <div className="space-y-3">
-            <div className="aspect-[4/3] w-full overflow-hidden rounded-xl border border-border">
+            <div className="aspect-[4/3] w-full overflow-hidden rounded-xl border border-border shadow-sm">
               <iframe src={lesson.fileUrl!} title={lesson.title} className="h-full w-full" />
             </div>
             <Link
@@ -113,7 +123,7 @@ export default async function AulaLessonPage({
           </Link>
         )}
 
-        {!showText && !showVideo && !showFile && !showLink && (
+        {!showText && !showYoutube && !showVideoFile && !showFile && !showLink && (
           <p className="text-sm text-muted-foreground">Esta lección todavía no tiene contenido.</p>
         )}
       </div>

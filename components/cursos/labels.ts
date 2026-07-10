@@ -1,4 +1,4 @@
-import { Compass, RotateCcw, GraduationCap, ShieldAlert, Sparkles, FileText, Video, File, Image, Link2, Layers } from "lucide-react";
+import { Compass, RotateCcw, GraduationCap, ShieldAlert, Sparkles, FileText, Video, FileVideo, File, Image, Link2, Layers } from "lucide-react";
 import type {
   CourseType,
   CourseStatus,
@@ -119,6 +119,7 @@ export const ENROLLMENT_STATUS_DOT: Record<EnrollmentStatus, string> = {
 export const LESSON_CONTENT_TYPE_LABELS: Record<LessonContentType, string> = {
   TEXT: "Texto",
   YOUTUBE: "Video de YouTube",
+  VIDEO: "Video (archivo)",
   PDF: "Documento PDF",
   IMAGE: "Imagen",
   LINK: "Enlace externo",
@@ -129,6 +130,7 @@ export const LESSON_CONTENT_TYPE_LABELS: Record<LessonContentType, string> = {
 export const LESSON_CONTENT_TYPE_ICONS: Record<LessonContentType, typeof FileText> = {
   TEXT: FileText,
   YOUTUBE: Video,
+  VIDEO: FileVideo,
   PDF: File,
   IMAGE: Image,
   LINK: Link2,

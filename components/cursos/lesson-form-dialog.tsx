@@ -66,8 +66,9 @@ export function LessonFormDialog({
   }, [state]);
 
   const showText = contentType === "TEXT" || contentType === "MIXED";
-  const showVideo = contentType === "YOUTUBE" || contentType === "MIXED";
+  const showYoutube = contentType === "YOUTUBE" || contentType === "MIXED";
   const showFile = contentType === "PDF" || contentType === "IMAGE" || contentType === "MIXED";
+  const showVideoFile = contentType === "VIDEO";
   const showLink = contentType === "LINK" || contentType === "MIXED";
 
   return (
@@ -114,7 +115,7 @@ export function LessonFormDialog({
               </div>
             )}
 
-            {showVideo && (
+            {showYoutube && (
               <div className="space-y-1.5">
                 <Label htmlFor="videoUrl">URL de YouTube</Label>
                 <Input
@@ -137,6 +138,17 @@ export function LessonFormDialog({
                     Ya hay un archivo cargado. Sube uno nuevo solo si quieres reemplazarlo.
                   </p>
                 )}
+              </div>
+            )}
+
+            {showVideoFile && (
+              <div className="space-y-1.5">
+                <Label htmlFor="file">Archivo de video</Label>
+                <Input id="file" name="file" type="file" accept="video/mp4,video/webm,video/ogg" />
+                <p className="text-xs text-muted-foreground">
+                  Formatos MP4, WebM u Ogg, hasta 200 MB.
+                  {values.fileUrl && " Ya hay un video cargado. Sube uno nuevo solo si quieres reemplazarlo."}
+                </p>
               </div>
             )}
 
