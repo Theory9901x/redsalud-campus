@@ -45,11 +45,14 @@ export function TrainingActivityTimeline({
   activities,
   basePath,
   planId,
+  adherenceByActivity,
 }: {
   activities: TrainingActivityTimelineItem[];
   /** "/admin/planes-capacitacion" o "/tutor/planes-capacitacion": el título enlaza al detalle de la actividad (documentos, Etapa 2). */
   basePath: string;
   planId: string;
+  /** % de adherencia por actividad (Etapa 3), ya calculado por la página. */
+  adherenceByActivity?: Record<string, number>;
 }) {
   if (activities.length === 0) {
     return (
@@ -121,6 +124,11 @@ export function TrainingActivityTimeline({
                     <Badge className={TRAINING_ACTIVITY_STATUS_CLASSES[activity.status]}>
                       {TRAINING_ACTIVITY_STATUS_LABELS[activity.status]}
                     </Badge>
+                    {adherenceByActivity?.[activity.id] !== undefined && (
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                        {adherenceByActivity[activity.id]}% adherencia
+                      </span>
+                    )}
                   </div>
                 </div>
               );

@@ -70,6 +70,8 @@ model User {
   mediaUploads   Media[]
   auditLogs      AuditLog[]
   trainingPlansAsTutor TrainingPlan[] @relation("TrainingPlanTutor")
+  trainingAttendances TrainingAttendance[] @relation("TrainingAttendanceUser")
+  trainingAttendancesRegistered TrainingAttendance[] @relation("TrainingAttendanceRegisteredBy")
 
   notificationsCreated  Notification[]     @relation("NotificationCreatedBy")
   notificationsTargeted Notification[]     @relation("NotificationTargetUser")
@@ -546,7 +548,7 @@ model TrainingActivity {
   plan           TrainingPlan           @relation(fields: [planId], references: [id], onDelete: Cascade)
   title          String
   type           TrainingActivityType
-  courseId       String? // requerido solo cuando type = COURSE (validado en la acción, no en el esquema)
+  courseId       String? // opcional siempre: "No aplica" = gestión directa, sin curso vinculado
   course         Course?                @relation(fields: [courseId], references: [id])
   startDate      DateTime
   endDate        DateTime?
@@ -556,8 +558,31 @@ model TrainingActivity {
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
 
-  documents Media[]
+  documents   Media[]
+  attendances TrainingAttendance[]
 
   @@index([planId])
   @@index([courseId])
+}
+
+/**
+ * Etapa 3: solo existe cuando la actividad NO tiene curso vinculado (evento
+ * externo, o "No aplica" con gestión directa) — sin curso no hay señal de
+ * completitud automática, así que la asistencia se registra manualmente.
+ * Las actividades con curso vinculado calculan adherencia en vivo desde
+ * Enrollment, sin necesidad de esta tabla.
+ */
+model TrainingAttendance {
+  id           String           @id @default(cuid())
+  activityId   String
+  activity     TrainingActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User             @relation("TrainingAttendanceUser", fields: [userId], references: [id], onDelete: Cascade)
+  attended     Boolean          @default(false)
+  registeredAt DateTime         @default(now())
+  registeredBy String
+  registeredByUser User         @relation("TrainingAttendanceRegisteredBy", fields: [registeredBy], references: [id])
+
+  @@unique([activityId, userId])
+  @@index([activityId])
 }

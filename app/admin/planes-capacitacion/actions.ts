@@ -128,3 +128,17 @@ export async function uploadTrainingActivityDocumentAction(
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
   return { error: null };
 }
+
+/** Etapa 3: registro manual de asistencia, solo aplica a actividades sin curso vinculado. */
+export async function setAttendanceAction(activityId: string, userId: string, attended: boolean) {
+  const { session, planId } = await requireTrainingActivityAccess(activityId);
+
+  await prisma.trainingAttendance.upsert({
+    where: { activityId_userId: { activityId, userId } },
+    update: { attended, registeredBy: session.user.id, registeredAt: new Date() },
+    create: { activityId, userId, attended, registeredBy: session.user.id },
+  });
+
+  revalidatePath(`/admin/planes-capacitacion/${planId}/actividades/${activityId}`);
+  revalidatePath(`/tutor/planes-capacitacion/${planId}/actividades/${activityId}`);
+}

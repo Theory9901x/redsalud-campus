@@ -2,12 +2,18 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CalendarRange, Users2 } from "lucide-react";
 import { requireTrainingActivityAccess } from "@/lib/auth-helpers";
-import { getTrainingActivityDetail } from "@/lib/training-plans";
+import {
+  getTrainingActivityDetail,
+  getActivityAdherence,
+  getActivityAttendanceRoster,
+} from "@/lib/training-plans";
 import { uploadTrainingActivityDocumentAction } from "@/app/admin/planes-capacitacion/actions";
 import { Badge } from "@/components/ui/badge";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
 import { TrainingDocumentUploadForm } from "@/components/training-plans/training-document-upload-form";
+import { ActivityAdherencePanel } from "@/components/training-plans/activity-adherence-panel";
+import { AttendanceRoster } from "@/components/training-plans/attendance-roster";
 import {
   TRAINING_ACTIVITY_TYPE_LABELS,
   TRAINING_ACTIVITY_STATUS_LABELS,
@@ -27,6 +33,17 @@ export default async function TutorActividadDetallePage({
 
   const activity = await getTrainingActivityDetail(activityId);
   if (!activity || activity.planId !== id) notFound();
+
+  const activityForAdherence = {
+    id: activity.id,
+    courseId: activity.courseId,
+    targetAudience: activity.targetAudience,
+    plan: { targetDepartment: activity.plan.targetDepartment },
+  };
+  const [adherence, roster] = await Promise.all([
+    getActivityAdherence(activityForAdherence),
+    activity.courseId ? Promise.resolve(null) : getActivityAttendanceRoster(activityForAdherence),
+  ]);
 
   const uploadDocumentAction = uploadTrainingActivityDocumentAction.bind(null, BASE_PATH, id, activityId);
 
@@ -75,6 +92,15 @@ export default async function TutorActividadDetallePage({
             {COURSE_AUDIENCE_LABELS[activity.targetAudience]}
           </span>
         </div>
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="font-display text-lg font-bold text-foreground">Adherencia y cumplimiento</h2>
+        {activity.courseId ? (
+          <ActivityAdherencePanel adherence={adherence} />
+        ) : (
+          <AttendanceRoster activityId={activity.id} roster={roster!} />
+        )}
       </div>
 
       <div className="space-y-3">

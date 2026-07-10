@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { CalendarRange, Building2, User, FileText } from "lucide-react";
+import { CalendarRange, Building2, User, FileText, Gauge } from "lucide-react";
 import { requireTrainingPlanAccess } from "@/lib/auth-helpers";
-import { getTrainingPlanDetail, getLinkableCourses } from "@/lib/training-plans";
+import { getTrainingPlanDetail, getLinkableCourses, getPlanAdherenceSummary } from "@/lib/training-plans";
 import { createTrainingActivityAction, uploadTrainingPlanDocumentAction } from "@/app/admin/planes-capacitacion/actions";
 import { Badge } from "@/components/ui/badge";
 import { TrainingActivityTimeline } from "@/components/training-plans/training-activity-timeline";
@@ -22,6 +22,14 @@ export default async function TutorPlanCapacitacionDetallePage({
 
   const [plan, courses] = await Promise.all([getTrainingPlanDetail(id), getLinkableCourses()]);
   if (!plan) notFound();
+
+  const adherenceSummary = await getPlanAdherenceSummary({
+    targetDepartment: plan.targetDepartment,
+    activities: plan.activities,
+  });
+  const adherenceByActivity = Object.fromEntries(
+    adherenceSummary.perActivity.map((a) => [a.activityId, a.percentage])
+  );
 
   const addActivityAction = createTrainingActivityAction.bind(null, BASE_PATH, id);
   const uploadDocumentAction = uploadTrainingPlanDocumentAction.bind(null, BASE_PATH, id);
@@ -52,13 +60,24 @@ export default async function TutorPlanCapacitacionDetallePage({
             <User className="h-4 w-4 text-primary" />
             {plan.tutor.fullName}
           </span>
+          <span className="flex items-center gap-1.5">
+            <Gauge className="h-4 w-4 text-primary" />
+            {adherenceSummary.overallPercentage !== null
+              ? `${adherenceSummary.overallPercentage}% de cumplimiento`
+              : "Sin datos de cumplimiento aún"}
+          </span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-3 lg:col-span-2">
           <h2 className="font-display text-lg font-bold text-foreground">Cronograma</h2>
-          <TrainingActivityTimeline activities={plan.activities} basePath={BASE_PATH} planId={id} />
+          <TrainingActivityTimeline
+            activities={plan.activities}
+            basePath={BASE_PATH}
+            planId={id}
+            adherenceByActivity={adherenceByActivity}
+          />
         </div>
 
         <div className="surface h-fit space-y-4 p-5 lg:sticky lg:top-6">
