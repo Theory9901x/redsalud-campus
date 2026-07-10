@@ -89,8 +89,10 @@ export function TrainingActivityTimeline({ activities }: { activities: TrainingA
                             {activity.course.title}
                           </Link>
                         </>
+                      ) : activity.type === "EXTERNAL_EVENT" ? (
+                        TRAINING_ACTIVITY_TYPE_LABELS.EXTERNAL_EVENT
                       ) : (
-                        TRAINING_ACTIVITY_TYPE_LABELS[activity.type]
+                        "No aplica · gestión directa"
                       )}
                       {" · "}
                       {COURSE_AUDIENCE_LABELS[activity.targetAudience]}

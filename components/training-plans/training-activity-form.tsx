@@ -54,16 +54,19 @@ export function TrainingActivityForm({
             <select
               id="activity-course"
               name="courseId"
-              required
               className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="">Selecciona un curso</option>
+              <option value="">No aplica</option>
               {courses.map((course) => (
                 <option key={course.id} value={course.id}>
                   {course.title}
                 </option>
               ))}
             </select>
+            <p className="text-xs text-muted-foreground">
+              Vincularlo activa el cálculo automático de adherencia (Etapa 3). Si no aplica, la actividad se
+              gestiona directamente aquí.
+            </p>
           </div>
         ) : (
           <div className="space-y-1.5">
