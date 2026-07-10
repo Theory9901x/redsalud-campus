@@ -1,13 +1,18 @@
 import { notFound } from "next/navigation";
-import { CalendarRange, Building2, User, FileText, Gauge } from "lucide-react";
+import Link from "next/link";
+import { CalendarRange, Building2, User, FileText, Gauge, ClipboardList, Plus } from "lucide-react";
 import { requireTrainingPlanAccess } from "@/lib/auth-helpers";
 import { getTrainingPlanDetail, getLinkableCourses, getPlanAdherenceSummary } from "@/lib/training-plans";
+import { getSurveysForPlan } from "@/lib/surveys";
 import { createTrainingActivityAction, uploadTrainingPlanDocumentAction } from "@/app/admin/planes-capacitacion/actions";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { TrainingActivityTimeline } from "@/components/training-plans/training-activity-timeline";
 import { TrainingActivityForm } from "@/components/training-plans/training-activity-form";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
 import { TrainingDocumentUploadForm } from "@/components/training-plans/training-document-upload-form";
+import { SurveyList } from "@/components/training-plans/survey-list";
 import { TRAINING_PLAN_STATUS_LABELS, TRAINING_PLAN_STATUS_CLASSES } from "@/components/training-plans/labels";
 
 const BASE_PATH = "/tutor/planes-capacitacion";
@@ -20,7 +25,11 @@ export default async function TutorPlanCapacitacionDetallePage({
   const { id } = await params;
   await requireTrainingPlanAccess(id);
 
-  const [plan, courses] = await Promise.all([getTrainingPlanDetail(id), getLinkableCourses()]);
+  const [plan, courses, surveys] = await Promise.all([
+    getTrainingPlanDetail(id),
+    getLinkableCourses(),
+    getSurveysForPlan(id),
+  ]);
   if (!plan) notFound();
 
   const adherenceSummary = await getPlanAdherenceSummary({
@@ -97,6 +106,23 @@ export default async function TutorPlanCapacitacionDetallePage({
         <div className="surface p-4">
           <TrainingDocumentUploadForm action={uploadDocumentAction} />
         </div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-primary" />
+            <h2 className="font-display text-lg font-bold text-foreground">Encuestas</h2>
+          </div>
+          <Link
+            href={`${BASE_PATH}/${id}/encuestas/nueva`}
+            className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
+          >
+            <Plus className="h-4 w-4" />
+            Nueva encuesta
+          </Link>
+        </div>
+        <SurveyList surveys={surveys} basePath={BASE_PATH} planId={id} showActivityScope />
       </div>
     </div>
   );

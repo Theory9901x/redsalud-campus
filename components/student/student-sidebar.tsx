@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, GraduationCap, Layers, Award, User, X, Activity } from "lucide-react";
+import { LayoutDashboard, GraduationCap, Layers, Award, User, X, Activity, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -18,6 +18,7 @@ const NAV_ITEMS = [
     hash: "#mis-certificados",
     exact: true,
   },
+  { href: "/mis-encuestas", label: "Mis encuestas", icon: ClipboardList, match: "/mis-encuestas", hash: "", exact: false },
   { href: "/perfil", label: "Perfil", icon: User, match: "/perfil", hash: "", exact: true },
 ];
 

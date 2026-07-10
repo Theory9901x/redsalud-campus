@@ -1,19 +1,23 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CalendarRange, Users2 } from "lucide-react";
+import { ArrowLeft, CalendarRange, Users2, ClipboardList, Plus } from "lucide-react";
 import { requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import {
   getTrainingActivityDetail,
   getActivityAdherence,
   getActivityAttendanceRoster,
 } from "@/lib/training-plans";
+import { getSurveysForActivity } from "@/lib/surveys";
 import { uploadTrainingActivityDocumentAction } from "@/app/admin/planes-capacitacion/actions";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
 import { TrainingDocumentUploadForm } from "@/components/training-plans/training-document-upload-form";
 import { ActivityAdherencePanel } from "@/components/training-plans/activity-adherence-panel";
 import { AttendanceRoster } from "@/components/training-plans/attendance-roster";
+import { SurveyList } from "@/components/training-plans/survey-list";
 import {
   TRAINING_ACTIVITY_TYPE_LABELS,
   TRAINING_ACTIVITY_STATUS_LABELS,
@@ -40,9 +44,10 @@ export default async function AdminActividadDetallePage({
     targetAudience: activity.targetAudience,
     plan: { targetDepartment: activity.plan.targetDepartment },
   };
-  const [adherence, roster] = await Promise.all([
+  const [adherence, roster, surveys] = await Promise.all([
     getActivityAdherence(activityForAdherence),
     activity.courseId ? Promise.resolve(null) : getActivityAttendanceRoster(activityForAdherence),
+    getSurveysForActivity(activityId),
   ]);
 
   const uploadDocumentAction = uploadTrainingActivityDocumentAction.bind(null, BASE_PATH, id, activityId);
@@ -109,6 +114,23 @@ export default async function AdminActividadDetallePage({
         <div className="surface p-4">
           <TrainingDocumentUploadForm action={uploadDocumentAction} />
         </div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-primary" />
+            <h2 className="font-display text-lg font-bold text-foreground">Encuestas de esta actividad</h2>
+          </div>
+          <Link
+            href={`${BASE_PATH}/${id}/encuestas/nueva?actividad=${activityId}`}
+            className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
+          >
+            <Plus className="h-4 w-4" />
+            Nueva encuesta
+          </Link>
+        </div>
+        <SurveyList surveys={surveys} basePath={BASE_PATH} planId={id} showActivityScope={false} />
       </div>
     </div>
   );

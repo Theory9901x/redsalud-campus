@@ -72,6 +72,8 @@ model User {
   trainingPlansAsTutor TrainingPlan[] @relation("TrainingPlanTutor")
   trainingAttendances TrainingAttendance[] @relation("TrainingAttendanceUser")
   trainingAttendancesRegistered TrainingAttendance[] @relation("TrainingAttendanceRegisteredBy")
+  surveysCreated  Survey[]         @relation("SurveyCreatedBy")
+  surveyResponses SurveyResponse[] @relation("SurveyRespondedBy")
 
   notificationsCreated  Notification[]     @relation("NotificationCreatedBy")
   notificationsTargeted Notification[]     @relation("NotificationTargetUser")
@@ -520,6 +522,7 @@ model TrainingPlan {
 
   activities TrainingActivity[]
   documents  Media[]
+  surveys    Survey[]
 
   @@index([tutorId])
   @@index([targetDepartment])
@@ -560,6 +563,7 @@ model TrainingActivity {
 
   documents   Media[]
   attendances TrainingAttendance[]
+  surveys     Survey[]
 
   @@index([planId])
   @@index([courseId])
@@ -585,4 +589,112 @@ model TrainingAttendance {
 
   @@unique([activityId, userId])
   @@index([activityId])
+}
+
+// ------------------------------------------------------------------
+// Etapa 4: encuestas de opinión (detección de necesidades / evaluación
+// post-capacitación). Distinto de Quiz: sin nota de aprobación, sin
+// intentos, una sola respuesta por usuario. Solo responden usuarios de la
+// plataforma con sesión iniciada (sin enlace público) — población fija y
+// verificable.
+// ------------------------------------------------------------------
+
+enum SurveyQuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  SCALE // escala Likert 1..N (scaleMin/scaleMax en la pregunta)
+  TEXT
+}
+
+model Survey {
+  id   String  @id @default(cuid())
+  title       String
+  description String?
+
+  trainingPlanId     String
+  trainingPlan       TrainingPlan      @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+  trainingActivityId String? // si se asigna: encuesta de esa jornada puntual ("participantes de la actividad"); si no, del plan en general
+  trainingActivity   TrainingActivity? @relation(fields: [trainingActivityId], references: [id], onDelete: Cascade)
+
+  // Audiencia objetivo (Etapa 3, mismo mecanismo): dependencia + tipo de personal.
+  targetDepartment String
+  targetAudience   CourseAudience @default(AMBOS)
+
+  createdBy String
+  creator   User     @relation("SurveyCreatedBy", fields: [createdBy], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questions SurveyQuestion[]
+  responses SurveyResponse[]
+
+  @@index([trainingPlanId])
+  @@index([trainingActivityId])
+}
+
+model SurveyQuestion {
+  id         String             @id @default(cuid())
+  surveyId   String
+  survey     Survey             @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  type       SurveyQuestionType
+  statement  String
+  isRequired Boolean            @default(true)
+  scaleMin   Int?               @default(1) // solo type = SCALE
+  scaleMax   Int?               @default(5) // solo type = SCALE
+  sortOrder  Int
+
+  options SurveyQuestionOption[]
+  answers SurveyAnswer[]
+
+  @@unique([surveyId, sortOrder])
+}
+
+model SurveyQuestionOption {
+  id         String         @id @default(cuid())
+  questionId String
+  question   SurveyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  sortOrder  Int
+
+  selectedIn SurveyAnswerOption[]
+
+  @@unique([questionId, sortOrder])
+}
+
+/** Una fila por usuario por encuesta: garantiza una sola respuesta (no hay "intentos"). */
+model SurveyResponse {
+  id          String   @id @default(cuid())
+  surveyId    String
+  survey      Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("SurveyRespondedBy", fields: [userId], references: [id], onDelete: Cascade)
+  submittedAt DateTime @default(now())
+
+  answers SurveyAnswer[]
+
+  @@unique([surveyId, userId])
+}
+
+model SurveyAnswer {
+  id         String         @id @default(cuid())
+  responseId String
+  response   SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  questionId String
+  question   SurveyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  textValue  String? // type = TEXT
+  scaleValue Int? // type = SCALE
+
+  selectedOptions SurveyAnswerOption[] // type = SINGLE_CHOICE / MULTIPLE_CHOICE
+
+  @@unique([responseId, questionId])
+}
+
+model SurveyAnswerOption {
+  id       String               @id @default(cuid())
+  answerId String
+  answer   SurveyAnswer         @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  optionId String
+  option   SurveyQuestionOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@unique([answerId, optionId])
 }

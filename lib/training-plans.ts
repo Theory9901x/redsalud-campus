@@ -53,21 +53,35 @@ export async function getTrainingActivityDetail(activityId: string) {
 // ------------------------------------------------------------------
 
 /**
- * Personal objetivo real de una actividad: estudiantes activos de la dependencia
- * del plan, filtrados por tipo de personal si la audiencia no es "Ambos".
- * No duplica datos: se calcula en vivo desde User (department, personnelType).
+ * Personal objetivo real de un plan/actividad/encuesta: estudiantes activos de
+ * la dependencia dada, filtrados por tipo de personal si la audiencia no es
+ * "Ambos". Fuente única reutilizada por adherencia (Etapa 3) y encuestas
+ * (Etapa 4): no se duplica el criterio de "a quién va dirigido esto".
  */
-async function getTargetAudienceUserIds(targetDepartment: string, targetAudience: CourseAudience) {
+export function targetAudienceUserWhere(targetDepartment: string, targetAudience: CourseAudience) {
+  return {
+    role: "STUDENT" as const,
+    status: "ACTIVE" as const,
+    department: { equals: targetDepartment, mode: "insensitive" as const },
+    ...(targetAudience === "AMBOS" ? {} : { personnelType: targetAudience === "ADMINISTRATIVO" ? ("ADMINISTRATIVO" as const) : ("ASISTENCIAL" as const) }),
+  };
+}
+
+export async function getTargetAudienceUserIds(targetDepartment: string, targetAudience: CourseAudience) {
   const users = await prisma.user.findMany({
-    where: {
-      role: "STUDENT",
-      status: "ACTIVE",
-      department: { equals: targetDepartment, mode: "insensitive" },
-      ...(targetAudience === "AMBOS" ? {} : { personnelType: targetAudience === "ADMINISTRATIVO" ? "ADMINISTRATIVO" : "ASISTENCIAL" }),
-    },
+    where: targetAudienceUserWhere(targetDepartment, targetAudience),
     select: { id: true },
   });
   return users.map((u) => u.id);
+}
+
+/** Lista nominal (nombre + documento) del personal objetivo, ordenada alfabéticamente. */
+export async function getTargetAudienceUsers(targetDepartment: string, targetAudience: CourseAudience) {
+  return prisma.user.findMany({
+    where: targetAudienceUserWhere(targetDepartment, targetAudience),
+    select: { id: true, fullName: true, documentNumber: true },
+    orderBy: { fullName: "asc" },
+  });
 }
 
 export type ActivityAdherence = {
@@ -129,18 +143,7 @@ export async function getActivityAttendanceRoster(activity: {
   plan: { targetDepartment: string };
 }) {
   const [users, attendance] = await Promise.all([
-    prisma.user.findMany({
-      where: {
-        role: "STUDENT",
-        status: "ACTIVE",
-        department: { equals: activity.plan.targetDepartment, mode: "insensitive" },
-        ...(activity.targetAudience === "AMBOS"
-          ? {}
-          : { personnelType: activity.targetAudience === "ADMINISTRATIVO" ? "ADMINISTRATIVO" : "ASISTENCIAL" }),
-      },
-      select: { id: true, fullName: true, documentNumber: true },
-      orderBy: { fullName: "asc" },
-    }),
+    getTargetAudienceUsers(activity.plan.targetDepartment, activity.targetAudience),
     prisma.trainingAttendance.findMany({
       where: { activityId: activity.id },
       select: { userId: true, attended: true },

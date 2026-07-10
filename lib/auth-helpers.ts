@@ -50,3 +50,13 @@ export async function requireTrainingActivityAccess(activityId: string) {
   const session = await requireTrainingPlanAccess(activity.planId);
   return { session, planId: activity.planId };
 }
+
+/** Igual que requireTrainingPlanAccess, resolviendo primero el plan dueño de la encuesta (Etapa 4). */
+export async function requireSurveyAccess(surveyId: string) {
+  const survey = await prisma.survey.findUnique({ where: { id: surveyId }, select: { trainingPlanId: true } });
+  if (!survey) {
+    throw new Error("Encuesta no encontrada.");
+  }
+  const session = await requireTrainingPlanAccess(survey.trainingPlanId);
+  return { session, planId: survey.trainingPlanId };
+}
