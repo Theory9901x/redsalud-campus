@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -7,8 +8,19 @@ import { signOutAction } from "@/lib/auth-actions";
 import { initials } from "@/lib/initials";
 
 export function AdminTopbar({ userName, onMenuClick }: { userName: string; onMenuClick: () => void }) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="flex items-center justify-between gap-2 border-b border-border bg-card px-4 py-4 sm:px-6">
+    <header
+      className="header-glass sticky top-0 z-30 flex items-center justify-between gap-2 px-4 py-4 sm:px-6"
+      data-scrolled={scrolled}
+    >
       <button
         type="button"
         onClick={onMenuClick}

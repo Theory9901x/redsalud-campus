@@ -14,6 +14,7 @@ import {
 import { RoleBadge } from "@/components/admin/role-badge";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { ToggleStatusButton } from "@/components/admin/toggle-status-button";
+import { StaggerSections } from "@/components/brand/stagger-sections";
 import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
 import type { PersonnelType, Prisma, Role, UserStatus } from "@prisma/client";
 
@@ -75,15 +76,19 @@ export default async function UsuariosPage({
             {users.length} {users.length === 1 ? "usuario encontrado" : "usuarios encontrados"}
           </p>
         </div>
-        <Link href="/admin/usuarios/nuevo" className={cn(buttonVariants(), "gap-1.5")}>
+        <Link
+          href="/admin/usuarios/nuevo"
+          className={cn(buttonVariants(), "gap-1.5 bg-gradient-to-r from-primary to-teal-400 text-white hover:opacity-90")}
+        >
           <Plus className="h-4 w-4" />
           Nuevo usuario
         </Link>
       </div>
 
+      <StaggerSections className="space-y-6">
       <form
         method="get"
-        className="surface flex flex-wrap items-end gap-3 p-4"
+        className="surface-panel flex flex-wrap items-end gap-3 p-4"
       >
         <div className="flex-1 min-w-[200px] space-y-1.5">
           <label htmlFor="q" className="text-xs font-medium text-muted-foreground">
@@ -165,7 +170,7 @@ export default async function UsuariosPage({
         )}
       </form>
 
-      <div className="surface overflow-hidden">
+      <div className="surface-panel overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -220,6 +225,7 @@ export default async function UsuariosPage({
           </TableBody>
         </Table>
       </div>
+      </StaggerSections>
     </div>
   );
 }

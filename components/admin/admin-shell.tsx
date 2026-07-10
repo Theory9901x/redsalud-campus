@@ -10,7 +10,7 @@ export function AdminShell({ userName, children }: { userName: string; children:
   return (
     <div className="flex min-h-screen">
       <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex min-w-0 flex-1 flex-col bg-background">
+      <div className="page-canvas flex min-w-0 flex-1 flex-col">
         <AdminTopbar userName={userName} onMenuClick={() => setSidebarOpen(true)} />
         <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6">{children}</main>
       </div>
