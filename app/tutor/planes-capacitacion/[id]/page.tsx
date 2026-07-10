@@ -20,13 +20,18 @@ import {
   buildActivityStatusCounts,
 } from "@/lib/training-plans";
 import { getSurveysForPlan, buildSurveyResponseRate } from "@/lib/surveys";
-import { createTrainingActivityAction, uploadTrainingPlanDocumentAction } from "@/app/admin/planes-capacitacion/actions";
+import {
+  createTrainingActivityAction,
+  uploadTrainingPlanDocumentAction,
+  bulkImportActivitiesAction,
+} from "@/app/admin/planes-capacitacion/actions";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrainingActivityTimeline } from "@/components/training-plans/training-activity-timeline";
 import { TrainingActivityForm } from "@/components/training-plans/training-activity-form";
+import { ImportScheduleDialog } from "@/components/training-plans/import-schedule-dialog";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
 import { TrainingDocumentUploadForm } from "@/components/training-plans/training-document-upload-form";
 import { SurveyList } from "@/components/training-plans/survey-list";
@@ -60,6 +65,7 @@ export default async function TutorPlanCapacitacionDetallePage({
 
   const addActivityAction = createTrainingActivityAction.bind(null, BASE_PATH, id);
   const uploadDocumentAction = uploadTrainingPlanDocumentAction.bind(null, BASE_PATH, id);
+  const importScheduleAction = bulkImportActivitiesAction.bind(null, BASE_PATH, id);
 
   return (
     <div className="space-y-6">
@@ -118,9 +124,12 @@ export default async function TutorPlanCapacitacionDetallePage({
             </div>
 
             <div className="surface h-fit space-y-4 p-5 lg:sticky lg:top-6">
-              <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
-                Agregar actividad
-              </h2>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
+                  Agregar actividad
+                </h2>
+                <ImportScheduleDialog action={importScheduleAction} />
+              </div>
               <TrainingActivityForm action={addActivityAction} courses={courses} />
             </div>
           </div>

@@ -6,10 +6,12 @@ import { prisma } from "@/lib/prisma";
 import { requireTutorOrAdmin, requireTrainingPlanAccess, requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import { saveTrainingPlanDocument, saveTrainingActivityDocument } from "@/lib/storage";
 import { trainingPlanSchema, trainingActivitySchema } from "@/lib/validations/training-plan";
+import { parseTrainingScheduleFile, type ImportRowError } from "@/lib/training-plan-import";
 
 export type TrainingPlanFormState = { error: string | null };
 export type TrainingActivityFormState = { error: string | null };
 export type TrainingDocumentFormState = { error: string | null };
+export type BulkImportFormState = { error: string | null; createdCount?: number; rowErrors?: ImportRowError[] };
 
 export async function createTrainingPlanAction(
   basePath: string,
@@ -88,6 +90,47 @@ export async function createTrainingActivityAction(
 
   revalidatePath(`${basePath}/${planId}`);
   return { error: null };
+}
+
+/** Etapa de reorganización: cronograma en bloque desde Excel/XLS. Complementa "Agregar actividad", no lo reemplaza. */
+export async function bulkImportActivitiesAction(
+  basePath: string,
+  planId: string,
+  _prevState: BulkImportFormState,
+  formData: FormData
+): Promise<BulkImportFormState> {
+  await requireTrainingPlanAccess(planId);
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Selecciona un archivo .xlsx." };
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  let parsed;
+  try {
+    parsed = await parseTrainingScheduleFile(buffer);
+  } catch {
+    return { error: "No se pudo leer el archivo. Verifica que sea un .xlsx válido, generado con la plantilla." };
+  }
+
+  if (parsed.valid.length > 0) {
+    await prisma.trainingActivity.createMany({
+      data: parsed.valid.map((row) => ({
+        planId,
+        title: row.title,
+        type: row.type,
+        courseId: row.courseId,
+        startDate: row.startDate,
+        endDate: row.endDate,
+        targetAudience: row.targetAudience,
+        isRequired: row.isRequired,
+      })),
+    });
+  }
+
+  revalidatePath(`${basePath}/${planId}`);
+  return { error: null, createdCount: parsed.valid.length, rowErrors: parsed.errors };
 }
 
 export async function uploadTrainingPlanDocumentAction(
