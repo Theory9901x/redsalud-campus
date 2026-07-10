@@ -35,7 +35,7 @@ export function TrainingDocumentList({
   }
 
   return (
-    <div className="surface overflow-hidden">
+    <div className="surface-panel overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>

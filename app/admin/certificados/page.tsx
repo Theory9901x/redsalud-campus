@@ -14,6 +14,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { RevokeCertificateDialog } from "@/components/certificados/revoke-certificate-dialog";
 import { restoreCertificateAction, regenerateCertificateAction } from "@/app/admin/certificados/actions";
 import { CERTIFICATE_STATUS_LABELS, CERTIFICATE_STATUS_CLASSES } from "@/components/certificados/labels";
+import { StaggerSections } from "@/components/brand/stagger-sections";
 import { cn } from "@/lib/utils";
 import type { CertificateStatus, Prisma } from "@prisma/client";
 
@@ -60,7 +61,8 @@ export default async function AdminCertificadosPage({
         </Link>
       </div>
 
-      <form method="get" className="surface flex flex-wrap items-end gap-3 p-4">
+      <StaggerSections className="space-y-6">
+      <form method="get" className="surface-panel flex flex-wrap items-end gap-3 p-4">
         <div className="flex-1 min-w-[220px] space-y-1.5">
           <label htmlFor="q" className="text-xs font-medium text-muted-foreground">
             Buscar estudiante, cédula o código
@@ -114,7 +116,7 @@ export default async function AdminCertificadosPage({
         </Button>
       </form>
 
-      <div className="surface overflow-hidden">
+      <div className="surface-panel overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -193,6 +195,7 @@ export default async function AdminCertificadosPage({
           </TableBody>
         </Table>
       </div>
+      </StaggerSections>
     </div>
   );
 }

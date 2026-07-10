@@ -24,7 +24,10 @@ export default async function AdminPlanesCapacitacionPage() {
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
           </Link>
-          <Link href="/admin/planes-capacitacion/nuevo" className={cn(buttonVariants(), "gap-1.5")}>
+          <Link
+            href="/admin/planes-capacitacion/nuevo"
+            className={cn(buttonVariants(), "gap-1.5 bg-gradient-to-r from-primary to-teal-400 text-white hover:opacity-90")}
+          >
             <Plus className="h-4 w-4" />
             Nuevo plan
           </Link>

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { ENROLLMENT_STATUS_LABELS } from "@/components/cursos/labels";
 import { CERTIFICATE_STATUS_LABELS } from "@/components/certificados/labels";
+import { StaggerSections } from "@/components/brand/stagger-sections";
 
 const PREVIEW_LIMIT = 15;
 
@@ -88,6 +89,7 @@ export default async function ReportesPage({
         </p>
       </div>
 
+      <StaggerSections className="space-y-8">
       {/* Estudiantes por curso */}
       <section className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -119,7 +121,7 @@ export default async function ReportesPage({
             </a>
           </div>
         </div>
-        <div className="surface overflow-hidden">
+        <div className="surface-panel overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -164,7 +166,7 @@ export default async function ReportesPage({
             Exportar CSV
           </a>
         </div>
-        <div className="surface overflow-hidden">
+        <div className="surface-panel overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -232,7 +234,7 @@ export default async function ReportesPage({
             </a>
           </div>
         </div>
-        <div className="surface overflow-hidden">
+        <div className="surface-panel overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -322,7 +324,7 @@ export default async function ReportesPage({
             </a>
           </div>
         </div>
-        <div className="surface overflow-hidden">
+        <div className="surface-panel overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -356,6 +358,7 @@ export default async function ReportesPage({
           </Table>
         </div>
       </section>
+      </StaggerSections>
     </div>
   );
 }

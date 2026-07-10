@@ -11,14 +11,14 @@ export function TablePageSkeleton({ rows = 6 }: { rows?: number }) {
         <Skeleton className="h-9 w-32" />
       </div>
 
-      <div className="surface flex flex-wrap items-end gap-3 p-4">
+      <div className="surface-panel flex flex-wrap items-end gap-3 p-4">
         <Skeleton className="h-9 w-48" />
         <Skeleton className="h-9 w-40" />
         <Skeleton className="h-9 w-40" />
         <Skeleton className="h-9 w-24" />
       </div>
 
-      <div className="surface overflow-hidden p-4">
+      <div className="surface-panel overflow-hidden p-4">
         <div className="space-y-3">
           <Skeleton className="h-4 w-full" />
           {Array.from({ length: rows }).map((_, i) => (

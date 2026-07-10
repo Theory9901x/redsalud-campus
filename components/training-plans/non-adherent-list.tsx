@@ -20,7 +20,7 @@ export function NonAdherentList({ users }: { users: NonAdherentUser[] }) {
           Todo el personal objetivo fue adherente.
         </p>
       ) : (
-        <div className="surface overflow-hidden">
+        <div className="surface-panel overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

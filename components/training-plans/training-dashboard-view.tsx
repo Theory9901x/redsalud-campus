@@ -126,7 +126,7 @@ export function TrainingDashboardView({
               Exportar CSV
             </a>
           </div>
-          <div className="surface overflow-hidden">
+          <div className="surface-panel overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -181,7 +181,7 @@ export function TrainingDashboardView({
               Exportar CSV
             </a>
           </div>
-          <div className="surface overflow-hidden">
+          <div className="surface-panel overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -223,7 +223,7 @@ export function TrainingDashboardView({
       </TabsContent>
 
       <TabsContent value="por-plan" className="space-y-4 pt-4">
-        <form method="get" className="surface flex flex-wrap items-end gap-3 p-4">
+        <form method="get" className="surface-panel flex flex-wrap items-end gap-3 p-4">
           <input type="hidden" name="tab" value="por-plan" />
           <div className="flex-1 min-w-[240px] space-y-1.5">
             <label htmlFor="plan" className="text-xs font-medium text-muted-foreground">

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AssignEnrollmentForm } from "@/components/admin/assign-enrollment-form";
 import { CancelEnrollmentButton } from "@/components/admin/cancel-enrollment-button";
+import { StaggerSections } from "@/components/brand/stagger-sections";
 import { ENROLLMENT_STATUS_LABELS, ENROLLMENT_STATUS_CLASSES } from "@/components/cursos/labels";
 import type { EnrollmentStatus, Prisma } from "@prisma/client";
 
@@ -58,7 +59,8 @@ export default async function InscripcionesPage({
         </p>
       </div>
 
-      <section className="surface space-y-4 p-6">
+      <StaggerSections className="space-y-6">
+      <section className="surface-panel surface-accent-top space-y-4 p-6">
         <div className="flex items-center gap-2">
           <UserPlus className="h-4 w-4 text-primary" />
           <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
@@ -73,7 +75,7 @@ export default async function InscripcionesPage({
           {enrollments.length} {enrollments.length === 1 ? "inscripción" : "inscripciones"}
         </h2>
 
-        <form method="get" className="surface flex flex-wrap items-end gap-3 p-4">
+        <form method="get" className="surface-panel flex flex-wrap items-end gap-3 p-4">
           <div className="flex-1 min-w-[200px] space-y-1.5">
             <label htmlFor="q" className="text-xs font-medium text-muted-foreground">
               Buscar estudiante
@@ -127,7 +129,7 @@ export default async function InscripcionesPage({
           </Button>
         </form>
 
-        <div className="surface overflow-hidden">
+        <div className="surface-panel overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -168,6 +170,7 @@ export default async function InscripcionesPage({
           </Table>
         </div>
       </section>
+      </StaggerSections>
     </div>
   );
 }

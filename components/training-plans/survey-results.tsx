@@ -106,7 +106,7 @@ export function SurveyResults({
         {missing.length === 0 ? (
           <p className="text-sm text-muted-foreground">Todo el personal objetivo ya respondió.</p>
         ) : (
-          <div className="surface overflow-hidden">
+          <div className="surface-panel overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>

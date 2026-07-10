@@ -41,7 +41,7 @@ export function AttendanceRoster({
         <span className="font-display text-lg font-bold text-foreground">{percentage}%</span>
         <span className="text-sm text-muted-foreground">{attendedCount} de {roster.length} asistieron</span>
       </div>
-      <div className="surface overflow-hidden">
+      <div className="surface-panel overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
