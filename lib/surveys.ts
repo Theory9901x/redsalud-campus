@@ -20,6 +20,13 @@ export async function getSurveysForPlan(planId: string) {
   return withTargetCounts(surveys);
 }
 
+/** Tasa de respuesta agregada de un conjunto de encuestas (respondidas / objetivo). Pura transformación, sin acceso a datos. */
+export function buildSurveyResponseRate(surveys: { targetCount: number; _count: { responses: number } }[]) {
+  const totalTarget = surveys.reduce((sum, s) => sum + s.targetCount, 0);
+  const totalResponded = surveys.reduce((sum, s) => sum + s._count.responses, 0);
+  return totalTarget > 0 ? Math.round((totalResponded / totalTarget) * 100) : null;
+}
+
 /** Encuestas propias de una actividad puntual ("participantes de la actividad"). */
 export async function getSurveysForActivity(activityId: string) {
   const surveys = await prisma.survey.findMany({

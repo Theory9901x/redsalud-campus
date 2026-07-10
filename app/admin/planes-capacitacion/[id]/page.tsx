@@ -9,23 +9,28 @@ import {
   Gauge,
   ClipboardList,
   Plus,
-  BarChart3,
   Info,
 } from "lucide-react";
 import { requireTrainingPlanAccess } from "@/lib/auth-helpers";
-import { getTrainingPlanDetail, getLinkableCourses, getPlanAdherenceSummary } from "@/lib/training-plans";
-import { getSurveysForPlan } from "@/lib/surveys";
+import {
+  getTrainingPlanDetail,
+  getLinkableCourses,
+  getPlanAdherenceSummary,
+  buildAdherenceBarData,
+  buildActivityStatusCounts,
+} from "@/lib/training-plans";
+import { getSurveysForPlan, buildSurveyResponseRate } from "@/lib/surveys";
 import { createTrainingActivityAction, uploadTrainingPlanDocumentAction } from "@/app/admin/planes-capacitacion/actions";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { EmptyState } from "@/components/brand/empty-state";
 import { TrainingActivityTimeline } from "@/components/training-plans/training-activity-timeline";
 import { TrainingActivityForm } from "@/components/training-plans/training-activity-form";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
 import { TrainingDocumentUploadForm } from "@/components/training-plans/training-document-upload-form";
 import { SurveyList } from "@/components/training-plans/survey-list";
+import { PlanMetricsView } from "@/components/training-plans/plan-metrics-view";
 import { TRAINING_PLAN_STATUS_LABELS, TRAINING_PLAN_STATUS_CLASSES } from "@/components/training-plans/labels";
 
 const BASE_PATH = "/admin/planes-capacitacion";
@@ -193,11 +198,15 @@ export default async function AdminPlanCapacitacionDetallePage({
           <SurveyList surveys={surveys} basePath={BASE_PATH} planId={id} showActivityScope />
         </TabsContent>
 
-        <TabsContent value="metricas" className="space-y-3 pt-4">
-          <EmptyState
-            icon={BarChart3}
-            title="Métricas del plan"
-            description="Los gráficos de adherencia y el informe exportable de este plan estarán aquí."
+        <TabsContent value="metricas" className="pt-4">
+          <PlanMetricsView
+            planId={id}
+            overallPercentage={adherenceSummary.overallPercentage}
+            adherenceBarData={buildAdherenceBarData(plan.activities, adherenceSummary.perActivity)}
+            statusPieData={buildActivityStatusCounts(plan.activities)}
+            surveyResponseRate={buildSurveyResponseRate(surveys)}
+            totalActivities={plan.activities.length}
+            totalSurveys={surveys.length}
           />
         </TabsContent>
       </Tabs>

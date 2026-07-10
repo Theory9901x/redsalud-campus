@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { Role, CourseAudience } from "@prisma/client";
+import type { Role, CourseAudience, TrainingActivityStatus } from "@prisma/client";
 
 /** ADMIN ve todos los planes; TUTOR solo los suyos. Una sola vista, alcance por rol. */
 export function trainingPlanScopeWhere(role: Role, userId: string) {
@@ -189,6 +189,28 @@ export async function getPlanAdherenceSummary(plan: {
       ? Math.round(withAudience.reduce((sum, a) => sum + a.percentage, 0) / withAudience.length)
       : null;
   return { perActivity, overallPercentage };
+}
+
+/** Datos para el gráfico de barras "adherencia por actividad": zip de perActivity con el título real. Sin acceso a datos, pura transformación. */
+export function buildAdherenceBarData(
+  activities: { id: string; title: string }[],
+  perActivity: { activityId: string; percentage: number; totalExpected: number }[]
+) {
+  const titleById = new Map(activities.map((a) => [a.id, a.title]));
+  return perActivity
+    .filter((a) => a.totalExpected > 0)
+    .map((a) => ({ label: titleById.get(a.activityId) ?? "Actividad", percentage: a.percentage }));
+}
+
+/** Datos para el gráfico de pastel "actividades por estado": conteo por BORRADOR/ABIERTA/CERRADA. */
+export function buildActivityStatusCounts(activities: { status: TrainingActivityStatus }[]) {
+  const counts = { DRAFT: 0, OPEN: 0, CLOSED: 0 };
+  for (const activity of activities) counts[activity.status] += 1;
+  return [
+    { status: "DRAFT" as const, label: "Borrador", count: counts.DRAFT },
+    { status: "OPEN" as const, label: "Abierta", count: counts.OPEN },
+    { status: "CLOSED" as const, label: "Cerrada", count: counts.CLOSED },
+  ];
 }
 
 /** Lista de posibles tutores responsables: TUTOR o ADMIN, igual que el selector de tutor de un curso. */
