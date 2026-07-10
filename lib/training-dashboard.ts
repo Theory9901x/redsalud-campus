@@ -1,7 +1,51 @@
 import { prisma } from "@/lib/prisma";
-import { trainingPlanScopeWhere, getPlanAdherenceSummary } from "@/lib/training-plans";
+import { trainingPlanScopeWhere, getPlanAdherenceSummary, getActivityAdherence } from "@/lib/training-plans";
 import { getTargetAudienceUsers } from "@/lib/training-plans";
-import type { Role } from "@prisma/client";
+import type { Role, CourseAudience } from "@prisma/client";
+
+const PERSONNEL_TYPES = ["ADMINISTRATIVO", "ASISTENCIAL"] as const;
+const PERSONNEL_TYPE_LABELS: Record<(typeof PERSONNEL_TYPES)[number], string> = {
+  ADMINISTRATIVO: "Administrativo",
+  ASISTENCIAL: "Asistencial",
+};
+
+/**
+ * Adherencia promedio por tipo de personal, considerando por cada tipo solo
+ * las actividades que de verdad le aplican (targetAudience = ese tipo o
+ * "Ambos"). Reutiliza getActivityAdherence tal cual, pasándole el tipo de
+ * personal como audiencia explícita en vez de la audiencia declarada de la
+ * actividad — no duplica el cálculo de adherencia, solo cambia a quién se
+ * le mide.
+ */
+export async function getPersonnelTypeBreakdown(
+  plans: { targetDepartment: string; activities: { id: string; courseId: string | null; targetAudience: CourseAudience }[] }[]
+) {
+  const totals = { ADMINISTRATIVO: { sum: 0, count: 0 }, ASISTENCIAL: { sum: 0, count: 0 } };
+
+  for (const personnelType of PERSONNEL_TYPES) {
+    for (const plan of plans) {
+      for (const activity of plan.activities) {
+        if (activity.targetAudience !== "AMBOS" && activity.targetAudience !== personnelType) continue;
+        const adherence = await getActivityAdherence({
+          id: activity.id,
+          courseId: activity.courseId,
+          targetAudience: personnelType,
+          plan: { targetDepartment: plan.targetDepartment },
+        });
+        if (adherence.totalExpected === 0) continue;
+        totals[personnelType].sum += adherence.percentage;
+        totals[personnelType].count += 1;
+      }
+    }
+  }
+
+  return PERSONNEL_TYPES.map((type) => ({
+    personnelType: type,
+    label: PERSONNEL_TYPE_LABELS[type],
+    averagePercentage: totals[type].count > 0 ? Math.round(totals[type].sum / totals[type].count) : null,
+    activityCount: totals[type].count,
+  }));
+}
 
 const MONTH_FORMAT = new Intl.DateTimeFormat("es-CO", { month: "long", year: "numeric" });
 
@@ -115,6 +159,8 @@ export async function getTrainingDashboardData(role: Role, userId: string) {
   const totalResponded = surveyRows.reduce((sum, r) => sum + r.respondedCount, 0);
   const overallResponseRate = totalTarget > 0 ? Math.round((totalResponded / totalTarget) * 100) : null;
 
+  const personnelTypeBreakdown = await getPersonnelTypeBreakdown(plans);
+
   return {
     totalPlans: plans.length,
     totalActivities: plans.reduce((sum, p) => sum + p.activities.length, 0),
@@ -124,6 +170,7 @@ export async function getTrainingDashboardData(role: Role, userId: string) {
     planRows,
     surveyRows,
     overallResponseRate,
+    personnelTypeBreakdown,
   };
 }
 
