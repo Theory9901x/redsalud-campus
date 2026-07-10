@@ -33,12 +33,15 @@ const ACCENT_STYLES = {
 export function MetricCard({
   label,
   value,
+  suffix = "",
   icon: Icon,
   accent = "primary",
   href,
 }: {
   label: string;
   value: number;
+  /** Ej: "%" para métricas de porcentaje, sin cambiar el formato de miles del valor. */
+  suffix?: string;
   icon: LucideIcon;
   accent?: "primary" | "success" | "warning" | "destructive";
   href?: string;
@@ -64,6 +67,7 @@ export function MetricCard({
       </div>
       <p className="mt-3 font-display text-3xl font-extrabold tracking-tight text-foreground">
         {value.toLocaleString("es-CO")}
+        {suffix}
       </p>
       <p className="mt-0.5 text-sm font-medium text-foreground/60">{label}</p>
     </>
