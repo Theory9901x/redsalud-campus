@@ -16,22 +16,22 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const [showForgotHelp, setShowForgotHelp] = useState(false);
 
   return (
-    <div className="relative w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="relative space-y-6">
+    <div className="relative w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="relative space-y-8">
         <div className="relative">
-          <span className="absolute -right-1 -top-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-success text-white shadow-[0_8px_20px_-6px_color-mix(in_oklch,var(--primary)_60%,transparent)]">
+          <span className="absolute -right-1 -top-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-success text-white shadow-[0_8px_20px_-6px_color-mix(in_oklch,var(--primary)_60%,transparent)]">
             <ShieldCheck className="h-5 w-5" strokeWidth={2.25} />
           </span>
           <p className="text-xs font-bold uppercase tracking-wide text-primary">Bienvenido de nuevo</p>
-          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-foreground">
+          <h1 className="mt-1.5 font-display text-4xl font-extrabold tracking-tight text-foreground">
             Accede a tu espacio
           </h1>
-          <p className="mt-1.5 max-w-[85%] text-[15px] leading-relaxed text-muted-foreground">
+          <p className="mt-2 max-w-[85%] text-[15px] leading-relaxed text-muted-foreground">
             Continúa tu formación institucional desde una plataforma segura y unificada.
           </p>
         </div>
 
-        <form action={formAction} className="space-y-4">
+        <form action={formAction} className="space-y-5">
           <input type="hidden" name="callbackUrl" value={callbackUrl ?? ""} />
 
           <div className="space-y-1.5">
@@ -45,7 +45,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
                 autoComplete="email"
                 required
                 placeholder="nombre@redsaludcasanare.gov.co"
-                className="h-11 rounded-xl pl-10 transition-shadow focus-visible:shadow-md"
+                className="h-12 rounded-xl pl-10 transition-shadow focus-visible:shadow-md"
               />
             </div>
           </div>
@@ -70,7 +70,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
                 autoComplete="current-password"
                 required
                 placeholder="Ingresa tu contraseña"
-                className="h-11 rounded-xl px-10 transition-shadow focus-visible:shadow-md"
+                className="h-12 rounded-xl px-10 transition-shadow focus-visible:shadow-md"
               />
               <button
                 type="button"
@@ -103,7 +103,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
           <button
             type="submit"
             disabled={pending}
-            className="group/cta relative flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-primary to-success text-sm font-semibold text-white shadow-[0_10px_24px_-8px_color-mix(in_oklch,var(--primary)_55%,transparent)] transition-all duration-(--duration-signature-fast) ease-(--ease-signature) hover:-translate-y-0.5 hover:shadow-[0_14px_32px_-8px_color-mix(in_oklch,var(--primary)_65%,transparent)] active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+            className="group/cta relative flex h-[3.25rem] w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-primary to-success text-[15px] font-semibold text-white shadow-[0_10px_24px_-8px_color-mix(in_oklch,var(--primary)_55%,transparent)] transition-all duration-(--duration-signature-fast) ease-(--ease-signature) hover:-translate-y-0.5 hover:shadow-[0_14px_32px_-8px_color-mix(in_oklch,var(--primary)_65%,transparent)] active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
           >
             {pending ? (
               <>
