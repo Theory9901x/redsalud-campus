@@ -2,12 +2,10 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Mail, Lock, Eye, EyeOff, LogIn, HelpCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, HelpCircle, ShieldCheck, KeyRound } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
 import { loginAction, type LoginState } from "./actions";
 
 const initialState: LoginState = { error: null };
@@ -18,16 +16,18 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const [showForgotHelp, setShowForgotHelp] = useState(false);
 
   return (
-    <div className="surface surface-accent-top relative w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 rounded-3xl p-8 shadow-xl duration-700">
-      <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_15%_0%,rgba(43,166,222,0.10),transparent_55%)]" />
-
+    <div className="relative w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="relative space-y-6">
-        <div className="text-center">
-          <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground">
-            Iniciar sesión
+        <div className="relative">
+          <span className="absolute -right-1 -top-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-success text-white shadow-[0_8px_20px_-6px_color-mix(in_oklch,var(--primary)_60%,transparent)]">
+            <ShieldCheck className="h-5 w-5" strokeWidth={2.25} />
+          </span>
+          <p className="text-xs font-bold uppercase tracking-wide text-primary">Bienvenido de nuevo</p>
+          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-foreground">
+            Accede a tu espacio
           </h1>
-          <p className="mt-1.5 text-base text-muted-foreground">
-            Accede a tus cursos, evaluaciones y certificados.
+          <p className="mt-1.5 max-w-[85%] text-[15px] leading-relaxed text-muted-foreground">
+            Continúa tu formación institucional desde una plataforma segura y unificada.
           </p>
         </div>
 
@@ -35,7 +35,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
           <input type="hidden" name="callbackUrl" value={callbackUrl ?? ""} />
 
           <div className="space-y-1.5">
-            <Label htmlFor="email">Correo electrónico</Label>
+            <Label htmlFor="email">Correo institucional</Label>
             <div className="group relative">
               <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
               <Input
@@ -69,7 +69,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
-                placeholder="••••••••"
+                placeholder="Ingresa tu contraseña"
                 className="h-11 rounded-xl px-10 transition-shadow focus-visible:shadow-md"
               />
               <button
@@ -91,7 +91,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
 
           <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
             <Checkbox name="remember" defaultChecked />
-            Recordarme
+            Recordar acceso
           </label>
 
           {state.error && (
@@ -100,17 +100,10 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
             </p>
           )}
 
-          <Button
+          <button
             type="submit"
             disabled={pending}
-            className={cn(
-              // El Button base ya trae transition-all + la firma de movimiento
-              // (duration-(--duration-signature-fast)/ease-(--ease-signature));
-              // repetir "duration-300" acá la pisaba en silencio (tailwind-merge
-              // resuelve el conflicto quedándose con el último de la cadena).
-              "h-11 w-full gap-2 rounded-xl bg-gradient-to-r from-primary to-success text-white shadow-md",
-              "hover:-translate-y-0.5 hover:shadow-lg hover:opacity-95 active:translate-y-0 active:scale-[0.98]"
-            )}
+            className="group/cta relative flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-primary to-success text-sm font-semibold text-white shadow-[0_10px_24px_-8px_color-mix(in_oklch,var(--primary)_55%,transparent)] transition-all duration-(--duration-signature-fast) ease-(--ease-signature) hover:-translate-y-0.5 hover:shadow-[0_14px_32px_-8px_color-mix(in_oklch,var(--primary)_65%,transparent)] active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
           >
             {pending ? (
               <>
@@ -119,11 +112,22 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
               </>
             ) : (
               <>
-                <LogIn className="h-4 w-4" />
                 Iniciar sesión
+                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/cta:translate-x-1" />
               </>
             )}
-          </Button>
+          </button>
+
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pt-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-success" />
+              Sesión protegida
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <KeyRound className="h-3.5 w-3.5 text-success" />
+              Acceso por roles
+            </span>
+          </div>
         </form>
 
         <div className="space-y-2 text-center text-sm text-muted-foreground">
@@ -137,6 +141,10 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
             ¿Necesitas ayuda? Contacta a Talento Humano de Red Salud Casanare E.S.E.
           </p>
         </div>
+
+        <p className="border-t border-border pt-4 text-center text-[11px] text-muted-foreground/60">
+          © {new Date().getFullYear()} RedSalud Te Forma · Plataforma institucional
+        </p>
       </div>
     </div>
   );
