@@ -23,7 +23,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("bg-muted/50 [&_tr]:border-b", className)}
+      className={cn("bg-muted [&_tr]:border-b-2 [&_tr]:border-b-muted-foreground/25", className)}
       {...props}
     />
   )
@@ -35,10 +35,12 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
       data-slot="table-body"
       className={cn(
         "[&_tr:last-child]:border-0",
-        // Ritmo visual de fila: zebra muy sutil + hover notorio con acento de
-        // marca lateral, aplicado solo al cuerpo (no al encabezado) porque
-        // TableRow es el mismo primitivo para ambos.
-        "[&_tr:nth-child(even)]:bg-muted/25 [&_tr]:transition-[background-color,box-shadow] [&_tr]:duration-200 [&_tr:hover]:bg-primary/5 [&_tr:hover]:shadow-[inset_3px_0_0_0_var(--primary)]",
+        // Ritmo visual de fila: zebra bien marcada + hover notorio con acento
+        // de marca lateral, aplicado solo al cuerpo (no al encabezado) porque
+        // TableRow es el mismo primitivo para ambos. El --border global es
+        // casi invisible sobre blanco, así que las líneas y el zebrado usan
+        // muted-foreground con más presencia.
+        "[&_tr:nth-child(even)]:bg-muted/60 [&_tr]:transition-[background-color,box-shadow] [&_tr]:duration-200 [&_tr:hover]:bg-primary/10 [&_tr:hover]:shadow-[inset_3px_0_0_0_var(--primary)]",
         className
       )}
       {...props}
@@ -51,7 +53,7 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
     <tfoot
       data-slot="table-footer"
       className={cn(
-        "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
+        "border-t-2 border-t-muted-foreground/25 bg-muted font-medium [&>tr]:last:border-b-0",
         className
       )}
       {...props}
@@ -64,7 +66,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b border-border has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        "border-b border-muted-foreground/20 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
         className
       )}
       {...props}
