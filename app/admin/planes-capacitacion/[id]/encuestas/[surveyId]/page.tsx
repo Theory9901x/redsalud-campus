@@ -42,7 +42,7 @@ export default async function AdminEncuestaDetallePage({
         {survey.trainingActivity ? survey.trainingActivity.title : survey.trainingPlan.title}
       </Link>
 
-      <div className="surface surface-accent-top p-6">
+      <div className="surface-panel surface-accent-top p-6">
         <h1 className="font-display text-2xl font-extrabold text-foreground">{survey.title}</h1>
         {survey.description && <p className="mt-1 text-sm text-muted-foreground">{survey.description}</p>}
         <div className="mt-4 flex flex-wrap items-center gap-5 text-sm text-muted-foreground">

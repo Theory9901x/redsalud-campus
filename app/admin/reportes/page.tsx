@@ -12,6 +12,7 @@ import {
 import { ENROLLMENT_STATUS_LABELS } from "@/components/cursos/labels";
 import { CERTIFICATE_STATUS_LABELS } from "@/components/certificados/labels";
 import { StaggerSections } from "@/components/brand/stagger-sections";
+import { AdminPageHeader } from "@/components/admin/page-header";
 
 const PREVIEW_LIMIT = 15;
 
@@ -82,12 +83,10 @@ export default async function ReportesPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold text-foreground">Reportes</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Vista previa de los primeros {PREVIEW_LIMIT} registros. Exporta cada reporte a CSV para verlo completo.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Reportes"
+        description={`Vista previa de los primeros ${PREVIEW_LIMIT} registros. Exporta cada reporte a CSV para verlo completo.`}
+      />
 
       <StaggerSections className="space-y-8">
       {/* Estudiantes por curso */}

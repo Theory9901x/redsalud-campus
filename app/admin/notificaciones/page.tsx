@@ -4,6 +4,7 @@ import { NotificationForm } from "@/components/admin/notification-form";
 import { DeleteNotificationButton } from "@/components/admin/delete-notification-button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/brand/empty-state";
+import { AdminPageHeader } from "@/components/admin/page-header";
 import type { NotificationSeverity } from "@prisma/client";
 
 const SEVERITY_LABELS: Record<NotificationSeverity, string> = {
@@ -45,12 +46,10 @@ export default async function NotificacionesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold text-foreground">Notificaciones</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Emite novedades institucionales a todos los usuarios, a un rol, o a una persona puntual.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Notificaciones"
+        description="Emite novedades institucionales a todos los usuarios, a un rol, o a una persona puntual."
+      />
 
       <NotificationForm users={users} />
 

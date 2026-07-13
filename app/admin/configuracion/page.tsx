@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { InstitutionSettingsForm } from "@/components/admin/institution-settings-form";
 import { InstitutionAssetUploader } from "@/components/admin/institution-asset-uploader";
 import { uploadInstitutionLogoAction, uploadInstitutionSignatureAction } from "@/app/admin/configuracion/actions";
+import { AdminPageHeader } from "@/components/admin/page-header";
 
 export default async function ConfiguracionPage() {
   const settings = await prisma.institutionSettings.upsert({
@@ -12,12 +13,10 @@ export default async function ConfiguracionPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold text-foreground">Configuración institucional</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Estos datos aparecen impresos en todos los certificados emitidos.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Configuración institucional"
+        description="Estos datos aparecen impresos en todos los certificados emitidos."
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <InstitutionAssetUploader

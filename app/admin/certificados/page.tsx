@@ -15,6 +15,7 @@ import { RevokeCertificateDialog } from "@/components/certificados/revoke-certif
 import { restoreCertificateAction, regenerateCertificateAction } from "@/app/admin/certificados/actions";
 import { CERTIFICATE_STATUS_LABELS, CERTIFICATE_STATUS_CLASSES } from "@/components/certificados/labels";
 import { StaggerSections } from "@/components/brand/stagger-sections";
+import { AdminPageHeader } from "@/components/admin/page-header";
 import { cn } from "@/lib/utils";
 import type { CertificateStatus, Prisma } from "@prisma/client";
 
@@ -48,18 +49,16 @@ export default async function AdminCertificadosPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold text-foreground">Certificados</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Se emiten automáticamente al completar un curso. Puedes buscarlos, anularlos y volver a descargarlos.
-          </p>
-        </div>
-        <Link href="/admin/certificados/plantilla" className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>
-          <LayoutTemplate className="h-4 w-4" />
-          Editar plantilla del certificado
-        </Link>
-      </div>
+      <AdminPageHeader
+        title="Certificados"
+        description="Se emiten automáticamente al completar un curso. Puedes buscarlos, anularlos y volver a descargarlos."
+        action={
+          <Link href="/admin/certificados/plantilla" className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>
+            <LayoutTemplate className="h-4 w-4" />
+            Editar plantilla del certificado
+          </Link>
+        }
+      />
 
       <StaggerSections className="space-y-6">
       <form method="get" className="surface-panel flex flex-wrap items-end gap-3 p-4">

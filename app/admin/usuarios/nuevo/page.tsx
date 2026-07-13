@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { UserForm } from "@/components/admin/user-form";
 import { createUserAction } from "@/app/admin/usuarios/actions";
+import { AdminPageHeader } from "@/components/admin/page-header";
 
 export default function NuevoUsuarioPage() {
   return (
@@ -14,10 +15,10 @@ export default function NuevoUsuarioPage() {
           <ArrowLeft className="h-4 w-4" />
           Volver a usuarios
         </Link>
-        <h1 className="font-display text-2xl font-extrabold text-foreground">Nuevo usuario</h1>
-        <p className="text-sm text-muted-foreground">
-          Se creará la cuenta con una contraseña temporal; el usuario deberá cambiarla al ingresar.
-        </p>
+        <AdminPageHeader
+          title="Nuevo usuario"
+          description="Se creará la cuenta con una contraseña temporal; el usuario deberá cambiarla al ingresar."
+        />
       </div>
 
       <div className="surface max-w-3xl p-6">

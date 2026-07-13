@@ -10,6 +10,7 @@ import { ModuleLessonEditor } from "@/components/cursos/module-lesson-editor";
 import { CoursePublishControls } from "@/components/cursos/course-publish-controls";
 import { COURSE_STATUS_CLASSES, COURSE_STATUS_LABELS } from "@/components/cursos/labels";
 import { updateCourseAction } from "@/app/admin/cursos/actions";
+import { AdminPageHeader } from "@/components/admin/page-header";
 
 export default async function AdminCursoDetallePage({
   params,
@@ -48,19 +49,23 @@ export default async function AdminCursoDetallePage({
           <ArrowLeft className="h-4 w-4" />
           Volver a cursos
         </Link>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-2xl font-extrabold text-foreground">{course.title}</h1>
-          <Badge className={COURSE_STATUS_CLASSES[course.status]}>{COURSE_STATUS_LABELS[course.status]}</Badge>
-          {course.status === "PUBLISHED" && (
-            <Link
-              href={`/cursos/${course.slug}`}
-              target="_blank"
-              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-            >
-              Ver en el catálogo <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
-          )}
-        </div>
+        <AdminPageHeader
+          title={course.title}
+          action={
+            <>
+              <Badge className={COURSE_STATUS_CLASSES[course.status]}>{COURSE_STATUS_LABELS[course.status]}</Badge>
+              {course.status === "PUBLISHED" && (
+                <Link
+                  href={`/cursos/${course.slug}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  Ver en el catálogo <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
+              )}
+            </>
+          }
+        />
       </div>
 
       <CoursePublishControls courseId={course.id} status={course.status} />

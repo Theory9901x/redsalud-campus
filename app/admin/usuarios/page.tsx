@@ -15,6 +15,7 @@ import { RoleBadge } from "@/components/admin/role-badge";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { ToggleStatusButton } from "@/components/admin/toggle-status-button";
 import { StaggerSections } from "@/components/brand/stagger-sections";
+import { AdminPageHeader } from "@/components/admin/page-header";
 import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
 import type { PersonnelType, Prisma, Role, UserStatus } from "@prisma/client";
 
@@ -69,21 +70,19 @@ export default async function UsuariosPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold text-foreground">Usuarios</h1>
-          <p className="text-sm text-muted-foreground">
-            {users.length} {users.length === 1 ? "usuario encontrado" : "usuarios encontrados"}
-          </p>
-        </div>
-        <Link
-          href="/admin/usuarios/nuevo"
-          className={cn(buttonVariants(), "gap-1.5 bg-gradient-to-r from-primary to-teal-400 text-white hover:opacity-90")}
-        >
-          <Plus className="h-4 w-4" />
-          Nuevo usuario
-        </Link>
-      </div>
+      <AdminPageHeader
+        title="Usuarios"
+        description={`${users.length} ${users.length === 1 ? "usuario encontrado" : "usuarios encontrados"}`}
+        action={
+          <Link
+            href="/admin/usuarios/nuevo"
+            className={cn(buttonVariants(), "gap-1.5 bg-gradient-to-r from-primary to-teal-400 text-white hover:opacity-90")}
+          >
+            <Plus className="h-4 w-4" />
+            Nuevo usuario
+          </Link>
+        }
+      />
 
       <StaggerSections className="space-y-6">
       <form

@@ -2,6 +2,7 @@ import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getTrainingDashboardData } from "@/lib/training-dashboard";
 import { getPlanMetricsData } from "@/lib/plan-metrics";
 import { TrainingDashboardView } from "@/components/training-plans/training-dashboard-view";
+import { AdminPageHeader } from "@/components/admin/page-header";
 
 const BASE_PATH = "/admin/planes-capacitacion";
 
@@ -19,12 +20,10 @@ export default async function AdminPlanesCapacitacionDashboardPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold text-foreground">Dashboard de capacitaciones</h1>
-        <p className="text-sm text-muted-foreground">
-          Indicadores reales de todos los planes de la institución: adherencia, cumplimiento y encuestas.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Dashboard de capacitaciones"
+        description="Indicadores reales de todos los planes de la institución: adherencia, cumplimiento y encuestas."
+      />
       <TrainingDashboardView
         data={data}
         basePath={BASE_PATH}

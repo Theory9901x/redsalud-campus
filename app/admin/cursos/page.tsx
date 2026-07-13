@@ -5,6 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CourseAdminTable } from "@/components/cursos/course-admin-table";
 import { StaggerSections } from "@/components/brand/stagger-sections";
+import { AdminPageHeader } from "@/components/admin/page-header";
 import { COURSE_TYPE_LABELS, COURSE_STATUS_LABELS } from "@/components/cursos/labels";
 import type { Prisma, CourseStatus, CourseType } from "@prisma/client";
 
@@ -36,27 +37,25 @@ export default async function AdminCursosPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold text-foreground">Cursos</h1>
-          <p className="text-sm text-muted-foreground">
-            {courses.length} {courses.length === 1 ? "curso" : "cursos"}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/admin/cursos/categorias" className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>
-            <Tag className="h-4 w-4" />
-            Categorías
-          </Link>
-          <Link
-            href="/admin/cursos/nuevo"
-            className={cn(buttonVariants(), "gap-1.5 bg-gradient-to-r from-primary to-teal-400 text-white hover:opacity-90")}
-          >
-            <Plus className="h-4 w-4" />
-            Nuevo curso
-          </Link>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Cursos"
+        description={`${courses.length} ${courses.length === 1 ? "curso" : "cursos"}`}
+        action={
+          <>
+            <Link href="/admin/cursos/categorias" className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>
+              <Tag className="h-4 w-4" />
+              Categorías
+            </Link>
+            <Link
+              href="/admin/cursos/nuevo"
+              className={cn(buttonVariants(), "gap-1.5 bg-gradient-to-r from-primary to-teal-400 text-white hover:opacity-90")}
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo curso
+            </Link>
+          </>
+        }
+      />
 
       <StaggerSections className="space-y-6">
       <form method="get" className="surface-panel flex flex-wrap items-end gap-3 p-4">

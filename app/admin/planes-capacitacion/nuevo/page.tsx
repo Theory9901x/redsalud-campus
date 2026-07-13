@@ -2,6 +2,7 @@ import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getTutorOptions, getDepartmentOptions } from "@/lib/training-plans";
 import { createTrainingPlanAction } from "@/app/admin/planes-capacitacion/actions";
 import { TrainingPlanForm } from "@/components/training-plans/training-plan-form";
+import { AdminPageHeader } from "@/components/admin/page-header";
 
 export default async function NuevoPlanCapacitacionPage() {
   const session = await requireTutorOrAdmin();
@@ -16,10 +17,10 @@ export default async function NuevoPlanCapacitacionPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold text-foreground">Nuevo plan de capacitación</h1>
-        <p className="text-sm text-muted-foreground">Define el cronograma; las actividades se agregan después.</p>
-      </div>
+      <AdminPageHeader
+        title="Nuevo plan de capacitación"
+        description="Define el cronograma; las actividades se agregan después."
+      />
 
       <div className="surface p-6">
         <TrainingPlanForm action={action} tutors={tutors} departments={departments} isAdmin={isAdmin} />

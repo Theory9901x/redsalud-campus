@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { parseCertificateLayout } from "@/lib/certificate-template";
 import { CertificateTemplateBuilder } from "@/components/certificados/certificate-template-builder";
+import { AdminPageHeader } from "@/components/admin/page-header";
 
 export default async function CertificateTemplatePage() {
   const [template, settings] = await Promise.all([
@@ -20,11 +21,10 @@ export default async function CertificateTemplatePage() {
           <ArrowLeft className="h-4 w-4" />
           Volver a certificados
         </Link>
-        <h1 className="font-display text-2xl font-extrabold text-foreground">Plantilla del certificado</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Arrastra los campos del estudiante, el logo, la firma y el código QR para diseñar el certificado que se
-          genera automáticamente. Los cambios aplican a los próximos certificados emitidos y a los que regeneres.
-        </p>
+        <AdminPageHeader
+          title="Plantilla del certificado"
+          description="Arrastra los campos del estudiante, el logo, la firma y el código QR para diseñar el certificado que se genera automáticamente. Los cambios aplican a los próximos certificados emitidos y a los que regeneres."
+        />
       </div>
 
       <CertificateTemplateBuilder

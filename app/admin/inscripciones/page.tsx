@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { AssignEnrollmentForm } from "@/components/admin/assign-enrollment-form";
 import { CancelEnrollmentButton } from "@/components/admin/cancel-enrollment-button";
 import { StaggerSections } from "@/components/brand/stagger-sections";
+import { AdminPageHeader } from "@/components/admin/page-header";
 import { ENROLLMENT_STATUS_LABELS, ENROLLMENT_STATUS_CLASSES } from "@/components/cursos/labels";
 import type { EnrollmentStatus, Prisma } from "@prisma/client";
 
@@ -52,12 +53,7 @@ export default async function InscripcionesPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold text-foreground">Inscripciones</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Asigna estudiantes a los cursos y controla su acceso.
-        </p>
-      </div>
+      <AdminPageHeader title="Inscripciones" description="Asigna estudiantes a los cursos y controla su acceso." />
 
       <StaggerSections className="space-y-6">
       <section className="surface-panel surface-accent-top space-y-4 p-6">

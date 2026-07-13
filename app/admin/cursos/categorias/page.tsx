@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { CategoryFormDialog } from "@/components/admin/category-form-dialog";
 import { ToggleCategoryButton } from "@/components/admin/toggle-category-button";
+import { AdminPageHeader } from "@/components/admin/page-header";
 import { createCategoryAction, updateCategoryAction } from "./actions";
 
 export default async function CategoriasPage() {
@@ -30,16 +31,11 @@ export default async function CategoriasPage() {
           <ArrowLeft className="h-4 w-4" />
           Volver a cursos
         </Link>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-2xl font-extrabold text-foreground">Categorías</h1>
-            <p className="text-sm text-muted-foreground">
-              Organizan el catálogo público de cursos en {categories.length}{" "}
-              {categories.length === 1 ? "categoría" : "categorías"}.
-            </p>
-          </div>
-          <CategoryFormDialog mode="create" action={createCategoryAction} />
-        </div>
+        <AdminPageHeader
+          title="Categorías"
+          description={`Organizan el catálogo público de cursos en ${categories.length} ${categories.length === 1 ? "categoría" : "categorías"}.`}
+          action={<CategoryFormDialog mode="create" action={createCategoryAction} />}
+        />
       </div>
 
       <div className="surface-panel overflow-hidden">

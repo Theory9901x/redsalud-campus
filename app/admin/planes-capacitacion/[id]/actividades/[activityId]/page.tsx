@@ -81,7 +81,7 @@ export default async function AdminActividadDetallePage({
         {activity.plan.title}
       </Link>
 
-      <div className="surface surface-accent-top p-6">
+      <div className="surface-panel surface-accent-top p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="font-display text-2xl font-extrabold text-foreground">{activity.title}</h1>

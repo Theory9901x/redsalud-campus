@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { CourseForm } from "@/components/cursos/course-form";
 import { createCourseAction } from "@/app/admin/cursos/actions";
+import { AdminPageHeader } from "@/components/admin/page-header";
 
 export default async function NuevoCursoPage() {
   const [categories, tutors] = await Promise.all([
@@ -23,10 +24,10 @@ export default async function NuevoCursoPage() {
           <ArrowLeft className="h-4 w-4" />
           Volver a cursos
         </Link>
-        <h1 className="font-display text-2xl font-extrabold text-foreground">Nuevo curso</h1>
-        <p className="text-sm text-muted-foreground">
-          Se crea en borrador. Podrás añadir módulos y lecciones después de guardarlo.
-        </p>
+        <AdminPageHeader
+          title="Nuevo curso"
+          description="Se crea en borrador. Podrás añadir módulos y lecciones después de guardarlo."
+        />
       </div>
 
       <div className="surface max-w-3xl p-6">

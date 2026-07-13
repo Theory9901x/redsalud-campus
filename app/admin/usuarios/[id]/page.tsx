@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { UserForm } from "@/components/admin/user-form";
 import { ResetPasswordDialog } from "@/components/admin/reset-password-dialog";
 import { updateUserAction } from "@/app/admin/usuarios/actions";
+import { AdminPageHeader } from "@/components/admin/page-header";
 
 export default async function EditarUsuarioPage({
   params,
@@ -30,14 +31,11 @@ export default async function EditarUsuarioPage({
           <ArrowLeft className="h-4 w-4" />
           Volver a usuarios
         </Link>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="font-display text-2xl font-extrabold text-foreground">{user.fullName}</h1>
-          <ResetPasswordDialog userId={user.id} userName={user.fullName} />
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Creado el {user.createdAt.toLocaleDateString("es-CO")}
-          {user.lastLoginAt && ` · Último ingreso ${user.lastLoginAt.toLocaleDateString("es-CO")}`}
-        </p>
+        <AdminPageHeader
+          title={user.fullName}
+          description={`Creado el ${user.createdAt.toLocaleDateString("es-CO")}${user.lastLoginAt ? ` · Último ingreso ${user.lastLoginAt.toLocaleDateString("es-CO")}` : ""}`}
+          action={<ResetPasswordDialog userId={user.id} userName={user.fullName} />}
+        />
       </div>
 
       <div className="surface max-w-3xl p-6">

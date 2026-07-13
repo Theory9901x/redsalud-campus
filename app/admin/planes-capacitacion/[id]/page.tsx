@@ -77,7 +77,7 @@ export default async function AdminPlanCapacitacionDetallePage({
         Planes de capacitación
       </Link>
 
-      <div className="surface surface-accent-top p-6">
+      <div className="surface-panel surface-accent-top p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h1 className="font-display text-2xl font-extrabold text-foreground">{plan.title}</h1>
           <Badge className={TRAINING_PLAN_STATUS_CLASSES[plan.status]}>

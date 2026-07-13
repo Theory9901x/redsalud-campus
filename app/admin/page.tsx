@@ -2,6 +2,7 @@ import Link from "next/link";
 import { GraduationCap, UserCog, BookOpen, Award, BadgeCheck, Percent, TrendingUp, Activity } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { MetricCard } from "@/components/admin/metric-card";
+import { AdminPageHeader } from "@/components/admin/page-header";
 import { StaggerGrid } from "@/components/brand/stagger-grid";
 import { EmptyState } from "@/components/brand/empty-state";
 
@@ -89,12 +90,10 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Resumen general del campus virtual de Red Salud Casanare E.S.E.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Dashboard"
+        description="Resumen general del campus virtual de Red Salud Casanare E.S.E."
+      />
 
       <StaggerGrid className="grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Estudiantes" value={totalStudents} icon={GraduationCap} accent="primary" />
