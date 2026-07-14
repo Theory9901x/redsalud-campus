@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { UserFormState } from "@/app/admin/usuarios/actions";
-import type { DocumentType, PersonnelType, Role, UserStatus } from "@prisma/client";
+import type { AdminSection, DocumentType, PersonnelType, Role, UserStatus } from "@prisma/client";
 
 const DOCUMENT_TYPES: { value: DocumentType; label: string }[] = [
   { value: "CC", label: "Cédula de ciudadanía" },
@@ -31,6 +32,17 @@ const PERSONNEL_TYPES: { value: PersonnelType; label: string }[] = [
   { value: "ASISTENCIAL", label: "Asistencial" },
 ];
 
+const ADMIN_SECTION_LABELS: { value: AdminSection; label: string }[] = [
+  { value: "USUARIOS", label: "Usuarios" },
+  { value: "CURSOS", label: "Cursos" },
+  { value: "PLANES_CAPACITACION", label: "Planes de capacitación" },
+  { value: "INSCRIPCIONES", label: "Inscripciones" },
+  { value: "CERTIFICADOS", label: "Certificados" },
+  { value: "NOTIFICACIONES", label: "Notificaciones" },
+  { value: "REPORTES", label: "Reportes" },
+  { value: "CONFIGURACION", label: "Configuración" },
+];
+
 type UserFormValues = {
   fullName: string;
   documentType: DocumentType;
@@ -43,6 +55,7 @@ type UserFormValues = {
   personnelType: PersonnelType;
   role: Role;
   status: UserStatus;
+  restrictedAdminSections: AdminSection[];
 };
 
 const EMPTY_VALUES: UserFormValues = {
@@ -57,6 +70,7 @@ const EMPTY_VALUES: UserFormValues = {
   personnelType: "ADMINISTRATIVO",
   role: "STUDENT",
   status: "ACTIVE",
+  restrictedAdminSections: [],
 };
 
 const initialState: UserFormState = { error: null };
@@ -66,14 +80,18 @@ export function UserForm({
   action,
   defaultValues,
   submitLabel,
+  isOwnAccount,
 }: {
   mode: "create" | "edit";
   action: (prevState: UserFormState, formData: FormData) => Promise<UserFormState>;
   defaultValues?: Partial<UserFormValues>;
   submitLabel: string;
+  /** Si esta ficha es la del propio admin que la está editando: no puede quitarse a sí mismo Usuarios. */
+  isOwnAccount?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const values = { ...EMPTY_VALUES, ...defaultValues };
+  const [role, setRole] = useState<Role>(values.role);
 
   return (
     <form action={formAction} className="space-y-6">
@@ -151,7 +169,8 @@ export function UserForm({
           <select
             id="role"
             name="role"
-            defaultValue={values.role}
+            value={role}
+            onChange={(e) => setRole(e.target.value as Role)}
             className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           >
             {ROLES.map((option) => (
@@ -161,6 +180,42 @@ export function UserForm({
             ))}
           </select>
         </div>
+
+        {role === "ADMIN" && (
+          <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4 sm:col-span-2">
+            <div>
+              <Label>Nivel de administrador</Label>
+              <p className="text-xs text-muted-foreground">
+                Marca las secciones a las que <strong>este admin NO</strong> debe tener acceso. Déjalas todas
+                sin marcar para un administrador principal, con acceso total.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+              {ADMIN_SECTION_LABELS.map((section) => {
+                const isSelfUsuarios = isOwnAccount && section.value === "USUARIOS";
+                return (
+                  <label
+                    key={section.value}
+                    className={`group flex items-center gap-2 text-sm ${isSelfUsuarios ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+                  >
+                    <Checkbox
+                      name="restrictedAdminSections"
+                      value={section.value}
+                      disabled={isSelfUsuarios}
+                      defaultChecked={values.restrictedAdminSections.includes(section.value)}
+                    />
+                    {section.label}
+                  </label>
+                );
+              })}
+            </div>
+            {isOwnAccount && (
+              <p className="text-xs text-muted-foreground">
+                No puedes quitarte a ti mismo el acceso a Usuarios.
+              </p>
+            )}
+          </div>
+        )}
 
         {mode === "edit" && (
           <div className="space-y-1.5">

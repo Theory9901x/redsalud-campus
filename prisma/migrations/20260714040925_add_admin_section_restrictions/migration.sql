@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "AdminSection" AS ENUM ('USUARIOS', 'CURSOS', 'PLANES_CAPACITACION', 'INSCRIPCIONES', 'CERTIFICADOS', 'NOTIFICACIONES', 'REPORTES', 'CONFIGURACION');
+
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "restrictedAdminSections" "AdminSection"[] DEFAULT ARRAY[]::"AdminSection"[];

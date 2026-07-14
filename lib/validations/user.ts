@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+const adminSectionSchema = z.enum([
+  "USUARIOS",
+  "CURSOS",
+  "PLANES_CAPACITACION",
+  "INSCRIPCIONES",
+  "CERTIFICADOS",
+  "NOTIFICACIONES",
+  "REPORTES",
+  "CONFIGURACION",
+]);
+
 export const createUserSchema = z.object({
   fullName: z.string().trim().min(3, "El nombre completo es obligatorio."),
   documentType: z.enum(["CC", "CE", "TI", "PA"]),
@@ -14,6 +25,7 @@ export const createUserSchema = z.object({
   }),
   role: z.enum(["ADMIN", "TUTOR", "STUDENT"]),
   password: z.string().min(8, "La contraseña temporal debe tener al menos 8 caracteres."),
+  restrictedAdminSections: z.array(adminSectionSchema).default([]),
 });
 
 export const updateUserSchema = z.object({
@@ -30,4 +42,5 @@ export const updateUserSchema = z.object({
   }),
   role: z.enum(["ADMIN", "TUTOR", "STUDENT"]),
   status: z.enum(["ACTIVE", "INACTIVE", "BLOCKED"]),
+  restrictedAdminSections: z.array(adminSectionSchema).default([]),
 });

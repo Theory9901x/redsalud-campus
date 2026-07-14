@@ -35,13 +35,14 @@ export async function createUserAction(
     personnelType: formData.get("personnelType"),
     role: formData.get("role"),
     password: formData.get("password"),
+    restrictedAdminSections: formData.getAll("restrictedAdminSections"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   }
 
-  const { password, ...data } = parsed.data;
+  const { password, restrictedAdminSections, ...data } = parsed.data;
   const passwordHash = await bcrypt.hash(password, 10);
 
   try {
@@ -54,6 +55,10 @@ export async function createUserAction(
         department: data.department || null,
         passwordHash,
         mustChangePassword: true,
+        // Las restricciones de sección solo tienen sentido para ADMIN; para
+        // otros roles no hacen nada (el proxy solo las revisa bajo /admin),
+        // pero se guarda vacío para no dejar datos ambiguos.
+        restrictedAdminSections: data.role === "ADMIN" ? restrictedAdminSections : [],
       },
     });
   } catch (error) {
@@ -72,7 +77,7 @@ export async function updateUserAction(
   _prevState: UserFormState,
   formData: FormData
 ): Promise<UserFormState> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsed = updateUserSchema.safeParse({
     fullName: formData.get("fullName"),
@@ -86,13 +91,20 @@ export async function updateUserAction(
     personnelType: formData.get("personnelType"),
     role: formData.get("role"),
     status: formData.get("status"),
+    restrictedAdminSections: formData.getAll("restrictedAdminSections"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   }
 
-  const data = parsed.data;
+  const { restrictedAdminSections, ...data } = parsed.data;
+
+  // Un admin no puede quitarse a sí mismo el acceso a Usuarios: sin esto,
+  // podría dejarse sin forma de revertirlo (nadie más podría editarlo).
+  if (userId === session.user.id && restrictedAdminSections.includes("USUARIOS")) {
+    return { error: "No puedes restringirte a ti mismo el acceso a Usuarios." };
+  }
 
   try {
     await prisma.user.update({
@@ -103,6 +115,7 @@ export async function updateUserAction(
         profession: data.profession || null,
         position: data.position || null,
         department: data.department || null,
+        restrictedAdminSections: data.role === "ADMIN" ? restrictedAdminSections : [],
       },
     });
   } catch (error) {
@@ -161,4 +174,30 @@ export async function resetPasswordAction(userId: string): Promise<{ tempPasswor
 
   revalidatePath(`/admin/usuarios/${userId}`);
   return { tempPassword };
+}
+
+/**
+ * Igual que resetPasswordAction, pero con una contraseña elegida por el
+ * admin en vez de una generada al azar. Sigue obligando el cambio en el
+ * siguiente inicio de sesión: es una contraseña de arranque, no la
+ * definitiva del usuario.
+ */
+export async function setCustomPasswordAction(
+  userId: string,
+  password: string
+): Promise<{ error: string | null }> {
+  await requireAdmin();
+
+  if (password.length < 8) {
+    return { error: "La contraseña debe tener al menos 8 caracteres." };
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash, mustChangePassword: true },
+  });
+
+  revalidatePath(`/admin/usuarios/${userId}`);
+  return { error: null };
 }

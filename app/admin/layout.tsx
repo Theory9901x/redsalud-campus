@@ -9,5 +9,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/login");
   }
 
-  return <AdminShell userName={session.user.name ?? "Administrador"}>{children}</AdminShell>;
+  return (
+    <AdminShell
+      userName={session.user.name ?? "Administrador"}
+      restrictedAdminSections={session.user.restrictedAdminSections}
+    >
+      {children}
+    </AdminShell>
+  );
 }

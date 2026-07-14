@@ -50,25 +50,29 @@ export async function assignEnrollmentsAction(
   // Si ya está ACTIVE, COMPLETED o FAILED, se deja tal cual.
 
   revalidatePath("/admin/inscripciones");
+  for (const userId of studentIds) revalidatePath(`/admin/usuarios/${userId}`);
   return { error: null, success: true };
 }
 
 export async function cancelEnrollmentAction(enrollmentId: string) {
   await requireAdmin();
-  await prisma.enrollment.update({
+  const enrollment = await prisma.enrollment.update({
     where: { id: enrollmentId },
     data: { status: "CANCELLED" },
   });
   revalidatePath("/admin/inscripciones");
+  revalidatePath(`/admin/usuarios/${enrollment.userId}`);
 }
 
 export async function reactivateEnrollmentAction(enrollmentId: string) {
   await requireAdmin();
   // Solo tiene sentido reactivar una inscripción CANCELLED; una ya COMPLETED
   // o FAILED no debe volver a ACTIVE (desincronizaría el certificado ya emitido).
+  const enrollment = await prisma.enrollment.findUniqueOrThrow({ where: { id: enrollmentId } });
   await prisma.enrollment.updateMany({
     where: { id: enrollmentId, status: "CANCELLED" },
     data: { status: "ACTIVE", enrolledAt: new Date(), completedAt: null },
   });
   revalidatePath("/admin/inscripciones");
+  revalidatePath(`/admin/usuarios/${enrollment.userId}`);
 }

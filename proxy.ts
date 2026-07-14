@@ -1,9 +1,23 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import type { Role } from "@prisma/client";
+import type { AdminSection, Role } from "@prisma/client";
 
 const ADMIN_PREFIX = "/admin";
 const TUTOR_PREFIX = "/tutor";
+
+// Prefijos de sección del panel admin que un ADMIN puntual puede tener
+// restringidos (niveles de administrador). El primer prefijo que matchea
+// gana, así que van del más específico al más genérico donde aplica.
+const ADMIN_SECTION_PREFIXES: [string, AdminSection][] = [
+  ["/admin/usuarios", "USUARIOS"],
+  ["/admin/cursos", "CURSOS"],
+  ["/admin/planes-capacitacion", "PLANES_CAPACITACION"],
+  ["/admin/inscripciones", "INSCRIPCIONES"],
+  ["/admin/certificados", "CERTIFICADOS"],
+  ["/admin/notificaciones", "NOTIFICACIONES"],
+  ["/admin/reportes", "REPORTES"],
+  ["/admin/configuracion", "CONFIGURACION"],
+];
 
 function roleHome(role: Role) {
   if (role === "ADMIN") return "/admin";
@@ -31,8 +45,16 @@ export default auth((request) => {
 
   const { role } = session.user;
 
-  if (pathname.startsWith(ADMIN_PREFIX) && role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/no-autorizado", request.url));
+  if (pathname.startsWith(ADMIN_PREFIX)) {
+    if (role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/no-autorizado", request.url));
+    }
+
+    const restricted = session.user.restrictedAdminSections ?? [];
+    const matchedSection = ADMIN_SECTION_PREFIXES.find(([prefix]) => pathname.startsWith(prefix))?.[1];
+    if (matchedSection && restricted.includes(matchedSection)) {
+      return NextResponse.redirect(new URL("/no-autorizado", request.url));
+    }
   }
 
   if (pathname.startsWith(TUTOR_PREFIX) && role !== "ADMIN" && role !== "TUTOR") {

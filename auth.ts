@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import type { PersonnelType, Role } from "@prisma/client";
+import type { AdminSection, PersonnelType, Role } from "@prisma/client";
 import type { DefaultSession } from "next-auth";
 
 declare module "next-auth" {
@@ -11,6 +11,7 @@ declare module "next-auth" {
     role: Role;
     mustChangePassword: boolean;
     personnelType: PersonnelType;
+    restrictedAdminSections: AdminSection[];
   }
   interface Session {
     user: {
@@ -18,6 +19,7 @@ declare module "next-auth" {
       role: Role;
       mustChangePassword: boolean;
       personnelType: PersonnelType;
+      restrictedAdminSections: AdminSection[];
     } & DefaultSession["user"];
   }
 }
@@ -27,6 +29,7 @@ declare module "@auth/core/jwt" {
     role: Role;
     mustChangePassword: boolean;
     personnelType: PersonnelType;
+    restrictedAdminSections: AdminSection[];
     revalidatedAt: number;
   }
 }
@@ -76,6 +79,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role: user.role,
           mustChangePassword: user.mustChangePassword,
           personnelType: user.personnelType,
+          restrictedAdminSections: user.restrictedAdminSections,
         };
       },
     }),
@@ -86,6 +90,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = user.role;
         token.mustChangePassword = user.mustChangePassword;
         token.personnelType = user.personnelType;
+        token.restrictedAdminSections = user.restrictedAdminSections;
         token.revalidatedAt = Date.now();
         return token;
       }
@@ -103,6 +108,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       token.role = dbUser.role;
       token.mustChangePassword = dbUser.mustChangePassword;
       token.personnelType = dbUser.personnelType;
+      token.restrictedAdminSections = dbUser.restrictedAdminSections;
       token.revalidatedAt = Date.now();
       return token;
     },
@@ -111,6 +117,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.role = token.role;
       session.user.mustChangePassword = token.mustChangePassword;
       session.user.personnelType = token.personnelType;
+      session.user.restrictedAdminSections = token.restrictedAdminSections;
       return session;
     },
   },

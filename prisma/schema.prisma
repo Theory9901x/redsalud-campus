@@ -43,6 +43,21 @@ enum PersonnelType {
   ASISTENCIAL
 }
 
+// Secciones del panel admin que se pueden restringir a un ADMIN puntual (para
+// tener "niveles" de administrador: el admin principal no restringe ninguna,
+// un admin junior puede tener varias en su lista de restringidas). Dashboard
+// no aplica: siempre es accesible para cualquier ADMIN.
+enum AdminSection {
+  USUARIOS
+  CURSOS
+  PLANES_CAPACITACION
+  INSCRIPCIONES
+  CERTIFICADOS
+  NOTIFICACIONES
+  REPORTES
+  CONFIGURACION
+}
+
 model User {
   id             String       @id @default(cuid())
   fullName       String
@@ -58,6 +73,10 @@ model User {
   role           Role         @default(STUDENT)
   status         UserStatus   @default(ACTIVE)
   mustChangePassword Boolean  @default(true) // admin crea con contraseña temporal
+  // Solo aplica si role = ADMIN: secciones del panel a las que este admin NO
+  // tiene acceso (vacío = admin principal, con acceso total). Nunca restringe
+  // Dashboard.
+  restrictedAdminSections AdminSection[] @default([])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   lastLoginAt    DateTime?

@@ -16,21 +16,31 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { AdminSection } from "@prisma/client";
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { href: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; section?: AdminSection }[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/usuarios", label: "Usuarios", icon: Users },
-  { href: "/admin/cursos", label: "Cursos", icon: BookOpen },
-  { href: "/admin/planes-capacitacion", label: "Planes de capacitación", icon: CalendarRange },
-  { href: "/admin/inscripciones", label: "Inscripciones", icon: ClipboardList },
-  { href: "/admin/certificados", label: "Certificados", icon: Award },
-  { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell },
-  { href: "/admin/reportes", label: "Reportes", icon: BarChart3 },
-  { href: "/admin/configuracion", label: "Configuración", icon: Settings },
+  { href: "/admin/usuarios", label: "Usuarios", icon: Users, section: "USUARIOS" },
+  { href: "/admin/cursos", label: "Cursos", icon: BookOpen, section: "CURSOS" },
+  { href: "/admin/planes-capacitacion", label: "Planes de capacitación", icon: CalendarRange, section: "PLANES_CAPACITACION" },
+  { href: "/admin/inscripciones", label: "Inscripciones", icon: ClipboardList, section: "INSCRIPCIONES" },
+  { href: "/admin/certificados", label: "Certificados", icon: Award, section: "CERTIFICADOS" },
+  { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell, section: "NOTIFICACIONES" },
+  { href: "/admin/reportes", label: "Reportes", icon: BarChart3, section: "REPORTES" },
+  { href: "/admin/configuracion", label: "Configuración", icon: Settings, section: "CONFIGURACION" },
 ];
 
-export function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function AdminSidebar({
+  open,
+  onClose,
+  restrictedSections,
+}: {
+  open: boolean;
+  onClose: () => void;
+  restrictedSections: AdminSection[];
+}) {
   const pathname = usePathname();
+  const items = NAV_ITEMS.filter((item) => !item.section || !restrictedSections.includes(item.section));
 
   return (
     <>
@@ -62,7 +72,7 @@ export function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => 
         </div>
 
         <nav className="flex-1 space-y-1 px-3">
-          {NAV_ITEMS.map((item) => {
+          {items.map((item) => {
             const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
