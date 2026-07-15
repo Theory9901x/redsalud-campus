@@ -15,6 +15,7 @@ import { CourseDetailCard } from "@/components/cursos/course-detail-card";
 import { CourseCreatorCard } from "@/components/cursos/course-creator-card";
 import { CourseLessonAccordion } from "@/components/cursos/course-lesson-accordion";
 import { PublicCoursesShell } from "@/components/cursos/public-courses-shell";
+import { ShareCourseButton } from "@/components/cursos/share-course-button";
 import { coursePhotoTransitionName } from "@/lib/view-transition-names";
 import {
   COURSE_TYPE_LABELS,
@@ -27,6 +28,15 @@ function roleHome(role: string | undefined) {
   if (role === "ADMIN") return "/admin";
   if (role === "TUTOR") return "/tutor";
   return "/inicio";
+}
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase())
+    .join("");
 }
 
 export default async function CursoDetallePage({
@@ -93,54 +103,59 @@ export default async function CursoDetallePage({
         Volver al catálogo
       </Link>
 
-      {/* Header "completo" del curso: banner a todo el ancho con la foto (o el
-          gradiente por tipo de curso) de fondo y un degradado navy encima para
-          que el título siempre sea legible, en vez de una miniatura chica
-          seguida de texto plano. */}
-      <section className="relative isolate overflow-hidden rounded-3xl shadow-sm">
-        <div className="relative h-56 w-full sm:h-72 lg:h-80">
-          {course.imageUrl ? (
-            <>
-              <Image
-                src={course.imageUrl}
-                alt={course.title}
-                fill
-                sizes="100vw"
-                className="object-cover"
-                style={{ viewTransitionName: coursePhotoTransitionName(`/cursos/${slug}`) }}
-                priority
-              />
-              {/* Doble capa: un tinte parejo sobre toda la foto (para que
-                  cualquier imagen subida, por brillante o "ruidosa" que sea,
-                  quede subordinada) más un refuerzo abajo donde vive el texto. */}
-              <div className="absolute inset-0 bg-black/45" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
-            </>
-          ) : (
-            <div className={cn("absolute inset-0 bg-gradient-to-br", colors.gradient)}>
-              <DotPattern className="text-white/15" />
-            </div>
-          )}
-
-          <div className="relative flex h-full flex-col justify-end p-6 sm:p-10">
-            <div className={cn("mb-3 flex h-11 w-11 items-center justify-center rounded-xl shadow-md", colors.iconBox)}>
-              <TypeIcon className="h-5 w-5 text-white" />
-            </div>
+      {/* Tarjeta de título: compacta, sin foto detrás -- separada de la caja
+          de imagen/video de abajo en vez de tener el texto encimado sobre la
+          foto. */}
+      <section className="relative isolate overflow-hidden rounded-2xl bg-navy px-5 py-5 text-white sm:px-8 sm:py-6">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 10% 0%, color-mix(in oklch, var(--primary) 30%, transparent), transparent 55%), radial-gradient(circle at 100% 100%, color-mix(in oklch, var(--success) 18%, transparent), transparent 50%)",
+          }}
+        />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
               {course.category && (
-                <Badge className="border border-white/10 bg-black/40 text-white backdrop-blur">{course.category.name}</Badge>
+                <Badge className="border border-white/15 bg-white/10 text-white">{course.category.name}</Badge>
               )}
               <Badge className={colors.badge}>{COURSE_TYPE_LABELS[course.courseType]}</Badge>
             </div>
-            <h1 className="mt-3 max-w-2xl text-balance font-display text-2xl font-extrabold tracking-tight text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)] sm:text-4xl">
+            <h1 className="mt-2 max-w-2xl text-balance font-display text-xl font-extrabold tracking-tight sm:text-2xl">
               {course.title}
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/90 drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)] sm:text-[15px]">
-              {course.shortDescription}
-            </p>
+            <div className="mt-2.5 flex items-center gap-2 text-sm text-white/70">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-[10px] font-bold text-white">
+                {initials(course.tutor.fullName)}
+              </span>
+              Por <span className="font-medium text-white">{course.tutor.fullName}</span>
+            </div>
           </div>
+          <ShareCourseButton title={course.title} />
         </div>
       </section>
+
+      {/* Caja de imagen/video: el "cuadro" propio de la portada del curso,
+          separado del título de arriba. */}
+      <div className="relative aspect-video w-full overflow-hidden rounded-2xl shadow-sm ring-1 ring-black/5">
+        {course.imageUrl ? (
+          <Image
+            src={course.imageUrl}
+            alt={course.title}
+            fill
+            sizes="(min-width: 1024px) 900px, 100vw"
+            className="object-cover"
+            style={{ viewTransitionName: coursePhotoTransitionName(`/cursos/${slug}`) }}
+            priority
+          />
+        ) : (
+          <div className={cn("flex h-full w-full items-center justify-center bg-gradient-to-br", colors.gradient)}>
+            <DotPattern className="text-white/15" />
+            <TypeIcon className="h-16 w-16 text-white/40" strokeWidth={1.5} />
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <StaggerSections className="space-y-6 lg:col-span-2">
