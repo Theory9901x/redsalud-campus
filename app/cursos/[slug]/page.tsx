@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Clock, Target, Users, Info, User, ClipboardList, Layers } from "lucide-react";
+import { ArrowLeft, Clock, Target, Users, Info, User, ClipboardList, Layers } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
@@ -83,45 +83,65 @@ export default async function CursoDetallePage({
 
   return (
     <div className="space-y-6">
+      <Link
+        href="/cursos"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Volver al catálogo
+      </Link>
+
+      {/* Header "completo" del curso: banner a todo el ancho con la foto (o el
+          gradiente por tipo de curso) de fondo y un degradado navy encima para
+          que el título siempre sea legible, en vez de una miniatura chica
+          seguida de texto plano. */}
+      <section className="relative isolate overflow-hidden rounded-3xl shadow-sm">
+        <div className="relative h-56 w-full sm:h-72 lg:h-80">
+          {course.imageUrl ? (
+            <>
+              <Image
+                src={course.imageUrl}
+                alt={course.title}
+                fill
+                sizes="100vw"
+                className="object-cover"
+                style={{ viewTransitionName: coursePhotoTransitionName(`/cursos/${slug}`) }}
+                priority
+              />
+              {/* Doble capa: un tinte parejo sobre toda la foto (para que
+                  cualquier imagen subida, por brillante o "ruidosa" que sea,
+                  quede subordinada) más un refuerzo abajo donde vive el texto. */}
+              <div className="absolute inset-0 bg-black/45" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
+            </>
+          ) : (
+            <div className={cn("absolute inset-0 bg-gradient-to-br", colors.gradient)}>
+              <DotPattern className="text-white/15" />
+            </div>
+          )}
+
+          <div className="relative flex h-full flex-col justify-end p-6 sm:p-10">
+            <div className={cn("mb-3 flex h-11 w-11 items-center justify-center rounded-xl shadow-md", colors.iconBox)}>
+              <TypeIcon className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {course.category && (
+                <Badge className="border border-white/10 bg-black/40 text-white backdrop-blur">{course.category.name}</Badge>
+              )}
+              <Badge className={colors.badge}>{COURSE_TYPE_LABELS[course.courseType]}</Badge>
+            </div>
+            <h1 className="mt-3 max-w-2xl text-balance font-display text-2xl font-extrabold tracking-tight text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)] sm:text-4xl">
+              {course.title}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/90 drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)] sm:text-[15px]">
+              {course.shortDescription}
+            </p>
+          </div>
+        </div>
+      </section>
+
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <StaggerSections className="space-y-6 lg:col-span-2">
-          <div>
-            <div className="relative aspect-video w-full overflow-hidden rounded-2xl shadow-sm ring-1 ring-black/5">
-              {course.imageUrl ? (
-                <Image
-                  src={course.imageUrl}
-                  alt={course.title}
-                  fill
-                  sizes="(min-width: 1024px) 800px, 100vw"
-                  className="fade-edge object-cover"
-                  style={{ viewTransitionName: coursePhotoTransitionName(`/cursos/${slug}`) }}
-                  priority
-                />
-              ) : (
-                <div className={cn("relative flex h-full w-full items-center justify-center bg-gradient-to-br", colors.gradient)}>
-                  <DotPattern className="text-white/20" />
-                  <TypeIcon className="h-16 w-16 text-white/40" strokeWidth={1.5} />
-                </div>
-              )}
-              <div className={cn("absolute left-4 top-4 flex h-11 w-11 items-center justify-center rounded-xl shadow-md", colors.iconBox)}>
-                <TypeIcon className="h-5 w-5 text-white" />
-              </div>
-            </div>
-
-            <div className="mt-5">
-              <div className="flex flex-wrap items-center gap-1.5">
-                {course.category && <Badge className="bg-secondary text-secondary-foreground">{course.category.name}</Badge>}
-                <Badge className={colors.badge}>{COURSE_TYPE_LABELS[course.courseType]}</Badge>
-              </div>
-              <h1 className="mt-2 font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-                {course.title}
-              </h1>
-              <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
-                {course.shortDescription}
-              </p>
-            </div>
-          </div>
-
           <CourseDetailCard icon={User} iconClassName="bg-primary/10 text-primary" title="Ficha del curso">
             <CourseCreatorCard
               tutorName={course.tutor.fullName}
