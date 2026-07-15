@@ -14,6 +14,7 @@ import { EnrollButton } from "@/components/cursos/enroll-button";
 import { CourseDetailCard } from "@/components/cursos/course-detail-card";
 import { CourseCreatorCard } from "@/components/cursos/course-creator-card";
 import { CourseLessonAccordion } from "@/components/cursos/course-lesson-accordion";
+import { PublicCoursesShell } from "@/components/cursos/public-courses-shell";
 import { coursePhotoTransitionName } from "@/lib/view-transition-names";
 import {
   COURSE_TYPE_LABELS,
@@ -82,6 +83,7 @@ export default async function CursoDetallePage({
   const totalLessons = course.modules.reduce((total, m) => total + m.lessons.length, 0);
 
   return (
+    <PublicCoursesShell maxWidth="max-w-6xl">
     <div className="space-y-6">
       <Link
         href="/cursos"
@@ -272,5 +274,6 @@ export default async function CursoDetallePage({
         </aside>
       </div>
     </div>
+    </PublicCoursesShell>
   );
 }

@@ -4,6 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { CourseCatalogBrowser } from "@/components/cursos/course-catalog-browser";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { EcgPulse } from "@/components/brand/ecg-pulse";
+import { StudentShell } from "@/components/student/student-shell";
+import { AdminShell } from "@/components/admin/admin-shell";
+import { PublicCoursesShell } from "@/components/cursos/public-courses-shell";
+import { getUserAvatarUrl } from "@/lib/avatar";
+import { getNotificationsForUser } from "@/lib/notifications";
 import type { Prisma } from "@prisma/client";
 
 export default async function CatalogoCursosPage() {
@@ -29,7 +34,7 @@ export default async function CatalogoCursosPage() {
   const obligatoriosCount = courses.filter((c) => c.courseType === "OBLIGATORIO").length;
   const firstName = session?.user.name?.split(" ")[0];
 
-  return (
+  const content = (
     <StaggerSections className="space-y-10">
       {/* Mismo tratamiento "signature" que el hero del dashboard de estudiante:
           banda navy con pulso ECG atravesando de fondo, no un bloque de texto
@@ -120,4 +125,41 @@ export default async function CatalogoCursosPage() {
       />
     </StaggerSections>
   );
+
+  // El catálogo (a diferencia del detalle de un curso) preserva el dashboard
+  // de quien ya tiene sesión, para no darle la sensación de haber salido de
+  // la plataforma solo por mirar la lista de cursos.
+  if (session?.user.role === "STUDENT") {
+    const [avatarUrl, settings, { notifications, unreadCount }, user] = await Promise.all([
+      getUserAvatarUrl(session.user.id),
+      prisma.institutionSettings.findUnique({ where: { id: "singleton" } }),
+      getNotificationsForUser(session.user.id, session.user.role),
+      prisma.user.findUnique({ where: { id: session.user.id }, select: { position: true } }),
+    ]);
+
+    return (
+      <StudentShell
+        userName={session.user.name ?? ""}
+        avatarUrl={avatarUrl}
+        logoUrl={settings?.logoUrl ?? null}
+        notifications={notifications}
+        unreadCount={unreadCount}
+        position={user?.position ?? null}
+        personnelType={session.user.personnelType}
+      >
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{content}</main>
+      </StudentShell>
+    );
+  }
+
+  if (session?.user.role === "ADMIN") {
+    return (
+      <AdminShell userName={session.user.name ?? "Administrador"} restrictedAdminSections={session.user.restrictedAdminSections}>
+        <div className="mx-auto w-full max-w-6xl">{content}</div>
+      </AdminShell>
+    );
+  }
+
+  // Visitante anónimo y tutor (sin sidebar propio): header público flotante.
+  return <PublicCoursesShell maxWidth="max-w-5xl">{content}</PublicCoursesShell>;
 }
