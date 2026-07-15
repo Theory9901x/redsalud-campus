@@ -1,6 +1,9 @@
+import { BookOpen, Layers, ShieldCheck, Clock3 } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { CourseCatalogBrowser } from "@/components/cursos/course-catalog-browser";
+import { StaggerSections } from "@/components/brand/stagger-sections";
+import { EcgPulse } from "@/components/brand/ecg-pulse";
 import type { Prisma } from "@prisma/client";
 
 export default async function CatalogoCursosPage() {
@@ -22,23 +25,82 @@ export default async function CatalogoCursosPage() {
     prisma.courseCategory.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
   ]);
 
+  const totalHours = courses.reduce((sum, c) => sum + c.durationHours, 0);
+  const obligatoriosCount = courses.filter((c) => c.courseType === "OBLIGATORIO").length;
+  const firstName = session?.user.name?.split(" ")[0];
+
   return (
-    <div className="space-y-10">
-      <section className="text-center">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
-          <span className="h-1.5 w-1.5 rounded-full bg-success" />
-          Plataforma oficial · RedSalud Casanare E.S.E.
-        </span>
-        <h1 className="mx-auto mt-4 max-w-2xl font-display text-3xl font-extrabold tracking-tight text-navy sm:text-4xl">
-          Todo tu proceso de{" "}
-          <span className="bg-gradient-to-r from-primary to-success bg-clip-text text-transparent">
-            formación institucional
-          </span>{" "}
-          en un solo lugar.
-        </h1>
-        <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
-          Inducción, reinducción y capacitación del talento humano de Red Salud Casanare E.S.E.
-        </p>
+    <StaggerSections className="space-y-10">
+      {/* Mismo tratamiento "signature" que el hero del dashboard de estudiante:
+          banda navy con pulso ECG atravesando de fondo, no un bloque de texto
+          centrado y plano sobre blanco. */}
+      <section className="relative isolate overflow-hidden rounded-3xl bg-navy px-6 py-12 text-white sm:px-10 sm:py-16">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 8% -15%, color-mix(in oklch, var(--primary) 35%, transparent), transparent 55%), radial-gradient(circle at 100% 115%, color-mix(in oklch, var(--success) 22%, transparent), transparent 55%)",
+          }}
+        />
+        <EcgPulse className="absolute inset-x-0 bottom-3 h-10 w-full text-primary/30 sm:bottom-4 sm:h-12" />
+
+        <div className="relative">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-white/80 backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-success" />
+            Plataforma oficial · RedSalud Casanare E.S.E.
+          </span>
+          <h1 className="mt-4 max-w-2xl font-display text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">
+            {firstName ? `Hola, ${firstName}. ` : ""}Todo tu proceso de{" "}
+            <span className="bg-gradient-to-r from-primary to-success bg-clip-text text-transparent">
+              formación institucional
+            </span>{" "}
+            en un solo lugar.
+          </h1>
+          <p className="mt-4 max-w-lg text-sm text-white/70">
+            Inducción, reinducción y capacitación del talento humano de Red Salud Casanare E.S.E.
+          </p>
+
+          <div className="mt-8 grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:gap-8 sm:border-l sm:border-white/15 sm:pl-0">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-primary">
+                <BookOpen className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="font-display text-xl font-extrabold leading-none">{courses.length}</p>
+                <p className="mt-1 text-xs text-white/60">Cursos disponibles</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-success">
+                <Layers className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="font-display text-xl font-extrabold leading-none">{categories.length}</p>
+                <p className="mt-1 text-xs text-white/60">Categorías</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-warning">
+                <Clock3 className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="font-display text-xl font-extrabold leading-none">{totalHours}h</p>
+                <p className="mt-1 text-xs text-white/60">De contenido</p>
+              </div>
+            </div>
+            {obligatoriosCount > 0 && (
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-destructive">
+                  <ShieldCheck className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="font-display text-xl font-extrabold leading-none">{obligatoriosCount}</p>
+                  <p className="mt-1 text-xs text-white/60">Obligatorios</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </section>
 
       <CourseCatalogBrowser
@@ -56,6 +118,6 @@ export default async function CatalogoCursosPage() {
           tutorName: course.tutor.fullName,
         }))}
       />
-    </div>
+    </StaggerSections>
   );
 }
