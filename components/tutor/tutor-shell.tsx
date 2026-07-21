@@ -1,46 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Users,
-  BookOpen,
-  ClipboardList,
-  Award,
-  BarChart3,
-  Bell,
-  Settings,
-  Activity,
-  CalendarRange,
-  X,
-} from "lucide-react";
+import { Activity, BookOpen, CalendarRange, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { AdminSection } from "@prisma/client";
+import { AdminTopbar } from "@/components/admin/topbar";
 
-const NAV_ITEMS: { href: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; section?: AdminSection }[] = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/usuarios", label: "Usuarios", icon: Users, section: "USUARIOS" },
-  { href: "/admin/cursos", label: "Cursos", icon: BookOpen, section: "CURSOS" },
-  { href: "/admin/planes-capacitacion", label: "Planes de capacitación", icon: CalendarRange, section: "PLANES_CAPACITACION" },
-  { href: "/admin/inscripciones", label: "Inscripciones", icon: ClipboardList, section: "INSCRIPCIONES" },
-  { href: "/admin/certificados", label: "Certificados", icon: Award, section: "CERTIFICADOS" },
-  { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell, section: "NOTIFICACIONES" },
-  { href: "/admin/reportes", label: "Reportes", icon: BarChart3, section: "REPORTES" },
-  { href: "/admin/configuracion", label: "Configuración", icon: Settings, section: "CONFIGURACION" },
+const NAV_ITEMS = [
+  { href: "/tutor", label: "Mis cursos", icon: BookOpen, exact: true },
+  { href: "/tutor/planes-capacitacion", label: "Planes de capacitación", icon: CalendarRange, exact: false },
 ];
 
-export function AdminSidebar({
-  open,
-  onClose,
-  restrictedSections,
-}: {
-  open: boolean;
-  onClose: () => void;
-  restrictedSections: AdminSection[];
-}) {
+function TutorSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
-  const items = NAV_ITEMS.filter((item) => !item.section || !restrictedSections.includes(item.section));
 
   return (
     <>
@@ -53,17 +26,14 @@ export function AdminSidebar({
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Resplandor de marca detrás del logo, mismo tratamiento que el login/hero. */}
         <div className="pointer-events-none absolute -left-10 -top-16 h-56 w-56 rounded-full bg-primary/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-10 -right-10 h-48 w-48 rounded-full bg-success/10 blur-3xl" />
 
         <div className="relative flex items-center gap-2 px-6 py-6">
           <Activity className="h-6 w-6 text-sidebar-primary" strokeWidth={2.5} />
           <div className="flex-1">
-            <p className="font-display text-base font-extrabold leading-none text-white">
-              RedSalud Te Forma
-            </p>
-            <p className="mt-1 text-xs text-sidebar-foreground/60">Panel administrativo</p>
+            <p className="font-display text-base font-extrabold leading-none text-white">RedSalud Te Forma</p>
+            <p className="mt-1 text-xs text-sidebar-foreground/60">Panel del tutor</p>
           </div>
           <button
             type="button"
@@ -75,8 +45,8 @@ export function AdminSidebar({
           </button>
         </div>
 
-        <nav className="relative flex-1 space-y-1.5 overflow-y-auto px-3">
-          {items.map((item) => {
+        <nav className="relative flex-1 space-y-1.5 px-3">
+          {NAV_ITEMS.map((item) => {
             const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
@@ -110,5 +80,20 @@ export function AdminSidebar({
         </div>
       </aside>
     </>
+  );
+}
+
+/** Shell del tutor: mismo lenguaje (sidebar navy + topbar glass) que admin y estudiante. */
+export function TutorShell({ userName, children }: { userName: string; children: React.ReactNode }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <div className="flex min-h-screen">
+      <TutorSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="page-canvas flex min-w-0 flex-1 flex-col">
+        <AdminTopbar userName={userName} roleLabel="Tutor" onMenuClick={() => setSidebarOpen(true)} />
+        <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6">{children}</main>
+      </div>
+    </div>
   );
 }

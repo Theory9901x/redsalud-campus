@@ -56,10 +56,12 @@ export function StudentSidebar({
 
   return (
     <>
-      {open && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={onClose} aria-hidden="true" />}
+      {open && (
+        <div className="fixed inset-0 z-40 bg-navy/40 backdrop-blur-sm lg:hidden" onClick={onClose} aria-hidden="true" />
+      )}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col overflow-hidden bg-gradient-to-b from-sidebar to-[#0A1622] text-sidebar-foreground transition-transform duration-200 lg:sticky lg:top-0 lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col overflow-hidden border-r border-white/10 bg-gradient-to-b from-sidebar to-[#0A1622] text-sidebar-foreground transition-transform duration-200 lg:sticky lg:top-0 lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -124,7 +126,9 @@ export function StudentSidebar({
           })}
         </nav>
 
-        <div className="relative px-6 py-4 text-xs text-sidebar-foreground/40">Red Salud Casanare E.S.E.</div>
+        <div className="relative border-t border-white/10 px-6 py-4 text-xs text-sidebar-foreground/40">
+          Red Salud Casanare E.S.E.
+        </div>
       </aside>
     </>
   );
