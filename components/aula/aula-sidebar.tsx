@@ -103,7 +103,7 @@ function ModuleCard({
   const allDone = total > 0 && done === total;
 
   return (
-    <motion.div variants={fadeSlideUp} className="clay-card overflow-hidden">
+    <motion.div variants={fadeSlideUp} className="surface-clay overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
@@ -251,7 +251,7 @@ export function AulaSidebar({
       ))}
 
       {finalQuizzes.length > 0 && (
-        <motion.div variants={fadeSlideUp} className="clay-card overflow-hidden p-3">
+        <motion.div variants={fadeSlideUp} className="surface-clay overflow-hidden p-3">
           <p className="px-1 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Evaluación final
           </p>
@@ -283,7 +283,7 @@ export function AulaSidebar({
       <button
         type="button"
         onClick={() => setDrawerOpen(true)}
-        className="clay-card fixed bottom-5 left-4 z-40 flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-primary lg:hidden"
+        className="surface-clay fixed bottom-5 left-4 z-40 flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-primary lg:hidden"
       >
         <ListTree className="h-4 w-4 text-primary" />
         Contenido del curso

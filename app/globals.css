@@ -155,6 +155,41 @@
   --sidebar-ring: oklch(68.52% 0.1312 233.93);
 }
 
+/*
+ * Escalas del sistema de superficies (ver DESIGN-SYSTEM.md):
+ * radios nombrados (superficie grande / tarjeta / chip) y niveles de sombra
+ * 0-3 reutilizables. Cualquier superficie nueva debe consumir estas
+ * variables, nunca valores mágicos repetidos.
+ */
+:root {
+  --radius-surface: 24px;
+  --radius-card: 20px;
+  --radius-chip: 12px;
+
+  --shadow-0: 0 1px 2px 0 color-mix(in oklch, var(--navy) 5%, transparent);
+  --shadow-1:
+    0 1px 2px 0 color-mix(in oklch, var(--navy) 5%, transparent),
+    0 3px 8px -2px color-mix(in oklch, var(--navy) 6%, transparent),
+    0 10px 24px -8px color-mix(in oklch, var(--navy) 12%, transparent);
+  --shadow-2:
+    0 2px 4px 0 color-mix(in oklch, var(--navy) 6%, transparent),
+    0 6px 12px -2px color-mix(in oklch, var(--navy) 8%, transparent),
+    0 18px 36px -10px color-mix(in oklch, var(--navy) 18%, transparent);
+  --shadow-3:
+    inset 0 1px 0 0 color-mix(in oklch, var(--card) 90%, transparent),
+    0 1px 2px 0 color-mix(in oklch, var(--navy) 6%, transparent),
+    0 16px 32px -12px color-mix(in oklch, var(--navy) 16%, transparent),
+    0 32px 64px -28px color-mix(in oklch, var(--navy) 20%, transparent);
+  --shadow-clay:
+    inset 2px 2px 6px rgba(255, 255, 255, 0.9),
+    inset -2px -2px 6px rgba(0, 0, 0, 0.05),
+    8px 8px 20px rgba(0, 0, 0, 0.08);
+  --shadow-clay-pressed:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.08),
+    inset -2px -2px 6px rgba(255, 255, 255, 0.7),
+    2px 2px 8px rgba(0, 0, 0, 0.04);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -285,8 +320,9 @@
   .page-canvas {
     background-color: oklch(91.30% 0.0173 256.28);
     background-image:
-      radial-gradient(circle at 88% -8%, color-mix(in oklch, var(--navy) 12%, transparent), transparent 45%),
-      radial-gradient(circle at -10% 100%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 45%),
+      radial-gradient(circle at 88% -8%, color-mix(in oklch, var(--navy) 12%, transparent), transparent 50%),
+      radial-gradient(circle 560px at -10% 100%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 70%),
+      radial-gradient(circle 480px at 104% 62%, color-mix(in oklch, var(--success) 10%, transparent), transparent 70%),
       linear-gradient(165deg in oklch, oklch(93.51% 0.0138 258.35) 0%, oklch(90.34% 0.0191 255.54) 50%, oklch(87.74% 0.0233 252.19) 100%);
   }
 
@@ -342,15 +378,19 @@
   }
 
   /*
-   * Extensión del sistema de superficies para el aula (glass + clay):
-   * .surface-glass = panel translúcido que desenfoca lo que tiene detrás
-   * (necesita un fondo con color/blobs debajo, ver .aula-canvas); .clay-card
-   * = tarjeta "blanda" con la doble sombra clay (luz interna arriba-izquierda,
-   * sombra interna abajo-derecha y caída exterior difusa). Son niveles del
-   * mismo sistema, no estilos sueltos: comparten radios y tokens de marca.
+   * Sistema glass + clay (ver DESIGN-SYSTEM.md):
+   * .surface-glass = vidrio sobre fondo claro (necesita blobs de color
+   * debajo, ver .page-canvas/.aula-canvas); .surface-glass-dark = vidrio
+   * sobre navy (heros, sidebar); .surface-clay = tarjeta "blanda" con la
+   * doble sombra clay; .surface-clay-pressed = su estado activo/presionado
+   * (sombras invertidas hacia adentro). Comparten las escalas --radius-* y
+   * --shadow-* definidas en :root; nada de valores mágicos sueltos.
+   * REGLA DE COSTO: glass en CONTENEDORES (pocos por vista), clay en los
+   * ÍTEMS repetidos de listas/grillas (sombras, sin backdrop-filter).
    */
   .surface-glass {
-    @apply relative rounded-[22px] border;
+    @apply relative border;
+    border-radius: var(--radius-surface);
     border-color: color-mix(in oklch, white 60%, transparent);
     background-color: color-mix(in oklch, white 65%, transparent);
     -webkit-backdrop-filter: blur(24px) saturate(150%);
@@ -360,21 +400,50 @@
       0 8px 32px -12px color-mix(in oklch, var(--navy) 18%, transparent);
   }
 
-  .clay-card {
-    @apply relative rounded-[20px] border border-black/5 bg-card;
+  .surface-glass-dark {
+    @apply relative border;
+    border-radius: var(--radius-surface);
+    border-color: color-mix(in oklch, white 15%, transparent);
+    background-color: color-mix(in oklch, white 8%, transparent);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
     box-shadow:
-      inset 2px 2px 6px rgba(255, 255, 255, 0.9),
-      inset -2px -2px 6px rgba(0, 0, 0, 0.05),
-      8px 8px 20px rgba(0, 0, 0, 0.08);
+      inset 0 1px 0 0 color-mix(in oklch, white 12%, transparent),
+      0 8px 32px -12px rgba(0, 0, 0, 0.35);
   }
 
-  /* Chip glass chico (metadatos del hero del aula, porcentaje de avance). */
+  .surface-clay {
+    @apply relative border border-black/5 bg-card;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-clay);
+  }
+
+  .surface-clay-pressed {
+    @apply relative border border-black/5;
+    border-radius: var(--radius-card);
+    background-color: color-mix(in oklch, var(--primary) 8%, var(--card));
+    box-shadow: var(--shadow-clay-pressed);
+  }
+
+  /* Chip glass chico (metadatos de heros, porcentajes, contadores). */
   .chip-glass {
-    @apply inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs font-medium text-white;
+    @apply inline-flex items-center gap-1.5 border px-2.5 py-1 text-xs font-medium text-white;
+    border-radius: var(--radius-chip);
     border-color: color-mix(in oklch, white 25%, transparent);
     background-color: color-mix(in oklch, white 10%, transparent);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
+  }
+
+  /* Halos de acento para CTAs y estados destacados (el rojo queda reservado
+     para "obligatorio / alerta", nunca como color decorativo). */
+  .glow-brand {
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--primary) 30%, transparent),
+      0 4px 18px -2px color-mix(in oklch, var(--primary) 45%, transparent);
+  }
+  .glow-danger {
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--destructive) 30%, transparent),
+      0 4px 18px -2px color-mix(in oklch, var(--destructive) 45%, transparent);
   }
 
   /*

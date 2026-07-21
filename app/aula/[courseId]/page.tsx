@@ -20,7 +20,7 @@ export default async function AulaIndexPage({ params }: { params: Promise<{ cour
     // Estado vacío claymórfico: ícono en blob de color suave + CTA de salida,
     // en vez del rectángulo punteado genérico.
     <div className="flex min-h-[50vh] items-center justify-center">
-      <div className="clay-card flex max-w-md flex-col items-center gap-4 px-8 py-12 text-center">
+      <div className="surface-clay flex max-w-md flex-col items-center gap-4 px-8 py-12 text-center">
         <div
           className="flex h-20 w-20 items-center justify-center rounded-[28px] text-primary"
           style={{
