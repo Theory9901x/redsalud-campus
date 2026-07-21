@@ -43,8 +43,13 @@ export default async function AulaLessonPage({
   const showLink = (lesson.contentType === "LINK" || lesson.contentType === "MIXED") && lesson.externalUrl;
   const embedUrl = lesson.videoUrl ? getYoutubeEmbedUrl(lesson.videoUrl) : null;
 
+  // Un documento embebido (PDF) necesita más lienzo que un texto de lectura:
+  // se ensancha el contenedor y el visor ocupa casi toda la altura de la
+  // ventana, para que se pueda leer sin abrir el archivo en otra pestaña.
+  const isDocumentLesson = Boolean(showFile && lesson.contentType !== "IMAGE");
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className={cn("mx-auto space-y-6", isDocumentLesson ? "max-w-6xl" : "max-w-3xl")}>
       <div className="reading-progress" aria-hidden="true" />
       <div>
         {/* Badges de tipo de contenido + duración + estado de avance. */}
@@ -125,8 +130,11 @@ export default async function AulaLessonPage({
 
         {showFile && lesson.contentType !== "IMAGE" && (
           <div className="space-y-3">
-            <div className="aspect-[4/3] w-full overflow-hidden rounded-xl border border-border shadow-sm">
-              <iframe src={lesson.fileUrl!} title={lesson.title} className="h-full w-full" />
+            {/* Visor a casi toda la altura de la ventana, ajustado al ancho de
+                página y sin panel de miniaturas, para leer el documento aquí
+                mismo sin tener que abrirlo en otra pestaña. */}
+            <div className="h-[82vh] min-h-[520px] w-full overflow-hidden rounded-xl border border-border shadow-sm">
+              <iframe src={`${lesson.fileUrl!}#view=FitH&navpanes=0`} title={lesson.title} className="h-full w-full" />
             </div>
             <Link
               href={lesson.fileUrl!}
