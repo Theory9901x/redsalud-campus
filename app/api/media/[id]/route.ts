@@ -1,4 +1,6 @@
-import { readFile, stat } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { stat } from "node:fs/promises";
+import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -92,7 +94,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 
   // Soporte de rango de bytes para que <video> pueda buscar/adelantar sin
-  // descargar el archivo completo primero (necesario para VIDEO, inocuo para el resto).
+  // descargar el archivo completo primero. Se sirve por STREAMING
+  // (createReadStream), nunca cargando el archivo entero en memoria: un video
+  // de cientos de MB con varios estudiantes reproduciendo a la vez agotaría
+  // la RAM del servidor con readFile().
   const range = request.headers.get("range");
   if (range) {
     const match = range.match(/^bytes=(\d*)-(\d*)$/);
@@ -106,36 +111,28 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       });
     }
 
-    try {
-      const buffer = await readFile(filePath);
-      const chunk = buffer.subarray(start, end + 1);
-      return new NextResponse(new Uint8Array(chunk), {
-        status: 206,
-        headers: {
-          "Content-Type": media.fileType,
-          "Content-Disposition": `inline; filename="${encodeURIComponent(media.fileName)}"`,
-          "Cache-Control": "private, max-age=0, no-cache",
-          "Accept-Ranges": "bytes",
-          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-          "Content-Length": String(chunk.byteLength),
-        },
-      });
-    } catch {
-      return NextResponse.json({ error: "Archivo no encontrado en disco." }, { status: 404 });
-    }
-  }
-
-  try {
-    const buffer = await readFile(filePath);
-    return new NextResponse(new Uint8Array(buffer), {
+    const stream = Readable.toWeb(createReadStream(filePath, { start, end })) as ReadableStream;
+    return new NextResponse(stream, {
+      status: 206,
       headers: {
         "Content-Type": media.fileType,
         "Content-Disposition": `inline; filename="${encodeURIComponent(media.fileName)}"`,
         "Cache-Control": "private, max-age=0, no-cache",
         "Accept-Ranges": "bytes",
+        "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+        "Content-Length": String(end - start + 1),
       },
     });
-  } catch {
-    return NextResponse.json({ error: "Archivo no encontrado en disco." }, { status: 404 });
   }
+
+  const stream = Readable.toWeb(createReadStream(filePath)) as ReadableStream;
+  return new NextResponse(stream, {
+    headers: {
+      "Content-Type": media.fileType,
+      "Content-Disposition": `inline; filename="${encodeURIComponent(media.fileName)}"`,
+      "Cache-Control": "private, max-age=0, no-cache",
+      "Accept-Ranges": "bytes",
+      "Content-Length": String(fileSize),
+    },
+  });
 }
