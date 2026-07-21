@@ -18,8 +18,12 @@ export default async function AulaLayout({
   const data = await getAulaData(courseId, session.user.id);
   if (!data) redirect("/no-autorizado");
 
+  const lessonCount = data.modules.reduce((total, m) => total + m.lessons.length, 0);
+
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    // aula-canvas: lienzo con blobs de marca desenfocados para que las
+    // superficies glass del aula tengan color real que difuminar.
+    <div className="aula-canvas flex min-h-screen flex-col">
       <AulaHeader
         courseId={courseId}
         title={data.course.title}
@@ -27,6 +31,8 @@ export default async function AulaLayout({
         courseType={data.course.courseType}
         durationHours={data.course.durationHours}
         progress={data.enrollment.progressPercentage}
+        moduleCount={data.modules.length}
+        lessonCount={lessonCount}
       />
 
       <div className="flex flex-1 flex-col lg:flex-row">
@@ -37,7 +43,7 @@ export default async function AulaLayout({
           modules={data.modules}
           finalQuizzes={data.finalQuizzes}
         />
-        <main className="flex-1 px-4 py-8 sm:px-8">{children}</main>
+        <main className="min-w-0 flex-1 px-4 py-8 sm:px-8">{children}</main>
       </div>
     </div>
   );

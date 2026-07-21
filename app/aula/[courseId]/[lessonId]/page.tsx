@@ -1,13 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, FileText } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Clock, ExternalLink, FileText } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getAulaData } from "@/lib/aula";
 import { getYoutubeEmbedUrl } from "@/lib/youtube";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { LESSON_CONTENT_TYPE_LABELS, LESSON_CONTENT_TYPE_ICONS } from "@/components/cursos/labels";
 import { markLessonCompleteAction } from "../actions";
 
 export default async function AulaLessonPage({
@@ -45,14 +47,39 @@ export default async function AulaLessonPage({
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="reading-progress" aria-hidden="true" />
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {lessonMeta.completed ? "Completada" : "Lección"}
-        </p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold text-foreground">{lesson.title}</h1>
+        {/* Badges de tipo de contenido + duración + estado de avance. */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(() => {
+            const TypeIcon = LESSON_CONTENT_TYPE_ICONS[lesson.contentType];
+            return (
+              <Badge className="gap-1 bg-primary/10 text-primary">
+                <TypeIcon className="h-3 w-3" />
+                {LESSON_CONTENT_TYPE_LABELS[lesson.contentType]}
+              </Badge>
+            );
+          })()}
+          {lesson.estimatedMinutes !== null && lesson.estimatedMinutes > 0 && (
+            <Badge className="gap-1 bg-secondary text-secondary-foreground">
+              <Clock className="h-3 w-3" />
+              {lesson.estimatedMinutes} min
+            </Badge>
+          )}
+          <Badge
+            className={cn(
+              "gap-1",
+              lessonMeta.completed ? "bg-success/15 text-success" : "bg-warning/15 text-warning-foreground"
+            )}
+          >
+            {lessonMeta.completed && <CheckCircle2 className="h-3 w-3" />}
+            {lessonMeta.completed ? "Completada" : "En curso"}
+          </Badge>
+        </div>
+        <h1 className="mt-2 font-display text-2xl font-extrabold text-foreground">{lesson.title}</h1>
         {lesson.description && <p className="mt-2 text-sm text-muted-foreground">{lesson.description}</p>}
       </div>
 
-      <div className="surface space-y-5 p-6">
+      {/* Tarjeta glass del contenido: difumina los blobs del aula-canvas. */}
+      <div className="surface-glass space-y-5 p-6">
         {showText && lesson.contentBody && (
           <div
             className="prose prose-sm max-w-none"
