@@ -90,9 +90,10 @@ export function CourseCatalogBrowser({
 
   return (
     <div className="space-y-8">
-      {/* Barra de herramientas: buscador + filtros agrupados en su propia superficie, separada del grid. */}
-      <div className="surface flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-        <div className="flex items-center gap-2 rounded-full border border-border/80 bg-secondary/40 px-4 py-2 shadow-inner transition-shadow focus-within:border-primary/40 focus-within:ring-3 focus-within:ring-ring/20 sm:w-72 sm:shrink-0">
+      {/* Barra de herramientas: panel glass flotante; chips de categoría en
+          clay, el activo "presionado" con glow de marca. */}
+      <div className="surface-glass flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div className="flex items-center gap-2 rounded-full border border-border/80 bg-white/60 px-4 py-2 shadow-inner transition-shadow focus-within:border-primary/40 focus-within:ring-3 focus-within:ring-ring/20 sm:w-72 sm:shrink-0">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
           <input
             value={q}
@@ -107,10 +108,10 @@ export function CourseCatalogBrowser({
             type="button"
             onClick={() => setCategoria(null)}
             className={cn(
-              "rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-200",
+              "rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-primary",
               !categoria
-                ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-md shadow-primary/25"
-                : "border border-border bg-white/70 text-foreground/70 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-white hover:shadow-sm"
+                ? "surface-clay-pressed font-semibold text-primary outline outline-2 outline-primary/25"
+                : "surface-clay text-foreground/70 hover:-translate-y-0.5 hover:text-foreground"
             )}
           >
             Todos
@@ -121,10 +122,10 @@ export function CourseCatalogBrowser({
               key={category.id}
               onClick={() => setCategoria(category.id)}
               className={cn(
-                "rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-200",
+                "rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-primary",
                 categoria === category.id
-                  ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-md shadow-primary/25"
-                  : "border border-border bg-white/70 text-foreground/70 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-white hover:shadow-sm"
+                  ? "surface-clay-pressed font-semibold text-primary outline outline-2 outline-primary/25"
+                  : "surface-clay text-foreground/70 hover:-translate-y-0.5 hover:text-foreground"
               )}
             >
               {category.name}

@@ -45,7 +45,9 @@ export function CoursePosterCard({
       // @container: la densidad interna (qué meta se muestra) reacciona al
       // ancho REAL de la tarjeta -grilla de 4 columnas, 2, carrusel o
       // sidebar-, no al viewport completo.
-      className="surface-hover group @container relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-2xl shadow-md shadow-black/15 ring-1 ring-black/5"
+      // Hover: elevación (surface-hover) + escala sutil + brillo del borde con
+      // color de marca, en 300ms.
+      className="surface-hover group @container relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-2xl shadow-md shadow-black/15 ring-1 ring-black/5 transition-[scale,box-shadow] duration-300 hover:scale-[1.02] hover:ring-primary/40"
     >
       <div className="absolute inset-0">
         {imageUrl ? (

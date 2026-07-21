@@ -39,7 +39,7 @@ export default async function CatalogoCursosPage() {
       {/* Mismo tratamiento "signature" que el hero del dashboard de estudiante:
           banda navy con pulso ECG atravesando de fondo, no un bloque de texto
           centrado y plano sobre blanco. */}
-      <section className="relative isolate overflow-hidden rounded-3xl bg-navy px-6 py-12 text-white sm:px-10 sm:py-16">
+      <section className="noise-overlay relative isolate overflow-hidden rounded-3xl bg-navy px-6 py-12 text-white sm:px-10 sm:py-16">
         <div
           className="pointer-events-none absolute inset-0"
           style={{
@@ -47,6 +47,9 @@ export default async function CatalogoCursosPage() {
               "radial-gradient(circle at 8% -15%, color-mix(in oklch, var(--primary) 35%, transparent), transparent 55%), radial-gradient(circle at 100% 115%, color-mix(in oklch, var(--success) 22%, transparent), transparent 55%)",
           }}
         />
+        {/* Orbes de luz difuminados detrás del contenido, parientes del login/aula. */}
+        <div className="pointer-events-none absolute -left-20 top-1/3 h-64 w-64 rounded-full bg-primary/30 blur-[90px]" />
+        <div className="pointer-events-none absolute -top-24 right-[20%] h-56 w-56 rounded-full bg-success/20 blur-[100px]" />
         <EcgPulse className="absolute inset-x-0 bottom-3 h-10 w-full text-primary/30 sm:bottom-4 sm:h-12" />
 
         <div className="relative">
@@ -65,9 +68,11 @@ export default async function CatalogoCursosPage() {
             Inducción, reinducción y capacitación del talento humano de Red Salud Casanare E.S.E.
           </p>
 
-          <div className="mt-8 grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:gap-8 sm:border-l sm:border-white/15 sm:pl-0">
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-primary">
+          {/* Estadísticas en mini-tarjetas glass con ícono en contenedor de
+              color propio: con peso visual, no números flotando sueltos. */}
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+            <div className="surface-glass-dark flex items-center gap-3 rounded-2xl px-4 py-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/25 text-primary">
                 <BookOpen className="h-4 w-4" />
               </span>
               <div>
@@ -75,8 +80,8 @@ export default async function CatalogoCursosPage() {
                 <p className="mt-1 text-xs text-white/60">Cursos disponibles</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-success">
+            <div className="surface-glass-dark flex items-center gap-3 rounded-2xl px-4 py-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-success/25 text-success">
                 <Layers className="h-4 w-4" />
               </span>
               <div>
@@ -84,8 +89,8 @@ export default async function CatalogoCursosPage() {
                 <p className="mt-1 text-xs text-white/60">Categorías</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-warning">
+            <div className="surface-glass-dark flex items-center gap-3 rounded-2xl px-4 py-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-warning/25 text-warning">
                 <Clock3 className="h-4 w-4" />
               </span>
               <div>
@@ -94,8 +99,8 @@ export default async function CatalogoCursosPage() {
               </div>
             </div>
             {obligatoriosCount > 0 && (
-              <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-destructive">
+              <div className="surface-glass-dark glow-danger flex items-center gap-3 rounded-2xl px-4 py-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-destructive/25 text-red-300">
                   <ShieldCheck className="h-4 w-4" />
                 </span>
                 <div>
