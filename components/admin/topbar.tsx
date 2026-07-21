@@ -15,15 +15,18 @@ import {
 import { signOutAction } from "@/lib/auth-actions";
 import { initials } from "@/lib/initials";
 
-/** Topbar de los paneles de gestión (admin y tutor: cambia solo roleLabel). */
+/** Topbar de los paneles de gestión (admin y tutor: cambian roleLabel y breadcrumb). */
 export function AdminTopbar({
   userName,
   onMenuClick,
   roleLabel = "Administrador",
+  breadcrumb,
 }: {
   userName: string;
   onMenuClick: () => void;
   roleLabel?: string;
+  /** Sección actual, mostrada a la izquierda (p. ej. "Panel · Mis cursos"). */
+  breadcrumb?: string;
 }) {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -46,6 +49,10 @@ export function AdminTopbar({
       >
         <Menu className="h-6 w-6" />
       </button>
+
+      {breadcrumb && (
+        <p className="hidden min-w-0 flex-1 truncate text-sm font-medium text-muted-foreground lg:block">{breadcrumb}</p>
+      )}
 
       <div className="flex flex-1 items-center justify-end">
         {/* Bloque de usuario como píldora clay clickeable con menú. */}

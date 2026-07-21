@@ -45,7 +45,7 @@ export default async function TutorCursoDetallePage({
     <div className="space-y-6">
       <div>
         <Link
-          href="/tutor"
+          href="/tutor/cursos"
           className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
