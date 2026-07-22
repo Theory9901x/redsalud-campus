@@ -597,6 +597,33 @@
   .mesh-orb { animation: none; }
 }
 
+/*
+ * Entrada escalonada en CSS puro (antes iba con Framer Motion). Cada hijo
+ * directo se desvanece y sube con un retardo creciente; el índice lo fija el
+ * componente con la variable --i. Se pasó a CSS porque estos dos envoltorios
+ * se usan en 19 vistas y arrastraban framer-motion al bundle inicial de casi
+ * toda la aplicación.
+ */
+.stagger-in > * {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: stagger-appear var(--duration-signature, 0.4s) var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+@keyframes stagger-appear {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stagger-in > * {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Relleno de la barra de progreso del aula: el degradado se desplaza en bucle. */
 .progress-fill-animated {
   background: linear-gradient(90deg in oklch, var(--primary), var(--success), var(--primary));

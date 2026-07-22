@@ -1,24 +1,19 @@
-"use client";
-
-import { Children } from "react";
-import { motion } from "framer-motion";
-import { staggerContainer, fadeSlideUp } from "@/lib/motion";
+import { Children, isValidElement } from "react";
 import { cn } from "@/lib/utils";
 
+/** Igual que StaggerSections pero para una grilla. También sin JavaScript. */
 export function StaggerGrid({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <motion.div
-      variants={staggerContainer}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "-40px" }}
-      className={cn("grid", className)}
-    >
-      {Children.map(children, (child) => (
-        <motion.div variants={fadeSlideUp} className="view-fade-in">
-          {child}
-        </motion.div>
-      ))}
-    </motion.div>
+    <div className={cn("stagger-in grid", className)}>
+      {Children.map(children, (child, index) =>
+        isValidElement(child) ? (
+          <div className="view-fade-in" style={{ "--i": index } as React.CSSProperties}>
+            {child}
+          </div>
+        ) : (
+          child
+        )
+      )}
+    </div>
   );
 }

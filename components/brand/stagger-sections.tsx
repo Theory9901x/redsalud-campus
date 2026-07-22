@@ -1,17 +1,22 @@
-"use client";
-
-import { Children } from "react";
-import { motion } from "framer-motion";
-import { staggerContainer, fadeSlideUp } from "@/lib/motion";
+import { Children, isValidElement } from "react";
 import { cn } from "@/lib/utils";
 
-/** Igual que StaggerGrid, pero para bloques de sección apilados (no una grilla), animados al montar. */
+/**
+ * Entrada escalonada de bloques apilados. Server Component: la animación es
+ * CSS (.stagger-in en globals.css), así que no lleva JavaScript al cliente.
+ * Antes usaba Framer Motion y por eso convertía en cliente a las 19 vistas
+ * que lo envuelven.
+ */
 export function StaggerSections({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <motion.div variants={staggerContainer} initial="hidden" animate="show" className={cn(className)}>
-      {Children.map(children, (child) => (
-        <motion.div variants={fadeSlideUp}>{child}</motion.div>
-      ))}
-    </motion.div>
+    <div className={cn("stagger-in", className)}>
+      {Children.map(children, (child, index) =>
+        isValidElement(child) ? (
+          <div style={{ "--i": index } as React.CSSProperties}>{child}</div>
+        ) : (
+          child
+        )
+      )}
+    </div>
   );
 }
