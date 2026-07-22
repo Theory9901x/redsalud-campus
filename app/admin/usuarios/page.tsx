@@ -20,7 +20,7 @@ import { TablePagination } from "@/components/admin/table-pagination";
 import { parsePageSize } from "@/lib/pagination";
 import { AutoSearchInput, AutoFilterSelect } from "@/components/admin/auto-search-input";
 import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
-import type { PersonnelType, Prisma, Role, UserStatus } from "@prisma/client";
+import type { PersonnelType, Prisma, Role, TipoVinculacion, UserStatus } from "@prisma/client";
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: "ADMIN", label: "Administrador" },
@@ -32,6 +32,17 @@ const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
   { value: "ACTIVE", label: "Activo" },
   { value: "INACTIVE", label: "Inactivo" },
   { value: "BLOCKED", label: "Bloqueado" },
+];
+
+const VINCULACION_OPTIONS: { value: TipoVinculacion; label: string }[] = [
+  { value: "CARRERA_ADMINISTRATIVA", label: "Carrera administrativa" },
+  { value: "PROVISIONALIDAD", label: "Provisionalidad" },
+  { value: "TEMPORAL", label: "Temporal" },
+  { value: "TRABAJADOR_OFICIAL", label: "Trabajador oficial" },
+  { value: "LIBRE_NOMBRAMIENTO", label: "Libre nombramiento" },
+  { value: "PERIODO_FIJO", label: "Periodo fijo" },
+  { value: "CONTRATO_PRESTACION", label: "Contrato de prestación" },
+  { value: "OTRO", label: "Otro" },
 ];
 
 const PERSONNEL_TYPE_OPTIONS: { value: PersonnelType; label: string }[] = [
@@ -47,11 +58,13 @@ export default async function UsuariosPage({
     role?: string;
     status?: string;
     personnelType?: string;
+    municipio?: string;
+    vinculacion?: string;
     page?: string;
     pageSize?: string;
   }>;
 }) {
-  const { q, role, status, personnelType, page: pageParam, pageSize: pageSizeParam } = await searchParams;
+  const { q, role, status, personnelType, municipio, vinculacion, page: pageParam, pageSize: pageSizeParam } = await searchParams;
 
   const where: Prisma.UserWhereInput = {};
 
@@ -72,6 +85,12 @@ export default async function UsuariosPage({
   if (personnelType) {
     where.personnelType = personnelType as PersonnelType;
   }
+  if (municipio) {
+    where.municipioId = municipio;
+  }
+  if (vinculacion) {
+    where.tipoVinculacion = vinculacion as TipoVinculacion;
+  }
 
   // Paginado: con cientos de personas cargadas, traer la tabla entera hacía
   // lenta la vista y la consulta. Se pide solo la página visible y las
@@ -80,7 +99,7 @@ export default async function UsuariosPage({
   const pageSize = parsePageSize(pageSizeParam);
   const page = Math.max(1, Number(pageParam) || 1);
 
-  const [total, users] = await Promise.all([
+  const [total, users, municipios] = await Promise.all([
     prisma.user.count({ where }),
     prisma.user.findMany({
       where,
@@ -95,10 +114,13 @@ export default async function UsuariosPage({
         email: true,
         position: true,
         personnelType: true,
+        tipoVinculacion: true,
         role: true,
         status: true,
+        municipio: { select: { nombre: true } },
       },
     }),
+    prisma.municipio.findMany({ where: { isActive: true }, orderBy: { nombre: "asc" }, select: { id: true, nombre: true } }),
   ]);
 
   return (
@@ -128,6 +150,16 @@ export default async function UsuariosPage({
         />
         <AutoFilterSelect paramName="role" label="Rol" options={ROLE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
         <AutoFilterSelect paramName="status" label="Estado" options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
+        <AutoFilterSelect
+          paramName="municipio"
+          label="Municipio"
+          options={municipios.map((m) => ({ value: m.id, label: m.nombre }))}
+        />
+        <AutoFilterSelect
+          paramName="vinculacion"
+          label="Vinculación"
+          options={VINCULACION_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+        />
       </div>
 
       <div className="surface-glass overflow-hidden">
@@ -139,6 +171,8 @@ export default async function UsuariosPage({
               <TableHead>Correo</TableHead>
               <TableHead>Cargo</TableHead>
               <TableHead>Personal</TableHead>
+              <TableHead>Municipio</TableHead>
+              <TableHead>Vinculación</TableHead>
               <TableHead>Rol</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="sticky right-0 bg-slate-100 text-right dark:bg-slate-800">Acciones</TableHead>
@@ -147,7 +181,7 @@ export default async function UsuariosPage({
           <TableBody>
             {users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={10} className="py-10 text-center text-muted-foreground">
                   No se encontraron usuarios con esos filtros.
                 </TableCell>
               </TableRow>
@@ -169,6 +203,10 @@ export default async function UsuariosPage({
                   {user.position || "—"}
                 </TableCell>
                 <TableCell className="text-muted-foreground">{PERSONNEL_TYPE_LABELS[user.personnelType]}</TableCell>
+                <TableCell className="text-muted-foreground">{user.municipio?.nombre ?? "—"}</TableCell>
+                <TableCell className="whitespace-nowrap text-muted-foreground">
+                  {VINCULACION_OPTIONS.find((v) => v.value === user.tipoVinculacion)?.label ?? "—"}
+                </TableCell>
                 <TableCell>
                   <RoleBadge role={user.role} />
                 </TableCell>
