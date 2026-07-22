@@ -47,7 +47,7 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
         // TableRow es el mismo primitivo para ambos. Colores planos de la
         // paleta gris (no el --border/--muted del tema, casi invisibles
         // sobre blanco) para que las líneas y el zebrado sean inequívocos.
-        "[&_tr:nth-child(even)]:bg-slate-100 [&_tr]:transition-[background-color,box-shadow] [&_tr]:duration-200 [&_tr:hover]:bg-primary/10 [&_tr:hover]:shadow-[inset_3px_0_0_0_var(--primary)] dark:[&_tr:nth-child(even)]:bg-slate-800/60",
+        "[&_tr:nth-child(odd)]:bg-card [&_tr:nth-child(even)]:bg-slate-100 [&_tr]:transition-[background-color,box-shadow] [&_tr]:duration-200 [&_tr:hover]:bg-primary/10 [&_tr:hover]:shadow-[inset_3px_0_0_0_var(--primary)] dark:[&_tr:nth-child(even)]:bg-slate-800/60",
         className
       )}
       {...props}

@@ -210,10 +210,10 @@ export default async function UsuariosPage({
               <TableHead>Documento</TableHead>
               <TableHead>Correo</TableHead>
               <TableHead>Cargo</TableHead>
-              <TableHead>Tipo de personal</TableHead>
+              <TableHead>Personal</TableHead>
               <TableHead>Rol</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
+              <TableHead className="sticky right-0 bg-slate-100 text-right dark:bg-slate-800">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -234,8 +234,12 @@ export default async function UsuariosPage({
                 <TableCell className="text-muted-foreground">
                   {user.documentType} {user.documentNumber}
                 </TableCell>
-                <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                <TableCell className="text-muted-foreground">{user.position || "—"}</TableCell>
+                <TableCell className="max-w-[190px] truncate text-muted-foreground" title={user.email}>
+                  {user.email}
+                </TableCell>
+                <TableCell className="max-w-[200px] truncate text-muted-foreground" title={user.position ?? ""}>
+                  {user.position || "—"}
+                </TableCell>
                 <TableCell className="text-muted-foreground">{PERSONNEL_TYPE_LABELS[user.personnelType]}</TableCell>
                 <TableCell>
                   <RoleBadge role={user.role} />
@@ -243,14 +247,16 @@ export default async function UsuariosPage({
                 <TableCell>
                   <StatusBadge status={user.status} />
                 </TableCell>
-                <TableCell className="flex justify-end gap-2">
+                <TableCell className="sticky right-0 bg-inherit">
+                  <div className="flex justify-end gap-2">
                   <Link
                     href={`/admin/usuarios/${user.id}`}
                     className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
                   >
                     Editar
                   </Link>
-                  <ToggleStatusButton userId={user.id} status={user.status} />
+                    <ToggleStatusButton userId={user.id} status={user.status} />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

@@ -284,7 +284,9 @@ async function main() {
         passwordHash: await bcrypt.hash(passwordTemporal, 10),
         role: "STUDENT",
         status: "ACTIVE",
-        mustChangePassword: true,
+        // Talento Humano prefiere que el cambio de contraseña sea opcional:
+        // la persona puede cambiarla desde su perfil cuando quiera.
+        mustChangePassword: false,
       },
     });
     creados++;
