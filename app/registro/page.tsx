@@ -8,11 +8,14 @@ import { RegisterForm } from "./register-form";
 export const dynamic = "force-dynamic";
 
 export default async function RegistroPage() {
-  const settings = await prisma.institutionSettings.findUnique({ where: { id: "singleton" } });
+  const [settings, municipios] = await Promise.all([
+    prisma.institutionSettings.findUnique({ where: { id: "singleton" } }),
+    prisma.municipio.findMany({ where: { isActive: true }, orderBy: { nombre: "asc" }, select: { id: true, nombre: true } }),
+  ]);
 
   return (
     <AuthShell logoUrl={settings?.logoUrl ?? null}>
-      <RegisterForm />
+      <RegisterForm municipios={municipios} />
     </AuthShell>
   );
 }

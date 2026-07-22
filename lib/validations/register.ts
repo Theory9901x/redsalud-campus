@@ -12,6 +12,9 @@ export const registerSchema = z
     personnelType: z.enum(["ADMINISTRATIVO", "ASISTENCIAL"], {
       message: "Selecciona el tipo de personal.",
     }),
+    // Obligatorio: Talento Humano mide cobertura por municipio, y un registro
+    // sin él queda fuera de todos los indicadores territoriales.
+    municipioId: z.string().min(1, "Selecciona tu municipio."),
     password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
     confirmPassword: z.string(),
   })

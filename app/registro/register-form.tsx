@@ -18,7 +18,7 @@ const DOCUMENT_TYPES = [
   { value: "PA", label: "Pasaporte" },
 ];
 
-export function RegisterForm() {
+export function RegisterForm({ municipios }: { municipios: { id: string; nombre: string }[] }) {
   const [state, formAction, pending] = useActionState(registerAction, initialState);
 
   return (
@@ -105,6 +105,25 @@ export function RegisterForm() {
             >
               <option value="ADMINISTRATIVO">Administrativo</option>
               <option value="ASISTENCIAL">Asistencial</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="municipioId">Municipio</Label>
+            <select
+              id="municipioId"
+              name="municipioId"
+              required
+              defaultValue=""
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="" disabled>
+                Selecciona tu municipio
+              </option>
+              {municipios.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.nombre}
+                </option>
+              ))}
             </select>
           </div>
         </div>
