@@ -58,13 +58,18 @@ enum AdminSection {
   CONFIGURACION
 }
 
-// Vínculo laboral con la institución. Los PLANTA son los que llevan estrella
-// en las fichas y listados (Fase 7.5).
+// Modalidad de nombramiento, tomada de la columna TIPO NOM del plan de cargos
+// (la leyenda del propio archivo define los códigos). Todo el que está en el
+// plan de cargos ES personal de planta: la estrella de la Fase 7.5 se muestra
+// a cualquiera cuyo tipo NO sea CONTRATO_PRESTACION (los contratistas).
 enum TipoVinculacion {
-  PLANTA
-  CARRERA_ADMINISTRATIVA
-  PROVISIONAL
-  CONTRATO_PRESTACION
+  CARRERA_ADMINISTRATIVA // KA
+  PROVISIONALIDAD // PRO
+  TEMPORAL // TEM
+  TRABAJADOR_OFICIAL // T.O
+  LIBRE_NOMBRAMIENTO // LNR
+  PERIODO_FIJO // P.F
+  CONTRATO_PRESTACION // contratistas: no son de planta, no llevan estrella
   OTRO
 }
 
