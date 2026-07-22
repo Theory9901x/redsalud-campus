@@ -5,6 +5,7 @@ import { AutoFilterSelect } from "@/components/admin/auto-search-input";
 import { KpiCard, DashboardPanel } from "@/components/dashboard/dashboard-kit";
 import { EmptyState } from "@/components/brand/empty-state";
 import { BarrasCumplimiento, BarrasConteo, AreaActividad } from "@/components/reportes/panel-graficos";
+import { BotonInforme } from "@/components/reportes/boton-informe";
 import {
   actividadEnTiempo,
   certificadosPor,
@@ -77,6 +78,7 @@ export default async function CentroDatosPage({
       <AdminPageHeader
         title="Centro de datos"
         description="Cumplimiento, certificados y personal de planta. Todo lo que filtres aquí es lo que sale en el informe."
+        action={<BotonInforme />}
       />
 
       {/* Filtros globales: aplican a todos los paneles. */}
