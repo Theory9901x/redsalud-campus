@@ -16,15 +16,21 @@ export function AssignEnrollmentForm({ courses, students }: { courses: CourseOpt
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const filteredStudents = useMemo(() => {
+  // Solo se PINTA un tramo de la lista. Con cientos de personas, renderizar
+  // todas dejaba cientos de KB de HTML en la página y la volvía lenta; el
+  // buscador es el camino para llegar a alguien concreto.
+  const VISIBLES = 25;
+  const { filteredStudents, totalCoincidencias } = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return students;
-    return students.filter(
-      (s) =>
-        s.fullName.toLowerCase().includes(q) ||
-        s.documentNumber.includes(q) ||
-        s.email.toLowerCase().includes(q)
-    );
+    const coincidencias = !q
+      ? students
+      : students.filter(
+          (s) =>
+            s.fullName.toLowerCase().includes(q) ||
+            s.documentNumber.includes(q) ||
+            s.email.toLowerCase().includes(q)
+        );
+    return { filteredStudents: coincidencias.slice(0, VISIBLES), totalCoincidencias: coincidencias.length };
   }, [search, students]);
 
   function toggle(id: string) {
@@ -73,6 +79,11 @@ export function AssignEnrollmentForm({ courses, students }: { courses: CourseOpt
         <div className="max-h-64 overflow-y-auto rounded-lg border border-border">
           {filteredStudents.length === 0 && (
             <p className="p-3 text-sm text-muted-foreground">Sin resultados.</p>
+          )}
+          {totalCoincidencias > filteredStudents.length && (
+            <p className="border-b border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              Mostrando {filteredStudents.length} de {totalCoincidencias}. Escribe para acotar la búsqueda.
+            </p>
           )}
           {filteredStudents.map((student) => (
             <label

@@ -18,6 +18,7 @@ import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { TablePagination } from "@/components/admin/table-pagination";
 import { parsePageSize } from "@/lib/pagination";
+import { AutoSearchInput, AutoFilterSelect } from "@/components/admin/auto-search-input";
 import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
 import type { PersonnelType, Prisma, Role, UserStatus } from "@prisma/client";
 
@@ -117,90 +118,17 @@ export default async function UsuariosPage({
       />
 
       <StaggerSections className="space-y-6">
-      <form method="get" className="surface-panel flex flex-wrap items-end gap-3 p-4">
-        {/* Al aplicar un filtro se vuelve a la página 1: el offset anterior
-            apunta a un conjunto de resultados que ya no existe. */}
-        <input type="hidden" name="page" value="1" />
-        <input type="hidden" name="pageSize" value={pageSize} />
-        <div className="flex-1 min-w-[200px] space-y-1.5">
-          <label htmlFor="q" className="text-xs font-medium text-muted-foreground">
-            Buscar por nombre, cédula, correo o cargo
-          </label>
-          <input
-            id="q"
-            name="q"
-            defaultValue={q ?? ""}
-            placeholder="Ej. María Gutiérrez, 1015469107, Enfermera Jefe..."
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <label htmlFor="personnelType" className="text-xs font-medium text-muted-foreground">
-            Tipo de personal
-          </label>
-          <select
-            id="personnelType"
-            name="personnelType"
-            defaultValue={personnelType ?? ""}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Todos</option>
-            {PERSONNEL_TYPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-1.5">
-          <label htmlFor="role" className="text-xs font-medium text-muted-foreground">
-            Rol
-          </label>
-          <select
-            id="role"
-            name="role"
-            defaultValue={role ?? ""}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Todos</option>
-            {ROLE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-1.5">
-          <label htmlFor="status" className="text-xs font-medium text-muted-foreground">
-            Estado
-          </label>
-          <select
-            id="status"
-            name="status"
-            defaultValue={status ?? ""}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Todos</option>
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <Button type="submit" variant="secondary">
-          Filtrar
-        </Button>
-        {(q || role || status || personnelType) && (
-          <Link href="/admin/usuarios" className={cn(buttonVariants({ variant: "ghost" }))}>
-            Limpiar
-          </Link>
-        )}
-      </form>
+      {/* Filtros automáticos: se aplican al escribir o elegir, sin botón. */}
+      <div className="surface-panel flex flex-wrap items-end gap-3 p-4">
+        <AutoSearchInput label="Buscar por nombre, cédula, correo o cargo" placeholder="Ej. María Gutiérrez, 1015469107, Enfermera Jefe..." />
+        <AutoFilterSelect
+          paramName="personnelType"
+          label="Tipo de personal"
+          options={PERSONNEL_TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+        />
+        <AutoFilterSelect paramName="role" label="Rol" options={ROLE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
+        <AutoFilterSelect paramName="status" label="Estado" options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
+      </div>
 
       <div className="surface-glass overflow-hidden">
         <Table>

@@ -14,15 +14,20 @@ import { AssignEnrollmentForm } from "@/components/admin/assign-enrollment-form"
 import { CancelEnrollmentButton } from "@/components/admin/cancel-enrollment-button";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { TablePagination } from "@/components/admin/table-pagination";
+import { AutoSearchInput, AutoFilterSelect } from "@/components/admin/auto-search-input";
+import { parsePageSize } from "@/lib/pagination";
 import { ENROLLMENT_STATUS_LABELS, ENROLLMENT_STATUS_CLASSES } from "@/components/cursos/labels";
 import type { EnrollmentStatus, Prisma } from "@prisma/client";
 
 export default async function InscripcionesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ curso?: string; estado?: string; q?: string }>;
+  searchParams: Promise<{ curso?: string; estado?: string; q?: string; page?: string; pageSize?: string }>;
 }) {
-  const { curso, estado, q } = await searchParams;
+  const { curso, estado, q, page: pageParam, pageSize: pageSizeParam } = await searchParams;
+  const pageSize = parsePageSize(pageSizeParam);
+  const page = Math.max(1, Number(pageParam) || 1);
 
   const where: Prisma.EnrollmentWhereInput = {};
   if (curso) where.courseId = curso;
@@ -37,7 +42,7 @@ export default async function InscripcionesPage({
     };
   }
 
-  const [courses, students, enrollments] = await Promise.all([
+  const [courses, students, enrollments, totalEnrollments] = await Promise.all([
     prisma.course.findMany({ orderBy: { title: "asc" }, select: { id: true, title: true } }),
     prisma.user.findMany({
       where: { role: "STUDENT", status: "ACTIVE" },
@@ -47,8 +52,11 @@ export default async function InscripcionesPage({
     prisma.enrollment.findMany({
       where,
       orderBy: { enrolledAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
       include: { user: { select: { fullName: true, documentNumber: true } }, course: { select: { title: true } } },
     }),
+    prisma.enrollment.count({ where }),
   ]);
 
   return (
@@ -68,62 +76,23 @@ export default async function InscripcionesPage({
 
       <section className="space-y-4">
         <h2 className="font-display text-lg font-bold text-foreground">
-          {enrollments.length} {enrollments.length === 1 ? "inscripción" : "inscripciones"}
+          {totalEnrollments} {totalEnrollments === 1 ? "inscripción" : "inscripciones"}
         </h2>
 
-        <form method="get" className="surface-panel flex flex-wrap items-end gap-3 p-4">
-          <div className="flex-1 min-w-[200px] space-y-1.5">
-            <label htmlFor="q" className="text-xs font-medium text-muted-foreground">
-              Buscar estudiante
-            </label>
-            <input
-              id="q"
-              name="q"
-              defaultValue={q ?? ""}
-              placeholder="Nombre, cédula o correo..."
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label htmlFor="curso" className="text-xs font-medium text-muted-foreground">
-              Curso
-            </label>
-            <select
-              id="curso"
-              name="curso"
-              defaultValue={curso ?? ""}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Todos</option>
-              {courses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.title}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label htmlFor="estado" className="text-xs font-medium text-muted-foreground">
-              Estado
-            </label>
-            <select
-              id="estado"
-              name="estado"
-              defaultValue={estado ?? ""}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Todos</option>
-              {Object.entries(ENROLLMENT_STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Button type="submit" variant="secondary">
-            Filtrar
-          </Button>
-        </form>
+        {/* Filtros que se aplican solos al escribir o elegir: sin botón. */}
+        <div className="surface-panel flex flex-wrap items-end gap-3 p-4">
+          <AutoSearchInput label="Buscar estudiante" placeholder="Nombre, cédula o correo..." />
+          <AutoFilterSelect
+            paramName="curso"
+            label="Curso"
+            options={courses.map((c) => ({ value: c.id, label: c.title }))}
+          />
+          <AutoFilterSelect
+            paramName="estado"
+            label="Estado"
+            options={Object.entries(ENROLLMENT_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
+          />
+        </div>
 
         <div className="surface-glass overflow-hidden">
           <Table>
@@ -164,6 +133,7 @@ export default async function InscripcionesPage({
               ))}
             </TableBody>
           </Table>
+          <TablePagination total={totalEnrollments} page={page} pageSize={pageSize} />
         </div>
       </section>
       </StaggerSections>

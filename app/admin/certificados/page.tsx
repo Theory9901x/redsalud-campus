@@ -16,15 +16,20 @@ import { restoreCertificateAction, regenerateCertificateAction } from "@/app/adm
 import { CERTIFICATE_STATUS_LABELS, CERTIFICATE_STATUS_CLASSES } from "@/components/certificados/labels";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { TablePagination } from "@/components/admin/table-pagination";
+import { AutoSearchInput, AutoFilterSelect } from "@/components/admin/auto-search-input";
+import { parsePageSize } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import type { CertificateStatus, Prisma } from "@prisma/client";
 
 export default async function AdminCertificadosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; curso?: string; estado?: string }>;
+  searchParams: Promise<{ q?: string; curso?: string; estado?: string; page?: string; pageSize?: string }>;
 }) {
-  const { q, curso, estado } = await searchParams;
+  const { q, curso, estado, page: pageParam, pageSize: pageSizeParam } = await searchParams;
+  const pageSize = parsePageSize(pageSizeParam);
+  const page = Math.max(1, Number(pageParam) || 1);
 
   const where: Prisma.CertificateWhereInput = {};
   if (curso) where.courseId = curso;
@@ -37,14 +42,16 @@ export default async function AdminCertificadosPage({
     ];
   }
 
-  const [certificates, courses] = await Promise.all([
+  const [certificates, courses, totalCertificates] = await Promise.all([
     prisma.certificate.findMany({
       where,
       orderBy: { issuedAt: "desc" },
       include: { user: { select: { fullName: true, documentNumber: true } }, course: { select: { title: true } } },
-      take: 200,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     }),
     prisma.course.findMany({ orderBy: { title: "asc" }, select: { id: true, title: true } }),
+    prisma.certificate.count({ where }),
   ]);
 
   return (
@@ -61,59 +68,16 @@ export default async function AdminCertificadosPage({
       />
 
       <StaggerSections className="space-y-6">
-      <form method="get" className="surface-panel flex flex-wrap items-end gap-3 p-4">
-        <div className="flex-1 min-w-[220px] space-y-1.5">
-          <label htmlFor="q" className="text-xs font-medium text-muted-foreground">
-            Buscar estudiante, cédula o código
-          </label>
-          <input
-            id="q"
-            name="q"
-            defaultValue={q ?? ""}
-            placeholder="Ej: RSC-2026-..."
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="curso" className="text-xs font-medium text-muted-foreground">
-            Curso
-          </label>
-          <select
-            id="curso"
-            name="curso"
-            defaultValue={curso ?? ""}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Todos</option>
-            {courses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.title}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="estado" className="text-xs font-medium text-muted-foreground">
-            Estado
-          </label>
-          <select
-            id="estado"
-            name="estado"
-            defaultValue={estado ?? ""}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Todos</option>
-            {Object.entries(CERTIFICATE_STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Button type="submit" variant="secondary">
-          Filtrar
-        </Button>
-      </form>
+      {/* Filtros automáticos: sin botón. */}
+      <div className="surface-panel flex flex-wrap items-end gap-3 p-4">
+        <AutoSearchInput label="Buscar" placeholder="Estudiante, cédula o código..." />
+        <AutoFilterSelect paramName="curso" label="Curso" options={courses.map((c) => ({ value: c.id, label: c.title }))} />
+        <AutoFilterSelect
+          paramName="estado"
+          label="Estado"
+          options={Object.entries(CERTIFICATE_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
+        />
+      </div>
 
       <div className="surface-glass overflow-hidden">
         <Table>
@@ -193,6 +157,7 @@ export default async function AdminCertificadosPage({
             ))}
           </TableBody>
         </Table>
+        <TablePagination total={totalCertificates} page={page} pageSize={pageSize} />
       </div>
       </StaggerSections>
     </div>

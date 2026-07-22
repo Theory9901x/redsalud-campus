@@ -6,15 +6,20 @@ import { cn } from "@/lib/utils";
 import { CourseAdminTable } from "@/components/cursos/course-admin-table";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { TablePagination } from "@/components/admin/table-pagination";
+import { AutoSearchInput, AutoFilterSelect } from "@/components/admin/auto-search-input";
+import { parsePageSize } from "@/lib/pagination";
 import { COURSE_TYPE_LABELS, COURSE_STATUS_LABELS } from "@/components/cursos/labels";
 import type { Prisma, CourseStatus, CourseType } from "@prisma/client";
 
 export default async function AdminCursosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; categoria?: string; estado?: string; tipo?: string }>;
+  searchParams: Promise<{ q?: string; categoria?: string; estado?: string; tipo?: string; page?: string; pageSize?: string }>;
 }) {
-  const { q, categoria, estado, tipo } = await searchParams;
+  const { q, categoria, estado, tipo, page: pageParam, pageSize: pageSizeParam } = await searchParams;
+  const pageSize = parsePageSize(pageSizeParam);
+  const page = Math.max(1, Number(pageParam) || 1);
 
   const where: Prisma.CourseWhereInput = {};
   if (q) where.title = { contains: q, mode: "insensitive" };
@@ -22,7 +27,7 @@ export default async function AdminCursosPage({
   if (estado) where.status = estado as CourseStatus;
   if (tipo) where.courseType = tipo as CourseType;
 
-  const [courses, categories] = await Promise.all([
+  const [courses, categories, totalCourses] = await Promise.all([
     prisma.course.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -31,8 +36,11 @@ export default async function AdminCursosPage({
         tutor: { select: { fullName: true } },
         _count: { select: { modules: true, enrollments: true } },
       },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     }),
     prisma.courseCategory.findMany({ orderBy: { name: "asc" } }),
+    prisma.course.count({ where }),
   ]);
 
   return (
@@ -58,86 +66,20 @@ export default async function AdminCursosPage({
       />
 
       <StaggerSections className="space-y-6">
-      <form method="get" className="surface-panel flex flex-wrap items-end gap-3 p-4">
-        <div className="flex-1 min-w-[200px] space-y-1.5">
-          <label htmlFor="q" className="text-xs font-medium text-muted-foreground">
-            Buscar por título
-          </label>
-          <input
-            id="q"
-            name="q"
-            defaultValue={q ?? ""}
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="categoria" className="text-xs font-medium text-muted-foreground">
-            Categoría
-          </label>
-          <select
-            id="categoria"
-            name="categoria"
-            defaultValue={categoria ?? ""}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Todas</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="tipo" className="text-xs font-medium text-muted-foreground">
-            Tipo
-          </label>
-          <select
-            id="tipo"
-            name="tipo"
-            defaultValue={tipo ?? ""}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Todos</option>
-            {Object.entries(COURSE_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="estado" className="text-xs font-medium text-muted-foreground">
-            Estado
-          </label>
-          <select
-            id="estado"
-            name="estado"
-            defaultValue={estado ?? ""}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Todos</option>
-            {Object.entries(COURSE_STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button
-          type="submit"
-          className={cn(buttonVariants({ variant: "secondary" }))}
-        >
-          Filtrar
-        </button>
-        {(q || categoria || estado || tipo) && (
-          <Link href="/admin/cursos" className={cn(buttonVariants({ variant: "ghost" }))}>
-            Limpiar
-          </Link>
-        )}
-      </form>
+      {/* Filtros automáticos: sin botón. */}
+      <div className="surface-panel flex flex-wrap items-end gap-3 p-4">
+        <AutoSearchInput label="Buscar curso" placeholder="Nombre del curso..." />
+        <AutoFilterSelect paramName="categoria" label="Categoría" options={categories.map((c) => ({ value: c.id, label: c.name }))} />
+        <AutoFilterSelect paramName="tipo" label="Tipo" options={Object.entries(COURSE_TYPE_LABELS).map(([value, label]) => ({ value, label }))} />
+        <AutoFilterSelect paramName="estado" label="Estado" options={Object.entries(COURSE_STATUS_LABELS).map(([value, label]) => ({ value, label }))} />
+      </div>
 
-      <CourseAdminTable courses={courses} basePath="/admin/cursos" />
+      <div>
+        <CourseAdminTable courses={courses} basePath="/admin/cursos" />
+        <div className="surface-glass mt-0 rounded-t-none border-t-0">
+          <TablePagination total={totalCourses} page={page} pageSize={pageSize} />
+        </div>
+      </div>
       </StaggerSections>
     </div>
   );
