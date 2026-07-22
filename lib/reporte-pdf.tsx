@@ -148,7 +148,7 @@ function InformeDoc({ datos, logo }: { datos: DatosInforme; logo: string | null 
         </View>
 
         <View style={styles.seccion}>
-          <Text style={styles.seccionTitulo}>Cumplimiento por municipio</Text>
+          <Text style={styles.seccionTitulo}>Cumplimiento de la formación por municipio</Text>
           <Barras filas={datos.cumplimientoMunicipio} />
         </View>
 

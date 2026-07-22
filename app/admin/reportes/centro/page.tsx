@@ -87,7 +87,7 @@ export default async function CentroDatosPage({
     <div className="accent-admin space-y-6">
       <AdminPageHeader
         title="Centro de datos"
-        description="Cumplimiento, certificados y personal de planta. Todo lo que filtres aquí es lo que sale en el informe."
+        description="Cumplimiento de la formación asignada, certificados y personal de planta. Todo lo que filtres aquí es lo que sale en el informe."
         action={<BotonInforme />}
       />
 
@@ -131,7 +131,7 @@ export default async function CentroDatosPage({
 
       {/* A. Cumplimiento */}
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
-        <DashboardPanel title="Cumplimiento por municipio" description="Porcentaje de personas que completaron obligatorios.">
+        <DashboardPanel title="Cumplimiento por municipio" description="Porcentaje de personas que completaron la formación en la que están inscritas.">
           {porMunicipio.length === 0 ? (
             <EmptyState icon={MapPin} title="Sin datos para estos filtros" className="py-10" />
           ) : (
