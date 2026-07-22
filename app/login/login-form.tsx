@@ -35,16 +35,19 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
           <input type="hidden" name="callbackUrl" value={callbackUrl ?? ""} />
 
           <div className="space-y-1.5">
-            <Label htmlFor="email">Correo institucional</Label>
+            <Label htmlFor="email">Correo o usuario</Label>
             <div className="group relative">
               <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+              {/* type="text" y no "email": el personal sin correo propio entra
+                  con un usuario "nombre.apellido", que el navegador rechazaría
+                  como correo inválido. */}
               <Input
                 id="email"
                 name="email"
-                type="email"
-                autoComplete="email"
+                type="text"
+                autoComplete="username"
                 required
-                placeholder="nombre@redsaludcasanare.gov.co"
+                placeholder="nombre@redsaludcasanare.gov.co o nombre.apellido"
                 className="h-12 rounded-xl pl-10 transition-shadow focus-visible:shadow-md"
               />
             </div>

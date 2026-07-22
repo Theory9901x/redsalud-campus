@@ -34,8 +34,11 @@ declare module "@auth/core/jwt" {
   }
 }
 
+// El identificador puede ser el correo o el "usuario" (nombre.apellido) que
+// se asigna al personal sin un correo propio válido. Por eso no se valida como
+// email: se acepta cualquier cadena no vacía y se resuelve contra ambos campos.
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().min(1),
   password: z.string().min(1),
 });
 
@@ -59,9 +62,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(rawCredentials) {
         const parsed = credentialsSchema.safeParse(rawCredentials);
         if (!parsed.success) return null;
-        const { email, password } = parsed.data;
+        const { email: identificador, password } = parsed.data;
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        // Acepta correo o usuario, sin distinguir mayúsculas en el correo.
+        const user = await prisma.user.findFirst({
+          where: { OR: [{ email: identificador.toLowerCase() }, { username: identificador.toLowerCase() }] },
+        });
         if (!user || user.status !== "ACTIVE") return null;
 
         const passwordMatches = await bcrypt.compare(password, user.passwordHash);

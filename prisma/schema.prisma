@@ -112,6 +112,10 @@ model User {
   documentType   DocumentType
   documentNumber String       @unique
   email          String       @unique
+  // Identificador de acceso alterno (p. ej. "nombre.apellido"). Se usa cuando
+  // la persona no tiene un correo válido propio: puede entrar con esto en vez
+  // del correo. Nullable porque la mayoría entra con su correo institucional.
+  username       String?      @unique
   phone          String?
   profession     String?
   position       String? // cargo como texto libre (heredado; ver cargoId)

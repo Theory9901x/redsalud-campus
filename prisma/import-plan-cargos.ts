@@ -82,7 +82,7 @@ type FilaProcesada = {
   documento: string;
   fullName: string;
   email: string;
-  emailGenerado: boolean;
+  username: string | null;
   telefono: string | null;
   cargoNombre: string;
   municipioNombre: string;
@@ -121,6 +121,7 @@ async function main() {
   const procesadas: FilaProcesada[] = [];
   const errores: { fila: number; documento: string; motivo: string }[] = [];
   const correosVistos = new Map<string, string>(); // correo -> documento
+  const usuariosVistos = new Set<string>();
 
   for (let i = 2; i < rows.length; i++) {
     const r = rows[i] ?? [];
@@ -161,15 +162,18 @@ async function main() {
 
     // Correo: se toma el primero si la celda trae varios separados por ; o espacios.
     let email = clean(r[COL.correo]).split(/[;,\s]+/).filter(Boolean)[0]?.toLowerCase() ?? "";
-    let emailGenerado = false;
+    let username: string | null = null;
     const valido = /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email);
     if (!valido || correosVistos.has(email)) {
-      // Sin correo usable o repetido: usuario nombre.apellido en el dominio institucional.
+      // Sin correo usable o repetido: el acceso es un usuario nombre.apellido
+      // (sin @). El correo se deja con un valor único e inutilizable para no
+      // chocar con la restricción unique ni parecer un correo real.
       const base = usuarioDesdeNombre(clean(r[COL.nombre1]), clean(r[COL.apellido1]));
-      email = `${base}@${DOMINIO_INSTITUCIONAL}`;
-      emailGenerado = true;
+      username = base;
       let n = 2;
-      while (correosVistos.has(email)) email = `${base}${n++}@${DOMINIO_INSTITUCIONAL}`;
+      while (usuariosVistos.has(username)) username = `${base}${n++}`;
+      usuariosVistos.add(username);
+      email = `${username}.sin-correo@${DOMINIO_INSTITUCIONAL}`;
     }
     correosVistos.set(email, documento);
 
@@ -181,7 +185,7 @@ async function main() {
       documento,
       fullName,
       email,
-      emailGenerado,
+      username,
       telefono: clean(r[COL.celular]) || null,
       cargoNombre,
       municipioNombre,
@@ -208,7 +212,7 @@ async function main() {
   console.log(`  altas nuevas:      ${altas.length}`);
   console.log(`  actualizaciones:   ${actualizaciones.length}`);
   console.log(`  filas con error:   ${errores.length}`);
-  console.log(`  correos generados: ${procesadas.filter((p) => p.emailGenerado).length}`);
+  console.log(`  usuarios asignados: ${procesadas.filter((p) => p.username).length}`);
   console.log(`\nGrupo poblacional (según columna NIVEL):`);
   console.log(`  ASISTENCIAL:    ${procesadas.filter((p) => p.personnelType === "ASISTENCIAL").length}`);
   console.log(`  ADMINISTRATIVO: ${procesadas.filter((p) => p.personnelType === "ADMINISTRATIVO").length}`);
@@ -218,9 +222,11 @@ async function main() {
   )) console.log(`  ${tipo}: ${n}`);
   console.log(`\nCargos distintos a sembrar: ${cargosUnicos.size}`);
 
-  if (procesadas.filter((p) => p.emailGenerado).length > 0) {
-    console.log(`\nCorreos generados (sin correo usable o repetido):`);
-    procesadas.filter((p) => p.emailGenerado).forEach((p) => console.log(`  fila ${p.fila}: ${p.fullName} -> ${p.email}`));
+  if (procesadas.some((p) => p.username)) {
+    console.log(`\nEntran con USUARIO en vez de correo (su correo no era usable o estaba repetido):`);
+    procesadas
+      .filter((p) => p.username)
+      .forEach((p) => console.log(`  fila ${p.fila}: ${p.fullName} -> usuario "${p.username}"`));
   }
   if (errores.length > 0) {
     console.log(`\nFilas con error (no se importan):`);
@@ -240,7 +246,7 @@ async function main() {
   const cargos = await prisma.cargo.findMany();
   const cargoPorNombre = new Map(cargos.map((c) => [c.nombre, c]));
 
-  const credenciales: string[] = ["documento,nombre,cargo,municipio,grupo,usuario,contrasena_temporal"];
+  const credenciales: string[] = ["documento,nombre,cargo,municipio,grupo,usuario_o_correo,contrasena_temporal"];
   let creados = 0;
   let actualizados = 0;
 
@@ -250,6 +256,7 @@ async function main() {
     const datosComunes = {
       fullName: p.fullName,
       email: p.email,
+      username: p.username,
       phone: p.telefono,
       position: p.cargoNombre,
       personnelType: p.personnelType,
@@ -283,7 +290,7 @@ async function main() {
     creados++;
     const csv = (v: string) => `"${v.replace(/"/g, '""')}"`;
     credenciales.push(
-      [p.documento, p.fullName, p.cargoNombre, p.municipioNombre, p.personnelType, p.email, passwordTemporal]
+      [p.documento, p.fullName, p.cargoNombre, p.municipioNombre, p.personnelType, p.username ?? p.email, passwordTemporal]
         .map((v) => csv(String(v)))
         .join(",")
     );
