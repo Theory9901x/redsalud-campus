@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/admin/status-badge";
 import { ToggleStatusButton } from "@/components/admin/toggle-status-button";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { TablePagination, PAGE_SIZES, DEFAULT_PAGE_SIZE } from "@/components/admin/table-pagination";
 import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
 import type { PersonnelType, Prisma, Role, UserStatus } from "@prisma/client";
 
@@ -39,9 +40,16 @@ const PERSONNEL_TYPE_OPTIONS: { value: PersonnelType; label: string }[] = [
 export default async function UsuariosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; role?: string; status?: string; personnelType?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    role?: string;
+    status?: string;
+    personnelType?: string;
+    page?: string;
+    pageSize?: string;
+  }>;
 }) {
-  const { q, role, status, personnelType } = await searchParams;
+  const { q, role, status, personnelType, page: pageParam, pageSize: pageSizeParam } = await searchParams;
 
   const where: Prisma.UserWhereInput = {};
 
@@ -63,16 +71,41 @@ export default async function UsuariosPage({
     where.personnelType = personnelType as PersonnelType;
   }
 
-  const users = await prisma.user.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-  });
+  // Paginado: con cientos de personas cargadas, traer la tabla entera hacía
+  // lenta la vista y la consulta. Se pide solo la página visible y las
+  // columnas que la tabla realmente usa (antes venían todas, passwordHash
+  // incluido).
+  const pageSize = PAGE_SIZES.includes(Number(pageSizeParam) as (typeof PAGE_SIZES)[number])
+    ? Number(pageSizeParam)
+    : DEFAULT_PAGE_SIZE;
+  const page = Math.max(1, Number(pageParam) || 1);
+
+  const [total, users] = await Promise.all([
+    prisma.user.count({ where }),
+    prisma.user.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      select: {
+        id: true,
+        fullName: true,
+        documentType: true,
+        documentNumber: true,
+        email: true,
+        position: true,
+        personnelType: true,
+        role: true,
+        status: true,
+      },
+    }),
+  ]);
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="Usuarios"
-        description={`${users.length} ${users.length === 1 ? "usuario encontrado" : "usuarios encontrados"}`}
+        description={`${total} ${total === 1 ? "usuario encontrado" : "usuarios encontrados"}`}
         action={
           <Link
             href="/admin/usuarios/nuevo"
@@ -85,10 +118,11 @@ export default async function UsuariosPage({
       />
 
       <StaggerSections className="space-y-6">
-      <form
-        method="get"
-        className="surface-panel flex flex-wrap items-end gap-3 p-4"
-      >
+      <form method="get" className="surface-panel flex flex-wrap items-end gap-3 p-4">
+        {/* Al aplicar un filtro se vuelve a la página 1: el offset anterior
+            apunta a un conjunto de resultados que ya no existe. */}
+        <input type="hidden" name="page" value="1" />
+        <input type="hidden" name="pageSize" value={pageSize} />
         <div className="flex-1 min-w-[200px] space-y-1.5">
           <label htmlFor="q" className="text-xs font-medium text-muted-foreground">
             Buscar por nombre, cédula, correo o cargo
@@ -223,6 +257,7 @@ export default async function UsuariosPage({
             ))}
           </TableBody>
         </Table>
+        <TablePagination total={total} page={page} pageSize={pageSize} />
       </div>
       </StaggerSections>
     </div>
