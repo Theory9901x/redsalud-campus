@@ -181,3 +181,78 @@ export async function actividadEnTiempo(f: FiltrosReporte): Promise<FilaActivida
     ORDER BY dias.d
   `;
 }
+
+export type FilaDetalle = {
+  enrollmentId: string;
+  persona: string;
+  documento: string;
+  municipio: string | null;
+  cargo: string | null;
+  grupo: string;
+  vinculacion: string;
+  esPlanta: boolean;
+  curso: string;
+  estado: string;
+  avance: number;
+};
+
+/**
+ * Tabla de detalle (persona × curso) con TODAS las dimensiones pobladas y
+ * paginada en el servidor. La versión anterior mostraba "los primeros 15"
+ * pero consultaba sin límite por detrás, y dejaba en "—" las columnas que
+ * ahora sí existen.
+ */
+export async function detalleInscripciones(
+  f: FiltrosReporte,
+  opciones: { busqueda?: string; pagina: number; porPagina: number }
+): Promise<{ filas: FilaDetalle[]; total: number }> {
+  const cond: Prisma.Sql[] = [Prisma.sql`u."role" = 'STUDENT'`];
+  if (f.municipioId) cond.push(Prisma.sql`u."municipioId" = ${f.municipioId}`);
+  if (f.grupo) cond.push(Prisma.sql`u."personnelType"::text = ${f.grupo}`);
+  if (f.cargoId) cond.push(Prisma.sql`u."cargoId" = ${f.cargoId}`);
+  if (f.vinculacion) cond.push(Prisma.sql`u."tipoVinculacion"::text = ${f.vinculacion}`);
+  if (f.cursoId) cond.push(Prisma.sql`e."courseId" = ${f.cursoId}`);
+  if (f.desde) cond.push(Prisma.sql`e."enrolledAt" >= ${new Date(f.desde)}`);
+  if (f.hasta) cond.push(Prisma.sql`e."enrolledAt" <= ${new Date(`${f.hasta}T23:59:59`)}`);
+  if (opciones.busqueda) {
+    const patron = `%${opciones.busqueda}%`;
+    cond.push(
+      Prisma.sql`(u."fullName" ILIKE ${patron} OR u."documentNumber" ILIKE ${patron} OR co."title" ILIKE ${patron})`
+    );
+  }
+  const donde = Prisma.join(cond, " AND ");
+
+  const [filas, totales] = await Promise.all([
+    prisma.$queryRaw<FilaDetalle[]>`
+      SELECT
+        e."id" AS "enrollmentId",
+        u."fullName" AS persona,
+        u."documentNumber" AS documento,
+        m."nombre" AS municipio,
+        c."nombre" AS cargo,
+        u."personnelType"::text AS grupo,
+        u."tipoVinculacion"::text AS vinculacion,
+        (u."tipoVinculacion" <> 'CONTRATO_PRESTACION') AS "esPlanta",
+        co."title" AS curso,
+        e."status"::text AS estado,
+        e."progressPercentage"::int AS avance
+      FROM "Enrollment" e
+      JOIN "User" u ON u."id" = e."userId"
+      JOIN "Course" co ON co."id" = e."courseId"
+      LEFT JOIN "Municipio" m ON m."id" = u."municipioId"
+      LEFT JOIN "Cargo" c ON c."id" = u."cargoId"
+      WHERE ${donde}
+      ORDER BY u."fullName" ASC
+      LIMIT ${opciones.porPagina} OFFSET ${(opciones.pagina - 1) * opciones.porPagina}
+    `,
+    prisma.$queryRaw<{ total: number }[]>`
+      SELECT COUNT(*)::int AS total
+      FROM "Enrollment" e
+      JOIN "User" u ON u."id" = e."userId"
+      JOIN "Course" co ON co."id" = e."courseId"
+      WHERE ${donde}
+    `,
+  ]);
+
+  return { filas, total: totales[0]?.total ?? 0 };
+}

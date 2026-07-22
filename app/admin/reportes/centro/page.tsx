@@ -1,13 +1,19 @@
 import { Award, BadgeCheck, MapPin, Percent, Users } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { AdminPageHeader } from "@/components/admin/page-header";
-import { AutoFilterSelect } from "@/components/admin/auto-search-input";
+import { AutoFilterSelect, AutoSearchInput } from "@/components/admin/auto-search-input";
+import { TablePagination } from "@/components/admin/table-pagination";
+import { parsePageSize } from "@/lib/pagination";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { ENROLLMENT_STATUS_LABELS } from "@/components/cursos/labels";
 import { KpiCard, DashboardPanel } from "@/components/dashboard/dashboard-kit";
 import { EmptyState } from "@/components/brand/empty-state";
 import { BarrasCumplimiento, BarrasConteo, AreaActividad } from "@/components/reportes/panel-graficos";
 import { BotonInforme } from "@/components/reportes/boton-informe";
 import {
   actividadEnTiempo,
+  detalleInscripciones,
   certificadosPor,
   cumplimientoPor,
   kpis,
@@ -33,6 +39,8 @@ export default async function CentroDatosPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await searchParams;
+  const porPagina = parsePageSize(sp.pageSize);
+  const pagina = Math.max(1, Number(sp.page) || 1);
   const filtros: FiltrosReporte = {
     desde: sp.desde,
     hasta: sp.hasta,
@@ -53,6 +61,7 @@ export default async function CentroDatosPage({
     certPorCurso,
     planta,
     actividad,
+    detalle,
     municipios,
     cargos,
     cursos,
@@ -65,6 +74,7 @@ export default async function CentroDatosPage({
     certificadosPor("curso", filtros),
     metricasPlanta(filtros),
     actividadEnTiempo(filtros),
+    detalleInscripciones(filtros, { busqueda: sp.q, pagina, porPagina }),
     prisma.municipio.findMany({ where: { isActive: true }, orderBy: { nombre: "asc" }, select: { id: true, nombre: true } }),
     prisma.cargo.findMany({ where: { isActive: true }, orderBy: { nombre: "asc" }, select: { id: true, nombre: true } }),
     prisma.course.findMany({ orderBy: { title: "asc" }, select: { id: true, title: true } }),
@@ -83,6 +93,7 @@ export default async function CentroDatosPage({
 
       {/* Filtros globales: aplican a todos los paneles. */}
       <div className="surface-panel flex flex-wrap items-end gap-3 p-4">
+        <AutoSearchInput label="Buscar persona o curso" placeholder="Nombre, cédula o curso..." />
         <AutoFilterSelect
           paramName="municipio"
           label="Municipio"
@@ -199,6 +210,76 @@ export default async function CentroDatosPage({
             />
           </div>
         )}
+      </DashboardPanel>
+
+      {/* 8.5 Tabla de detalle: mismas dimensiones que los paneles, paginada en servidor. */}
+      <DashboardPanel
+        title="Detalle por persona y curso"
+        description="⭐ marca al personal de planta. Responde a los mismos filtros y al buscador."
+      >
+        <div className="-mx-5 -mb-5 overflow-hidden rounded-b-[var(--radius-surface)]">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Persona</TableHead>
+                <TableHead>Documento</TableHead>
+                <TableHead>Municipio</TableHead>
+                <TableHead>Cargo</TableHead>
+                <TableHead>Grupo</TableHead>
+                <TableHead>Vinculación</TableHead>
+                <TableHead>Curso</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="text-right">Avance</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {detalle.filas.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
+                    No hay registros con estos filtros.
+                  </TableCell>
+                </TableRow>
+              )}
+              {detalle.filas.map((f) => (
+                <TableRow key={f.enrollmentId}>
+                  <TableCell className="max-w-[220px] truncate font-medium text-foreground">
+                    {f.esPlanta && <span title="Personal de planta">⭐ </span>}
+                    {f.persona}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{f.documento}</TableCell>
+                  <TableCell className="text-muted-foreground">{f.municipio ?? "—"}</TableCell>
+                  <TableCell className="max-w-[200px] truncate text-muted-foreground" title={f.cargo ?? ""}>
+                    {f.cargo ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {PERSONNEL_TYPE_LABELS[f.grupo as "ASISTENCIAL"] ?? f.grupo}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                    {VINCULACION_LABELS[f.vinculacion] ?? f.vinculacion}
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate text-muted-foreground" title={f.curso}>
+                    {f.curso}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        f.estado === "COMPLETED"
+                          ? "bg-success/15 text-success"
+                          : f.estado === "FAILED"
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-primary/10 text-primary"
+                      }
+                    >
+                      {ENROLLMENT_STATUS_LABELS[f.estado as "ACTIVE"] ?? f.estado}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">{f.avance}%</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <TablePagination total={detalle.total} page={pagina} pageSize={porPagina} />
+        </div>
       </DashboardPanel>
 
       {/* E. Actividad */}
