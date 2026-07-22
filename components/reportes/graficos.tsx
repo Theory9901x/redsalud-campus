@@ -40,20 +40,34 @@ const tooltipProps = {
 /** Barras de cumplimiento (%) con color según qué tan bajo esté. */
 export function BarrasCumplimiento({
   datos,
+  maximo = 12,
 }: {
   datos: { etiqueta: string; personas: number; completaron: number }[];
+  /** Barras a mostrar. Con más de una docena las etiquetas se encabalgan y el
+   *  gráfico deja de leerse; el resto se resume en una barra "Otros". */
+  maximo?: number;
 }) {
-  const filas = datos.map((d) => ({
+  const ordenados = [...datos].sort((a, b) => b.personas - a.personas);
+  const visibles = ordenados.slice(0, maximo);
+  const resto = ordenados.slice(maximo);
+  if (resto.length > 0) {
+    visibles.push({
+      etiqueta: `Otros (${resto.length})`,
+      personas: resto.reduce((s, d) => s + d.personas, 0),
+      completaron: resto.reduce((s, d) => s + d.completaron, 0),
+    });
+  }
+  const filas = visibles.map((d) => ({
     ...d,
     pct: d.personas > 0 ? Math.round((d.completaron / d.personas) * 100) : 0,
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={Math.max(220, filas.length * 34)}>
+    <ResponsiveContainer width="100%" height={Math.max(220, filas.length * 40)}>
       <BarChart data={filas} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
         <CartesianGrid horizontal={false} stroke="var(--border)" />
         <XAxis type="number" domain={[0, 100]} unit="%" tick={EJE} axisLine={false} tickLine={false} />
-        <YAxis type="category" dataKey="etiqueta" width={150} tick={EJE} axisLine={false} tickLine={false} />
+        <YAxis type="category" dataKey="etiqueta" width={180} tick={EJE} axisLine={false} tickLine={false} interval={0} />
         <Tooltip
           {...tooltipProps}
           formatter={(valor, _nombre, item) => {

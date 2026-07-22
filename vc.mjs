@@ -1,0 +1,22 @@
+import { chromium } from "playwright";
+const BASE = "https://campusvirtual.redsaludteforma.com";
+const SCRATCH="C:/Users/USUARIO/AppData/Local/Temp/claude/d--redsaludlms/0515329b-aad2-41a1-9184-2b88a262b03b/scratchpad";
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport:{width:1500,height:1000} });
+const errors=[]; page.on("console",m=>{if(m.type()==="error")errors.push(m.text())});
+page.on("response",r=>{if(r.status()>=400)errors.push(`${r.url()} ${r.status()}`)});
+await page.goto(`${BASE}/login`,{waitUntil:"networkidle"});
+await page.fill('input[name="email"]',"redsaludteforma@gmail.com");
+await page.fill('input[name="password"]',"redsaludteforma123");
+await page.click('button[type="submit"]'); await page.waitForTimeout(3000);
+const t0=Date.now();
+await page.goto(`${BASE}/admin/reportes/centro`,{waitUntil:"networkidle"});
+await page.waitForTimeout(3000);
+console.log("carga centro de datos:", Date.now()-t0, "ms");
+console.log("gráficos SVG renderizados:", await page.locator(".recharts-surface").count());
+await page.screenshot({ path:`${SCRATCH}/centro.png`, fullPage:true });
+// filtrar por municipio
+await page.selectOption('#municipio',{label:"Yopal"}); await page.waitForTimeout(3000);
+console.log("tras filtrar Yopal, URL:", page.url());
+console.log("errors:", JSON.stringify(errors.slice(0,4)));
+await browser.close();
