@@ -58,6 +58,49 @@ enum AdminSection {
   CONFIGURACION
 }
 
+// Vínculo laboral con la institución. Los PLANTA son los que llevan estrella
+// en las fichas y listados (Fase 7.5).
+enum TipoVinculacion {
+  PLANTA
+  CARRERA_ADMINISTRATIVA
+  PROVISIONAL
+  CONTRATO_PRESTACION
+  OTRO
+}
+
+// Cómo entró la persona a la plataforma: el personal de planta lo provisiona
+// Talento Humano por importación, no se auto-registra.
+enum OrigenRegistro {
+  IMPORTACION
+  AUTO
+}
+
+// Municipio de procedencia. Tabla y no enum: Talento Humano necesita listar,
+// filtrar y medir por municipio, y poder agregar municipios sin migración.
+model Municipio {
+  id           String  @id @default(cuid())
+  nombre       String  @unique
+  departamento String  @default("Casanare")
+  isActive     Boolean @default(true)
+
+  usuarios User[]
+}
+
+// Cargo / tipo de profesional. Tabla y no enum: serán muchísimos y de esto
+// dependen el filtro del catálogo y las métricas cruzadas del centro de datos.
+model Cargo {
+  id       String        @id @default(cuid())
+  nombre   String        @unique
+  // Grupo poblacional al que pertenece el cargo: permite derivar el grupo de
+  // una persona cuando la fila importada no lo traiga explícito.
+  personnelType PersonnelType
+  isActive Boolean       @default(true)
+
+  usuarios User[]
+
+  @@index([personnelType])
+}
+
 model User {
   id             String       @id @default(cuid())
   fullName       String
@@ -66,9 +109,22 @@ model User {
   email          String       @unique
   phone          String?
   profession     String?
-  position       String? // cargo
+  position       String? // cargo como texto libre (heredado; ver cargoId)
   department     String? // dependencia o área
+  // personnelType ES el grupo poblacional (ASISTENCIAL | ADMINISTRATIVO). No
+  // se duplica en un campo nuevo: ya determina qué cursos ve cada persona a
+  // través de Course.targetAudience.
   personnelType  PersonnelType @default(ADMINISTRATIVO)
+
+  municipioId String?
+  municipio   Municipio? @relation(fields: [municipioId], references: [id])
+  cargoId     String?
+  cargo       Cargo?     @relation(fields: [cargoId], references: [id])
+
+  tipoVinculacion TipoVinculacion @default(CONTRATO_PRESTACION)
+  origenRegistro  OrigenRegistro  @default(AUTO)
+  provisionedAt   DateTime?
+  provisionedBy   String?
   passwordHash   String
   role           Role         @default(STUDENT)
   status         UserStatus   @default(ACTIVE)
@@ -101,6 +157,11 @@ model User {
   @@index([role, status])
   @@index([department])
   @@index([personnelType])
+  // Dimensiones del centro de datos de Talento Humano (Fase 7.7): todas se
+  // usan como filtro global y como eje de agregación.
+  @@index([municipioId])
+  @@index([cargoId])
+  @@index([tipoVinculacion])
 }
 
 // ------------------------------------------------------------------
