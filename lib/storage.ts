@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
+import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 
 const PRIVATE_UPLOADS_ROOT = path.join(process.cwd(), "uploads");
@@ -15,14 +16,34 @@ function sanitizeFileName(originalName: string) {
   return `${Date.now()}-${base}${ext}`;
 }
 
-/** Guarda la imagen destacada de un curso en /public (archivo público, sin control de acceso). */
+/** Ancho máximo de una portada: el hero del detalle se ve a ~1150px CSS, así
+ *  que 1920 cubre pantallas de alta densidad sin desperdicio. */
+const COVER_MAX_WIDTH = 1920;
+
+/**
+ * Guarda la imagen destacada de un curso en /public (archivo público, sin
+ * control de acceso), recomprimida a WebP y acotada en ancho.
+ *
+ * Por qué: las portadas llegan como PNG de captura (se midieron de 1.7 MB) y
+ * se descargan enteras en CADA tarjeta de la grilla del catálogo, donde se
+ * ven a ~300px. Como las imágenes se sirven sin el optimizador de Next (ver
+ * next.config.ts), el redimensionado tiene que pasar aquí, al subir.
+ */
 export async function saveCourseImage(file: File, courseId: string): Promise<string> {
-  const fileName = sanitizeFileName(file.name);
   const dir = path.join(PUBLIC_UPLOADS_ROOT, "covers", courseId);
   await mkdir(dir, { recursive: true });
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, fileName), buffer);
+  const inputBuffer = Buffer.from(await file.arrayBuffer());
+  const baseName = sanitizeFileName(file.name).replace(/\.[^.]+$/, "");
+  const fileName = `${baseName}.webp`;
+
+  const optimized = await sharp(inputBuffer)
+    .rotate() // respeta la orientación EXIF antes de redimensionar
+    .resize({ width: COVER_MAX_WIDTH, withoutEnlargement: true })
+    .webp({ quality: 82 })
+    .toBuffer();
+
+  await writeFile(path.join(dir, fileName), optimized);
 
   return `/uploads/covers/${courseId}/${fileName}`;
 }

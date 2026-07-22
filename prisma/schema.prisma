@@ -173,6 +173,8 @@ model Course {
 
   @@index([status, courseType])
   @@index([status, targetAudience])
+  // Todo el panel del tutor filtra sus cursos por tutorId.
+  @@index([tutorId])
 }
 
 model CourseModule {
@@ -407,6 +409,9 @@ model Certificate {
   revokedReason   String?
 
   @@index([userId])
+  // KPIs y listados de certificados por curso (panel del tutor y reportes).
+  @@index([courseId])
+  @@index([issuedAt])
 }
 
 // ------------------------------------------------------------------

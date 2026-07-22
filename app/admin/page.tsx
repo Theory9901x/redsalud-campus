@@ -43,7 +43,9 @@ export default async function AdminDashboardPage() {
     prisma.user.count({ where: { role: "TUTOR" } }),
     prisma.course.count(),
     prisma.certificate.count({ where: { status: "VALID" } }),
-    prisma.certificate.findMany({ where: { status: "VALID" }, distinct: ["userId"], select: { userId: true } }),
+    // Contar en SQL: antes traía una fila por estudiante certificado solo
+    // para medir la longitud del array en JS.
+    prisma.user.count({ where: { certificates: { some: { status: "VALID" } } } }),
     prisma.enrollment.aggregate({ _avg: { finalScore: true }, where: { finalScore: { not: null } } }),
     prisma.enrollment.groupBy({
       by: ["courseId"],
@@ -100,7 +102,7 @@ export default async function AdminDashboardPage() {
         <MetricCard label="Tutores" value={totalTutors} icon={UserCog} accent="success" />
         <MetricCard label="Cursos" value={totalCourses} icon={BookOpen} accent="warning" />
         <MetricCard label="Certificados emitidos" value={totalCertificates} icon={Award} accent="destructive" />
-        <MetricCard label="Estudiantes certificados" value={certifiedStudents.length} icon={BadgeCheck} accent="primary" />
+        <MetricCard label="Estudiantes certificados" value={certifiedStudents} icon={BadgeCheck} accent="primary" />
         <MetricCard label="Promedio de aprobación %" value={avgScore} icon={Percent} accent="success" />
       </StaggerGrid>
 
