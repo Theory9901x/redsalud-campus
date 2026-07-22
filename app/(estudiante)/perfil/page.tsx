@@ -29,7 +29,7 @@ export default async function PerfilPage() {
         <p className="mt-1 text-sm text-muted-foreground">Gestiona tu cuenta y tu foto de perfil.</p>
       </div>
 
-      <section className="surface space-y-4 p-6">
+      <section className="surface-glass space-y-4 p-6">
         <div className="flex items-center gap-2">
           <User className="h-4 w-4 text-primary" />
           <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">Foto de perfil</h2>
@@ -37,7 +37,7 @@ export default async function PerfilPage() {
         <AvatarUploader avatarUrl={avatarUrl} />
       </section>
 
-      <section className="surface space-y-4 p-6">
+      <section className="surface-glass space-y-4 p-6">
         <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">Mis datos</h2>
         <div>
           <p className="font-display text-lg font-extrabold text-foreground">{user.fullName}</p>
@@ -56,7 +56,7 @@ export default async function PerfilPage() {
         </div>
       </section>
 
-      <section className="surface space-y-4 p-6">
+      <section className="surface-glass space-y-4 p-6">
         <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
           Cambiar contraseña
         </h2>

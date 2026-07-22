@@ -36,7 +36,7 @@ export default async function MisEncuestasPage() {
                   <Link
                     key={survey.id}
                     href={`/mis-encuestas/${survey.id}`}
-                    className="surface-hover surface flex items-center gap-4 p-5"
+                    className="surface-clay flex items-center gap-4 p-5 transition-all duration-200 hover:-translate-y-0.5"
                   >
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                       <ClipboardList className="h-6 w-6" />
@@ -67,7 +67,7 @@ export default async function MisEncuestasPage() {
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {answered.map((survey) => (
-                  <div key={survey.id} className="surface flex items-center gap-4 p-5 opacity-80">
+                  <div key={survey.id} className="surface-clay flex items-center gap-4 p-5 opacity-80">
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
                       <CheckCircle2 className="h-6 w-6" />
                     </span>

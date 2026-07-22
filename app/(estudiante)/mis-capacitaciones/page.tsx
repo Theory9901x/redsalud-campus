@@ -35,7 +35,7 @@ export default async function MisCapacitacionesPage() {
               <Link
                 key={plan.id}
                 href={`/mis-capacitaciones/${plan.id}`}
-                className="surface surface-hover surface-accent-top flex flex-col gap-3 p-5"
+                className="surface-clay surface-accent-top flex flex-col gap-3 overflow-hidden p-5 transition-all duration-200 hover:-translate-y-0.5"
               >
                 <div className="flex items-center gap-3">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">

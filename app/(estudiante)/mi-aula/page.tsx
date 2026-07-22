@@ -90,7 +90,7 @@ export default async function MiAulaPage() {
                 <Link
                   key={certificate.id}
                   href={`/mi-aula/certificados/${certificate.id}`}
-                  className="surface-hover surface flex items-center gap-4 p-5"
+                  className="surface-clay flex items-center gap-4 p-5 transition-all duration-200 hover:-translate-y-0.5"
                 >
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning-foreground">
                     <Award className="h-6 w-6" />
