@@ -31,7 +31,14 @@ function formatDay(iso: string) {
  * área con degradado sutil, leyenda siempre presente y tooltip por columna
  * al pasar el mouse. El texto usa tokens de texto, nunca el color de la serie.
  */
-export function EnrollmentChart({ points }: { points: ChartPoint[] }) {
+export function TrendChart({
+  points,
+  seriesLabels = ["Inscripciones", "Finalizaciones"],
+}: {
+  points: ChartPoint[];
+  /** Etiquetas de las dos series; cambian por rol (el resto es idéntico). */
+  seriesLabels?: [string, string];
+}) {
   const [rangeDays, setRangeDays] = useState<7 | 30 | 90>(30);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
@@ -67,12 +74,15 @@ export function EnrollmentChart({ points }: { points: ChartPoint[] }) {
         {/* Leyenda: identidad por color + etiqueta, nunca color solo. */}
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
+            {/* El punto debe coincidir con el color real de la línea: las dos
+                series llevan colores fijos (azul/verde) en todos los roles,
+                porque el color identifica a la serie, no a quién la mira. */}
             <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-            Inscripciones
+            {seriesLabels[0]}
           </span>
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full bg-success" />
-            Finalizaciones
+            {seriesLabels[1]}
           </span>
         </div>
         <div className="flex gap-1.5">
@@ -82,9 +92,9 @@ export function EnrollmentChart({ points }: { points: ChartPoint[] }) {
               type="button"
               onClick={() => setRangeDays(r.days)}
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-success",
+                "rounded-full px-3 py-1 text-xs font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-[var(--accent)]",
                 rangeDays === r.days
-                  ? "surface-clay-pressed font-semibold text-success"
+                  ? "surface-clay-pressed font-semibold text-[var(--accent)]"
                   : "surface-clay text-foreground/70 hover:-translate-y-0.5"
               )}
             >
@@ -169,8 +179,8 @@ export function EnrollmentChart({ points }: { points: ChartPoint[] }) {
           >
             <p className="font-semibold text-foreground">{formatDay(hover.date)}</p>
             <p className="text-muted-foreground">
-              <span className="font-medium text-foreground">{hover.inscripciones}</span> inscripciones ·{" "}
-              <span className="font-medium text-foreground">{hover.finalizaciones}</span> finalizaciones
+              <span className="font-medium text-foreground">{hover.inscripciones}</span> {seriesLabels[0].toLowerCase()} ·{" "}
+              <span className="font-medium text-foreground">{hover.finalizaciones}</span> {seriesLabels[1].toLowerCase()}
             </p>
           </div>
         )}

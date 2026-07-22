@@ -1,9 +1,9 @@
-import { Activity, GraduationCap, CheckCircle2, Award, BookOpen, Clock, User } from "lucide-react";
+import { Activity, GraduationCap, CheckCircle2, Award, BookOpen, Clock, ShieldAlert, User } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { StaggerGrid } from "@/components/brand/stagger-grid";
 import { StaggerSections } from "@/components/brand/stagger-sections";
-import { MetricCard } from "@/components/admin/metric-card";
+import { KpiCard } from "@/components/dashboard/dashboard-kit";
 import { CourseGrid } from "@/components/cursos/course-grid";
 import { CoursePosterCard } from "@/components/cursos/course-poster-card";
 import { CourseCatalogBrowser } from "@/components/cursos/course-catalog-browser";
@@ -43,13 +43,18 @@ export default async function InicioPage() {
       getUserAvatarUrl(userId),
     ]);
 
+  // Obligatorios que le corresponden y aún no completa (KPI de atención).
+  const pendingObligatorios =
+    enrollments.filter((e) => e.course.courseType === "OBLIGATORIO" && e.status !== "COMPLETED").length +
+    availableCourses.filter((c) => c.courseType === "OBLIGATORIO").length;
+
   const overallProgress =
     enrollments.length > 0
       ? Math.round(enrollments.reduce((sum, e) => sum + e.progressPercentage, 0) / enrollments.length)
       : 0;
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+    <main className="accent-student mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
       <StaggerSections className="space-y-10">
       {/*
        * Momento signature 2: composición editorial asimétrica, no la banda
@@ -101,11 +106,13 @@ export default async function InicioPage() {
         </div>
       </section>
 
-      <StaggerGrid className="grid-cols-1 gap-4 sm:grid-cols-3">
-        <MetricCard label="Cursos activos" value={activeCount} icon={GraduationCap} accent="primary" href="#mis-cursos" />
-        <MetricCard label="Completados" value={completedCount} icon={CheckCircle2} accent="success" href="#mis-cursos" />
-        <MetricCard label="Certificados" value={certificateCount} icon={Award} accent="warning" href="/mi-aula#mis-certificados" />
-      </StaggerGrid>
+      {/* Mismos KpiCard que tutor y admin; solo cambian datos y el acento. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <KpiCard label="Cursos activos" value={activeCount} icon={GraduationCap} href="#mis-cursos" />
+        <KpiCard label="Completados" value={completedCount} icon={CheckCircle2} href="#mis-cursos" />
+        <KpiCard label="Certificados" value={certificateCount} icon={Award} href="/mi-aula#mis-certificados" />
+        <KpiCard label="Obligatorios pendientes" value={pendingObligatorios} icon={ShieldAlert} href="#mis-cursos" />
+      </div>
 
       <section id="mis-cursos" className="surface-panel scroll-mt-20 p-6 sm:p-8">
         <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/[0.07] blur-3xl" />

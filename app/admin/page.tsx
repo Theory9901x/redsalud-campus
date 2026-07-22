@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { GraduationCap, UserCog, BookOpen, Award, BadgeCheck, Percent, TrendingUp, Activity } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { MetricCard } from "@/components/admin/metric-card";
+import { KpiCard } from "@/components/dashboard/dashboard-kit";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { StaggerGrid } from "@/components/brand/stagger-grid";
 import { EmptyState } from "@/components/brand/empty-state";
@@ -91,20 +91,21 @@ export default async function AdminDashboardPage() {
   const avgScore = avgScoreAgg._avg.finalScore ? Math.round(avgScoreAgg._avg.finalScore) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="accent-admin space-y-6">
       <AdminPageHeader
         title="Dashboard"
         description="Resumen general del campus virtual de Red Salud Casanare E.S.E."
       />
 
-      <StaggerGrid className="grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard label="Estudiantes" value={totalStudents} icon={GraduationCap} accent="primary" />
-        <MetricCard label="Tutores" value={totalTutors} icon={UserCog} accent="success" />
-        <MetricCard label="Cursos" value={totalCourses} icon={BookOpen} accent="warning" />
-        <MetricCard label="Certificados emitidos" value={totalCertificates} icon={Award} accent="destructive" />
-        <MetricCard label="Estudiantes certificados" value={certifiedStudents} icon={BadgeCheck} accent="primary" />
-        <MetricCard label="Promedio de aprobación %" value={avgScore} icon={Percent} accent="success" />
-      </StaggerGrid>
+      {/* Mismos KpiCard que estudiante y tutor; cambia el acento del rol. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6 2xl:grid-cols-6">
+        <KpiCard label="Estudiantes" value={totalStudents} icon={GraduationCap} href="/admin/usuarios" />
+        <KpiCard label="Tutores" value={totalTutors} icon={UserCog} href="/admin/usuarios" />
+        <KpiCard label="Cursos" value={totalCourses} icon={BookOpen} href="/admin/cursos" />
+        <KpiCard label="Certificados emitidos" value={totalCertificates} icon={Award} href="/admin/certificados" />
+        <KpiCard label="Estudiantes certificados" value={certifiedStudents} icon={BadgeCheck} />
+        <KpiCard label="Promedio de aprobación" value={`${avgScore}%`} icon={Percent} />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="surface space-y-4 p-6">

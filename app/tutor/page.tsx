@@ -14,9 +14,18 @@ import {
 } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { StaggerSections } from "@/components/brand/stagger-sections";
 import { EmptyState } from "@/components/brand/empty-state";
-import { EnrollmentChart, type ChartPoint } from "@/components/tutor/enrollment-chart";
+import { ChartPanel } from "@/components/dashboard/chart-panel";
+import type { ChartPoint } from "@/components/dashboard/trend-chart";
+import {
+  ActivityTimeline,
+  AttentionList,
+  DashboardHero,
+  DashboardPanel,
+  DashboardShell,
+  KpiCard,
+  QuickAction,
+} from "@/components/dashboard/dashboard-kit";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -140,19 +149,19 @@ export default async function TutorDashboardPage() {
     ...recentEnrollments.slice(0, 6).map((e) => ({
       at: e.enrolledAt,
       icon: UserPlus,
-      color: "text-primary bg-primary/10",
+      tone: "text-primary bg-primary/10",
       text: `${e.user.fullName} se inscribió en ${e.course.title}`,
     })),
     ...recentCompletions.slice(0, 6).map((e) => ({
       at: e.completedAt!,
       icon: CheckCircle2,
-      color: "text-success bg-success/10",
+      tone: "text-success bg-success/10",
       text: `${e.user.fullName} completó ${e.course.title}`,
     })),
     ...recentCertificates.map((c) => ({
       at: c.issuedAt,
       icon: Award,
-      color: "text-warning-foreground bg-warning/15",
+      tone: "text-warning-foreground bg-warning/15",
       text: `${c.user.fullName} obtuvo certificado de ${c.course.title}`,
     })),
   ]
@@ -161,12 +170,12 @@ export default async function TutorDashboardPage() {
 
   const firstName = session!.user.name?.split(" ")[0] ?? "Tutor";
 
-  const kpis = [
-    { label: "Cursos activos", value: publishedCount, icon: BookOpen, color: "bg-success/12 text-success" },
-    { label: "Borradores", value: draftCount, icon: FileWarning, color: "bg-warning/15 text-warning-foreground" },
-    { label: "Inscritos", value: enrolledCount, icon: Users, color: "bg-primary/10 text-primary" },
-    { label: "Finalización", value: `${completionRate}%`, icon: Percent, color: "bg-success/12 text-success" },
-    { label: "Certificados este mes", value: certificatesThisMonth, icon: Award, color: "bg-primary/10 text-primary" },
+  const kpis: { label: string; value: string | number; icon: typeof BookOpen; href?: string }[] = [
+    { label: "Cursos activos", value: publishedCount, icon: BookOpen, href: "/tutor/cursos" },
+    { label: "Borradores", value: draftCount, icon: FileWarning, href: "/tutor/cursos" },
+    { label: "Inscritos", value: enrolledCount, icon: Users, href: "/tutor/inscritos" },
+    { label: "Finalización", value: `${completionRate}%`, icon: Percent },
+    { label: "Certificados este mes", value: certificatesThisMonth, icon: Award, href: "/tutor/certificados" },
   ];
 
   const quickActions = [
@@ -177,137 +186,56 @@ export default async function TutorDashboardPage() {
   ];
 
   return (
-    <StaggerSections className="space-y-6">
-      {/* Hero compacto del espacio de trabajo. */}
-      <section className="noise-overlay relative isolate overflow-hidden rounded-3xl bg-navy px-6 py-7 text-white sm:px-8">
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 10% -20%, color-mix(in oklch, var(--success) 30%, transparent), transparent 55%), radial-gradient(circle at 100% 120%, color-mix(in oklch, var(--primary) 20%, transparent), transparent 50%)",
-          }}
-        />
-        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-success/25 blur-[90px]" />
-        <div className="relative flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-success backdrop-blur">
-              Espacio de trabajo · Tutor
-            </span>
-            <h1 className="mt-3 font-display text-2xl font-extrabold text-balance sm:text-3xl">Hola, {firstName}.</h1>
-            <p className="mt-1.5 max-w-lg text-sm text-white/70">
-              Así va la formación de tus cursos hoy.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {quickActions.map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="chip-glass px-3 py-2 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-success"
-              >
-                <action.icon className="h-3.5 w-3.5 text-success" />
-                {action.label}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+    <DashboardShell role="tutor">
+      <DashboardHero
+        eyebrow="Espacio de trabajo · Tutor"
+        title={`Hola, ${firstName}.`}
+        subtitle="Así va la formación de tus cursos hoy."
+        actions={quickActions.map((a) => (
+          <QuickAction key={a.href} href={a.href} label={a.label} icon={a.icon} />
+        ))}
+      />
 
-      {/* KPIs en tarjetas clay con ícono en contenedor de color. */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="surface-clay flex items-center gap-3 px-4 py-4">
-            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${kpi.color}`}>
-              <kpi.icon className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <p className="font-display text-xl font-extrabold leading-none text-foreground">{kpi.value}</p>
-              <p className="mt-1 truncate text-xs text-muted-foreground">{kpi.label}</p>
-            </div>
-          </div>
+          <KpiCard key={kpi.label} label={kpi.label} value={kpi.value} icon={kpi.icon} href={kpi.href} />
         ))}
       </div>
 
-      {/* items-start: cada panel toma su altura natural; si no, el de la
-          gráfica se estira al alto de la actividad y queda medio vacío. */}
+      {/* items-start: cada panel toma su altura natural en vez de estirarse
+          al alto del vecino más largo. */}
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
-        {/* Gráfica de avance en panel glass. */}
-        <section className="surface-glass p-5 xl:col-span-2">
-          <h2 className="font-display text-base font-extrabold text-foreground">Avance de formación</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">Inscripciones y finalizaciones en tus cursos.</p>
-          <div className="mt-4">
-            <EnrollmentChart points={chartPoints} />
-          </div>
-        </section>
+        <DashboardPanel
+          title="Avance de formación"
+          description="Inscripciones y finalizaciones en tus cursos."
+          className="xl:col-span-2"
+        >
+          <ChartPanel points={chartPoints} seriesLabels={["Inscripciones", "Finalizaciones"]} />
+        </DashboardPanel>
 
-        {/* Actividad reciente: timeline vertical con línea de acento. */}
-        <section className="surface-glass p-5">
-          <h2 className="font-display text-base font-extrabold text-foreground">Actividad reciente</h2>
+        <DashboardPanel title="Actividad reciente">
           {activity.length === 0 ? (
             <EmptyState
               icon={ActivityIcon}
               title="Sin actividad todavía"
               description="Cuando haya inscripciones o avances en tus cursos, aparecerán aquí."
-              className="mt-4 py-10"
+              className="py-10"
             />
           ) : (
-            <div className="relative mt-4 max-h-[420px] overflow-y-auto pr-1">
-              <span aria-hidden="true" className="absolute bottom-2 left-[15px] top-2 w-[2.5px] rounded-full bg-success/25" />
-              <ul className="space-y-4">
-                {activity.map((item, index) => (
-                  <li key={index} className="relative flex items-start gap-3">
-                    <span className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${item.color}`}>
-                      <item.icon className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0 pt-1">
-                      <p className="text-sm leading-snug text-foreground/85">{item.text}</p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        {item.at.toLocaleDateString("es-CO", { day: "numeric", month: "short" })}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <ActivityTimeline items={activity} />
           )}
-        </section>
+        </DashboardPanel>
       </div>
 
-      {/* Cursos con atención requerida. */}
-      <section className="surface-glass p-5">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-warning/15 text-warning-foreground">
-            <AlertTriangle className="h-4 w-4" />
-          </span>
-          <div>
-            <h2 className="font-display text-base font-extrabold text-foreground">Atención requerida</h2>
-            <p className="text-xs text-muted-foreground">Cursos sin contenido o con inscritos estancados.</p>
-          </div>
-        </div>
-        {attention.length === 0 ? (
-          <p className="mt-4 flex items-center gap-2 rounded-xl bg-success/10 px-4 py-3 text-sm text-success">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            Todo en orden: tus cursos tienen contenido y tus inscritos avanzan.
-          </p>
-        ) : (
-          <ul className="mt-4 divide-y divide-border">
-            {attention.map((item, index) => (
-              <li key={`${item.courseId}-${index}`} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground">{item.title}</p>
-                  <p className="text-xs text-muted-foreground">{item.problem}</p>
-                </div>
-                <Link
-                  href={item.href}
-                  className="surface-clay shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold text-success transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-success"
-                >
-                  {item.cta}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </StaggerSections>
+      <DashboardPanel
+        title="Atención requerida"
+        description="Cursos sin contenido o con inscritos estancados."
+      >
+        <AttentionList
+          items={attention}
+          allClearText="Todo en orden: tus cursos tienen contenido y tus inscritos avanzan."
+        />
+      </DashboardPanel>
+    </DashboardShell>
   );
 }

@@ -461,6 +461,102 @@
       linear-gradient(165deg in oklch, oklch(93.51% 0.0138 258.35) 0%, oklch(90.34% 0.0191 255.54) 50%, oklch(87.74% 0.0233 252.19) 100%);
   }
 
+  /*
+   * ---- Estética futurista de los dashboards (Etapa B) ----
+   * El acento lo define cada rol con la variable --accent en el contenedor
+   * (estudiante = primary, tutor = success, admin = violeta). Todo lo demás
+   * es idéntico entre roles: mismos componentes, mismas clases.
+   */
+
+  /* Hero tipo HUD: navy con mesh de acento, malla técnica y grano. */
+  .hud-hero {
+    @apply relative isolate overflow-hidden;
+    border-radius: var(--radius-surface);
+    background-color: var(--navy);
+    background-image:
+      radial-gradient(circle 520px at 8% -20%, color-mix(in oklch, var(--accent) 34%, transparent), transparent 60%),
+      radial-gradient(circle 420px at 100% 120%, color-mix(in oklch, var(--primary) 22%, transparent), transparent 55%);
+  }
+  /* Malla de líneas al 4%: sensación tech sin ruido visual. */
+  .hud-grid::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse at center, black 20%, transparent 78%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 78%);
+  }
+
+  /*
+   * Panel glass con borde luminoso: el degradado del borde va en un
+   * pseudo-elemento con mask (no border-image, que no soporta radios) para
+   * que el brillo siga la esquina redondeada.
+   */
+  .panel-hud {
+    @apply relative border border-white/50;
+    border-radius: var(--radius-surface);
+    background-color: color-mix(in oklch, white 68%, transparent);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    backdrop-filter: blur(24px) saturate(150%);
+    box-shadow:
+      inset 0 1px 0 0 color-mix(in oklch, white 80%, transparent),
+      0 8px 32px -12px color-mix(in oklch, var(--accent) 22%, transparent);
+  }
+  .panel-hud::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    background: linear-gradient(140deg, color-mix(in oklch, var(--accent) 55%, transparent), transparent 45%, color-mix(in oklch, var(--accent) 25%, transparent));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  /* Número de KPI en tamaño hero con degradado de acento aplicado al texto. */
+  .kpi-number {
+    @apply font-display font-extrabold leading-none tracking-tight;
+    background-image: linear-gradient(135deg in oklch, var(--accent), color-mix(in oklch, var(--accent) 55%, var(--navy)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Botón futurista: relleno degradado del acento + glow exterior. */
+  .btn-hud {
+    @apply relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl border border-white/25 px-3.5 py-2 text-sm font-semibold text-white transition-all duration-200;
+    background-image: linear-gradient(135deg in oklch, var(--accent), color-mix(in oklch, var(--accent) 70%, var(--navy)));
+    box-shadow: 0 4px 16px -4px color-mix(in oklch, var(--accent) 55%, transparent);
+  }
+  .btn-hud:hover {
+    @apply -translate-y-0.5 scale-[1.02];
+    box-shadow: 0 8px 24px -6px color-mix(in oklch, var(--accent) 70%, transparent);
+  }
+  /* Variante secundaria: glass con borde luminoso, sobre fondo claro. */
+  .btn-hud-ghost {
+    @apply relative inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-all duration-200;
+    border-color: color-mix(in oklch, var(--accent) 35%, transparent);
+    background-color: color-mix(in oklch, var(--accent) 8%, white);
+    color: color-mix(in oklch, var(--accent) 75%, var(--navy));
+  }
+  .btn-hud-ghost:hover {
+    @apply -translate-y-0.5;
+    box-shadow: 0 6px 18px -6px color-mix(in oklch, var(--accent) 45%, transparent);
+  }
+
+  /* Separador luminoso con el acento, se apaga hacia los extremos. */
+  .divider-glow {
+    height: 1px;
+    background: linear-gradient(to right, transparent, color-mix(in oklch, var(--accent) 45%, transparent), transparent);
+  }
+
   /* Grano sutil (3-5%) sobre heros con gradiente, para quitarles lo "plástico". */
   .noise-overlay::after {
     content: "";
@@ -470,6 +566,35 @@
     pointer-events: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
+}
+
+/*
+ * Acento por rol: cada dashboard fija --accent en su contenedor y todos los
+ * componentes compartidos (KpiCard, panel-hud, btn-hud...) lo consumen. Un
+ * solo token, tres identidades, cero componentes duplicados.
+ */
+.accent-student { --accent: var(--primary); }
+.accent-tutor { --accent: var(--success); }
+.accent-admin { --accent: oklch(62% 0.19 295); } /* violeta institucional */
+
+/*
+ * Orbe del mesh animado del hero. Solo anima transform (compuesto en GPU),
+ * nunca filtros ni posición, para no forzar repaint en cada frame.
+ */
+.mesh-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(120px);
+  will-change: transform;
+  animation: mesh-drift 26s ease-in-out infinite alternate;
+}
+.mesh-orb-slow { animation-duration: 38s; animation-direction: alternate-reverse; }
+@keyframes mesh-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(8%, -6%, 0) scale(1.18); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mesh-orb { animation: none; }
 }
 
 /* Relleno de la barra de progreso del aula: el degradado se desplaza en bucle. */
