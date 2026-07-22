@@ -21,7 +21,10 @@ export type FiltrosReporte = {
 
 /** Condición SQL común a los paneles que miden sobre personas inscritas. */
 function condiciones(f: FiltrosReporte) {
-  const partes: Prisma.Sql[] = [Prisma.sql`u."role" = 'STUDENT' AND u."status" = 'ACTIVE'`];
+  // Cuenta cualquier persona activa inscrita en formación, sin importar su rol:
+  // administradores y tutores también hacen los cursos y deben aparecer en el
+  // cumplimiento. Antes se filtraba por role = STUDENT y quedaban fuera.
+  const partes: Prisma.Sql[] = [Prisma.sql`u."status" = 'ACTIVE'`];
   if (f.municipioId) partes.push(Prisma.sql`u."municipioId" = ${f.municipioId}`);
   if (f.grupo) partes.push(Prisma.sql`u."personnelType"::text = ${f.grupo}`);
   if (f.cargoId) partes.push(Prisma.sql`u."cargoId" = ${f.cargoId}`);
@@ -54,8 +57,11 @@ export async function cumplimientoPor(
     FROM "User" u
     LEFT JOIN "Municipio" m ON m."id" = u."municipioId"
     LEFT JOIN "Cargo" c ON c."id" = u."cargoId"
-    LEFT JOIN "Enrollment" e ON e."userId" = u."id"
-      AND e."courseId" IN (SELECT "id" FROM "Course" WHERE "courseType" = 'OBLIGATORIO')
+    -- Se mide sobre los cursos en los que la persona está inscrita, no solo
+    -- sobre los de tipo OBLIGATORIO: la inducción institucional es de tipo
+    -- INDUCCION y es la formación que todo el personal debe cursar, así que
+    -- restringir por courseType dejaba el cumplimiento en cero para todos.
+    JOIN "Enrollment" e ON e."userId" = u."id"
     WHERE ${condiciones(f)}
     GROUP BY etiqueta
     HAVING COUNT(DISTINCT u."id") > 0
@@ -150,7 +156,7 @@ export async function metricasPlanta(f: FiltrosReporte): Promise<FilaPlanta[]> {
     FROM "User" u
     LEFT JOIN "Enrollment" e ON e."userId" = u."id"
     LEFT JOIN "Certificate" ce ON ce."userId" = u."id"
-    WHERE u."role" = 'STUDENT' AND u."status" = 'ACTIVE'
+    WHERE u."status" = 'ACTIVE'
       AND u."tipoVinculacion" <> 'CONTRATO_PRESTACION'
       ${extra.length > 0 ? Prisma.join(extra, " ") : Prisma.empty}
     GROUP BY grupo
@@ -206,7 +212,7 @@ export async function detalleInscripciones(
   f: FiltrosReporte,
   opciones: { busqueda?: string; pagina: number; porPagina: number }
 ): Promise<{ filas: FilaDetalle[]; total: number }> {
-  const cond: Prisma.Sql[] = [Prisma.sql`u."role" = 'STUDENT'`];
+  const cond: Prisma.Sql[] = [Prisma.sql`1 = 1`];
   if (f.municipioId) cond.push(Prisma.sql`u."municipioId" = ${f.municipioId}`);
   if (f.grupo) cond.push(Prisma.sql`u."personnelType"::text = ${f.grupo}`);
   if (f.cargoId) cond.push(Prisma.sql`u."cargoId" = ${f.cargoId}`);
