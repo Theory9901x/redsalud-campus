@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Award,
   BarChart3,
+  PieChart,
   Bell,
   Settings,
   Activity,
@@ -27,7 +28,8 @@ const NAV_ITEMS: { href: string; label: string; icon: typeof LayoutDashboard; ex
   { href: "/admin/inscripciones", label: "Inscripciones", icon: ClipboardList, section: "INSCRIPCIONES" },
   { href: "/admin/certificados", label: "Certificados", icon: Award, section: "CERTIFICADOS" },
   { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell, section: "NOTIFICACIONES" },
-  { href: "/admin/reportes", label: "Reportes", icon: BarChart3, section: "REPORTES" },
+  { href: "/admin/reportes/centro", label: "Centro de datos", icon: PieChart, section: "REPORTES" },
+  { href: "/admin/reportes", label: "Reportes", icon: BarChart3, exact: true, section: "REPORTES" },
   { href: "/admin/bitacora", label: "Bitácora", icon: ScrollText, section: "REPORTES" },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings, section: "CONFIGURACION" },
 ];
