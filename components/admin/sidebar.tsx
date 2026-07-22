@@ -12,6 +12,7 @@ import {
   Bell,
   Settings,
   Activity,
+  ScrollText,
   CalendarRange,
   X,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const NAV_ITEMS: { href: string; label: string; icon: typeof LayoutDashboard; ex
   { href: "/admin/certificados", label: "Certificados", icon: Award, section: "CERTIFICADOS" },
   { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell, section: "NOTIFICACIONES" },
   { href: "/admin/reportes", label: "Reportes", icon: BarChart3, section: "REPORTES" },
+  { href: "/admin/bitacora", label: "Bitácora", icon: ScrollText, section: "REPORTES" },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings, section: "CONFIGURACION" },
 ];
 

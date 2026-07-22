@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-helpers";
+import { registrarAuditoria } from "@/lib/audit";
 import { createUserSchema, updateUserSchema } from "@/lib/validations/user";
 
 export type UserFormState = {
@@ -21,7 +22,7 @@ export async function createUserAction(
   _prevState: UserFormState,
   formData: FormData
 ): Promise<UserFormState> {
-  await requireAdmin();
+  const sesionAudit = await requireAdmin();
 
   const parsed = createUserSchema.safeParse({
     fullName: formData.get("fullName"),
@@ -45,8 +46,9 @@ export async function createUserAction(
   const { password, restrictedAdminSections, ...data } = parsed.data;
   const passwordHash = await bcrypt.hash(password, 10);
 
+  let creado;
   try {
-    await prisma.user.create({
+    creado = await prisma.user.create({
       data: {
         ...data,
         phone: data.phone || null,
@@ -67,6 +69,14 @@ export async function createUserAction(
     }
     throw error;
   }
+
+  await registrarAuditoria({
+    userId: sesionAudit.user.id,
+    action: "CREATE",
+    entity: "User",
+    entityId: creado.id,
+    description: `Creó el usuario ${creado.fullName} (${creado.email})`,
+  });
 
   revalidatePath("/admin/usuarios");
   redirect("/admin/usuarios");
@@ -125,13 +135,21 @@ export async function updateUserAction(
     throw error;
   }
 
+  await registrarAuditoria({
+    userId: session.user.id,
+    action: "UPDATE",
+    entity: "User",
+    entityId: userId,
+    description: `Actualizó los datos de ${data.fullName}`,
+  });
+
   revalidatePath("/admin/usuarios");
   revalidatePath(`/admin/usuarios/${userId}`);
   redirect("/admin/usuarios");
 }
 
 export async function toggleUserStatusAction(userId: string) {
-  await requireAdmin();
+  const sesion = await requireAdmin();
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   const nextStatus = user.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
@@ -139,6 +157,14 @@ export async function toggleUserStatusAction(userId: string) {
   await prisma.user.update({
     where: { id: userId },
     data: { status: nextStatus },
+  });
+
+  await registrarAuditoria({
+    userId: sesion.user.id,
+    action: "UPDATE",
+    entity: "User",
+    entityId: userId,
+    description: `${nextStatus === "ACTIVE" ? "Activó" : "Desactivó"} a ${user.fullName}`,
   });
 
   revalidatePath("/admin/usuarios");
@@ -162,7 +188,7 @@ function generateTempPassword(length = 10): string {
  * en persona, etc.). Se obliga a cambiarla en el siguiente inicio de sesión.
  */
 export async function resetPasswordAction(userId: string): Promise<{ tempPassword: string }> {
-  await requireAdmin();
+  const sesion = await requireAdmin();
 
   const tempPassword = generateTempPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 10);
@@ -170,6 +196,14 @@ export async function resetPasswordAction(userId: string): Promise<{ tempPasswor
   await prisma.user.update({
     where: { id: userId },
     data: { passwordHash, mustChangePassword: true },
+  });
+
+  await registrarAuditoria({
+    userId: sesion.user.id,
+    action: "RESET_PASSWORD",
+    entity: "User",
+    entityId: userId,
+    description: "Generó una contraseña temporal aleatoria",
   });
 
   revalidatePath(`/admin/usuarios/${userId}`);
@@ -186,7 +220,7 @@ export async function setCustomPasswordAction(
   userId: string,
   password: string
 ): Promise<{ error: string | null }> {
-  await requireAdmin();
+  const sesion = await requireAdmin();
 
   if (password.length < 8) {
     return { error: "La contraseña debe tener al menos 8 caracteres." };
@@ -196,6 +230,14 @@ export async function setCustomPasswordAction(
   await prisma.user.update({
     where: { id: userId },
     data: { passwordHash, mustChangePassword: true },
+  });
+
+  await registrarAuditoria({
+    userId: sesion.user.id,
+    action: "RESET_PASSWORD",
+    entity: "User",
+    entityId: userId,
+    description: "Asignó una contraseña específica",
   });
 
   revalidatePath(`/admin/usuarios/${userId}`);

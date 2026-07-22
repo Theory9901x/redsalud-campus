@@ -1,31 +1,14 @@
 import Link from "next/link";
-import { GraduationCap, UserCog, BookOpen, Award, BadgeCheck, Percent, TrendingUp, Activity } from "lucide-react";
+import { GraduationCap, UserCog, BookOpen, Award, BadgeCheck, Percent, TrendingUp, MapPin } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { cn } from "@/lib/utils";
 import { KpiCard } from "@/components/dashboard/dashboard-kit";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { StaggerGrid } from "@/components/brand/stagger-grid";
 import { EmptyState } from "@/components/brand/empty-state";
 
-function timeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  const units: [number, string][] = [
-    [60, "segundo"],
-    [60, "minuto"],
-    [24, "hora"],
-    [30, "día"],
-    [12, "mes"],
-    [Number.MAX_SAFE_INTEGER, "año"],
-  ];
-  let value = seconds;
-  for (const [limit, label] of units) {
-    if (value < limit) {
-      const rounded = Math.max(1, Math.floor(value));
-      return `hace ${rounded} ${label}${rounded === 1 ? "" : "s"}`;
-    }
-    value = Math.floor(value / limit);
-  }
-  return "";
-}
+/** Fila del ranking de cobertura por municipio. */
+type CoberturaMunicipio = { municipio: string; personas: number; completaron: number };
 
 export default async function AdminDashboardPage() {
   const [
@@ -36,8 +19,7 @@ export default async function AdminDashboardPage() {
     certifiedStudents,
     avgScoreAgg,
     topCoursesRaw,
-    recentEnrollments,
-    recentCertificates,
+    coberturaMunicipios,
   ] = await Promise.all([
     prisma.user.count({ where: { role: "STUDENT" } }),
     prisma.user.count({ where: { role: "TUTOR" } }),
@@ -53,16 +35,24 @@ export default async function AdminDashboardPage() {
       orderBy: { _count: { courseId: "desc" } },
       take: 5,
     }),
-    prisma.enrollment.findMany({
-      orderBy: { enrolledAt: "desc" },
-      take: 6,
-      include: { user: { select: { fullName: true } }, course: { select: { title: true } } },
-    }),
-    prisma.certificate.findMany({
-      orderBy: { issuedAt: "desc" },
-      take: 6,
-      include: { user: { select: { fullName: true } }, course: { select: { title: true } } },
-    }),
+    // Cobertura de obligatorios por municipio: dice DÓNDE hay que intervenir,
+    // que es lo que Talento Humano necesita del panel. Un GROUP BY, no un
+    // listado de eventos sueltos.
+    prisma.$queryRaw<CoberturaMunicipio[]>`
+      SELECT
+        COALESCE(m."nombre", 'Sin municipio') AS municipio,
+        COUNT(DISTINCT u."id")::int AS personas,
+        COUNT(DISTINCT e."userId") FILTER (WHERE e."status" = 'COMPLETED')::int AS completaron
+      FROM "User" u
+      LEFT JOIN "Municipio" m ON m."id" = u."municipioId"
+      LEFT JOIN "Enrollment" e ON e."userId" = u."id"
+        AND e."courseId" IN (SELECT "id" FROM "Course" WHERE "courseType" = 'OBLIGATORIO')
+      WHERE u."role" = 'STUDENT' AND u."status" = 'ACTIVE'
+      GROUP BY municipio
+      HAVING COUNT(DISTINCT u."id") > 0
+      ORDER BY (COUNT(DISTINCT e."userId") FILTER (WHERE e."status" = 'COMPLETED')::float / NULLIF(COUNT(DISTINCT u."id"),0)) ASC
+      LIMIT 8
+    `,
   ]);
 
   const topCourseIds = topCoursesRaw.map((c) => c.courseId);
@@ -74,19 +64,6 @@ export default async function AdminDashboardPage() {
     title: topCourseDetails.find((d) => d.id === c.courseId)?.title ?? "Curso eliminado",
     count: c._count._all,
   }));
-
-  const activity = [
-    ...recentEnrollments.map((e) => ({
-      date: e.enrolledAt,
-      text: `${e.user.fullName} se inscribió en ${e.course.title}`,
-    })),
-    ...recentCertificates.map((c) => ({
-      date: c.issuedAt,
-      text: `${c.user.fullName} obtuvo un certificado en ${c.course.title}`,
-    })),
-  ]
-    .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .slice(0, 8);
 
   const avgScore = avgScoreAgg._avg.finalScore ? Math.round(avgScoreAgg._avg.finalScore) : 0;
 
@@ -136,19 +113,44 @@ export default async function AdminDashboardPage() {
 
         <section className="surface space-y-4 p-6">
           <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-primary" />
-            <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">Actividad reciente</h2>
+            <MapPin className="h-4 w-4 text-primary" />
+            <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
+              Cobertura de obligatorios por municipio
+            </h2>
           </div>
-          {activity.length === 0 ? (
-            <EmptyState icon={Activity} title="Sin actividad todavía" description="Las inscripciones y certificados recientes aparecerán aquí." />
+          <p className="-mt-2 text-xs text-muted-foreground">
+            Ordenado de menor a mayor cumplimiento: dónde hace falta intervenir.
+          </p>
+          {coberturaMunicipios.length === 0 ? (
+            <EmptyState
+              icon={MapPin}
+              title="Sin datos de cobertura"
+              description="Aparecerá cuando haya personal con municipio y cursos obligatorios asignados."
+            />
           ) : (
             <ul className="space-y-3">
-              {activity.map((item, index) => (
-                <li key={index} className="flex items-start justify-between gap-3 border-b border-border pb-2 text-sm last:border-b-0 last:pb-0">
-                  <span className="text-foreground">{item.text}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{timeAgo(item.date)}</span>
-                </li>
-              ))}
+              {coberturaMunicipios.map((fila) => {
+                const pct = fila.personas > 0 ? Math.round((fila.completaron / fila.personas) * 100) : 0;
+                return (
+                  <li key={fila.municipio} className="space-y-1">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="truncate text-foreground">{fila.municipio}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {fila.completaron}/{fila.personas} · {pct}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-all",
+                          pct >= 80 ? "bg-success" : pct >= 40 ? "bg-warning" : "bg-destructive"
+                        )}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

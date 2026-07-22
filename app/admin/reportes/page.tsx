@@ -13,6 +13,7 @@ import { ENROLLMENT_STATUS_LABELS } from "@/components/cursos/labels";
 import { CERTIFICATE_STATUS_LABELS } from "@/components/certificados/labels";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { AutoFilterSelect } from "@/components/admin/auto-search-input";
 
 const PREVIEW_LIMIT = 15;
 
@@ -119,23 +120,13 @@ export default async function ReportesPage({
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 className="font-display text-lg font-bold text-foreground">Estudiantes por curso</h2>
           <div className="flex flex-wrap items-end gap-2">
-            <form method="get" className="flex items-end gap-2">
-              <select
-                name="curso"
-                defaultValue={curso ?? ""}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="">Todos los cursos</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title}
-                  </option>
-                ))}
-              </select>
-              <Button type="submit" variant="secondary" size="sm">
-                Filtrar
-              </Button>
-            </form>
+            {/* Filtro automático: aplica al elegir, sin botón. */}
+            <AutoFilterSelect
+              paramName="curso"
+              label=""
+              allLabel="Todos los cursos"
+              options={courses.map((c) => ({ value: c.id, label: c.title }))}
+            />
             <a
               href={`/api/reportes/estudiantes-por-curso${curso ? `?curso=${curso}` : ""}`}
               className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
@@ -232,23 +223,12 @@ export default async function ReportesPage({
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 className="font-display text-lg font-bold text-foreground">Resultados de cuestionarios</h2>
           <div className="flex flex-wrap items-end gap-2">
-            <form method="get" className="flex items-end gap-2">
-              <select
-                name="quizCurso"
-                defaultValue={quizCurso ?? ""}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="">Todos los cursos</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title}
-                  </option>
-                ))}
-              </select>
-              <Button type="submit" variant="secondary" size="sm">
-                Filtrar
-              </Button>
-            </form>
+            <AutoFilterSelect
+              paramName="quizCurso"
+              label=""
+              allLabel="Todos los cursos"
+              options={courses.map((c) => ({ value: c.id, label: c.title }))}
+            />
             <a
               href={`/api/reportes/resultados-cuestionarios${quizCurso ? `?curso=${quizCurso}` : ""}`}
               className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"

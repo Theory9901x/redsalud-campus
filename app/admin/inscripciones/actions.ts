@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-helpers";
+import { registrarAuditoria } from "@/lib/audit";
 
 export type AssignEnrollmentState = { error: string | null; success?: boolean };
 
@@ -10,7 +11,7 @@ export async function assignEnrollmentsAction(
   _prevState: AssignEnrollmentState,
   formData: FormData
 ): Promise<AssignEnrollmentState> {
-  await requireAdmin();
+  const sesion = await requireAdmin();
 
   const courseId = formData.get("courseId");
   const studentIds = formData.getAll("studentIds").map(String);
@@ -49,17 +50,33 @@ export async function assignEnrollmentsAction(
   ]);
   // Si ya está ACTIVE, COMPLETED o FAILED, se deja tal cual.
 
+  await registrarAuditoria({
+    userId: sesion.user.id,
+    action: "ENROLL",
+    entity: "Enrollment",
+    entityId: courseId,
+    description: `Inscribió ${studentIds.length} ${studentIds.length === 1 ? "persona" : "personas"} en un curso`,
+  });
+
   revalidatePath("/admin/inscripciones");
   for (const userId of studentIds) revalidatePath(`/admin/usuarios/${userId}`);
   return { error: null, success: true };
 }
 
 export async function cancelEnrollmentAction(enrollmentId: string) {
-  await requireAdmin();
+  const sesion = await requireAdmin();
   const enrollment = await prisma.enrollment.update({
     where: { id: enrollmentId },
     data: { status: "CANCELLED" },
   });
+  await registrarAuditoria({
+    userId: sesion.user.id,
+    action: "UNENROLL",
+    entity: "Enrollment",
+    entityId: enrollmentId,
+    description: "Canceló una inscripción",
+  });
+
   revalidatePath("/admin/inscripciones");
   revalidatePath(`/admin/usuarios/${enrollment.userId}`);
 }
