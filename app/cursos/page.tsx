@@ -1,7 +1,9 @@
 import { BookOpen, Layers, ShieldCheck, Clock3 } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { CourseCatalogBrowser } from "@/components/cursos/course-catalog-browser";
+import { CatalogoResultados } from "@/components/cursos/catalogo-resultados";
+import { FiltrosCatalogo } from "@/components/cursos/filtros-catalogo";
+import { COURSE_TYPE_LABELS, COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { EcgPulse } from "@/components/brand/ecg-pulse";
 import { StudentShell } from "@/components/student/student-shell";
@@ -12,8 +14,14 @@ import { getUserAvatarUrl } from "@/lib/avatar";
 import { getNotificationsForUser } from "@/lib/notifications";
 import type { Prisma } from "@prisma/client";
 
-export default async function CatalogoCursosPage() {
+export default async function CatalogoCursosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; categoria?: string; tipo?: string; estado?: string }>;
+}) {
   const session = await auth();
+  const sp = await searchParams;
+  const lista = (v?: string) => (v ?? "").split(",").filter(Boolean);
 
   // Visitante anónimo: ve todo el catálogo público. Usuario con sesión: solo
   // los cursos de su tipo de personal (o "Ambos"), igual que en su dashboard.
@@ -22,14 +30,74 @@ export default async function CatalogoCursosPage() {
     where.targetAudience = { in: [session.user.personnelType, "AMBOS"] };
   }
 
-  const [courses, categories] = await Promise.all([
+  // Se traen los cursos que le corresponden al usuario y los contadores de
+  // cada faceta se calculan sobre ese conjunto, en el servidor: así el número
+  // que ve junto a cada opción es real, no una estimación del cliente.
+  const [todos, categories, misInscripciones] = await Promise.all([
     prisma.course.findMany({
       where,
       orderBy: { publishedAt: "desc" },
       include: { category: { select: { id: true, name: true } }, tutor: { select: { fullName: true } } },
     }),
     prisma.courseCategory.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
+    session?.user
+      ? prisma.enrollment.findMany({
+          where: { userId: session.user.id },
+          select: { courseId: true, status: true, progressPercentage: true },
+        })
+      : Promise.resolve([]),
   ]);
+
+  const estadoPorCurso = new Map(misInscripciones.map((e) => [e.courseId, e]));
+  const estadoDe = (id: string) => {
+    const e = estadoPorCurso.get(id);
+    if (!e) return "pendiente";
+    if (e.status === "COMPLETED") return "completado";
+    return e.progressPercentage > 0 ? "en-curso" : "pendiente";
+  };
+
+  const filtrosCategoria = lista(sp.categoria);
+  const filtrosTipo = lista(sp.tipo);
+  const filtrosEstado = lista(sp.estado);
+  const busqueda = (sp.q ?? "").trim().toLowerCase();
+
+  const coincide = (c: (typeof todos)[number]) =>
+    (busqueda === "" || c.title.toLowerCase().includes(busqueda)) &&
+    (filtrosCategoria.length === 0 || (c.category && filtrosCategoria.includes(c.category.id))) &&
+    (filtrosTipo.length === 0 || filtrosTipo.includes(c.courseType)) &&
+    (filtrosEstado.length === 0 || filtrosEstado.includes(estadoDe(c.id)));
+
+  const courses = todos.filter(coincide);
+
+  const facetas = [
+    {
+      paramName: "categoria",
+      titulo: "Categoría",
+      opciones: categories.map((cat) => ({
+        valor: cat.id,
+        etiqueta: cat.name,
+        conteo: todos.filter((c) => c.category?.id === cat.id).length,
+      })),
+    },
+    {
+      paramName: "tipo",
+      titulo: "Tipo de curso",
+      opciones: [...new Set(todos.map((c) => c.courseType))].map((tipo) => ({
+        valor: tipo,
+        etiqueta: COURSE_TYPE_LABELS[tipo],
+        conteo: todos.filter((c) => c.courseType === tipo).length,
+      })),
+    },
+    {
+      paramName: "estado",
+      titulo: "Mi avance",
+      opciones: [
+        { valor: "pendiente", etiqueta: "Sin iniciar", conteo: todos.filter((c) => estadoDe(c.id) === "pendiente").length },
+        { valor: "en-curso", etiqueta: "En curso", conteo: todos.filter((c) => estadoDe(c.id) === "en-curso").length },
+        { valor: "completado", etiqueta: "Completado", conteo: todos.filter((c) => estadoDe(c.id) === "completado").length },
+      ],
+    },
+  ].filter((f) => f.opciones.length > 0);
 
   const totalHours = courses.reduce((sum, c) => sum + c.durationHours, 0);
   const obligatoriosCount = courses.filter((c) => c.courseType === "OBLIGATORIO").length;
@@ -114,17 +182,18 @@ export default async function CatalogoCursosPage() {
         </div>
       </section>
 
-      <CourseCatalogBrowser
-        categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+      <FiltrosCatalogo facetas={facetas} total={courses.length} />
+
+      <CatalogoResultados
         courses={courses.map((course) => ({
           id: course.id,
           href: `/cursos/${course.slug}`,
           imageUrl: course.imageUrl,
           title: course.title,
           courseType: course.courseType,
-          categoryId: course.category?.id ?? null,
           categoryName: course.category?.name ?? null,
-          targetAudience: course.targetAudience,
+          audienceLabel:
+            course.targetAudience === "AMBOS" ? null : COURSE_AUDIENCE_LABELS[course.targetAudience],
           durationHours: course.durationHours,
           tutorName: course.tutor.fullName,
         }))}
