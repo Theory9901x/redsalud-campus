@@ -5,20 +5,29 @@ import { NativeCssBypass } from "@/components/brand/native-css-bypass";
 import { NativeViewTransitions } from "@/components/brand/native-view-transitions";
 import "./globals.css";
 
+// display: "swap" en las tres: el texto se pinta de inmediato con la fuente
+// del sistema y se sustituye al llegar la definitiva, en vez de dejar la
+// pantalla en blanco esperándolas (se midieron ~680ms entre TTFB y el primer
+// pintado).
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const bricolage = Bricolage_Grotesque({
   variable: "--font-bricolage",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  // Solo los pesos que la interfaz usa de verdad (font-bold y font-extrabold);
+  // antes se descargaban cinco.
+  weight: ["700", "800"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
