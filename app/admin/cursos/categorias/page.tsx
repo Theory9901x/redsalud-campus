@@ -38,7 +38,7 @@ export default async function CategoriasPage() {
         />
       </div>
 
-      <div className="surface-panel overflow-hidden">
+      <div className="surface-glass overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

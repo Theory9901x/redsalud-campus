@@ -125,7 +125,7 @@ export default async function InscripcionesPage({
           </Button>
         </form>
 
-        <div className="surface-panel overflow-hidden">
+        <div className="surface-glass overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

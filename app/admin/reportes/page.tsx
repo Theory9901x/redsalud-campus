@@ -120,7 +120,7 @@ export default async function ReportesPage({
             </a>
           </div>
         </div>
-        <div className="surface-panel overflow-hidden">
+        <div className="surface-glass overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -165,7 +165,7 @@ export default async function ReportesPage({
             Exportar CSV
           </a>
         </div>
-        <div className="surface-panel overflow-hidden">
+        <div className="surface-glass overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -233,7 +233,7 @@ export default async function ReportesPage({
             </a>
           </div>
         </div>
-        <div className="surface-panel overflow-hidden">
+        <div className="surface-glass overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -323,7 +323,7 @@ export default async function ReportesPage({
             </a>
           </div>
         </div>
-        <div className="surface-panel overflow-hidden">
+        <div className="surface-glass overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

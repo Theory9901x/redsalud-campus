@@ -41,7 +41,7 @@ export function CourseAdminTable({
   }
 
   return (
-    <div className="surface-panel overflow-hidden">
+    <div className="surface-glass overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>

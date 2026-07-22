@@ -23,6 +23,10 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
+      // Sin `sticky`: el contenedor de la tabla usa overflow-x-auto, que hace
+      // que overflow-y compute a auto y se vuelva contenedor de scroll; un
+      // thead sticky ahí se ancla a un contenedor que nunca scrollea por
+      // dentro y se mueve con la página. Sería CSS muerto.
       className={cn(
         "bg-slate-100 [&_tr]:border-b-2 [&_tr]:border-b-slate-300 dark:bg-slate-800 dark:[&_tr]:border-b-slate-600",
         className

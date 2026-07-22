@@ -169,7 +169,7 @@ export default async function UsuariosPage({
         )}
       </form>
 
-      <div className="surface-panel overflow-hidden">
+      <div className="surface-glass overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
