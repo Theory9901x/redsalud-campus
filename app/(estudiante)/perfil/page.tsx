@@ -1,15 +1,16 @@
-import { User, Mail, IdCard, Briefcase, Phone, GraduationCap, Building2 } from "lucide-react";
+import { User, Mail, IdCard, Briefcase, Phone, GraduationCap, Building2, MapPin, BadgeCheck } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getUserAvatarUrl } from "@/lib/avatar";
 import { AvatarUploader } from "@/components/student/avatar-uploader";
 import { ChangePasswordForm } from "@/components/student/change-password-form";
 import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
+import { MarcaPlanta, VINCULACION_LABELS, esPlanta } from "@/components/admin/marca-planta";
 
 export default async function PerfilPage() {
   const session = await auth();
   const [user, avatarUrl] = await Promise.all([
-    prisma.user.findUniqueOrThrow({ where: { id: session!.user.id } }),
+    prisma.user.findUniqueOrThrow({ where: { id: session!.user.id }, include: { municipio: true } }),
     getUserAvatarUrl(session!.user.id),
   ]);
 
@@ -20,6 +21,8 @@ export default async function PerfilPage() {
     { icon: GraduationCap, label: "Profesión", value: user.profession || "—" },
     { icon: Briefcase, label: "Cargo", value: user.position || "—" },
     { icon: Building2, label: "Tipo de personal", value: PERSONNEL_TYPE_LABELS[user.personnelType] },
+    { icon: MapPin, label: "Municipio", value: user.municipio?.nombre ?? "—" },
+    { icon: BadgeCheck, label: "Vinculación", value: VINCULACION_LABELS[user.tipoVinculacion] },
   ];
 
   return (
@@ -40,7 +43,15 @@ export default async function PerfilPage() {
       <section className="surface-glass space-y-4 p-6">
         <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">Mis datos</h2>
         <div>
-          <p className="font-display text-lg font-extrabold text-foreground">{user.fullName}</p>
+          <p className="flex items-center gap-2 font-display text-lg font-extrabold text-foreground">
+            <MarcaPlanta tipo={user.tipoVinculacion} />
+            {user.fullName}
+            {esPlanta(user.tipoVinculacion) && (
+              <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning-foreground">
+                Planta
+              </span>
+            )}
+          </p>
           <div className="mt-3 space-y-2.5">
             {infoRows.map((row) => (
               <div key={row.label} className="flex items-center gap-3 text-sm">

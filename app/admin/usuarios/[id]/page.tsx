@@ -13,6 +13,8 @@ import { ENROLLMENT_STATUS_LABELS, ENROLLMENT_STATUS_CLASSES } from "@/component
 import { CERTIFICATE_STATUS_LABELS, CERTIFICATE_STATUS_CLASSES } from "@/components/certificados/labels";
 import { updateUserAction } from "@/app/admin/usuarios/actions";
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { MarcaPlanta, VINCULACION_LABELS, esPlanta } from "@/components/admin/marca-planta";
+import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
 
 export default async function EditarUsuarioPage({
   params,
@@ -20,7 +22,7 @@ export default async function EditarUsuarioPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [session, user] = await Promise.all([auth(), prisma.user.findUnique({ where: { id } })]);
+  const [session, user] = await Promise.all([auth(), prisma.user.findUnique({ where: { id }, include: { municipio: true, cargo: true } })]);
 
   if (!user) {
     notFound();
@@ -58,10 +60,42 @@ export default async function EditarUsuarioPage({
           Volver a usuarios
         </Link>
         <AdminPageHeader
-          title={user.fullName}
+          title={`${esPlanta(user.tipoVinculacion) ? "⭐ " : ""}${user.fullName}`}
           description={`Creado el ${user.createdAt.toLocaleDateString("es-CO")}${user.lastLoginAt ? ` · Último ingreso ${user.lastLoginAt.toLocaleDateString("es-CO")}` : ""}`}
           action={<ResetPasswordDialog userId={user.id} userName={user.fullName} />}
         />
+      </div>
+
+      {/* Ficha completa: lo que la base sabe de la persona, de un vistazo. */}
+      <div className="surface-glass max-w-3xl p-6">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <MarcaPlanta tipo={user.tipoVinculacion} />
+          <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
+            Ficha del funcionario
+          </h2>
+          <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+            {VINCULACION_LABELS[user.tipoVinculacion]}
+          </span>
+        </div>
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+          {[
+            ["Documento", `${user.documentType} ${user.documentNumber}`],
+            ["Correo", user.email],
+            ["Usuario de acceso", user.username ?? "—"],
+            ["Teléfono", user.phone ?? "—"],
+            ["Municipio", user.municipio?.nombre ?? "—"],
+            ["Cargo", user.cargo?.nombre ?? user.position ?? "—"],
+            ["Grupo poblacional", PERSONNEL_TYPE_LABELS[user.personnelType]],
+            ["Dependencia", user.department ?? "—"],
+            ["Origen del registro", user.origenRegistro === "IMPORTACION" ? "Importado del plan de cargos" : "Creado en la plataforma"],
+            ["Último ingreso", user.lastLoginAt ? user.lastLoginAt.toLocaleString("es-CO") : "Nunca ha ingresado"],
+          ].map(([etiqueta, valor]) => (
+            <div key={etiqueta} className="flex justify-between gap-3 border-b border-border/60 pb-2">
+              <dt className="text-muted-foreground">{etiqueta}</dt>
+              <dd className="text-right font-medium text-foreground">{valor}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
 
       <div className="surface max-w-3xl p-6">

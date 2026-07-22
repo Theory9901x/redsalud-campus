@@ -18,6 +18,7 @@ import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { TablePagination } from "@/components/admin/table-pagination";
 import { parsePageSize } from "@/lib/pagination";
+import { MarcaPlanta } from "@/components/admin/marca-planta";
 import { AutoSearchInput, AutoFilterSelect } from "@/components/admin/auto-search-input";
 import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
 import type { PersonnelType, Prisma, Role, TipoVinculacion, UserStatus } from "@prisma/client";
@@ -189,7 +190,8 @@ export default async function UsuariosPage({
             {users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium text-foreground">
-                  <Link href={`/admin/usuarios/${user.id}`} className="hover:underline">
+                  <Link href={`/admin/usuarios/${user.id}`} className="inline-flex items-center gap-1.5 hover:underline">
+                    <MarcaPlanta tipo={user.tipoVinculacion} />
                     {user.fullName}
                   </Link>
                 </TableCell>
