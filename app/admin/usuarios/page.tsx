@@ -16,7 +16,8 @@ import { StatusBadge } from "@/components/admin/status-badge";
 import { ToggleStatusButton } from "@/components/admin/toggle-status-button";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AdminPageHeader } from "@/components/admin/page-header";
-import { TablePagination, PAGE_SIZES, DEFAULT_PAGE_SIZE } from "@/components/admin/table-pagination";
+import { TablePagination } from "@/components/admin/table-pagination";
+import { parsePageSize } from "@/lib/pagination";
 import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
 import type { PersonnelType, Prisma, Role, UserStatus } from "@prisma/client";
 
@@ -75,9 +76,7 @@ export default async function UsuariosPage({
   // lenta la vista y la consulta. Se pide solo la página visible y las
   // columnas que la tabla realmente usa (antes venían todas, passwordHash
   // incluido).
-  const pageSize = PAGE_SIZES.includes(Number(pageSizeParam) as (typeof PAGE_SIZES)[number])
-    ? Number(pageSizeParam)
-    : DEFAULT_PAGE_SIZE;
+  const pageSize = parsePageSize(pageSizeParam);
   const page = Math.max(1, Number(pageParam) || 1);
 
   const [total, users] = await Promise.all([

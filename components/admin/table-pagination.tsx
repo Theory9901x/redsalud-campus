@@ -4,9 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** Tamaños de página disponibles. */
-export const PAGE_SIZES = [20, 50, 100, 500, 1000] as const;
-export const DEFAULT_PAGE_SIZE = 20;
+import { PAGE_SIZES } from "@/lib/pagination";
 
 /**
  * Paginación de listados largos. Conserva los filtros actuales (opera sobre
