@@ -13,7 +13,6 @@ const initialState: LoginState = { error: null };
 export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
-  const [showForgotHelp, setShowForgotHelp] = useState(false);
 
   return (
     <div className="relative w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -56,13 +55,9 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Contraseña</Label>
-              <button
-                type="button"
-                onClick={() => setShowForgotHelp((v) => !v)}
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-              >
+              <Link href="/recuperar" className="text-xs font-medium text-primary hover:underline">
                 ¿Olvidaste tu contraseña?
-              </button>
+              </Link>
             </div>
             <div className="group relative">
               <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
@@ -84,12 +79,6 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            {showForgotHelp && (
-              <p className="flex items-start gap-1.5 rounded-lg bg-accent px-3 py-2 text-xs text-foreground/80 animate-in fade-in slide-in-from-top-1 duration-300">
-                <HelpCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                Contacta al administrador de la plataforma para restablecer tu contraseña.
-              </p>
-            )}
           </div>
 
           <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">

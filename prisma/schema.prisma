@@ -162,6 +162,7 @@ model User {
   notificationsCreated  Notification[]     @relation("NotificationCreatedBy")
   notificationsTargeted Notification[]     @relation("NotificationTargetUser")
   notificationReads     NotificationRead[] @relation("NotificationReadBy")
+  passwordResets        PasswordResetToken[]
 
   @@index([role, status])
   @@index([department])
@@ -796,4 +797,29 @@ model SurveyAnswerOption {
   option   SurveyQuestionOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
 
   @@unique([answerId, optionId])
+}
+
+// ------------------------------------------------------------------
+// Recuperación de contraseña por código enviado al correo
+// ------------------------------------------------------------------
+
+/**
+ * Código de un solo uso para restablecer la contraseña.
+ *
+ * Se guarda el HASH del código, nunca el código en claro: quien tenga acceso
+ * a la base no debe poder tomar cuentas ajenas. Lleva contador de intentos
+ * para frenar la adivinación por fuerza bruta de un código de 6 dígitos.
+ */
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
