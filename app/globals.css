@@ -494,6 +494,25 @@
     box-shadow: var(--shadow-clay-pressed);
   }
 
+  /*
+   * Columna fijada al borde derecho de una tabla ancha (acciones).
+   *
+   * Tiene que ser OPACA: es una capa por encima de la tabla que scrollea por
+   * debajo. Con un fondo heredado o translúcido el contenido de las columnas
+   * de atrás se ve a través y el resultado es texto encimado, que fue justo
+   * lo que pasaba. La sombra del borde izquierdo es lo que la delata como
+   * capa fijada y no como un parche pegado sobre el panel.
+   */
+  .col-fijada {
+    position: sticky;
+    right: 0;
+    background-color: var(--card);
+    box-shadow: -12px 0 16px -12px color-mix(in oklch, var(--shade) 35%, transparent);
+  }
+  thead .col-fijada {
+    background-color: color-mix(in oklch, var(--foreground) 6%, var(--card));
+  }
+
   /* Chip glass chico (metadatos de heros, porcentajes, contadores). */
   .chip-glass {
     @apply inline-flex items-center gap-1.5 border px-2.5 py-1 text-xs font-medium text-white;

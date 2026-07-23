@@ -176,7 +176,7 @@ export default async function UsuariosPage({
               <TableHead>Vinculación</TableHead>
               <TableHead>Rol</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead className="sticky right-0 bg-slate-100 text-right dark:bg-slate-800">Acciones</TableHead>
+              <TableHead className="col-fijada text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -215,7 +215,7 @@ export default async function UsuariosPage({
                 <TableCell>
                   <StatusBadge status={user.status} />
                 </TableCell>
-                <TableCell className="sticky right-0 bg-inherit">
+                <TableCell className="col-fijada">
                   <div className="flex justify-end gap-2">
                   <Link
                     href={`/admin/usuarios/${user.id}`}
