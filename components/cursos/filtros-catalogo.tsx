@@ -19,6 +19,10 @@ export type Faceta = {
  * Los contadores se calculan en el servidor y llegan por props: el cliente
  * solo navega. Cada faceta es multi-selección y se acumula en la URL separada
  * por comas, así el estado del filtro es compartible y sobrevive a recargas.
+ *
+ * No hay faceta por cargo a propósito: para el catálogo lo único que decide
+ * qué cursos corresponden es el grupo poblacional (asistencial/administrativo),
+ * ya cubierto por Course.targetAudience. El cargo no filtra formación.
  */
 export function FiltrosCatalogo({ facetas, total }: { facetas: Faceta[]; total: number }) {
   const router = useRouter();
