@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, LogOut, Menu } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ThemeToggle } from "@/components/brand/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,7 +55,8 @@ export function AdminTopbar({
         <p className="hidden min-w-0 flex-1 truncate text-sm font-medium text-muted-foreground lg:block">{breadcrumb}</p>
       )}
 
-      <div className="flex flex-1 items-center justify-end">
+      <div className="flex flex-1 items-center justify-end gap-2.5">
+        <ThemeToggle />
         {/* Bloque de usuario como píldora clay clickeable con menú. */}
         <DropdownMenu>
           <DropdownMenuTrigger className="surface-clay flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 outline-none transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-primary">

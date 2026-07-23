@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Inter, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/brand/theme-provider";
 import { NativeCssBypass } from "@/components/brand/native-css-bypass";
 import { NativeViewTransitions } from "@/components/brand/native-view-transitions";
 import "./globals.css";
@@ -41,17 +42,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    // suppressHydrationWarning: el script bloqueante de next-themes escribe la
+    // clase del tema en <html> antes de que React hidrate, así que el marcado
+    // del servidor y el del cliente difieren a propósito en ese atributo.
     <html
       lang="es"
+      suppressHydrationWarning
       className={`${inter.variable} ${bricolage.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         <NativeCssBypass />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <NativeViewTransitions />
-        {children}
-        <Toaster richColors position="top-right" />
+        <ThemeProvider>
+          <NativeViewTransitions />
+          {children}
+          <Toaster richColors position="top-right" />
+        </ThemeProvider>
       </body>
     </html>
   );

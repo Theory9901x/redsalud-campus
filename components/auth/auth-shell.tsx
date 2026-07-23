@@ -1,5 +1,6 @@
 import { Activity, Award, Layers, LineChart, QrCode, Sparkles } from "lucide-react";
 import { ConstellationPattern } from "@/components/brand/dot-pattern";
+import { ThemeToggle } from "@/components/brand/theme-toggle";
 
 const FEATURES = [
   { icon: Award, label: "Certificación digital", description: "Certificados en PDF verificables al instante." },
@@ -61,11 +62,16 @@ export function AuthShell({
   logoUrl?: string | null;
 }) {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[oklch(94.5%_0.008_255)] p-4 sm:p-8">
+    <div className="page-canvas relative flex min-h-screen items-center justify-center overflow-hidden p-4 sm:p-8">
+      {/* El selector de tema vive aquí arriba y no en la tarjeta: quien entra
+          de noche debe poder cambiarlo ANTES de iniciar sesión, no después. */}
+      <div className="absolute right-4 top-4 z-20 sm:right-8 sm:top-8">
+        <ThemeToggle />
+      </div>
       {/* Resplandor muy sutil detrás de la tarjeta, para que no flote sobre un gris plano. */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,color-mix(in_oklch,var(--primary)_10%,transparent),transparent_55%)]" />
 
-      <div className="relative grid w-full max-w-[88rem] grid-cols-1 overflow-hidden rounded-[2.5rem] border border-black/5 shadow-[0_2px_4px_0_rgba(10,22,34,0.06),0_24px_48px_-16px_rgba(10,22,34,0.25),0_48px_96px_-32px_rgba(10,22,34,0.30)] lg:grid-cols-2">
+      <div className="relative grid w-full max-w-[88rem] grid-cols-1 overflow-hidden rounded-[2.5rem] border shadow-[var(--shadow-3)] [border-color:var(--clay-border)] lg:grid-cols-2">
         {/* Panel institucional (oculto en móvil, ver encabezado compacto más abajo) */}
         <div
           className="relative hidden flex-col justify-between overflow-hidden p-12 text-white lg:flex xl:p-16"
@@ -137,7 +143,7 @@ export function AuthShell({
           </p>
         </div>
 
-        <div className="relative flex items-center justify-center bg-white px-6 py-14 sm:px-14 xl:px-16">
+        <div className="relative flex items-center justify-center bg-card px-6 py-14 sm:px-14 xl:px-16">
           <div className="relative flex w-full justify-center">{children}</div>
         </div>
       </div>

@@ -90,6 +90,10 @@
   --chart-4: oklch(62.37% 0.2028 21.62);
   --chart-5: oklch(25.39% 0.0467 249.10);
   --radius: 0.75rem;
+  /* Le dice al navegador de qué tema es la página, para que la barra de
+     scroll, los desplegables nativos y los campos de fecha no salgan claros
+     en una interfaz oscura. */
+  color-scheme: light;
   --sidebar: oklch(25.39% 0.0467 249.10);
   --sidebar-foreground: oklch(95.43% 0.0101 238.51);
   --sidebar-primary: oklch(68.52% 0.1312 233.93);
@@ -117,6 +121,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(19.63% 0.0292 251.51);
   --foreground: oklch(95.43% 0.0101 238.51);
   --card: oklch(23.73% 0.0363 248.09);
@@ -156,38 +161,116 @@
 }
 
 /*
- * Escalas del sistema de superficies (ver DESIGN-SYSTEM.md):
- * radios nombrados (superficie grande / tarjeta / chip) y niveles de sombra
- * 0-3 reutilizables. Cualquier superficie nueva debe consumir estas
- * variables, nunca valores mágicos repetidos.
+ * Escalas del sistema de superficies (ver DESIGN-SYSTEM.md).
+ *
+ * Aqui viven DOS cosas distintas y conviene no confundirlas:
+ *
+ *  - Escalas neutrales (radios): iguales en los dos temas.
+ *  - Primitivas de tema (--shade, --tint, --glass-*, --canvas-*): el par de
+ *    valores del que dependen vidrio, clay, lienzo y elevacion. Existen para
+ *    que cada clase se escriba UNA sola vez y funcione en los dos temas, en
+ *    vez de duplicar `.dark .surface-glass { ... }` por cada superficie.
+ *
+ * Cualquier superficie nueva debe consumir estas variables, nunca valores
+ * magicos repetidos y NUNCA `white`/`black` literales: un blanco literal es
+ * una losa luminosa en modo oscuro.
  */
 :root {
   --radius-surface: 24px;
   --radius-card: 20px;
   --radius-chip: 12px;
 
-  --shadow-0: 0 1px 2px 0 color-mix(in oklch, var(--navy) 5%, transparent);
+  /* Color con el que se tine TODA sombra proyectada. En claro es el navy de
+     marca (una sombra fria, no gris sucio); en oscuro, negro puro. */
+  --shade: var(--navy);
+  /* Color que "ilumina": brillos internos, bordes superiores, vidrio. */
+  --tint: oklch(100% 0 0);
+
+  --shadow-0: 0 1px 2px 0 color-mix(in oklch, var(--shade) 5%, transparent);
   --shadow-1:
-    0 1px 2px 0 color-mix(in oklch, var(--navy) 5%, transparent),
-    0 3px 8px -2px color-mix(in oklch, var(--navy) 6%, transparent),
-    0 10px 24px -8px color-mix(in oklch, var(--navy) 12%, transparent);
+    0 1px 2px 0 color-mix(in oklch, var(--shade) 5%, transparent),
+    0 3px 8px -2px color-mix(in oklch, var(--shade) 6%, transparent),
+    0 10px 24px -8px color-mix(in oklch, var(--shade) 12%, transparent);
   --shadow-2:
-    0 2px 4px 0 color-mix(in oklch, var(--navy) 6%, transparent),
-    0 6px 12px -2px color-mix(in oklch, var(--navy) 8%, transparent),
-    0 18px 36px -10px color-mix(in oklch, var(--navy) 18%, transparent);
+    0 2px 4px 0 color-mix(in oklch, var(--shade) 6%, transparent),
+    0 6px 12px -2px color-mix(in oklch, var(--shade) 8%, transparent),
+    0 18px 36px -10px color-mix(in oklch, var(--shade) 18%, transparent);
   --shadow-3:
-    inset 0 1px 0 0 color-mix(in oklch, var(--card) 90%, transparent),
-    0 1px 2px 0 color-mix(in oklch, var(--navy) 6%, transparent),
-    0 16px 32px -12px color-mix(in oklch, var(--navy) 16%, transparent),
-    0 32px 64px -28px color-mix(in oklch, var(--navy) 20%, transparent);
+    inset 0 1px 0 0 color-mix(in oklch, var(--tint) 90%, transparent),
+    0 1px 2px 0 color-mix(in oklch, var(--shade) 6%, transparent),
+    0 16px 32px -12px color-mix(in oklch, var(--shade) 16%, transparent),
+    0 32px 64px -28px color-mix(in oklch, var(--shade) 20%, transparent);
   --shadow-clay:
-    inset 2px 2px 6px rgba(255, 255, 255, 0.9),
-    inset -2px -2px 6px rgba(0, 0, 0, 0.05),
-    8px 8px 20px rgba(0, 0, 0, 0.08);
+    inset 2px 2px 6px color-mix(in oklch, var(--tint) 90%, transparent),
+    inset -2px -2px 6px color-mix(in oklch, var(--shade) 5%, transparent),
+    8px 8px 20px color-mix(in oklch, var(--shade) 8%, transparent);
   --shadow-clay-pressed:
-    inset 3px 3px 8px rgba(0, 0, 0, 0.08),
-    inset -2px -2px 6px rgba(255, 255, 255, 0.7),
-    2px 2px 8px rgba(0, 0, 0, 0.04);
+    inset 3px 3px 8px color-mix(in oklch, var(--shade) 8%, transparent),
+    inset -2px -2px 6px color-mix(in oklch, var(--tint) 70%, transparent),
+    2px 2px 8px color-mix(in oklch, var(--shade) 4%, transparent);
+  --clay-border: color-mix(in oklch, var(--shade) 5%, transparent);
+
+  /* Vidrio sobre lienzo claro. */
+  --glass-bg: color-mix(in oklch, var(--tint) 65%, transparent);
+  --glass-border: color-mix(in oklch, var(--tint) 60%, transparent);
+  --glass-inset: color-mix(in oklch, var(--tint) 80%, transparent);
+
+  /* Lienzo nivel 0. El degradado completo es un token porque los blobs de
+     color cambian de intencion entre temas: en claro tinen un fondo frio,
+     en oscuro son la unica fuente de luz de la pagina. */
+  --canvas-base: oklch(91.30% 0.0173 256.28);
+  --canvas-page:
+    radial-gradient(circle at 88% -8%, color-mix(in oklch, var(--navy) 12%, transparent), transparent 50%),
+    radial-gradient(circle 560px at -10% 100%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 70%),
+    radial-gradient(circle 480px at 104% 62%, color-mix(in oklch, var(--success) 10%, transparent), transparent 70%),
+    linear-gradient(165deg in oklch, oklch(93.51% 0.0138 258.35) 0%, oklch(90.34% 0.0191 255.54) 50%, oklch(87.74% 0.0233 252.19) 100%);
+  --canvas-aula:
+    radial-gradient(circle 480px at 8% 12%, color-mix(in oklch, var(--primary) 22%, transparent), transparent 70%),
+    radial-gradient(circle 420px at 96% 30%, color-mix(in oklch, var(--success) 16%, transparent), transparent 70%),
+    radial-gradient(circle 520px at 50% 105%, color-mix(in oklch, var(--navy) 14%, transparent), transparent 70%),
+    linear-gradient(165deg in oklch, oklch(93.51% 0.0138 258.35) 0%, oklch(90.34% 0.0191 255.54) 50%, oklch(87.74% 0.0233 252.19) 100%);
+
+  /* Degradado de fondo del panel nivel 1 (sutil, de arriba hacia abajo). */
+  --panel-gradient: linear-gradient(180deg in oklch, var(--card) 0%, oklch(99.09% 0.0029 264.54) 100%);
+}
+
+/*
+ * Modo oscuro. No es el tema claro invertido: en oscuro la profundidad la da
+ * el BORDE ILUMINADO de arriba, no la sombra proyectada (una sombra negra
+ * sobre fondo casi negro no se ve). Por eso el tinte sube de peso en clay y
+ * vidrio, y la sombra queda solo como separacion suave.
+ */
+.dark {
+  --shade: oklch(0% 0 0);
+  --tint: oklch(86% 0.025 248);
+
+  --clay-border: color-mix(in oklch, var(--tint) 8%, transparent);
+  --shadow-clay:
+    inset 1px 1px 0 0 color-mix(in oklch, var(--tint) 10%, transparent),
+    inset -2px -2px 6px color-mix(in oklch, var(--shade) 25%, transparent),
+    8px 8px 20px color-mix(in oklch, var(--shade) 40%, transparent);
+  --shadow-clay-pressed:
+    inset 3px 3px 8px color-mix(in oklch, var(--shade) 45%, transparent),
+    inset -1px -1px 0 0 color-mix(in oklch, var(--tint) 7%, transparent),
+    2px 2px 8px color-mix(in oklch, var(--shade) 25%, transparent);
+
+  --glass-bg: color-mix(in oklch, var(--tint) 9%, transparent);
+  --glass-border: color-mix(in oklch, var(--tint) 14%, transparent);
+  --glass-inset: color-mix(in oklch, var(--tint) 12%, transparent);
+
+  --canvas-base: oklch(17.20% 0.0243 251.20);
+  --canvas-page:
+    radial-gradient(circle at 88% -8%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 50%),
+    radial-gradient(circle 560px at -10% 100%, color-mix(in oklch, var(--primary) 13%, transparent), transparent 70%),
+    radial-gradient(circle 480px at 104% 62%, color-mix(in oklch, var(--success) 10%, transparent), transparent 70%),
+    linear-gradient(165deg in oklch, oklch(20.10% 0.0286 252.40) 0%, oklch(16.80% 0.0254 250.60) 50%, oklch(13.90% 0.0212 249.10) 100%);
+  --canvas-aula:
+    radial-gradient(circle 480px at 8% 12%, color-mix(in oklch, var(--primary) 24%, transparent), transparent 70%),
+    radial-gradient(circle 420px at 96% 30%, color-mix(in oklch, var(--success) 18%, transparent), transparent 70%),
+    radial-gradient(circle 520px at 50% 105%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 70%),
+    linear-gradient(165deg in oklch, oklch(20.10% 0.0286 252.40) 0%, oklch(16.80% 0.0254 250.60) 50%, oklch(13.90% 0.0212 249.10) 100%);
+
+  --panel-gradient: linear-gradient(180deg in oklch, var(--card) 0%, oklch(20.80% 0.0316 248.60) 100%);
 }
 
 @layer base {
@@ -235,10 +318,7 @@
   /* Superficie con profundidad real: sombra en capas en vez de shadow-sm plano. */
   .surface {
     @apply relative rounded-2xl border border-border bg-card;
-    box-shadow:
-      0 1px 2px 0 color-mix(in oklch, var(--navy) 5%, transparent),
-      0 3px 8px -2px color-mix(in oklch, var(--navy) 6%, transparent),
-      0 10px 24px -8px color-mix(in oklch, var(--navy) 12%, transparent);
+    box-shadow: var(--shadow-1);
   }
 
   .surface-hover {
@@ -248,10 +328,7 @@
   }
   .surface-hover:hover {
     @apply -translate-y-0.5;
-    box-shadow:
-      0 2px 4px 0 color-mix(in oklch, var(--navy) 6%, transparent),
-      0 6px 12px -2px color-mix(in oklch, var(--navy) 8%, transparent),
-      0 18px 36px -10px color-mix(in oklch, var(--navy) 18%, transparent);
+    box-shadow: var(--shadow-2);
   }
 
   /* Franja de acento superior con color de marca, para superficies destacadas. */
@@ -282,8 +359,8 @@
     background-color: color-mix(in oklch, var(--card) 72%, transparent);
     -webkit-backdrop-filter: blur(14px) saturate(160%);
     backdrop-filter: blur(14px) saturate(160%);
-    box-shadow: 0 1px 2px 0 color-mix(in oklch, var(--navy) 6%, transparent),
-      0 8px 24px -12px color-mix(in oklch, var(--navy) 20%, transparent);
+    box-shadow: 0 1px 2px 0 color-mix(in oklch, var(--shade) 6%, transparent),
+      0 8px 24px -12px color-mix(in oklch, var(--shade) 20%, transparent);
   }
 
   /*
@@ -318,63 +395,53 @@
    * sección elevado, nivel 2 = tarjetas dentro de la sección (.surface).
    */
   .page-canvas {
-    background-color: oklch(91.30% 0.0173 256.28);
-    background-image:
-      radial-gradient(circle at 88% -8%, color-mix(in oklch, var(--navy) 12%, transparent), transparent 50%),
-      radial-gradient(circle 560px at -10% 100%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 70%),
-      radial-gradient(circle 480px at 104% 62%, color-mix(in oklch, var(--success) 10%, transparent), transparent 70%),
-      linear-gradient(165deg in oklch, oklch(93.51% 0.0138 258.35) 0%, oklch(90.34% 0.0191 255.54) 50%, oklch(87.74% 0.0233 252.19) 100%);
+    background-color: var(--canvas-base);
+    background-image: var(--canvas-page);
   }
 
   .surface-panel {
     @apply relative overflow-hidden rounded-[22px] border border-border bg-card;
-    background-image: linear-gradient(180deg in oklch, var(--card) 0%, oklch(99.09% 0.0029 264.54) 100%);
-    box-shadow:
-      inset 0 1px 0 0 color-mix(in oklch, var(--card) 90%, transparent),
-      0 1px 2px 0 color-mix(in oklch, var(--navy) 6%, transparent),
-      0 16px 32px -12px color-mix(in oklch, var(--navy) 16%, transparent),
-      0 32px 64px -28px color-mix(in oklch, var(--navy) 20%, transparent);
+    background-image: var(--panel-gradient);
+    box-shadow: var(--shadow-3);
   }
 
   /* Tarjetas-métrica: elevación base + glow de acento en hover cuando son clicables. */
   .metric-card {
     @apply relative overflow-hidden rounded-2xl border border-border transition-all duration-300;
     box-shadow:
-      inset 0 1px 0 0 color-mix(in oklch, var(--card) 70%, transparent),
-      0 1px 2px 0 color-mix(in oklch, var(--navy) 5%, transparent),
-      0 3px 8px -2px color-mix(in oklch, var(--navy) 6%, transparent),
-      0 10px 24px -8px color-mix(in oklch, var(--navy) 12%, transparent);
+      inset 0 1px 0 0 color-mix(in oklch, var(--tint) 70%, transparent),
+      var(--shadow-1);
   }
   .metric-card.is-clickable:hover {
     transform: translateY(-3px);
   }
   .metric-card-primary.is-clickable:hover {
     box-shadow:
-      inset 0 1px 0 0 color-mix(in oklch, var(--card) 70%, transparent),
-      0 2px 4px 0 color-mix(in oklch, var(--navy) 6%, transparent),
+      inset 0 1px 0 0 color-mix(in oklch, var(--tint) 70%, transparent),
+      0 2px 4px 0 color-mix(in oklch, var(--shade) 6%, transparent),
       0 10px 24px -6px color-mix(in oklch, var(--primary) 30%, transparent),
-      0 24px 48px -16px color-mix(in oklch, var(--navy) 16%, transparent);
+      0 24px 48px -16px color-mix(in oklch, var(--shade) 16%, transparent);
   }
   .metric-card-success.is-clickable:hover {
     box-shadow:
-      inset 0 1px 0 0 color-mix(in oklch, var(--card) 70%, transparent),
-      0 2px 4px 0 color-mix(in oklch, var(--navy) 6%, transparent),
+      inset 0 1px 0 0 color-mix(in oklch, var(--tint) 70%, transparent),
+      0 2px 4px 0 color-mix(in oklch, var(--shade) 6%, transparent),
       0 10px 24px -6px color-mix(in oklch, var(--success) 28%, transparent),
-      0 24px 48px -16px color-mix(in oklch, var(--navy) 16%, transparent);
+      0 24px 48px -16px color-mix(in oklch, var(--shade) 16%, transparent);
   }
   .metric-card-warning.is-clickable:hover {
     box-shadow:
-      inset 0 1px 0 0 color-mix(in oklch, var(--card) 70%, transparent),
-      0 2px 4px 0 color-mix(in oklch, var(--navy) 6%, transparent),
+      inset 0 1px 0 0 color-mix(in oklch, var(--tint) 70%, transparent),
+      0 2px 4px 0 color-mix(in oklch, var(--shade) 6%, transparent),
       0 10px 24px -6px color-mix(in oklch, var(--warning) 32%, transparent),
-      0 24px 48px -16px color-mix(in oklch, var(--navy) 16%, transparent);
+      0 24px 48px -16px color-mix(in oklch, var(--shade) 16%, transparent);
   }
   .metric-card-destructive.is-clickable:hover {
     box-shadow:
-      inset 0 1px 0 0 color-mix(in oklch, var(--card) 70%, transparent),
-      0 2px 4px 0 color-mix(in oklch, var(--navy) 6%, transparent),
+      inset 0 1px 0 0 color-mix(in oklch, var(--tint) 70%, transparent),
+      0 2px 4px 0 color-mix(in oklch, var(--shade) 6%, transparent),
       0 10px 24px -6px color-mix(in oklch, var(--destructive) 28%, transparent),
-      0 24px 48px -16px color-mix(in oklch, var(--navy) 16%, transparent);
+      0 24px 48px -16px color-mix(in oklch, var(--shade) 16%, transparent);
   }
 
   /*
@@ -391,13 +458,13 @@
   .surface-glass {
     @apply relative border;
     border-radius: var(--radius-surface);
-    border-color: color-mix(in oklch, white 60%, transparent);
-    background-color: color-mix(in oklch, white 65%, transparent);
+    border-color: var(--glass-border);
+    background-color: var(--glass-bg);
     -webkit-backdrop-filter: blur(24px) saturate(150%);
     backdrop-filter: blur(24px) saturate(150%);
     box-shadow:
-      inset 0 1px 0 0 color-mix(in oklch, white 80%, transparent),
-      0 8px 32px -12px color-mix(in oklch, var(--navy) 18%, transparent);
+      inset 0 1px 0 0 var(--glass-inset),
+      0 8px 32px -12px color-mix(in oklch, var(--shade) 18%, transparent);
   }
 
   .surface-glass-dark {
@@ -413,13 +480,15 @@
   }
 
   .surface-clay {
-    @apply relative border border-black/5 bg-card;
+    @apply relative border bg-card;
+    border-color: var(--clay-border);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow-clay);
   }
 
   .surface-clay-pressed {
-    @apply relative border border-black/5;
+    @apply relative border;
+    border-color: var(--clay-border);
     border-radius: var(--radius-card);
     background-color: color-mix(in oklch, var(--primary) 8%, var(--card));
     box-shadow: var(--shadow-clay-pressed);
@@ -453,12 +522,8 @@
    * ve simplemente gris).
    */
   .aula-canvas {
-    background-color: oklch(91.3% 0.0173 256.28);
-    background-image:
-      radial-gradient(circle 480px at 8% 12%, color-mix(in oklch, var(--primary) 22%, transparent), transparent 70%),
-      radial-gradient(circle 420px at 96% 30%, color-mix(in oklch, var(--success) 16%, transparent), transparent 70%),
-      radial-gradient(circle 520px at 50% 105%, color-mix(in oklch, var(--navy) 14%, transparent), transparent 70%),
-      linear-gradient(165deg in oklch, oklch(93.51% 0.0138 258.35) 0%, oklch(90.34% 0.0191 255.54) 50%, oklch(87.74% 0.0233 252.19) 100%);
+    background-color: var(--canvas-base);
+    background-image: var(--canvas-aula);
   }
 
   /*
@@ -497,13 +562,14 @@
    * que el brillo siga la esquina redondeada.
    */
   .panel-hud {
-    @apply relative border border-white/50;
+    @apply relative border;
     border-radius: var(--radius-surface);
-    background-color: color-mix(in oklch, white 68%, transparent);
+    border-color: var(--glass-border);
+    background-color: var(--glass-bg);
     -webkit-backdrop-filter: blur(24px) saturate(150%);
     backdrop-filter: blur(24px) saturate(150%);
     box-shadow:
-      inset 0 1px 0 0 color-mix(in oklch, white 80%, transparent),
+      inset 0 1px 0 0 var(--glass-inset),
       0 8px 32px -12px color-mix(in oklch, var(--accent) 22%, transparent);
   }
   .panel-hud::before {
@@ -523,7 +589,7 @@
   /* Número de KPI en tamaño hero con degradado de acento aplicado al texto. */
   .kpi-number {
     @apply font-display font-extrabold leading-none tracking-tight;
-    background-image: linear-gradient(135deg in oklch, var(--accent), color-mix(in oklch, var(--accent) 55%, var(--navy)));
+    background-image: linear-gradient(135deg in oklch, var(--accent), color-mix(in oklch, var(--accent) 55%, var(--foreground)));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -543,8 +609,8 @@
   .btn-hud-ghost {
     @apply relative inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-all duration-200;
     border-color: color-mix(in oklch, var(--accent) 35%, transparent);
-    background-color: color-mix(in oklch, var(--accent) 8%, white);
-    color: color-mix(in oklch, var(--accent) 75%, var(--navy));
+    background-color: color-mix(in oklch, var(--accent) 8%, var(--card));
+    color: color-mix(in oklch, var(--accent) 75%, var(--foreground));
   }
   .btn-hud-ghost:hover {
     @apply -translate-y-0.5;
