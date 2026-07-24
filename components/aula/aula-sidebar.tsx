@@ -41,7 +41,7 @@ function TimelineNode({
     >
       {state === "completed" && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
       {state === "current" && <span className="h-2 w-2 rounded-full bg-primary" />}
-      {state === "pending" && <span className="h-2 w-2 rounded-full bg-black/15" />}
+      {state === "pending" && <span className="h-2 w-2 rounded-full bg-foreground/25" />}
       {state === "locked" && <Lock className="h-3 w-3" />}
       {state === "failed" && <XCircle className="h-3.5 w-3.5" />}
     </span>
@@ -52,7 +52,7 @@ function timelineRowClass(active: boolean, unlocked: boolean) {
   return cn(
     "group relative flex items-center gap-3 rounded-xl px-2 py-2 text-sm transition-[background-color,transform,box-shadow] duration-200",
     active && "bg-primary/10 font-medium text-primary",
-    !active && unlocked && "text-foreground/80 hover:bg-black/5 hover:translate-x-0.5",
+    !active && unlocked && "text-foreground/80 hover:bg-foreground/[0.06] hover:translate-x-0.5",
     !unlocked && "cursor-default text-muted-foreground/60"
   );
 }
@@ -108,7 +108,7 @@ function ModuleCard({
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-black/[0.03] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
+        className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-foreground/[0.03] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
       >
         <span
           className={cn(
@@ -269,7 +269,7 @@ export function AulaSidebar({
     <div className="border-b border-black/10 p-4">
       <p className="font-display text-sm font-bold leading-snug text-foreground">{courseTitle}</p>
       <div className="mt-2.5 flex items-center gap-2">
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-black/10">
+        <div className="h-2 flex-1 overflow-hidden rounded-full bg-foreground/10">
           <div className="progress-fill-animated h-full rounded-full transition-all" style={{ width: `${progress}%` }} />
         </div>
         <span className="text-xs font-semibold text-foreground/70">{progress}%</span>
@@ -313,7 +313,7 @@ export function AulaSidebar({
                   type="button"
                   onClick={() => setDrawerOpen(false)}
                   aria-label="Cerrar temario"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                 >
                   <X className="h-4 w-4" />
                 </button>
