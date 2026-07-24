@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
  * módulo y ninguno de estos paneles se ve sin desplazarse, así que no entra
  * al bundle inicial de la vista.
  */
-const cargando = () => <div className="h-56 w-full animate-pulse rounded-xl bg-black/5" />;
+const cargando = () => <div className="h-56 w-full animate-pulse rounded-xl bg-foreground/[0.06]" />;
 
 export const BarrasCumplimiento = dynamic(
   () => import("@/components/reportes/graficos").then((m) => m.BarrasCumplimiento),

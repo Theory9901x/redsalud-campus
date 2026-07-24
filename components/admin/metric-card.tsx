@@ -7,25 +7,25 @@ const ACCENT_STYLES = {
   primary: {
     bar: "bg-gradient-to-r from-primary to-primary/50",
     icon: "bg-primary/10 text-primary",
-    tint: "from-white to-primary/[0.06]",
+    tint: "from-[var(--card)] to-primary/[0.06]",
     card: "metric-card-primary",
   },
   success: {
     bar: "bg-gradient-to-r from-success to-success/50",
     icon: "bg-success/10 text-success",
-    tint: "from-white to-success/[0.06]",
+    tint: "from-[var(--card)] to-success/[0.06]",
     card: "metric-card-success",
   },
   warning: {
     bar: "bg-gradient-to-r from-warning to-warning/50",
     icon: "bg-warning/15 text-warning-foreground",
-    tint: "from-white to-warning/[0.08]",
+    tint: "from-[var(--card)] to-warning/[0.08]",
     card: "metric-card-warning",
   },
   destructive: {
     bar: "bg-gradient-to-r from-destructive to-destructive/50",
     icon: "bg-destructive/10 text-destructive",
-    tint: "from-white to-destructive/[0.06]",
+    tint: "from-[var(--card)] to-destructive/[0.06]",
     card: "metric-card-destructive",
   },
 } as const;

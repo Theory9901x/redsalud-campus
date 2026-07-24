@@ -13,7 +13,7 @@ import type { TrainingActivityStatus } from "@prisma/client";
 const STATUS_COLORS: Record<TrainingActivityStatus, string> = {
   DRAFT: "var(--color-muted-foreground)",
   OPEN: "var(--color-success)",
-  CLOSED: "var(--color-navy)",
+  CLOSED: "var(--color-foreground)",
 };
 
 export type ActivityStatusDatum = { status: TrainingActivityStatus; label: string; count: number };

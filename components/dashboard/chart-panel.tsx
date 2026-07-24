@@ -9,7 +9,7 @@ import type { ChartPoint } from "@/components/dashboard/trend-chart";
  * bundle inicial de ninguna de las tres vistas (ver auditoría, P2).
  */
 const TrendChart = dynamic(() => import("@/components/dashboard/trend-chart").then((m) => m.TrendChart), {
-  loading: () => <div className="h-[248px] w-full animate-pulse rounded-xl bg-black/5" />,
+  loading: () => <div className="h-[248px] w-full animate-pulse rounded-xl bg-foreground/[0.06]" />,
 });
 
 export function ChartPanel({ points, seriesLabels }: { points: ChartPoint[]; seriesLabels: [string, string] }) {
