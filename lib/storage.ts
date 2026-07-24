@@ -48,6 +48,29 @@ export async function saveCourseImage(file: File, courseId: string): Promise<str
   return `/uploads/covers/${courseId}/${fileName}`;
 }
 
+/**
+ * Imagen de apoyo de una pregunta de evaluación (pública, recomprimida a WebP):
+ * diagramas del enunciado, como las posturas a evaluar. No es material sensible
+ * —es parte del enunciado que el estudiante debe ver— así que va a /public.
+ */
+export async function saveQuestionImage(file: File, quizId: string): Promise<string> {
+  const dir = path.join(PUBLIC_UPLOADS_ROOT, "quiz", quizId);
+  await mkdir(dir, { recursive: true });
+
+  const inputBuffer = Buffer.from(await file.arrayBuffer());
+  const baseName = sanitizeFileName(file.name).replace(/\.[^.]+$/, "");
+  const fileName = `${baseName}.webp`;
+
+  const optimized = await sharp(inputBuffer)
+    .rotate()
+    .resize({ width: 1200, withoutEnlargement: true })
+    .webp({ quality: 85 })
+    .toBuffer();
+
+  await writeFile(path.join(dir, fileName), optimized);
+  return `/uploads/quiz/${quizId}/${fileName}`;
+}
+
 /** Logo o firma institucional (público): se usan tanto en la web como impresos en el PDF del certificado. */
 export async function saveInstitutionAsset(file: File, kind: "logo" | "firma"): Promise<string> {
   const fileName = sanitizeFileName(file.name);

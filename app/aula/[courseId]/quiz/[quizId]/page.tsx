@@ -35,6 +35,7 @@ export default async function AulaQuizPage({
       id: true,
       type: true,
       statement: true,
+      imageUrl: true,
       score: true,
       options: {
         orderBy: { sortOrder: "asc" },

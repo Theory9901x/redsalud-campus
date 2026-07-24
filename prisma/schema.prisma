@@ -333,6 +333,7 @@ model Question {
   quiz        Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
   type        QuestionType
   statement   String
+  imageUrl    String? // imagen de apoyo del enunciado (p. ej. posturas a evaluar)
   score       Int          @default(1)
   explanation String? // retroalimentación posterior
   sortOrder   Int

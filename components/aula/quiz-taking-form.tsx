@@ -16,6 +16,7 @@ type QuestionView = {
   id: string;
   type: QuestionType;
   statement: string;
+  imageUrl?: string | null;
   score: number;
   options: OptionView[];
 };
@@ -167,6 +168,14 @@ export function QuizTakingForm({
                       {index + 1}. {question.statement}
                     </p>
                   </div>
+                  {question.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={question.imageUrl}
+                      alt="Imagen de apoyo del enunciado"
+                      className="ml-6 max-h-56 w-auto rounded-lg border border-border object-contain"
+                    />
+                  )}
                   <ul className="ml-6 space-y-1 text-sm">
                     {question.options.map((option) => (
                       <li
@@ -227,6 +236,14 @@ export function QuizTakingForm({
             <legend className="text-sm font-semibold text-foreground">
               {index + 1}. {question.statement}
             </legend>
+            {question.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={question.imageUrl}
+                alt="Imagen de apoyo del enunciado"
+                className="max-h-72 w-auto rounded-lg border border-border object-contain"
+              />
+            )}
             <div className="space-y-2">
               {question.options.map((option) => (
                 <label

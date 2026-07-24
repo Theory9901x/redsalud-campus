@@ -79,7 +79,7 @@ export function QuizFormDialog({
                   min={1}
                   max={100}
                   required
-                  defaultValue={defaultValues?.passingScore ?? 80}
+                  defaultValue={defaultValues?.passingScore ?? 60}
                 />
               </div>
               <div className="space-y-1.5">

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { saveQuestionImage } from "@/lib/storage";
 import { requireCourseAccess } from "@/lib/auth-helpers";
 import { quizSchema, questionSchema } from "@/lib/validations/course";
 
@@ -160,6 +161,20 @@ function parseQuestionForm(formData: FormData) {
   });
 }
 
+/**
+ * Resuelve la imagen del enunciado: si llega un archivo nuevo lo guarda y
+ * devuelve su URL; si no, conserva la actual (campo oculto), y si viene vacía
+ * la quita. Así el mismo formulario sirve para poner, cambiar o dejar igual.
+ */
+async function resolverImagenPregunta(formData: FormData, quizId: string): Promise<string | null> {
+  const archivo = formData.get("image");
+  if (archivo instanceof File && archivo.size > 0) {
+    return saveQuestionImage(archivo, quizId);
+  }
+  const actual = formData.get("currentImageUrl");
+  return typeof actual === "string" && actual.length > 0 ? actual : null;
+}
+
 function validateOptionsForType(type: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "TRUE_FALSE", options: { isCorrect: boolean }[]): string | null {
   const correctCount = options.filter((o) => o.isCorrect).length;
   if (correctCount === 0) return "Marca al menos una opción correcta.";
@@ -191,12 +206,14 @@ export async function createQuestionAction(
   if (optionsError) return { error: optionsError };
 
   const count = await prisma.question.count({ where: { quizId } });
+  const imageUrl = await resolverImagenPregunta(formData, quizId);
 
   await prisma.question.create({
     data: {
       quizId,
       type: data.type,
       statement: data.statement,
+      imageUrl,
       score: data.score,
       explanation: data.explanation || null,
       sortOrder: count,
@@ -219,7 +236,7 @@ export async function updateQuestionAction(
   _prevState: QuizFormState,
   formData: FormData
 ): Promise<QuizFormState> {
-  const { courseId } = await questionQuizInfo(questionId);
+  const { courseId, quizId } = await questionQuizInfo(questionId);
   await requireCourseAccess(courseId);
 
   const parsed = parseQuestionForm(formData);
@@ -231,12 +248,15 @@ export async function updateQuestionAction(
   const optionsError = validateOptionsForType(data.type, data.options);
   if (optionsError) return { error: optionsError };
 
+  const imageUrl = await resolverImagenPregunta(formData, quizId);
+
   await prisma.$transaction([
     prisma.question.update({
       where: { id: questionId },
       data: {
         type: data.type,
         statement: data.statement,
+        imageUrl,
         score: data.score,
         explanation: data.explanation || null,
       },
