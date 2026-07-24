@@ -47,8 +47,12 @@ export function AppSidebar({
   subtitulo?: string;
   logoUrl?: string | null;
   claseAcento: "accent-student" | "accent-tutor" | "accent-admin";
-  /** Mensaje del pie. Cambia por rol: a un tutor no se le habla de "tu formación". */
-  pie: { titulo: string; texto: string };
+  /**
+   * Tarjeta del pie. Opcional a propósito: es decorativa y cuesta unos 120px,
+   * así que en un menú largo se come ítems de navegación reales. Se pone donde
+   * la lista es corta y se omite donde no.
+   */
+  pie?: { titulo: string; texto: string };
 }) {
   const pathname = usePathname();
   const [hash, setHash] = useState("");
@@ -170,6 +174,7 @@ export function AppSidebar({
         </nav>
 
         <div className="relative px-3 pb-3">
+          {pie && (
           <div className="surface-glass-dark p-3.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[color-mix(in_oklch,var(--accent)_25%,transparent)]">
               <ShieldCheck className="h-4 w-4 text-white" />
@@ -177,6 +182,7 @@ export function AppSidebar({
             <p className="mt-2.5 text-xs font-semibold leading-snug text-white">{pie.titulo}</p>
             <p className="mt-1 text-[11px] leading-snug text-sidebar-foreground/60">{pie.texto}</p>
           </div>
+          )}
           <p className="px-2 pt-3 text-[11px] text-sidebar-foreground/40">Red Salud Casanare E.S.E.</p>
         </div>
       </aside>

@@ -85,10 +85,6 @@ export function AdminSidebar({
       grupos={grupos}
       subtitulo="Panel administrativo"
       claseAcento="accent-admin"
-      pie={{
-        titulo: "Todo movimiento queda registrado",
-        texto: "Cada cambio en la plataforma se guarda en la bitácora, con quién y cuándo.",
-      }}
     />
   );
 }
