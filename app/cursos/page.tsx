@@ -43,10 +43,14 @@ export default async function CatalogoCursosPage({
     session?.user
       ? prisma.enrollment.findMany({
           where: { userId: session.user.id },
-          select: { courseId: true, status: true, progressPercentage: true },
+          select: { courseId: true, status: true, progressPercentage: true, completedAt: true },
         })
       : Promise.resolve([]),
   ]);
+
+  const institucion =
+    (await prisma.institutionSettings.findUnique({ where: { id: "singleton" }, select: { institutionName: true } }))
+      ?.institutionName ?? "Red Salud Casanare E.S.E.";
 
   const estadoPorCurso = new Map(misInscripciones.map((e) => [e.courseId, e]));
   const estadoDe = (id: string) => {
@@ -201,8 +205,15 @@ export default async function CatalogoCursosPage({
             course.targetAudience === "AMBOS" ? null : COURSE_AUDIENCE_LABELS[course.targetAudience],
           durationHours: course.durationHours,
           tutorName: course.tutor.fullName,
+          descripcion: course.shortDescription,
+          institucion,
           estado: session?.user ? estadoDe(course.id) : undefined,
           progreso: estadoPorCurso.get(course.id)?.progressPercentage,
+          completadoEl: estadoPorCurso.get(course.id)?.completedAt?.toLocaleDateString("es-CO", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          }),
         }))}
       />
     </StaggerSections>

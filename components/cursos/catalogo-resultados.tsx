@@ -1,5 +1,5 @@
-import { Clock, Layers, PlayCircle, ShieldAlert, Sparkles, User } from "lucide-react";
-import { CoursePosterCard } from "@/components/cursos/course-poster-card";
+import { Layers, PlayCircle, ShieldAlert, Sparkles } from "lucide-react";
+import { CourseStateCard, type CursoTarjeta, type EstadoTarjeta } from "@/components/cursos/course-state-card";
 import { EmptyState } from "@/components/brand/empty-state";
 import type { CourseType } from "@prisma/client";
 
@@ -10,6 +10,8 @@ export type CursoResultado = {
   href: string;
   imageUrl: string | null;
   title: string;
+  descripcion: string;
+  institucion: string;
   courseType: CourseType;
   categoryName: string | null;
   audienceLabel: string | null;
@@ -18,19 +20,39 @@ export type CursoResultado = {
   /** Avance de quien mira. Ausente para el visitante anónimo. */
   estado?: EstadoCurso;
   progreso?: number;
+  completadoEl?: string | null;
 };
 
-const INSIGNIA: Record<EstadoCurso, { label: string; dotClassName: string } | undefined> = {
-  "en-curso": { label: "En curso", dotClassName: "bg-primary" },
-  completado: { label: "Completado", dotClassName: "bg-success" },
-  pendiente: undefined,
-};
+/** Estado visual de la tarjeta: completado gana a en curso, que gana a obligatorio. */
+function estadoTarjeta(c: CursoResultado): EstadoTarjeta {
+  if (c.estado === "completado") return "completado";
+  if (c.estado === "en-curso") return "en-curso";
+  if (c.courseType === "OBLIGATORIO") return "obligatorio";
+  return "disponible";
+}
 
-const ACCION: Record<EstadoCurso, string> = {
+const CTA: Record<EstadoTarjeta, string> = {
+  obligatorio: "Ver curso",
   "en-curso": "Continuar",
-  completado: "Repasar",
-  pendiente: "Ver curso",
+  completado: "Ver de nuevo",
+  disponible: "Ver curso",
 };
+
+function aTarjeta(c: CursoResultado): CursoTarjeta {
+  const estado = estadoTarjeta(c);
+  return {
+    id: c.id,
+    href: c.href,
+    titulo: c.title,
+    descripcion: c.descripcion,
+    horas: c.durationHours,
+    institucion: c.institucion,
+    estado,
+    progreso: estado === "en-curso" ? c.progreso : undefined,
+    completadoEl: c.completadoEl,
+    cta: CTA[estado],
+  };
+}
 
 function Seccion({
   icono: Icono,
@@ -53,39 +75,14 @@ function Seccion({
         </span>
         <div className="min-w-0">
           <h2 className="font-display text-base font-extrabold text-foreground">
-            {titulo}{" "}
-            <span className="text-sm font-semibold text-muted-foreground">
-              ({cursos.length})
-            </span>
+            {titulo} <span className="text-sm font-semibold text-muted-foreground">({cursos.length})</span>
           </h2>
           <p className="text-xs text-muted-foreground">{descripcion}</p>
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {cursos.map((curso) => (
-          <CoursePosterCard
-            key={curso.id}
-            href={curso.href}
-            imageUrl={curso.imageUrl}
-            title={curso.title}
-            courseType={curso.courseType}
-            eyebrow={curso.categoryName}
-            audienceLabel={curso.audienceLabel}
-            statusBadge={curso.estado ? INSIGNIA[curso.estado] : undefined}
-            ctaLabel={curso.estado ? ACCION[curso.estado] : "Ver curso"}
-            // La barra solo aparece cuando hay algo que mostrar: un 0% en cada
-            // tarjeta del catálogo es ruido, no información.
-            progress={curso.estado === "en-curso" ? curso.progreso : undefined}
-            progressLabel={
-              curso.estado === "en-curso" && curso.progreso !== undefined
-                ? `${Math.round(curso.progreso)}% completado`
-                : undefined
-            }
-            meta={[
-              { icon: Clock, label: `${curso.durationHours}h` },
-              { icon: User, label: curso.tutorName },
-            ]}
-          />
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        {cursos.map((c) => (
+          <CourseStateCard key={c.id} curso={aTarjeta(c)} />
         ))}
       </div>
     </div>
@@ -115,8 +112,8 @@ export function CatalogoResultados({ courses }: { courses: CursoResultado[] }) {
     .filter((c) => c.estado === "en-curso")
     .sort((a, b) => (b.progreso ?? 0) - (a.progreso ?? 0));
 
-  // "Pendientes" de verdad: un obligatorio ya aprobado no está pendiente de
-  // nada. Antes la sección los incluía y el título mentía.
+  // "Pendientes" de verdad: un obligatorio ya aprobado o en curso no está
+  // pendiente de nada; aparece en su propia sección más arriba.
   const obligatorios = courses.filter(
     (c) => c.courseType === "OBLIGATORIO" && c.estado !== "completado" && c.estado !== "en-curso"
   );
@@ -151,9 +148,7 @@ export function CatalogoResultados({ courses }: { courses: CursoResultado[] }) {
           tono="bg-success/12 text-success"
           titulo={hayOtrasSecciones ? "Resto del catálogo" : "Cursos disponibles"}
           descripcion={
-            hayOtrasSecciones
-              ? "Todo lo demás que puedes tomar."
-              : "Formación disponible para tu perfil."
+            hayOtrasSecciones ? "Todo lo demás que puedes tomar." : "Formación disponible para tu perfil."
           }
           cursos={resto}
         />

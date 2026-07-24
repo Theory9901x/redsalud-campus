@@ -658,7 +658,9 @@
  * componentes compartidos (KpiCard, panel-hud, btn-hud...) lo consumen. Un
  * solo token, tres identidades, cero componentes duplicados.
  */
-.accent-student { --accent: var(--primary); }
+/* Estudiante: acento teal (mockup del catálogo aprobado). Un solo token
+   tiñe el área completa —barra activa, números KPI, foco, chips, avatar—. */
+.accent-student { --accent: oklch(78% 0.126 183); }
 .accent-tutor { --accent: var(--success); }
 .accent-admin { --accent: oklch(62% 0.19 295); } /* violeta institucional */
 
