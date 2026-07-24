@@ -17,7 +17,7 @@ import type { Prisma } from "@prisma/client";
 export default async function CatalogoCursosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; categoria?: string; tipo?: string; estado?: string }>;
+  searchParams: Promise<{ q?: string; categoria?: string; tipo?: string; estado?: string; orden?: string }>;
 }) {
   const session = await auth();
   const sp = await searchParams;
@@ -71,7 +71,13 @@ export default async function CatalogoCursosPage({
     (filtrosTipo.length === 0 || filtrosTipo.includes(c.courseType)) &&
     (filtrosEstado.length === 0 || filtrosEstado.includes(estadoDe(c.id)));
 
-  const courses = todos.filter(coincide);
+  const filtrados = todos.filter(coincide);
+  const courses =
+    sp.orden === "nombre"
+      ? [...filtrados].sort((a, b) => a.title.localeCompare(b.title, "es"))
+      : sp.orden === "duracion"
+        ? [...filtrados].sort((a, b) => b.durationHours - a.durationHours)
+        : filtrados; // "reciente": ya viene ordenado por publishedAt desc
 
   const facetas = [
     {
