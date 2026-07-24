@@ -5,11 +5,9 @@ import {
   Award,
   BookOpen,
   CheckCircle2,
-  Download,
   GraduationCap,
   Layers,
   PlayCircle,
-  QrCode,
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
@@ -45,17 +43,13 @@ export default async function MiAulaPage({
   const userId = session!.user.id;
   const sp = await searchParams;
 
-  const [enrollments, certificates, settings] = await Promise.all([
+  const [enrollments, certificadosCount, settings] = await Promise.all([
     prisma.enrollment.findMany({
       where: { userId, status: { not: "CANCELLED" } },
       orderBy: { enrolledAt: "desc" },
       include: { course: { include: { tutor: { select: { fullName: true } } } } },
     }),
-    prisma.certificate.findMany({
-      where: { userId, status: "VALID" },
-      orderBy: { issuedAt: "desc" },
-      include: { course: { select: { title: true } } },
-    }),
+    prisma.certificate.count({ where: { userId, status: "VALID" } }),
     prisma.institutionSettings.findUnique({
       where: { id: "singleton" },
       select: { institutionName: true },
@@ -85,7 +79,7 @@ export default async function MiAulaPage({
   const stats = {
     activos: enrollments.filter((e) => e.status !== "COMPLETED").length,
     completados: conteos.completados,
-    certificados: certificates.length,
+    certificados: certificadosCount,
     obligatorios: conteos.obligatorios,
   };
 
@@ -277,75 +271,6 @@ export default async function MiAulaPage({
             ))}
           </div>
         )}
-
-        {/* 6. Certificados */}
-        <section id="mis-certificados" className="scroll-mt-20 space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-warning/15 text-warning-foreground">
-              <Award className="h-[18px] w-[18px]" />
-            </span>
-            <h2 className="font-display text-xl font-extrabold text-foreground">Mis certificados</h2>
-            <span className="h-4 w-px bg-border" />
-            <span className="text-[13px] text-muted-foreground">
-              {certificates.length} {certificates.length === 1 ? "emitido" : "emitidos"}
-            </span>
-          </div>
-
-          {certificates.length === 0 ? (
-            <EmptyState
-              icon={Award}
-              title="Aún no tienes certificados"
-              description="Completa un curso para obtener tu primer certificado verificable con código QR."
-            />
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {certificates.map((c) => (
-                <article
-                  key={c.id}
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(150deg, color-mix(in oklch, var(--warning) 20%, var(--card)) 0%, color-mix(in oklch, var(--warning) 7%, var(--card)) 60%, var(--card) 100%)",
-                    borderColor: "color-mix(in oklch, var(--warning) 30%, transparent)",
-                  }}
-                  className="surface-hover relative overflow-hidden rounded-2xl border p-5 shadow-[var(--shadow-1)]"
-                >
-                  <Award
-                    className="pointer-events-none absolute -right-3 top-1/2 h-24 w-24 -translate-y-1/2 text-warning/[0.10]"
-                    strokeWidth={1.5}
-                  />
-                  <div className="relative flex items-start gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-warning/20 text-warning-foreground">
-                      <Award className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <h3 className="truncate font-display text-[15px] font-bold leading-snug text-foreground">
-                        {c.course.title}
-                      </h3>
-                      <p className="mt-1 font-mono text-[11.5px] text-muted-foreground">{c.certificateCode}</p>
-                      <p className="text-[11.5px] text-muted-foreground">
-                        Emitido el {c.issuedAt.toLocaleDateString("es-CO")}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="relative mt-4 flex items-center gap-2">
-                    <Link
-                      href={`/mi-aula/certificados/${c.id}`}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-foreground transition-colors hover:border-[var(--accent)]/40"
-                    >
-                      <Download className="h-3.5 w-3.5" /> Descargar
-                    </Link>
-                    <Link
-                      href={`/validar/${c.certificateCode}`}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-[12.5px] text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      <QrCode className="h-3.5 w-3.5" /> Validar
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
 
         {/* 7. Pie */}
         <div className="flex items-center justify-center gap-2 pt-2 text-[12.5px] text-muted-foreground">

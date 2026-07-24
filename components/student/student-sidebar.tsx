@@ -15,13 +15,7 @@ const GRUPOS: GrupoNav[] = [
   {
     label: "Mi expediente",
     items: [
-      {
-        href: "/mi-aula#mis-certificados",
-        label: "Mis certificados",
-        icon: Award,
-        match: "/mi-aula",
-        hash: "#mis-certificados",
-      },
+      { href: "/mis-certificados", label: "Mis certificados", icon: Award },
       { href: "/mis-capacitaciones", label: "Mis capacitaciones", icon: CalendarRange },
       { href: "/mis-encuestas", label: "Mis encuestas", icon: ClipboardList },
     ],

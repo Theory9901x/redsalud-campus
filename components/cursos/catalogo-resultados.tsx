@@ -1,4 +1,4 @@
-import { BookOpen, Layers } from "lucide-react";
+import { Layers } from "lucide-react";
 import { CourseStateCard, type CursoTarjeta, type EstadoTarjeta } from "@/components/cursos/course-state-card";
 import { OrdenSelect } from "@/components/cursos/orden-select";
 import { EmptyState } from "@/components/brand/empty-state";
@@ -64,17 +64,10 @@ function aTarjeta(c: CursoResultado): CursoTarjeta {
 export function CatalogoResultados({ courses }: { courses: CursoResultado[] }) {
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/15 text-[var(--accent)]">
-            <BookOpen className="h-[18px] w-[18px]" />
-          </span>
-          <h2 className="font-display text-xl font-extrabold text-foreground">Catálogo de cursos</h2>
-          <span className="h-4 w-px bg-border" />
-          <span className="text-sm text-muted-foreground">
-            {courses.length} {courses.length === 1 ? "curso encontrado" : "cursos encontrados"}
-          </span>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+        <span className="text-sm font-medium text-muted-foreground">
+          {courses.length} {courses.length === 1 ? "curso encontrado" : "cursos encontrados"}
+        </span>
         {courses.length > 0 && <OrdenSelect />}
       </div>
 

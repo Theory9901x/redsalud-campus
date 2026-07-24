@@ -223,7 +223,7 @@ export function CertificateReveal({
             Compartir
           </button>
           <Link
-            href="/mi-aula#mis-certificados"
+            href="/mis-certificados"
             className={cn(buttonVariants({ variant: "ghost", size: "lg" }), "gap-1.5 text-white/70 hover:bg-white/10 hover:text-white")}
           >
             Ver en mi historial
