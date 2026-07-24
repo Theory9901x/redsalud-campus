@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,7 @@ import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { TablePagination } from "@/components/admin/table-pagination";
 import { parsePageSize } from "@/lib/pagination";
-import { MarcaPlanta } from "@/components/admin/marca-planta";
+import { MarcaPlanta, VINCULACION_LABELS, VINCULACION_LABELS_CORTAS } from "@/components/admin/marca-planta";
 import { AutoSearchInput, AutoFilterSelect } from "@/components/admin/auto-search-input";
 import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
 import type { PersonnelType, Prisma, Role, TipoVinculacion, UserStatus } from "@prisma/client";
@@ -189,25 +189,32 @@ export default async function UsuariosPage({
             )}
             {users.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="font-medium text-foreground">
-                  <Link href={`/admin/usuarios/${user.id}`} className="inline-flex items-center gap-1.5 hover:underline">
+                <TableCell className="max-w-[190px] font-medium text-foreground">
+                  <Link
+                    href={`/admin/usuarios/${user.id}`}
+                    className="flex items-center gap-1.5 hover:underline"
+                    title={user.fullName}
+                  >
                     <MarcaPlanta tipo={user.tipoVinculacion} />
-                    {user.fullName}
+                    <span className="truncate">{user.fullName}</span>
                   </Link>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {user.documentType} {user.documentNumber}
+                {/* Solo el número: el tipo de documento es CC en la práctica
+                    totalidad de los registros y repetirlo 290 veces cuesta una
+                    columna entera. Queda en el título para consultarlo. */}
+                <TableCell className="text-muted-foreground" title={`${user.documentType} ${user.documentNumber}`}>
+                  {user.documentNumber}
                 </TableCell>
-                <TableCell className="max-w-[190px] truncate text-muted-foreground" title={user.email}>
+                <TableCell className="max-w-[120px] truncate text-muted-foreground" title={user.email}>
                   {user.email}
                 </TableCell>
-                <TableCell className="max-w-[200px] truncate text-muted-foreground" title={user.position ?? ""}>
+                <TableCell className="max-w-[120px] truncate text-muted-foreground" title={user.position ?? ""}>
                   {user.position || "—"}
                 </TableCell>
                 <TableCell className="text-muted-foreground">{PERSONNEL_TYPE_LABELS[user.personnelType]}</TableCell>
                 <TableCell className="text-muted-foreground">{user.municipio?.nombre ?? "—"}</TableCell>
-                <TableCell className="whitespace-nowrap text-muted-foreground">
-                  {VINCULACION_OPTIONS.find((v) => v.value === user.tipoVinculacion)?.label ?? "—"}
+                <TableCell className="max-w-[105px] truncate text-muted-foreground" title={VINCULACION_LABELS[user.tipoVinculacion]}>
+                  {VINCULACION_LABELS_CORTAS[user.tipoVinculacion] ?? "—"}
                 </TableCell>
                 <TableCell>
                   <RoleBadge role={user.role} />
@@ -216,12 +223,14 @@ export default async function UsuariosPage({
                   <StatusBadge status={user.status} />
                 </TableCell>
                 <TableCell className="col-fijada">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-1.5">
                   <Link
                     href={`/admin/usuarios/${user.id}`}
-                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                    className={cn(buttonVariants({ variant: "outline", size: "icon-sm" }))}
+                    title="Editar usuario"
+                    aria-label="Editar usuario"
                   >
-                    Editar
+                    <Pencil />
                   </Link>
                     <ToggleStatusButton userId={user.id} status={user.status} />
                   </div>
