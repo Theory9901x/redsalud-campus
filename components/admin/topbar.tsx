@@ -61,7 +61,7 @@ export function AdminTopbar({
         <DropdownMenu>
           <DropdownMenuTrigger className="surface-clay flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 outline-none transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-primary">
             <Avatar className="shrink-0">
-              <AvatarFallback className="bg-primary text-primary-foreground">
+              <AvatarFallback className="bg-gradient-to-br from-[var(--accent)] to-[color-mix(in_oklch,var(--accent)_60%,var(--navy))] text-white">
                 {initials(userName)}
               </AvatarFallback>
             </Avatar>

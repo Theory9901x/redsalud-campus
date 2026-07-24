@@ -69,7 +69,7 @@ export function StudentHeader({
             <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2.5 outline-none transition-colors hover:bg-muted">
               <Avatar>
                 {avatarUrl && <AvatarImage src={avatarUrl} alt={userName} />}
-                <AvatarFallback className="bg-primary text-primary-foreground">{initials(userName)}</AvatarFallback>
+                <AvatarFallback className="bg-gradient-to-br from-[var(--accent)] to-[color-mix(in_oklch,var(--accent)_60%,var(--navy))] text-white">{initials(userName)}</AvatarFallback>
               </Avatar>
               <div className="hidden text-left sm:block">
                 <p className="text-sm font-medium leading-tight text-foreground">{userName}</p>

@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Activity,
   ArrowLeft,
   BookOpen,
   CalendarRange,
@@ -12,10 +11,10 @@ import {
   Layers,
   LayoutDashboard,
   Users,
-  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminTopbar } from "@/components/admin/topbar";
+import { AppSidebar, type GrupoNav } from "@/components/shell/app-sidebar";
 
 /**
  * Identidad del área tutor (Fase 6.0): espacio de TRABAJO, no aula. Navy más
@@ -23,10 +22,7 @@ import { AdminTopbar } from "@/components/admin/topbar";
  * permanente y franja de acento superior que distingue el área a simple
  * vista. Misma familia visual que el resto del chrome, distinta firma.
  */
-const NAV_GROUPS: {
-  label: string | null;
-  items: { href: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; external?: boolean }[];
-}[] = [
+const NAV_GROUPS: GrupoNav[] = [
   {
     label: null,
     items: [{ href: "/tutor", label: "Panel", icon: LayoutDashboard, exact: true }],
@@ -47,7 +43,7 @@ const NAV_GROUPS: {
   },
   {
     label: "Explorar",
-    items: [{ href: "/cursos", label: "Catálogo institucional", icon: Layers, external: true }],
+    items: [{ href: "/cursos", label: "Catálogo institucional", icon: Layers }],
   },
 ];
 
@@ -59,93 +55,6 @@ const BREADCRUMBS: [string, string][] = [
   ["/cursos", "Explorar · Catálogo institucional"],
   ["/tutor", "Panel"],
 ];
-
-function TutorSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const pathname = usePathname();
-
-  return (
-    <>
-      {open && (
-        <div className="fixed inset-0 z-40 bg-navy/40 backdrop-blur-sm lg:hidden" onClick={onClose} aria-hidden="true" />
-      )}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-screen w-[260px] shrink-0 flex-col overflow-hidden border-r border-white/10 bg-gradient-to-b from-[#0B1826] to-[#050D16] text-sidebar-foreground transition-transform duration-200 lg:sticky lg:top-0 lg:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        {/* Resplandor verde del rol detrás del logo. */}
-        <div className="pointer-events-none absolute -left-10 -top-16 h-56 w-56 rounded-full bg-success/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-10 -right-10 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
-
-        <div className="relative flex items-center gap-2 px-5 py-6">
-          <Activity className="h-6 w-6 shrink-0 text-success" strokeWidth={2.5} />
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-sm font-extrabold leading-none text-white">
-              RedSalud Te Forma
-            </p>
-            <span className="mt-1.5 inline-flex items-center rounded-full border border-success/40 bg-success/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-success backdrop-blur">
-              Tutor
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-sidebar-foreground/60 hover:text-white lg:hidden"
-            aria-label="Cerrar menú"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <nav className="relative flex-1 space-y-4 overflow-y-auto px-3 pb-4">
-          {NAV_GROUPS.map((group, groupIndex) => (
-            <div key={group.label ?? "panel"} className={cn(groupIndex > 0 && "border-t border-white/10 pt-3")}>
-              {group.label && (
-                <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-sidebar-foreground/40">
-                  {group.label}
-                </p>
-              )}
-              <div className="space-y-1">
-                {group.items.map((item) => {
-                  const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onClose}
-                      className={cn(
-                        "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                        isActive
-                          ? "bg-gradient-to-r from-success to-success/70 text-white shadow-md shadow-success/30"
-                          : "text-sidebar-foreground/70 hover:translate-x-0.5 hover:bg-white/5 hover:text-white"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors",
-                          isActive ? "bg-white/20" : "bg-white/5 group-hover:bg-white/10"
-                        )}
-                      >
-                        <Icon className="h-4 w-4" strokeWidth={2} />
-                      </span>
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </nav>
-
-        <div className="relative border-t border-white/10 px-5 py-4 text-xs text-sidebar-foreground/40">
-          Red Salud Casanare E.S.E.
-        </div>
-      </aside>
-    </>
-  );
-}
 
 export function TutorShell({
   userName,
@@ -162,8 +71,18 @@ export function TutorShell({
   const breadcrumb = BREADCRUMBS.find(([prefix]) => pathname.startsWith(prefix))?.[1] ?? "Panel";
 
   return (
-    <div className="flex min-h-screen">
-      <TutorSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div className="accent-tutor flex min-h-screen">
+      <AppSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        grupos={NAV_GROUPS}
+        subtitulo="Espacio de tutor"
+        claseAcento="accent-tutor"
+        pie={{
+          titulo: "Tus cursos, tu seguimiento",
+          texto: "Aquí ves quién avanza, quién se quedó y a quién hay que empujar.",
+        }}
+      />
       <div className="page-canvas flex min-w-0 flex-1 flex-col">
         {/* Franja de acento del área tutor: verde -> azul, siempre visible. */}
         <div className="h-[3px] shrink-0 bg-gradient-to-r from-success to-primary" />
@@ -174,7 +93,7 @@ export function TutorShell({
           onMenuClick={() => setSidebarOpen(true)}
         />
         {banner}
-        <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6">{children}</main>
+        <main className="mx-auto w-full min-w-0 max-w-[1600px] flex-1 overflow-x-hidden p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

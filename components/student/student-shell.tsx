@@ -28,7 +28,7 @@ export function StudentShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="accent-student flex min-h-screen">
       <StudentSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} logoUrl={logoUrl} />
       <div className="page-canvas flex min-w-0 flex-1 flex-col">
         <StudentHeader
