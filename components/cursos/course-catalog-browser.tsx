@@ -93,7 +93,7 @@ export function CourseCatalogBrowser({
       {/* Barra de herramientas: panel glass flotante; chips de categoría en
           clay, el activo "presionado" con glow de marca. */}
       <div className="surface-glass flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-        <div className="flex items-center gap-2 rounded-full border border-border/80 bg-white/60 px-4 py-2 shadow-inner transition-shadow focus-within:border-primary/40 focus-within:ring-3 focus-within:ring-ring/20 sm:w-72 sm:shrink-0">
+        <div className="flex items-center gap-2 rounded-full border border-border/80 bg-[var(--glass-bg)] px-4 py-2 shadow-inner transition-shadow focus-within:border-primary/40 focus-within:ring-3 focus-within:ring-ring/20 sm:w-72 sm:shrink-0">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
           <input
             value={q}
