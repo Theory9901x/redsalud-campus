@@ -56,7 +56,13 @@ export function NotificationBell({
 
   return (
     <Popover>
-      <PopoverTrigger className="relative flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground">
+      {/* aria-label: el disparador solo contiene el ícono, así que un lector
+          de pantalla anunciaría "botón" sin más. El conteo va en el nombre
+          para que se sepa cuántas hay sin abrir el panel. */}
+      <PopoverTrigger
+        aria-label={unread > 0 ? `Notificaciones, ${unread} sin leer` : "Notificaciones"}
+        className="relative flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+      >
         <Bell className="h-5 w-5" strokeWidth={2} />
         {unread > 0 && (
           <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-white">

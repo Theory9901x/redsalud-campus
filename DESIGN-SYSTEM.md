@@ -99,3 +99,18 @@ Todo pasa por `lib/motion.ts` (`SIGNATURE_EASE`, `SIGNATURE_DURATION*`, `stagger
 5. Paleta: azul primario + verde éxito sobre navy; el rojo solo para obligatorio/alerta.
 6. **Los dos temas, siempre**: nada de blancos ni negros literales en superficies (ver arriba).
    Cualquier vista nueva se revisa en claro **y** en oscuro antes de darla por hecha.
+7. **Blanco sobre `--primary` no llega a AA** (2.75:1). El azul de marca tiene luminosidad 68%,
+   demasiado claro para texto blanco. Para texto blanco sobre relleno azul —avatares de iniciales,
+   píldoras— mézclalo con navy: `bg-[color-mix(in_oklch,var(--primary)_50%,var(--navy))]`. Los
+   botones/badges `bg-primary` existentes llevan texto grande o ícono y no se auditaron uno por uno;
+   si agregas texto normal sobre azul plano, verifícalo.
+
+## Accesibilidad
+
+- **Foco visible** en todo lo interactivo: `focus-visible:outline-2 focus-visible:outline-offset-2
+  focus-visible:outline-[var(--accent)]`.
+- **Nombre accesible** en botones que solo llevan ícono: `aria-label` (la campana, el buscador, las
+  acciones de tabla). Un `<button>` sin texto ni `aria-label` lo anuncia el lector como "botón" a secas.
+- **Se audita con axe-core** (`wcag2a`/`wcag2aa`) en las vistas clave, en los dos temas. Objetivo:
+  cero violaciones serias o críticas. El chequeo vive en el flujo de verificación, no en el repo.
+- Los `@keyframes` respetan `prefers-reduced-motion: reduce`.

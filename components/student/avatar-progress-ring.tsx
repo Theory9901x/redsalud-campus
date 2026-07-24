@@ -38,7 +38,11 @@ export function AvatarProgressRing({
       <div className="absolute inset-[6px] overflow-hidden rounded-full shadow-lg ring-4 ring-navy/40">
         <Avatar className="h-full w-full">
           {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
-          <AvatarFallback className="h-full w-full bg-primary text-lg text-primary-foreground">
+          {/* Fondo mezclado con navy en vez de --primary plano: el azul de
+              marca (luminosidad 68%) deja el blanco en 2.75:1, por debajo de
+              AA; mezclarlo a la mitad con navy lo baja a ~46% y el blanco pasa
+              de largo el 4.5:1. */}
+          <AvatarFallback className="h-full w-full bg-[color-mix(in_oklch,var(--primary)_50%,var(--navy))] text-lg text-white">
             {initials(name)}
           </AvatarFallback>
         </Avatar>
