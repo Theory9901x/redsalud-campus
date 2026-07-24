@@ -97,7 +97,12 @@ export default async function CatalogoCursosPage({
         { valor: "completado", etiqueta: "Completado", conteo: todos.filter((c) => estadoDe(c.id) === "completado").length },
       ],
     },
-  ].filter((f) => f.opciones.length > 0);
+  ]
+    .map((f) => ({
+      ...f,
+      opciones: [...f.opciones].sort((a, b) => b.conteo - a.conteo || a.etiqueta.localeCompare(b.etiqueta)),
+    }))
+    .filter((f) => f.opciones.length > 0);
 
   const totalHours = courses.reduce((sum, c) => sum + c.durationHours, 0);
   const obligatoriosCount = courses.filter((c) => c.courseType === "OBLIGATORIO").length;
@@ -196,6 +201,8 @@ export default async function CatalogoCursosPage({
             course.targetAudience === "AMBOS" ? null : COURSE_AUDIENCE_LABELS[course.targetAudience],
           durationHours: course.durationHours,
           tutorName: course.tutor.fullName,
+          estado: session?.user ? estadoDe(course.id) : undefined,
+          progreso: estadoPorCurso.get(course.id)?.progressPercentage,
         }))}
       />
     </StaggerSections>

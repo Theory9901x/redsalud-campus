@@ -59,7 +59,7 @@ export function FiltrosCatalogo({ facetas, total }: { facetas: Faceta[]; total: 
 
   return (
     <div className={cn("surface-glass space-y-4 p-4 sm:p-5", pendiente && "opacity-70")}>
-      <div className="flex items-center gap-2 rounded-full border border-border/80 bg-white/60 px-4 py-2 shadow-inner focus-within:border-primary/40 focus-within:ring-3 focus-within:ring-ring/20">
+      <div className="flex items-center gap-2 rounded-full border border-border/80 bg-[var(--glass-bg)] px-4 py-2 shadow-inner focus-within:border-primary/40 focus-within:ring-3 focus-within:ring-ring/20">
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input
           type="search"
