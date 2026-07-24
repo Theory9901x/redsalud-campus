@@ -51,7 +51,7 @@ export function CourseCreatorCard({
               className="h-11 w-11 shrink-0 rounded-full bg-white object-contain ring-1 ring-border"
             />
           ) : (
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-navy/10 text-sm font-bold text-navy">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-foreground/10 text-sm font-bold text-foreground">
               {initials(institution.name)}
             </span>
           )}

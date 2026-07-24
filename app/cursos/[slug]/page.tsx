@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Clock, Target, Users, Info, User, ClipboardList, Layers } from "lucide-react";
+import { ArrowLeft, Award, Clock, FileText, Target, Users, Info, User, ClipboardList, Layers } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
@@ -131,6 +131,28 @@ export default async function CursoDetallePage({
               </span>
               Por <span className="font-medium text-white">{course.tutor.fullName}</span>
             </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <span className="chip-glass">
+                <Clock className="h-3.5 w-3.5" />
+                {course.durationHours}h
+              </span>
+              {course.modules.length > 0 && (
+                <span className="chip-glass">
+                  <Layers className="h-3.5 w-3.5" />
+                  {course.modules.length} {course.modules.length === 1 ? "módulo" : "módulos"}
+                </span>
+              )}
+              {totalLessons > 0 && (
+                <span className="chip-glass">
+                  <FileText className="h-3.5 w-3.5" />
+                  {totalLessons} {totalLessons === 1 ? "lección" : "lecciones"}
+                </span>
+              )}
+              <span className="chip-glass">
+                <Award className="h-3.5 w-3.5" />
+                Certificado al aprobar
+              </span>
+            </div>
           </div>
           <ShareCourseButton title={course.title} />
         </div>
@@ -138,7 +160,12 @@ export default async function CursoDetallePage({
 
       {/* Caja de imagen/video: el "cuadro" propio de la portada del curso,
           separado del título de arriba. */}
-      <div className="relative aspect-video w-full overflow-hidden rounded-2xl shadow-sm ring-1 ring-black/5">
+      <div
+        className={cn(
+          "relative w-full overflow-hidden rounded-2xl shadow-sm ring-1 ring-border",
+          course.imageUrl ? "aspect-video max-h-[420px]" : "h-36 sm:h-44"
+        )}
+      >
         {course.imageUrl ? (
           <Image
             src={course.imageUrl}
@@ -175,7 +202,7 @@ export default async function CursoDetallePage({
             />
           </CourseDetailCard>
 
-          <CourseDetailCard icon={Info} iconClassName="bg-navy/10 text-navy" title="Acerca de este curso">
+          <CourseDetailCard icon={Info} iconClassName="bg-foreground/10 text-foreground" title="Acerca de este curso">
             <p className="whitespace-pre-line text-[15px] leading-relaxed text-foreground/80">
               {course.fullDescription || course.shortDescription}
             </p>

@@ -20,7 +20,7 @@ export async function SiteHeader() {
         <Link href="/cursos" className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-primary" strokeWidth={2.5} />
           <div className="leading-none">
-            <p className="font-display text-sm font-extrabold text-navy">
+            <p className="font-display text-sm font-extrabold text-foreground">
               RedSalud <span className="text-primary">Te Forma</span>
             </p>
             <p className="text-[10px] tracking-wide text-muted-foreground">REDSALUD CASANARE E.S.E.</p>

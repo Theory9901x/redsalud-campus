@@ -46,7 +46,7 @@ function BrandMark({
         </span>
       )}
       <span
-        className={`font-display font-extrabold ${size === "lg" ? "text-2xl" : "text-lg"} ${tone === "dark" ? "text-navy" : "text-white"}`}
+        className={`font-display font-extrabold ${size === "lg" ? "text-2xl" : "text-lg"} ${tone === "dark" ? "text-foreground" : "text-white"}`}
       >
         RedSalud <span className={tone === "dark" ? "text-primary" : "text-white/85"}>Te Forma</span>
       </span>
