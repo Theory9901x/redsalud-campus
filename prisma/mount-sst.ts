@@ -157,16 +157,29 @@ async function main() {
   const posturasUrl = `/uploads/quiz/${quiz.id}/posturas.webp`;
 
   type P = {
-    type: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "TRUE_FALSE";
+    type: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "TRUE_FALSE" | "OPEN_TEXT";
     statement: string;
     imageUrl?: string;
-    options: { text: string; isCorrect: boolean }[];
+    explanation?: string;
+    options?: { text: string; isCorrect: boolean }[];
   };
 
-  // Solo las preguntas auto-calificables de la evaluación (opción/verdadero-falso
-  // e imagen). Las abiertas (1, 2 y 7 del formato) quedan pendientes de decidir
-  // con Talento Humano cómo representarlas en un motor auto-calificado.
+  // Preguntas del formato de evaluación. Las de opción/verdadero-falso e imagen
+  // se auto-califican; las abiertas se guardan para consulta y no suman al
+  // puntaje (su "respuesta de referencia" va en explanation).
   const preguntas: P[] = [
+    {
+      type: "OPEN_TEXT",
+      statement: "Mencione tres (3) responsabilidades del trabajador en seguridad y salud en el trabajo.",
+      explanation:
+        "Por ejemplo: cuidar su salud y la de sus compañeros, usar los elementos de protección personal, cumplir las normas del SG-SST, reportar condiciones y actos inseguros, y participar en las actividades de prevención.",
+    },
+    {
+      type: "OPEN_TEXT",
+      statement: "¿Cuál es el objetivo de la Seguridad y Salud en el Trabajo?",
+      explanation:
+        "Prevenir lesiones y enfermedades causadas por las condiciones de trabajo, y proteger y promover la salud de los trabajadores, mediante la identificación, evaluación y control de los peligros y riesgos.",
+    },
     {
       type: "SINGLE_CHOICE",
       statement: "¿Qué se debe hacer en caso de un accidente de trabajo?",
@@ -229,6 +242,12 @@ async function main() {
       ],
     },
     {
+      type: "OPEN_TEXT",
+      statement: "Mencione tres (3) peligros en su área de trabajo.",
+      explanation:
+        "Depende del área. Por ejemplo: biológico (exposición a fluidos), biomecánico (posturas y cargas), locativo (pisos, escaleras), eléctrico, químico, psicosocial (carga laboral).",
+    },
+    {
       type: "SINGLE_CHOICE",
       statement: "Hacer una pausa activa consiste en:",
       options: [
@@ -246,9 +265,10 @@ async function main() {
         type: p.type,
         statement: p.statement,
         imageUrl: p.imageUrl ?? null,
+        explanation: p.explanation ?? null,
         score: 1,
         sortOrder: i,
-        options: { create: p.options.map((o, idx) => ({ text: o.text, isCorrect: o.isCorrect, sortOrder: idx })) },
+        options: { create: (p.options ?? []).map((o, idx) => ({ text: o.text, isCorrect: o.isCorrect, sortOrder: idx })) },
       },
     });
   }

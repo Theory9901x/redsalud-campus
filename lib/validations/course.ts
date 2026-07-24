@@ -61,10 +61,17 @@ export const questionOptionSchema = z.object({
   isCorrect: z.boolean(),
 });
 
-export const questionSchema = z.object({
-  type: z.enum(["SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE"]),
-  statement: z.string().trim().min(3, "El enunciado es obligatorio."),
-  score: z.coerce.number().int().min(1).max(100),
-  explanation: z.string().trim().optional().or(z.literal("")),
-  options: z.array(questionOptionSchema).min(2, "Cada pregunta necesita al menos 2 opciones."),
-});
+export const questionSchema = z
+  .object({
+    type: z.enum(["SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE", "OPEN_TEXT"]),
+    statement: z.string().trim().min(3, "El enunciado es obligatorio."),
+    score: z.coerce.number().int().min(1).max(100),
+    explanation: z.string().trim().optional().or(z.literal("")),
+    options: z.array(questionOptionSchema).default([]),
+  })
+  // Las de opción necesitan al menos 2; la abierta no lleva ninguna.
+  .superRefine((q, ctx) => {
+    if (q.type !== "OPEN_TEXT" && q.options.length < 2) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Cada pregunta necesita al menos 2 opciones.", path: ["options"] });
+    }
+  });

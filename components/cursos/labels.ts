@@ -141,4 +141,5 @@ export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   SINGLE_CHOICE: "Selección única",
   MULTIPLE_CHOICE: "Selección múltiple",
   TRUE_FALSE: "Verdadero / Falso",
+  OPEN_TEXT: "Respuesta abierta",
 };

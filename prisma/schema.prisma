@@ -303,6 +303,7 @@ enum QuestionType {
   SINGLE_CHOICE
   MULTIPLE_CHOICE
   TRUE_FALSE
+  OPEN_TEXT // respuesta abierta: se guarda para revisión, no suma al puntaje automático
 }
 
 model Quiz {
@@ -435,6 +436,7 @@ model QuizAnswer {
   questionId        String
   question          Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
   selectedOptionIds String[] // ids de QuestionOption elegidos
+  textAnswer        String? // respuesta libre (preguntas de tipo OPEN_TEXT)
   isCorrect         Boolean
   scoreObtained     Int
 

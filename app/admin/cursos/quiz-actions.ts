@@ -175,7 +175,8 @@ async function resolverImagenPregunta(formData: FormData, quizId: string): Promi
   return typeof actual === "string" && actual.length > 0 ? actual : null;
 }
 
-function validateOptionsForType(type: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "TRUE_FALSE", options: { isCorrect: boolean }[]): string | null {
+function validateOptionsForType(type: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "TRUE_FALSE" | "OPEN_TEXT", options: { isCorrect: boolean }[]): string | null {
+  if (type === "OPEN_TEXT") return null; // respuesta abierta: sin opciones
   const correctCount = options.filter((o) => o.isCorrect).length;
   if (correctCount === 0) return "Marca al menos una opción correcta.";
   if (type === "TRUE_FALSE") {

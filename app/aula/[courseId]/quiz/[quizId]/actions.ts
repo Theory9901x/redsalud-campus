@@ -12,6 +12,10 @@ export type QuizFeedbackItem = {
   isCorrect: boolean;
   explanation: string | null;
   correctOptionIds: string[];
+  /** Verdadero en preguntas de respuesta abierta (no cuentan al puntaje). */
+  isOpen?: boolean;
+  /** Texto que escribió el estudiante (solo en las abiertas). */
+  textAnswer?: string;
 };
 
 export type QuizSubmitState = {
@@ -68,12 +72,30 @@ export async function submitQuizAttemptAction(
   const answerRows: {
     questionId: string;
     selectedOptionIds: string[];
+    textAnswer: string | null;
     isCorrect: boolean;
     scoreObtained: number;
   }[] = [];
   const feedback: QuizFeedbackItem[] = [];
 
   for (const question of quiz.questions) {
+    // Respuesta abierta: se guarda el texto para revisión, pero NO cuenta al
+    // puntaje automático (no suma a maxScore). Así el 60% se calcula solo sobre
+    // las auto-calificables.
+    if (question.type === "OPEN_TEXT") {
+      const textAnswer = String(formData.get(`q_${question.id}_text`) ?? "").trim();
+      answerRows.push({ questionId: question.id, selectedOptionIds: [], textAnswer, isCorrect: false, scoreObtained: 0 });
+      feedback.push({
+        questionId: question.id,
+        isCorrect: false,
+        isOpen: true,
+        textAnswer,
+        explanation: question.explanation,
+        correctOptionIds: [],
+      });
+      continue;
+    }
+
     maxScore += question.score;
     const selectedOptionIds = formData.getAll(`q_${question.id}`).map(String);
     const correctOptionIds = question.options.filter((o) => o.isCorrect).map((o) => o.id);
@@ -91,7 +113,7 @@ export async function submitQuizAttemptAction(
     const scoreObtained = isCorrect ? question.score : 0;
     totalScore += scoreObtained;
 
-    answerRows.push({ questionId: question.id, selectedOptionIds, isCorrect, scoreObtained });
+    answerRows.push({ questionId: question.id, selectedOptionIds, textAnswer: null, isCorrect, scoreObtained });
     feedback.push({
       questionId: question.id,
       isCorrect,
@@ -100,7 +122,9 @@ export async function submitQuizAttemptAction(
     });
   }
 
-  const scorePercent = maxScore === 0 ? 0 : Math.round((totalScore / maxScore) * 100);
+  // Sin preguntas auto-calificables (todas abiertas) no hay nada que reprobar:
+  // se da por aprobado. Con al menos una, el porcentaje es sobre esas.
+  const scorePercent = maxScore === 0 ? 100 : Math.round((totalScore / maxScore) * 100);
   const passed = scorePercent >= quiz.passingScore;
 
   try {
@@ -121,6 +145,7 @@ export async function submitQuizAttemptAction(
           attemptId: attempt.id,
           questionId: a.questionId,
           selectedOptionIds: a.selectedOptionIds,
+          textAnswer: a.textAnswer,
           isCorrect: a.isCorrect,
           scoreObtained: a.scoreObtained,
         })),

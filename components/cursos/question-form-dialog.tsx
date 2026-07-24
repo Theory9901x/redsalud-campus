@@ -168,6 +168,13 @@ export function QuestionFormDialog({
               />
             </div>
 
+            {type === "OPEN_TEXT" ? (
+              <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                Respuesta abierta: el estudiante escribe libremente. No suma al puntaje automático de la
+                evaluación; se guarda para consulta. Lo que pongas en “Retroalimentación” se muestra como
+                respuesta de referencia al terminar.
+              </p>
+            ) : (
             <div className="space-y-2">
               <Label>Opciones</Label>
               <div className="space-y-2">
@@ -204,8 +211,10 @@ export function QuestionFormDialog({
                 </Button>
               )}
             </div>
+            )}
 
-            <input type="hidden" name="optionsJson" value={JSON.stringify(options)} />
+            {/* La abierta no lleva opciones: se envía una lista vacía. */}
+            <input type="hidden" name="optionsJson" value={JSON.stringify(type === "OPEN_TEXT" ? [] : options)} />
 
             {state.error && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>

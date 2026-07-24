@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Award, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Award, CheckCircle2, Clock, FileText, XCircle } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { submitQuizAttemptAction, type QuizSubmitState } from "@/app/aula/[courseId]/quiz/[quizId]/actions";
@@ -159,7 +159,9 @@ export function QuizTakingForm({
               return (
                 <div key={question.id} className="surface space-y-2 p-4">
                   <div className="flex items-start gap-2">
-                    {f.isCorrect ? (
+                    {f.isOpen ? (
+                      <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                    ) : f.isCorrect ? (
                       <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
                     ) : (
                       <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
@@ -176,22 +178,45 @@ export function QuizTakingForm({
                       className="ml-6 max-h-56 w-auto rounded-lg border border-border object-contain"
                     />
                   )}
-                  <ul className="ml-6 space-y-1 text-sm">
-                    {question.options.map((option) => (
-                      <li
-                        key={option.id}
-                        className={cn(
-                          "rounded-md px-2 py-1",
-                          f.correctOptionIds.includes(option.id)
-                            ? "bg-success/10 text-success"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {option.text}
-                      </li>
-                    ))}
-                  </ul>
-                  {f.explanation && <p className="ml-6 text-xs text-muted-foreground">{f.explanation}</p>}
+                  {f.isOpen ? (
+                    // Respuesta abierta: se muestra lo que escribió + la referencia.
+                    <div className="ml-6 space-y-2 text-sm">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tu respuesta</p>
+                        <p className="mt-0.5 whitespace-pre-line rounded-md bg-muted/50 px-2 py-1.5 text-foreground">
+                          {f.textAnswer?.trim() ? f.textAnswer : "—"}
+                        </p>
+                      </div>
+                      {f.explanation && (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-success">Respuesta de referencia</p>
+                          <p className="mt-0.5 whitespace-pre-line rounded-md bg-success/10 px-2 py-1.5 text-foreground">
+                            {f.explanation}
+                          </p>
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground">Esta pregunta no cuenta al puntaje; se guarda para consulta.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <ul className="ml-6 space-y-1 text-sm">
+                        {question.options.map((option) => (
+                          <li
+                            key={option.id}
+                            className={cn(
+                              "rounded-md px-2 py-1",
+                              f.correctOptionIds.includes(option.id)
+                                ? "bg-success/10 text-success"
+                                : "text-muted-foreground"
+                            )}
+                          >
+                            {option.text}
+                          </li>
+                        ))}
+                      </ul>
+                      {f.explanation && <p className="ml-6 text-xs text-muted-foreground">{f.explanation}</p>}
+                    </>
+                  )}
                 </div>
               );
             })}
@@ -244,23 +269,33 @@ export function QuizTakingForm({
                 className="max-h-72 w-auto rounded-lg border border-border object-contain"
               />
             )}
-            <div className="space-y-2">
-              {question.options.map((option) => (
-                <label
-                  key={option.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted/50"
-                >
-                  <input
-                    type={question.type === "MULTIPLE_CHOICE" ? "checkbox" : "radio"}
-                    name={`q_${question.id}`}
-                    value={option.id}
-                    required={question.type !== "MULTIPLE_CHOICE"}
-                    className="h-4 w-4"
-                  />
-                  <span className="text-foreground">{option.text}</span>
-                </label>
-              ))}
-            </div>
+            {question.type === "OPEN_TEXT" ? (
+              <textarea
+                name={`q_${question.id}_text`}
+                rows={3}
+                required
+                placeholder="Escribe tu respuesta..."
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus-visible:border-[var(--accent)]/50 focus-visible:ring-2 focus-visible:ring-[var(--accent)]/15"
+              />
+            ) : (
+              <div className="space-y-2">
+                {question.options.map((option) => (
+                  <label
+                    key={option.id}
+                    className="flex cursor-pointer items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted/50"
+                  >
+                    <input
+                      type={question.type === "MULTIPLE_CHOICE" ? "checkbox" : "radio"}
+                      name={`q_${question.id}`}
+                      value={option.id}
+                      required={question.type !== "MULTIPLE_CHOICE"}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-foreground">{option.text}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </fieldset>
         ))}
       </div>
