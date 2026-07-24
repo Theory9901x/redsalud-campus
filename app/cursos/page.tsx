@@ -1,4 +1,4 @@
-import { BookOpen, Layers, ShieldCheck, Clock3 } from "lucide-react";
+import { Layers } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { CatalogoResultados } from "@/components/cursos/catalogo-resultados";
@@ -113,40 +113,20 @@ export default async function CatalogoCursosPage({
     }))
     .filter((f) => f.opciones.length > 0);
 
-  const totalHours = courses.reduce((sum, c) => sum + c.durationHours, 0);
-  const obligatoriosCount = courses.filter((c) => c.courseType === "OBLIGATORIO").length;
 
   const content = (
     <StaggerSections className="space-y-6">
-      {/* Header corto: solo identifica la vista. La intro grande (saludo +
-          números) vive ahora en el dashboard, que es donde tiene sentido. */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)]/15 text-[var(--accent)]">
-            <Layers className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="font-display text-2xl font-extrabold tracking-tight text-foreground">Catálogo de cursos</h1>
-            <p className="text-[13px] text-muted-foreground">
-              Inducción, reinducción y capacitación del talento humano.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted-foreground">
-          <span className="chip-glass !text-foreground [background-color:var(--glass-bg)]">
-            <BookOpen className="h-3.5 w-3.5 text-[var(--accent)]" />
-            {courses.length} cursos
-          </span>
-          <span className="chip-glass !text-foreground [background-color:var(--glass-bg)]">
-            <Clock3 className="h-3.5 w-3.5 text-warning-foreground" />
-            {totalHours}h
-          </span>
-          {obligatoriosCount > 0 && (
-            <span className="chip-glass !text-foreground [background-color:var(--glass-bg)]">
-              <ShieldCheck className="h-3.5 w-3.5 text-destructive" />
-              {obligatoriosCount} obligatorios
-            </span>
-          )}
+      {/* Header en un cuadro glass, con solo título y descripción, para que no
+          quede plano. La intro grande (saludo + números) vive en el dashboard. */}
+      <div className="surface-glass surface-accent-top flex items-center gap-4 p-5 sm:p-6">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)]/15 text-[var(--accent)]">
+          <Layers className="h-6 w-6" />
+        </span>
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-extrabold tracking-tight text-foreground">Catálogo de cursos</h1>
+          <p className="text-[13px] text-muted-foreground">
+            Inducción, reinducción y capacitación del talento humano de Red Salud Casanare E.S.E.
+          </p>
         </div>
       </div>
 
