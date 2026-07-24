@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef, useState } from "react";
 import Image from "next/image";
-import { User } from "lucide-react";
+import { Upload, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { uploadAvatarAction, type AvatarUploadState } from "@/app/(estudiante)/perfil/actions";
 
@@ -10,6 +10,8 @@ const initialState: AvatarUploadState = { error: null };
 
 export function AvatarUploader({ avatarUrl }: { avatarUrl: string | null }) {
   const [state, formAction, pending] = useActionState(uploadAvatarAction, initialState);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [nombreArchivo, setNombreArchivo] = useState<string | null>(null);
 
   return (
     <form action={formAction} className="flex items-center gap-4">
@@ -30,14 +32,33 @@ export function AvatarUploader({ avatarUrl }: { avatarUrl: string | null }) {
         )}
       </div>
       <div className="flex-1 space-y-2">
+        {/*
+         * Input de archivo oculto disparado por un botón propio: el control
+         * nativo ("Choose File · No file chosen") no acata los tokens del tema
+         * y quedaba como un parche gris en la pasada de diseño. El nombre del
+         * archivo elegido se muestra aparte, con el estilo de la interfaz.
+         */}
         <input
+          ref={inputRef}
           type="file"
           name="avatar"
           accept="image/*"
-          className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-secondary-foreground"
+          className="sr-only"
+          onChange={(e) => setNombreArchivo(e.target.files?.[0]?.name ?? null)}
         />
-        <Button type="submit" size="sm" variant="outline" disabled={pending}>
-          {pending ? "Subiendo..." : "Cambiar foto"}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" size="sm" variant="outline" onClick={() => inputRef.current?.click()}>
+            <Upload className="h-4 w-4" />
+            Elegir imagen
+          </Button>
+          {nombreArchivo && (
+            <span className="max-w-[180px] truncate text-xs text-muted-foreground" title={nombreArchivo}>
+              {nombreArchivo}
+            </span>
+          )}
+        </div>
+        <Button type="submit" size="sm" disabled={pending || !nombreArchivo}>
+          {pending ? "Subiendo..." : "Guardar foto"}
         </Button>
         {state.error && <p className="text-sm text-destructive">{state.error}</p>}
       </div>
