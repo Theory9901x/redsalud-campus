@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, LogOut, Menu } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/brand/theme-toggle";
+import { BuscadorGlobal } from "@/components/shell/buscador-global";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,8 +52,10 @@ export function AdminTopbar({
         <Menu className="h-6 w-6" />
       </button>
 
+      <BuscadorGlobal />
+
       {breadcrumb && (
-        <p className="hidden min-w-0 flex-1 truncate text-sm font-medium text-muted-foreground lg:block">{breadcrumb}</p>
+        <p className="hidden min-w-0 flex-1 truncate text-sm font-medium text-muted-foreground xl:block">{breadcrumb}</p>
       )}
 
       <div className="flex flex-1 items-center justify-end gap-2.5">

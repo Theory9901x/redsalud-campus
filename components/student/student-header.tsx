@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RoleBadge } from "@/components/admin/role-badge";
 import { NotificationBell, type NotificationItem } from "@/components/student/notification-bell";
 import { ThemeToggle } from "@/components/brand/theme-toggle";
+import { BuscadorGlobal } from "@/components/shell/buscador-global";
 import { initials } from "@/lib/initials";
 import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
 import type { PersonnelType } from "@prisma/client";
@@ -62,6 +63,7 @@ export function StudentHeader({
         </button>
 
         <div className="flex flex-1 items-center justify-end gap-1.5">
+          <BuscadorGlobal />
           <ThemeToggle className="mr-1" />
           <NotificationBell notifications={notifications} unreadCount={unreadCount} />
 
