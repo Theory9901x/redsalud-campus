@@ -315,7 +315,7 @@ model Quiz {
   title              String
   description        String?
   passingScore       Int           @default(80) // % mínimo de este quiz
-  maxAttempts        Int           @default(2)
+  maxAttempts        Int           @default(10)
   timeLimitMinutes   Int?
   randomizeQuestions Boolean       @default(false)
   randomizeAnswers   Boolean       @default(false)

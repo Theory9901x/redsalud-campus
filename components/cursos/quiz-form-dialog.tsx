@@ -91,7 +91,7 @@ export function QuizFormDialog({
                   min={1}
                   max={10}
                   required
-                  defaultValue={defaultValues?.maxAttempts ?? 2}
+                  defaultValue={defaultValues?.maxAttempts ?? 10}
                 />
               </div>
             </div>
