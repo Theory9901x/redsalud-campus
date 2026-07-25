@@ -64,9 +64,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) return null;
         const { email: identificador, password } = parsed.data;
 
-        // Acepta correo o usuario, sin distinguir mayúsculas en el correo.
+        // Acepta correo o usuario, SIN distinguir mayúsculas. Se compara con
+        // `mode: "insensitive"` en vez de bajar el input a minúsculas, porque
+        // el valor GUARDADO puede tener mayúsculas (cuentas creadas antes de
+        // que el formulario normalizara el correo). Bajar solo el input dejaba
+        // fuera del acceso a esas personas aunque su contraseña fuera correcta.
         const user = await prisma.user.findFirst({
-          where: { OR: [{ email: identificador.toLowerCase() }, { username: identificador.toLowerCase() }] },
+          where: {
+            OR: [
+              { email: { equals: identificador, mode: "insensitive" } },
+              { username: { equals: identificador, mode: "insensitive" } },
+            ],
+          },
         });
         if (!user || user.status !== "ACTIVE") return null;
 
