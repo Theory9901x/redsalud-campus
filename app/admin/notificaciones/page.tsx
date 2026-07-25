@@ -40,7 +40,7 @@ export default async function NotificacionesPage() {
     prisma.user.findMany({
       where: { status: "ACTIVE" },
       orderBy: { fullName: "asc" },
-      select: { id: true, fullName: true, email: true },
+      select: { id: true, fullName: true, email: true, username: true },
     }),
   ]);
 
@@ -51,7 +51,7 @@ export default async function NotificacionesPage() {
         description="Emite novedades institucionales a todos los usuarios, a un rol, o a una persona puntual."
       />
 
-      <NotificationForm users={users} />
+      <NotificationForm users={users.map((u) => ({ id: u.id, fullName: u.fullName, email: u.email ?? (u.username ? `@${u.username}` : "") }))} />
 
       <div className="space-y-3">
         <h2 className="font-display text-lg font-bold text-foreground">Enviadas recientemente</h2>

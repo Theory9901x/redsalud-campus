@@ -111,7 +111,7 @@ model User {
   fullName       String
   documentType   DocumentType
   documentNumber String       @unique
-  email          String       @unique
+  email          String?      @unique // opcional: el personal sin correo entra con username
   // Identificador de acceso alterno (p. ej. "nombre.apellido"). Se usa cuando
   // la persona no tiene un correo válido propio: puede entrar con esto en vez
   // del correo. Nullable porque la mayoría entra con su correo institucional.

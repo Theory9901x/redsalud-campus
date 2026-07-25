@@ -48,6 +48,7 @@ type UserFormValues = {
   documentType: DocumentType;
   documentNumber: string;
   email: string;
+  username: string;
   phone: string;
   profession: string;
   position: string;
@@ -63,6 +64,7 @@ const EMPTY_VALUES: UserFormValues = {
   documentType: "CC",
   documentNumber: "",
   email: "",
+  username: "",
   phone: "",
   profession: "",
   position: "",
@@ -122,9 +124,33 @@ export function UserForm({
           <Input id="documentNumber" name="documentNumber" required defaultValue={values.documentNumber} />
         </div>
 
+        {/* Credenciales de acceso: basta con UNA. El personal sin correo propio
+            entra con un usuario "nombre.apellido". */}
+        <div className="space-y-1.5 sm:col-span-2">
+          <div className="rounded-lg border border-border bg-muted/30 p-3">
+            <p className="text-xs text-muted-foreground">
+              Para iniciar sesión la persona necesita <strong>al menos uno</strong> de estos dos: correo o
+              usuario. Si no tiene correo institucional, asígnale un usuario tipo{" "}
+              <span className="font-mono">nombre.apellido</span>.
+            </p>
+          </div>
+        </div>
+
         <div className="space-y-1.5">
           <Label htmlFor="email">Correo electrónico</Label>
-          <Input id="email" name="email" type="email" required defaultValue={values.email} />
+          <Input id="email" name="email" type="email" defaultValue={values.email} placeholder="nombre@correo.com" />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="username">Usuario (sin correo)</Label>
+          <Input
+            id="username"
+            name="username"
+            autoCapitalize="none"
+            autoComplete="off"
+            defaultValue={values.username}
+            placeholder="nombre.apellido"
+          />
         </div>
 
         <div className="space-y-1.5">

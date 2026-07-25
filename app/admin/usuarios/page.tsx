@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { RoleBadge } from "@/components/admin/role-badge";
 import { StatusBadge } from "@/components/admin/status-badge";
+import { DeleteUserButton } from "@/components/admin/delete-user-button";
 import { ToggleStatusButton } from "@/components/admin/toggle-status-button";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AdminPageHeader } from "@/components/admin/page-header";
@@ -113,6 +114,7 @@ export default async function UsuariosPage({
         documentType: true,
         documentNumber: true,
         email: true,
+        username: true,
         position: true,
         personnelType: true,
         tipoVinculacion: true,
@@ -205,8 +207,11 @@ export default async function UsuariosPage({
                 <TableCell className="text-muted-foreground" title={`${user.documentType} ${user.documentNumber}`}>
                   {user.documentNumber}
                 </TableCell>
-                <TableCell className="max-w-[120px] truncate text-muted-foreground" title={user.email}>
-                  {user.email}
+                <TableCell
+                  className="max-w-[120px] truncate text-muted-foreground"
+                  title={user.email ?? (user.username ? `usuario: ${user.username}` : "sin credencial de acceso")}
+                >
+                  {user.email ?? (user.username ? `@${user.username}` : <span className="text-destructive">Sin acceso</span>)}
                 </TableCell>
                 <TableCell className="max-w-[120px] truncate text-muted-foreground" title={user.position ?? ""}>
                   {user.position || "—"}
@@ -233,6 +238,7 @@ export default async function UsuariosPage({
                     <Pencil />
                   </Link>
                     <ToggleStatusButton userId={user.id} status={user.status} />
+                    <DeleteUserButton userId={user.id} userName={user.fullName} />
                   </div>
                 </TableCell>
               </TableRow>

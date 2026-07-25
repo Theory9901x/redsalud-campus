@@ -37,7 +37,9 @@ export async function solicitarCodigoAction(
   });
 
   // Cuenta inexistente o inactiva: se responde igual que en el caso exitoso.
-  if (!user || user.status !== "ACTIVE") {
+  // Cuenta sin correo (personal que entra solo con usuario): tampoco se le
+  // puede enviar un código; se responde igual para no revelar el caso.
+  if (!user || user.status !== "ACTIVE" || !user.email) {
     return { error: null, enviado: true };
   }
 

@@ -47,7 +47,7 @@ export default async function InscripcionesPage({
     prisma.user.findMany({
       where: { role: "STUDENT", status: "ACTIVE" },
       orderBy: { fullName: "asc" },
-      select: { id: true, fullName: true, documentNumber: true, email: true },
+      select: { id: true, fullName: true, documentNumber: true, email: true, username: true },
     }),
     prisma.enrollment.findMany({
       where,
@@ -71,7 +71,15 @@ export default async function InscripcionesPage({
             Asignar estudiantes a un curso
           </h2>
         </div>
-        <AssignEnrollmentForm courses={courses} students={students} />
+        <AssignEnrollmentForm
+          courses={courses}
+          students={students.map((s) => ({
+            id: s.id,
+            fullName: s.fullName,
+            documentNumber: s.documentNumber,
+            email: s.email ?? (s.username ? `@${s.username}` : ""),
+          }))}
+        />
       </section>
 
       <section className="space-y-4">

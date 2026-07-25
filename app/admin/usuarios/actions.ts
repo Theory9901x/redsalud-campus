@@ -29,6 +29,7 @@ export async function createUserAction(
     documentType: formData.get("documentType"),
     documentNumber: formData.get("documentNumber"),
     email: formData.get("email"),
+    username: formData.get("username"),
     phone: formData.get("phone"),
     profession: formData.get("profession"),
     position: formData.get("position"),
@@ -51,6 +52,10 @@ export async function createUserAction(
     creado = await prisma.user.create({
       data: {
         ...data,
+        // Vacío -> null: la cadena "" en un campo @unique chocaría con la de
+        // cualquier otro usuario sin ese dato.
+        email: data.email || null,
+        username: data.username || null,
         phone: data.phone || null,
         profession: data.profession || null,
         position: data.position || null,
@@ -94,6 +99,7 @@ export async function updateUserAction(
     documentType: formData.get("documentType"),
     documentNumber: formData.get("documentNumber"),
     email: formData.get("email"),
+    username: formData.get("username"),
     phone: formData.get("phone"),
     profession: formData.get("profession"),
     position: formData.get("position"),
@@ -121,6 +127,8 @@ export async function updateUserAction(
       where: { id: userId },
       data: {
         ...data,
+        email: data.email || null,
+        username: data.username || null,
         phone: data.phone || null,
         profession: data.profession || null,
         position: data.position || null,
@@ -130,7 +138,7 @@ export async function updateUserAction(
     });
   } catch (error) {
     if (isUniqueConstraintError(error)) {
-      return { error: "Ya existe un usuario con ese correo o número de documento." };
+      return { error: "Ya existe un usuario con ese correo, usuario o número de documento." };
     }
     throw error;
   }
@@ -169,6 +177,77 @@ export async function toggleUserStatusAction(userId: string) {
 
   revalidatePath("/admin/usuarios");
   revalidatePath(`/admin/usuarios/${userId}`);
+}
+
+export type DeleteUserState = { error: string | null };
+
+/**
+ * Elimina un usuario DEFINITIVAMENTE.
+ *
+ * Borrar de verdad solo tiene sentido para cuentas creadas por error, sin
+ * historia. Si la persona ya tiene certificados, dicta cursos o planes, o subió
+ * archivos, borrarla perdería esos registros (o rompería referencias), así que
+ * se bloquea y se sugiere DESACTIVAR —que es la herramienta correcta para la
+ * rotación de personal: conserva su historia y le quita el acceso—.
+ *
+ * Lo que sí cuelga en cascada (inscripciones, progreso, intentos, asistencias,
+ * notificaciones) se borra con la persona; la bitácora conserva sus entradas
+ * con el autor en blanco.
+ */
+export async function deleteUserAction(userId: string): Promise<DeleteUserState> {
+  const sesion = await requireAdmin();
+
+  if (userId === sesion.user.id) {
+    return { error: "No puedes eliminar tu propia cuenta." };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      fullName: true,
+      _count: {
+        select: { certificates: true, coursesTutored: true, mediaUploads: true, trainingPlansAsTutor: true },
+      },
+    },
+  });
+  if (!user) return { error: "El usuario ya no existe." };
+
+  const c = user._count;
+  const motivos: string[] = [];
+  if (c.certificates > 0) motivos.push(`${c.certificates} certificado(s) emitido(s)`);
+  if (c.coursesTutored > 0) motivos.push(`${c.coursesTutored} curso(s) como tutor`);
+  if (c.trainingPlansAsTutor > 0) motivos.push(`${c.trainingPlansAsTutor} plan(es) de capacitación`);
+  if (c.mediaUploads > 0) motivos.push(`${c.mediaUploads} archivo(s) subido(s)`);
+
+  if (motivos.length > 0) {
+    return {
+      error: `No se puede eliminar a ${user.fullName} sin perder su historia (${motivos.join(", ")}). Usa "Desactivar" para quitarle el acceso conservando sus registros.`,
+    };
+  }
+
+  try {
+    await prisma.user.delete({ where: { id: userId } });
+  } catch (error) {
+    // Alguna referencia que no se contempló arriba (encuestas o notificaciones
+    // que creó, etc.) impide el borrado. Mejor un mensaje claro que un 500.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      return {
+        error: `No se puede eliminar a ${user.fullName} porque tiene registros asociados en la plataforma. Usa "Desactivar" para quitarle el acceso conservando su historia.`,
+      };
+    }
+    throw error;
+  }
+
+  await registrarAuditoria({
+    userId: sesion.user.id,
+    action: "DELETE",
+    entity: "User",
+    entityId: userId,
+    description: `Eliminó definitivamente al usuario ${user.fullName}`,
+  });
+
+  revalidatePath("/admin/usuarios");
+  return { error: null };
 }
 
 const TEMP_PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
