@@ -75,6 +75,7 @@ export default async function UsuariosPage({
       { fullName: { contains: q, mode: "insensitive" } },
       { documentNumber: { contains: q, mode: "insensitive" } },
       { email: { contains: q, mode: "insensitive" } },
+      { username: { contains: q, mode: "insensitive" } },
       { position: { contains: q, mode: "insensitive" } },
     ];
   }
