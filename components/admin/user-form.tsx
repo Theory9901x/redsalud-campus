@@ -124,14 +124,14 @@ export function UserForm({
           <Input id="documentNumber" name="documentNumber" required defaultValue={values.documentNumber} />
         </div>
 
-        {/* Credenciales de acceso: basta con UNA. El personal sin correo propio
-            entra con un usuario "nombre.apellido". */}
+        {/* Credenciales de acceso: basta con UNA de las dos. Ambas se pueden
+            fijar o cambiar en cualquier usuario, tenga correo o no. */}
         <div className="space-y-1.5 sm:col-span-2">
           <div className="rounded-lg border border-border bg-muted/30 p-3">
             <p className="text-xs text-muted-foreground">
-              Para iniciar sesión la persona necesita <strong>al menos uno</strong> de estos dos: correo o
-              usuario. Si no tiene correo institucional, asígnale un usuario tipo{" "}
-              <span className="font-mono">nombre.apellido</span>.
+              La persona inicia sesión con su <strong>correo</strong> o con su <strong>usuario</strong> —cualquiera
+              de los dos—. Necesita al menos uno. Puedes escribir o cambiar ambos libremente; si alguien no tiene
+              correo, dale solo un usuario tipo <span className="font-mono">nombre.apellido</span>.
             </p>
           </div>
         </div>
@@ -142,7 +142,7 @@ export function UserForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="username">Usuario (sin correo)</Label>
+          <Label htmlFor="username">Usuario</Label>
           <Input
             id="username"
             name="username"
