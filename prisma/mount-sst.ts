@@ -20,6 +20,10 @@ const PUBLIC_UPLOADS = path.join(process.cwd(), "public", "uploads");
 const SRC = process.env.SST_SRC ?? "C:\\Users\\USUARIO\\Desktop\\SST\\drive-download-20260723T224043Z-1-001";
 const PDF = process.env.SST_PDF ?? path.join(process.cwd(), "..", "induccion-sst.pdf");
 const IMG_POSTURAS = process.env.SST_IMG ?? path.join(process.cwd(), "..", "posturas.png");
+// Rutas explícitas de los videos (evitan pelear con espacios/acentos en el
+// nombre al transferir al servidor); si no se dan, se arman desde SST_SRC.
+const VIDEO1 = process.env.SST_VIDEO1 ?? path.join(SRC, "riesgo biológico.mp4");
+const VIDEO2 = process.env.SST_VIDEO2 ?? path.join(SRC, "videoplayback.mp4");
 
 const sanitize = (name: string) => {
   const ext = path.extname(name).toLowerCase();
