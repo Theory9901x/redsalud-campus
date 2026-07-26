@@ -120,6 +120,7 @@ export default async function AdminPlanCapacitacionDetallePage({
                 basePath={BASE_PATH}
                 planId={id}
                 adherenceByActivity={adherenceByActivity}
+                puedeEliminar
               />
             </div>
 

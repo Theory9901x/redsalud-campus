@@ -10,6 +10,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
+import { deleteCourseAction } from "@/app/admin/cursos/actions";
 import { EmptyState } from "@/components/brand/empty-state";
 import { COURSE_TYPE_LABELS, COURSE_STATUS_LABELS, COURSE_STATUS_CLASSES } from "@/components/cursos/labels";
 import type { CourseStatus, CourseType } from "@prisma/client";
@@ -30,9 +32,12 @@ export type CourseAdminListItem = {
 export function CourseAdminTable({
   courses,
   basePath,
+  /** Solo el admin puede eliminar cursos; el tutor gestiona los suyos sin borrarlos. */
+  puedeEliminar = false,
 }: {
   courses: CourseAdminListItem[];
   basePath: string;
+  puedeEliminar?: boolean;
 }) {
   if (courses.length === 0) {
     return (
@@ -99,6 +104,17 @@ export function CourseAdminTable({
                   >
                     <Pencil className="h-4 w-4" />
                   </Link>
+                  {puedeEliminar && (
+                    <DeleteEntityButton
+                      action={deleteCourseAction.bind(null, course.id)}
+                      nombre={course.title}
+                      descripcion={
+                        course._count.enrollments > 0
+                          ? `Se elimina el curso con su contenido, sus evaluaciones y las ${course._count.enrollments} inscripciones con su avance. No se puede deshacer. Si solo quieres sacarlo del catálogo, usa "Archivar".`
+                          : 'Se elimina el curso con todo su contenido y evaluaciones. No se puede deshacer. Si solo quieres sacarlo del catálogo, usa "Archivar".'
+                      }
+                    />
+                  )}
                 </div>
               </TableCell>
             </TableRow>

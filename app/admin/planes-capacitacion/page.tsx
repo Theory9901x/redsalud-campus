@@ -33,7 +33,7 @@ export default async function AdminPlanesCapacitacionPage() {
         }
       />
 
-      <TrainingPlanList plans={plans} basePath="/admin/planes-capacitacion" showTutorColumn />
+      <TrainingPlanList plans={plans} basePath="/admin/planes-capacitacion" showTutorColumn puedeEliminar />
     </div>
   );
 }

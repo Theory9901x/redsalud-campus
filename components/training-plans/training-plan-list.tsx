@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { CalendarRange, Pencil } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
+import { deleteTrainingPlanAction } from "@/app/admin/planes-capacitacion/actions";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/brand/empty-state";
 import { TRAINING_PLAN_STATUS_LABELS, TRAINING_PLAN_STATUS_CLASSES } from "@/components/training-plans/labels";
@@ -20,10 +22,13 @@ export function TrainingPlanList({
   plans,
   basePath,
   showTutorColumn,
+  /** Solo el admin elimina planes. */
+  puedeEliminar = false,
 }: {
   plans: TrainingPlanListItem[];
   basePath: string;
   showTutorColumn: boolean;
+  puedeEliminar?: boolean;
 }) {
   if (plans.length === 0) {
     return (
@@ -75,6 +80,13 @@ export function TrainingPlanList({
                   >
                     <Pencil className="h-4 w-4" />
                   </Link>
+                  {puedeEliminar && (
+                    <DeleteEntityButton
+                      action={deleteTrainingPlanAction.bind(null, basePath, plan.id)}
+                      nombre={plan.title}
+                      descripcion={`Se elimina el plan con sus ${plan._count.activities} jornada(s), encuestas y documentos. No se puede deshacer.`}
+                    />
+                  )}
                 </div>
               </TableCell>
             </TableRow>

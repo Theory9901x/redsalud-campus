@@ -75,7 +75,7 @@ export default async function AdminCursosPage({
       </div>
 
       <div>
-        <CourseAdminTable courses={courses} basePath="/admin/cursos" />
+        <CourseAdminTable courses={courses} basePath="/admin/cursos" puedeEliminar />
         <div className="surface-glass mt-0 rounded-t-none border-t-0">
           <TablePagination total={totalCourses} page={page} pageSize={pageSize} />
         </div>

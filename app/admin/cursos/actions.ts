@@ -195,3 +195,45 @@ export async function revertToDraftAction(courseId: string) {
   revalidatePath(`/admin/cursos/${courseId}`);
   revalidatePath("/cursos");
 }
+
+export type DeleteCourseState = { error: string | null };
+
+/**
+ * Elimina un curso DEFINITIVAMENTE, con su contenido, inscripciones y avance.
+ *
+ * Guarda: si el curso ya emitió certificados, borrarlo los perdería (y la
+ * referencia lo impediría de todos modos). En ese caso se bloquea y se sugiere
+ * ARCHIVAR —que lo saca del catálogo conservando todo—. Un curso sin
+ * certificados sí se puede borrar; sus módulos, lecciones, evaluaciones,
+ * inscripciones y progreso cuelgan en cascada.
+ */
+export async function deleteCourseAction(courseId: string): Promise<DeleteCourseState> {
+  await requireAdmin();
+
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: { title: true, _count: { select: { certificates: true } } },
+  });
+  if (!course) return { error: "El curso ya no existe." };
+
+  if (course._count.certificates > 0) {
+    return {
+      error: `No se puede eliminar "${course.title}" porque ya emitió ${course._count.certificates} certificado(s), que se perderían. Usa "Archivar" para sacarlo del catálogo conservando todo.`,
+    };
+  }
+
+  try {
+    await prisma.course.delete({ where: { id: courseId } });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      return {
+        error: `No se puede eliminar "${course.title}" porque tiene registros asociados (p. ej. planes de capacitación). Usa "Archivar" en su lugar.`,
+      };
+    }
+    throw error;
+  }
+
+  revalidatePath("/admin/cursos");
+  revalidatePath("/cursos");
+  return { error: null };
+}

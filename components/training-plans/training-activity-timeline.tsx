@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { CalendarRange, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
+import { deleteTrainingActivityAction } from "@/app/admin/planes-capacitacion/actions";
 import { EmptyState } from "@/components/brand/empty-state";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import {
@@ -46,13 +48,16 @@ export function TrainingActivityTimeline({
   basePath,
   planId,
   adherenceByActivity,
+  puedeEliminar = false,
 }: {
   activities: TrainingActivityTimelineItem[];
+  /** Solo el admin elimina jornadas. */
   /** "/admin/planes-capacitacion" o "/tutor/planes-capacitacion": el título enlaza al detalle de la actividad (documentos, Etapa 2). */
   basePath: string;
   planId: string;
   /** % de adherencia por actividad (Etapa 3), ya calculado por la página. */
   adherenceByActivity?: Record<string, number>;
+  puedeEliminar?: boolean;
 }) {
   if (activities.length === 0) {
     return (
@@ -128,6 +133,13 @@ export function TrainingActivityTimeline({
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
                         {adherenceByActivity[activity.id]}% adherencia
                       </span>
+                    )}
+                    {puedeEliminar && (
+                      <DeleteEntityButton
+                        action={deleteTrainingActivityAction.bind(null, basePath, planId, activity.id)}
+                        nombre={activity.title}
+                        descripcion="Se elimina esta jornada del plan, con sus encuestas y documentos. No se puede deshacer."
+                      />
                     )}
                   </div>
                 </div>

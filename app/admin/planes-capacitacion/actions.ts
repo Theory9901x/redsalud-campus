@@ -224,3 +224,97 @@ export async function closeActivityAction(basePath: string, planId: string, acti
   revalidatePath(`${basePath}/${planId}`);
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
 }
+
+export type DeleteState = { error: string | null };
+
+/**
+ * Edita un plan de capacitación. Solo cambia sus datos: las actividades,
+ * asistencias y encuestas quedan intactas.
+ */
+export async function updateTrainingPlanAction(
+  basePath: string,
+  planId: string,
+  _prevState: TrainingPlanFormState,
+  formData: FormData
+): Promise<TrainingPlanFormState> {
+  const session = await requireTrainingPlanAccess(planId);
+
+  const parsed = trainingPlanSchema.safeParse({
+    title: formData.get("title"),
+    year: formData.get("year"),
+    description: formData.get("description") ?? "",
+    targetDepartment: formData.get("targetDepartment"),
+    tutorId: formData.get("tutorId") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+  }
+  const data = parsed.data;
+
+  await prisma.trainingPlan.update({
+    where: { id: planId },
+    data: {
+      title: data.title,
+      year: data.year,
+      description: data.description || null,
+      targetDepartment: data.targetDepartment || null,
+      // Solo el admin puede reasignar el plan a otro tutor.
+      ...(session.user.role === "ADMIN" && data.tutorId ? { tutorId: data.tutorId } : {}),
+    },
+  });
+
+  revalidatePath(basePath);
+  revalidatePath(`${basePath}/${planId}`);
+  return { error: null };
+}
+
+/**
+ * Elimina un plan con todo lo que cuelga de él (actividades, asistencias,
+ * encuestas y documentos). Se bloquea si alguna jornada ya registró
+ * asistencia: eso es evidencia de capacitación y no debe desaparecer sin más.
+ */
+export async function deleteTrainingPlanAction(basePath: string, planId: string): Promise<DeleteState> {
+  await requireTrainingPlanAccess(planId);
+
+  const plan = await prisma.trainingPlan.findUnique({
+    where: { id: planId },
+    select: { title: true, activities: { select: { _count: { select: { attendances: true } } } } },
+  });
+  if (!plan) return { error: "El plan ya no existe." };
+
+  const asistencias = plan.activities.reduce((s, a) => s + a._count.attendances, 0);
+  if (asistencias > 0) {
+    return {
+      error: `No se puede eliminar "${plan.title}": tiene ${asistencias} registro(s) de asistencia, que son la evidencia de la capacitación.`,
+    };
+  }
+
+  await prisma.trainingPlan.delete({ where: { id: planId } });
+  revalidatePath(basePath);
+  return { error: null };
+}
+
+/** Elimina una jornada del plan. Se bloquea si ya tiene asistencia registrada. */
+export async function deleteTrainingActivityAction(
+  basePath: string,
+  planId: string,
+  activityId: string
+): Promise<DeleteState> {
+  await requireTrainingActivityAccess(activityId);
+
+  const activity = await prisma.trainingActivity.findUnique({
+    where: { id: activityId },
+    select: { title: true, _count: { select: { attendances: true } } },
+  });
+  if (!activity) return { error: "La jornada ya no existe." };
+
+  if (activity._count.attendances > 0) {
+    return {
+      error: `No se puede eliminar "${activity.title}": ya tiene ${activity._count.attendances} asistencia(s) registrada(s).`,
+    };
+  }
+
+  await prisma.trainingActivity.delete({ where: { id: activityId } });
+  revalidatePath(`${basePath}/${planId}`);
+  return { error: null };
+}
