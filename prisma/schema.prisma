@@ -335,6 +335,7 @@ model Question {
   type        QuestionType
   statement   String
   imageUrl    String? // imagen de apoyo del enunciado (p. ej. posturas a evaluar)
+  expectedAnswer String? // respuesta modelo de las preguntas abiertas: se muestra en la revisión, nunca antes
   score       Int          @default(1)
   explanation String? // retroalimentación posterior
   sortOrder   Int

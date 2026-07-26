@@ -157,6 +157,7 @@ function parseQuestionForm(formData: FormData) {
     statement: formData.get("statement"),
     score: formData.get("score"),
     explanation: formData.get("explanation") ?? "",
+    expectedAnswer: formData.get("expectedAnswer") ?? "",
     options,
   });
 }
@@ -217,6 +218,7 @@ export async function createQuestionAction(
       imageUrl,
       score: data.score,
       explanation: data.explanation || null,
+      expectedAnswer: data.expectedAnswer || null,
       sortOrder: count,
       options: {
         create: data.options.map((o, index) => ({
@@ -260,6 +262,7 @@ export async function updateQuestionAction(
         imageUrl,
         score: data.score,
         explanation: data.explanation || null,
+        expectedAnswer: data.expectedAnswer || null,
       },
     }),
     prisma.questionOption.deleteMany({ where: { questionId } }),

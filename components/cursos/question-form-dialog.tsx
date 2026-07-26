@@ -47,6 +47,7 @@ export function QuestionFormDialog({
     explanation: string;
     options: OptionDraft[];
     imageUrl?: string | null;
+    expectedAnswer?: string | null;
   };
   trigger: React.ReactNode;
 }) {
@@ -169,11 +170,22 @@ export function QuestionFormDialog({
             </div>
 
             {type === "OPEN_TEXT" ? (
-              <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
-                Respuesta abierta: el estudiante escribe libremente. No suma al puntaje automático de la
-                evaluación; se guarda para consulta. Lo que pongas en “Retroalimentación” se muestra como
-                respuesta de referencia al terminar.
-              </p>
+              <div className="space-y-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="expectedAnswer">Respuesta esperada</Label>
+                  <Textarea
+                    id="expectedAnswer"
+                    name="expectedAnswer"
+                    rows={3}
+                    placeholder="Lo que debería contestar. Se le muestra al estudiante SOLO después de enviar, en la revisión y en su nota de repaso."
+                    defaultValue={defaultValues?.expectedAnswer ?? ""}
+                  />
+                </div>
+                <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                  Respuesta abierta: el estudiante escribe libremente. No suma al puntaje automático (lo revisa
+                  Talento Humano), pero sí queda registrada.
+                </p>
+              </div>
             ) : (
             <div className="space-y-2">
               <Label>Opciones</Label>

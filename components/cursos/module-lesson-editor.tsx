@@ -87,6 +87,7 @@ type QuestionItem = {
   type: QuestionType;
   statement: string;
   imageUrl: string | null;
+  expectedAnswer: string | null;
   score: number;
   explanation: string | null;
   options: OptionItem[];
@@ -582,6 +583,7 @@ function SortableQuestionRow({ question, index }: { question: QuestionItem; inde
             type: question.type,
             statement: question.statement,
             imageUrl: question.imageUrl,
+            expectedAnswer: question.expectedAnswer,
             score: question.score,
             explanation: question.explanation ?? "",
             options: question.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })),

@@ -1,7 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getAulaQuiz } from "@/lib/aula";
+import { getAulaQuiz, getNotaRepaso } from "@/lib/aula";
 import { seededShuffle } from "@/lib/quiz";
 import { QuizTakingForm } from "@/components/aula/quiz-taking-form";
 
@@ -44,6 +44,10 @@ export default async function AulaQuizPage({
     },
   });
 
+  // Nota de repaso del intento anterior fallido. Vacía en el primer intento:
+  // la información se gana al haber intentado, no antes.
+  const notaRepaso = await getNotaRepaso(quizId, session.user.id);
+
   const nextAttemptNumber = quizSummary.attemptsUsed + 1;
   const seed = `${quizId}:${session.user.id}:${nextAttemptNumber}`;
   let questions = rawQuestions;
@@ -81,6 +85,7 @@ export default async function AulaQuizPage({
         initiallyPassed={quizSummary.passed}
         initialBestScore={quizSummary.bestScore}
         initialAttemptsRemaining={quizSummary.attemptsRemaining}
+        notaRepaso={notaRepaso}
       />
     </div>
   );

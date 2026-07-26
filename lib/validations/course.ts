@@ -67,6 +67,7 @@ export const questionSchema = z
     statement: z.string().trim().min(3, "El enunciado es obligatorio."),
     score: z.coerce.number().int().min(1).max(100),
     explanation: z.string().trim().optional().or(z.literal("")),
+    expectedAnswer: z.string().trim().optional().or(z.literal("")),
     options: z.array(questionOptionSchema).default([]),
   })
   // Las de opción necesitan al menos 2; la abierta no lleva ninguna.

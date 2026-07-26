@@ -168,3 +168,60 @@ export async function getAulaQuiz(courseId: string, quizId: string, userId: stri
 
   return { course: data.course, enrollment: data.enrollment, quizSummary };
 }
+
+export type NotaRepasoItem = {
+  questionId: string;
+  statement: string;
+  /** Texto de la o las opciones correctas (vacío en preguntas abiertas). */
+  correctas: string[];
+  /** Respuesta modelo, solo en preguntas de respuesta abierta. */
+  respuestaEsperada: string | null;
+  explanation: string | null;
+  /** Si la persona ya la había acertado en ese intento. */
+  acertada: boolean;
+};
+
+/**
+ * "Nota de repaso": qué era lo correcto según el ÚLTIMO intento fallido.
+ *
+ * Se construye a partir del intento ya calificado, nunca antes: en el primer
+ * intento no existe y no hay nada que consultar. A partir del segundo, la
+ * persona ya se ganó la información porque falló una vez, y tenerla a mano
+ * mientras repite es justo el punto —son ~30 módulos y el objetivo es que
+ * aprendan, no que adivinen—.
+ */
+export async function getNotaRepaso(quizId: string, userId: string): Promise<NotaRepasoItem[]> {
+  const ultimo = await prisma.quizAttempt.findFirst({
+    where: { quizId, userId, finishedAt: { not: null } },
+    orderBy: { attemptNumber: "desc" },
+    include: {
+      answers: {
+        include: {
+          question: {
+            select: {
+              id: true,
+              statement: true,
+              type: true,
+              explanation: true,
+              expectedAnswer: true,
+              sortOrder: true,
+              options: { where: { isCorrect: true }, select: { text: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!ultimo || ultimo.passed) return [];
+
+  return ultimo.answers
+    .sort((a, b) => a.question.sortOrder - b.question.sortOrder)
+    .map((a) => ({
+      questionId: a.questionId,
+      statement: a.question.statement,
+      correctas: a.question.options.map((o) => o.text),
+      respuestaEsperada: a.question.type === "OPEN_TEXT" ? a.question.expectedAnswer : null,
+      explanation: a.question.explanation,
+      acertada: a.isCorrect,
+    }));
+}

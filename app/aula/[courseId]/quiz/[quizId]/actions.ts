@@ -12,10 +12,14 @@ export type QuizFeedbackItem = {
   isCorrect: boolean;
   explanation: string | null;
   correctOptionIds: string[];
+  /** Lo que marcó el estudiante, para resaltarlo en la revisión. */
+  selectedOptionIds?: string[];
   /** Verdadero en preguntas de respuesta abierta (no cuentan al puntaje). */
   isOpen?: boolean;
   /** Texto que escribió el estudiante (solo en las abiertas). */
   textAnswer?: string;
+  /** Respuesta modelo de una pregunta abierta; solo se envía DESPUÉS de calificar. */
+  expectedAnswer?: string | null;
 };
 
 export type QuizSubmitState = {
@@ -90,6 +94,7 @@ export async function submitQuizAttemptAction(
         isCorrect: false,
         isOpen: true,
         textAnswer,
+        expectedAnswer: question.expectedAnswer,
         explanation: question.explanation,
         correctOptionIds: [],
       });
@@ -117,6 +122,7 @@ export async function submitQuizAttemptAction(
     feedback.push({
       questionId: question.id,
       isCorrect,
+      selectedOptionIds,
       explanation: question.explanation,
       correctOptionIds,
     });
