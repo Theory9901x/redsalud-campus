@@ -210,10 +210,10 @@ export function UserForm({
         {role === "ADMIN" && (
           <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4 sm:col-span-2">
             <div>
-              <Label>Nivel de administrador</Label>
+              <Label>Secciones a las que tiene acceso</Label>
               <p className="text-xs text-muted-foreground">
-                Marca las secciones a las que <strong>este admin NO</strong> debe tener acceso. Déjalas todas
-                sin marcar para un administrador principal, con acceso total.
+                Marca lo que <strong>SÍ</strong> puede ver este administrador. Déjalas todas marcadas para un
+                administrador principal, con acceso total. El Dashboard siempre es visible.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
@@ -225,11 +225,12 @@ export function UserForm({
                     className={`group flex items-center gap-2 text-sm ${isSelfUsuarios ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
                   >
                     <Checkbox
-                      name="restrictedAdminSections"
+                      name="allowedAdminSections"
                       value={section.value}
                       disabled={isSelfUsuarios}
-                      defaultChecked={values.restrictedAdminSections.includes(section.value)}
+                      defaultChecked={!values.restrictedAdminSections.includes(section.value)}
                     />
+                    {isSelfUsuarios && <input type="hidden" name="allowedAdminSections" value={section.value} />}
                     {section.label}
                   </label>
                 );
@@ -237,7 +238,7 @@ export function UserForm({
             </div>
             {isOwnAccount && (
               <p className="text-xs text-muted-foreground">
-                No puedes quitarte a ti mismo el acceso a Usuarios.
+                No puedes quitarte a ti mismo el acceso a Usuarios (por eso queda fijo).
               </p>
             )}
           </div>

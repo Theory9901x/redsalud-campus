@@ -14,6 +14,28 @@ export type UserFormState = {
   error: string | null;
 };
 
+const TODAS_LAS_SECCIONES = [
+  "USUARIOS",
+  "CURSOS",
+  "PLANES_CAPACITACION",
+  "INSCRIPCIONES",
+  "CERTIFICADOS",
+  "NOTIFICACIONES",
+  "REPORTES",
+  "CONFIGURACION",
+] as const;
+
+/**
+ * El formulario marca las secciones a las que el admin SÍ tiene acceso, que es
+ * como lo lee cualquiera; la base guarda las RESTRINGIDAS. La conversión vive
+ * aquí para que la interfaz no tenga que razonar al revés (marcar todo para
+ * quitar todo era una trampa: se dejaba a un admin viendo solo el Dashboard).
+ */
+function seccionesRestringidas(formData: FormData): string[] {
+  const permitidas = new Set(formData.getAll("allowedAdminSections").map(String));
+  return TODAS_LAS_SECCIONES.filter((s) => !permitidas.has(s));
+}
+
 function isUniqueConstraintError(error: unknown): error is Prisma.PrismaClientKnownRequestError {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
@@ -37,7 +59,7 @@ export async function createUserAction(
     personnelType: formData.get("personnelType"),
     role: formData.get("role"),
     password: formData.get("password"),
-    restrictedAdminSections: formData.getAll("restrictedAdminSections"),
+    restrictedAdminSections: seccionesRestringidas(formData),
   });
 
   if (!parsed.success) {
@@ -107,7 +129,7 @@ export async function updateUserAction(
     personnelType: formData.get("personnelType"),
     role: formData.get("role"),
     status: formData.get("status"),
-    restrictedAdminSections: formData.getAll("restrictedAdminSections"),
+    restrictedAdminSections: seccionesRestringidas(formData),
   });
 
   if (!parsed.success) {
