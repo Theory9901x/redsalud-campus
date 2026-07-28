@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Download } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { CERTIFICATE_STATUS_LABELS } from "@/components/certificados/labels";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { AutoFilterSelect } from "@/components/admin/auto-search-input";
+import { CatalogoInformes } from "@/components/admin/dashboard/catalogo-informes";
 
 const PREVIEW_LIMIT = 15;
 
@@ -111,8 +113,15 @@ export default async function ReportesPage({
     <div className="space-y-8">
       <AdminPageHeader
         title="Reportes"
-        description={`Vista previa de los primeros ${PREVIEW_LIMIT} registros. Exporta cada reporte a CSV para verlo completo.`}
+        description={`Informes en PDF listos para archivar, y vista previa de los primeros ${PREVIEW_LIMIT} registros de cada reporte para exportar en CSV.`}
       />
+
+      {/* Dos cosas distintas conviven aquí a propósito: el PDF es el documento
+          formal con membrete, el CSV es el dato en crudo para trabajarlo en
+          una hoja de cálculo. Quien viene a esta sección quiere uno u otro. */}
+      <Suspense fallback={null}>
+        <CatalogoInformes />
+      </Suspense>
 
       <StaggerSections className="space-y-8">
       {/* Estudiantes por curso */}
