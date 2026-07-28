@@ -84,11 +84,13 @@
   --border: oklch(92.77% 0.0121 247.96);
   --input: oklch(92.77% 0.0121 247.96);
   --ring: oklch(68.52% 0.1312 233.93);
-  --chart-1: oklch(68.52% 0.1312 233.93);
-  --chart-2: oklch(68.27% 0.1823 145.18);
-  --chart-3: oklch(84.62% 0.1716 85.29);
-  --chart-4: oklch(62.37% 0.2028 21.62);
-  --chart-5: oklch(25.39% 0.0467 249.10);
+  /* Los --chart-* son el puente hacia Tailwind (text-chart-1, fill-chart-2…);
+     el valor real vive en --data-*, definido una sola vez para los dos temas. */
+  --chart-1: var(--data-1);
+  --chart-2: var(--data-2);
+  --chart-3: var(--data-3);
+  --chart-4: var(--data-4);
+  --chart-5: var(--data-5);
   --radius: 0.75rem;
   /* Le dice al navegador de qué tema es la página, para que la barra de
      scroll, los desplegables nativos y los campos de fecha no salgan claros
@@ -120,6 +122,45 @@
   --duration-signature-slow: 0.6s;
 }
 
+/*
+ * ─── Identidad institucional vs. color de datos ──────────────────────────
+ *
+ * Son dos cosas distintas y hasta ahora estaban mezcladas: los mismos cuatro
+ * colores servían de acento de interfaz Y de color de serie en las gráficas.
+ *
+ * 1) --rs-*: la paleta oficial de Red Salud Casanare E.S.E. Se usa para
+ *    IDENTIDAD -logo, cintillos, membrete de los reportes impresos-. NO se
+ *    usa para codificar datos: medida contra fondo claro, el amarillo da
+ *    1.58:1 de contraste y el verde 2.78:1, muy por debajo del mínimo de 3:1.
+ *    Una barra amarilla de 8 px con ese contraste es invisible.
+ *
+ * 2) --data-*: la serie categórica de las gráficas. Orden FIJO: la serie 1
+ *    siempre es --data-1, nunca se recicla ni se rota según cuántas series
+ *    haya, porque si al filtrar cambia el color de lo que sobrevive el
+ *    usuario cree que cambió el dato. Derivada de la institucional pero
+ *    corregida en luminosidad, y con un magenta en la segunda posición para
+ *    romper el bloque verde/ámbar/rojo, que es indistinguible con daltonismo.
+ *
+ *    Verificada con los seis chequeos (luminosidad, croma, separación con
+ *    daltonismo protan/deutan/tritan, y contraste) en tema claro Y oscuro:
+ *    pasa los dos con el mismo juego de valores. La separación con daltonismo
+ *    más ajustada es 10.9 (azul↔magenta), dentro de la banda mínima 8-12: por
+ *    eso toda gráfica lleva SIEMPRE leyenda o etiqueta directa, nunca color
+ *    a secas como única forma de distinguir una serie de otra.
+ */
+:root {
+  --rs-azul: #0091d4;
+  --rs-verde: #3fae49;
+  --rs-amarillo: #ffc20e;
+  --rs-rojo: #e4272b;
+
+  --data-1: #2f8f3c;
+  --data-2: #a8438f;
+  --data-3: #0091d4;
+  --data-4: #c4232a;
+  --data-5: #b8860b;
+}
+
 .dark {
   color-scheme: dark;
   --background: oklch(19.63% 0.0292 251.51);
@@ -145,11 +186,11 @@
   --border: oklch(100% 0 0 / 0.1);
   --input: oklch(100% 0 0 / 0.15);
   --ring: oklch(68.52% 0.1312 233.93);
-  --chart-1: oklch(68.52% 0.1312 233.93);
-  --chart-2: oklch(68.27% 0.1823 145.18);
-  --chart-3: oklch(84.62% 0.1716 85.29);
-  --chart-4: oklch(62.37% 0.2028 21.62);
-  --chart-5: oklch(95.43% 0.0101 238.51);
+  --chart-1: var(--data-1);
+  --chart-2: var(--data-2);
+  --chart-3: var(--data-3);
+  --chart-4: var(--data-4);
+  --chart-5: var(--data-5);
   --sidebar: oklch(17.21% 0.0227 242.99);
   --sidebar-foreground: oklch(95.43% 0.0101 238.51);
   --sidebar-primary: oklch(68.52% 0.1312 233.93);
@@ -361,6 +402,30 @@
     backdrop-filter: blur(14px) saturate(160%);
     box-shadow: 0 1px 2px 0 color-mix(in oklch, var(--shade) 6%, transparent),
       0 8px 24px -12px color-mix(in oklch, var(--shade) 20%, transparent);
+  }
+
+  /*
+   * Rejilla de densidad del panel de gestión: 6 / 3 / 2 / 1 columnas.
+   *
+   * Los cortes (1400 / 1024 / 640) son los del diseño y NO coinciden con los
+   * breakpoints por defecto de Tailwind -xl son 1280, no 1400-, así que
+   * encadenar utilidades daba seis columnas ya a 1280 px, donde cada tarjeta
+   * queda demasiado estrecha para su número. Una clase con sus propios cortes
+   * en vez de repetir la cadena en cada widget.
+   */
+  .grid-densidad {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 640px) {
+    .grid-densidad { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 1024px) {
+    .grid-densidad { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (min-width: 1400px) {
+    .grid-densidad { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   }
 
   /*
