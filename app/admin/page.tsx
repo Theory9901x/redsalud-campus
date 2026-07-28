@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { ExportarReporte } from "@/components/admin/dashboard/exportar-reporte";
 import { DashboardPanel } from "@/components/dashboard/dashboard-kit";
 import { FiltrosGlobales } from "@/components/admin/dashboard/filtros-globales";
 import { Indicadores } from "@/components/admin/dashboard/indicadores";
@@ -58,7 +58,13 @@ export default async function AdminDashboardPage({
         description="Estado de la formación del personal de Red Salud Casanare E.S.E."
       />
 
-      <FiltrosGlobales municipios={municipios} cursos={cursos} />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <FiltrosGlobales municipios={municipios} cursos={cursos} />
+        </div>
+        {/* Exporta lo que se está viendo: arrastra los filtros activos. */}
+        <ExportarReporte tipo="panel" />
+      </div>
 
       <LimiteError>
         <Suspense key={`kpi-${clave}`} fallback={<CargandoKpis />}>
@@ -102,11 +108,7 @@ export default async function AdminDashboardPage({
             ? "Resultado de los filtros aplicados. Haz clic en una fila para ver la ficha."
             : "Ordenado por quién necesita atención primero. Haz clic en una fila para ver la ficha."
         }
-        action={
-          <Link href="/admin/reportes" className="btn-hud-ghost shrink-0 py-1.5 text-xs">
-            Ver reportes completos
-          </Link>
-        }
+        action={<ExportarReporte tipo="personal" />}
       >
         <LimiteError>
           <Suspense key={`tabla-${clave}-${pagina}`} fallback={<CargandoTabla />}>
