@@ -114,6 +114,7 @@ export function AulaSidebar({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: SIGNATURE_DURATION, ease: SIGNATURE_EASE }}
+              data-carril
               className="fixed inset-y-0 left-0 z-50 flex w-[88vw] max-w-sm flex-col gap-3 overflow-y-auto bg-[var(--canvas-base)] p-3 lg:hidden"
             >
               <div className="flex items-center justify-between px-2">
@@ -143,7 +144,10 @@ export function AulaSidebar({
           continúe en la columna de al lado.
           [&>*]:shrink-0 porque en un contenedor flex los hijos se comprimen
           por defecto en vez de desbordar, y entonces no habría qué desplazar. */}
-      <aside className="hidden h-full w-[340px] shrink-0 flex-col gap-4 overflow-y-auto overscroll-contain px-4 py-4 lg:flex [&>*]:shrink-0">
+      <aside
+        data-carril
+        className="hidden h-full w-[340px] shrink-0 flex-col gap-4 overflow-y-auto overscroll-contain px-4 py-4 lg:flex [&>*]:shrink-0"
+      >
         {cabecera}
         {contenido}
       </aside>

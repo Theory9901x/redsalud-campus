@@ -28,33 +28,71 @@ export function ContenidoCurso({
   const [busqueda, setBusqueda] = useState("");
 
   /**
-   * Qué módulos están desplegados.
+   * Qué módulos están desplegados, en absoluto: el carril se queda como el
+   * estudiante lo dejó.
    *
-   * Por defecto se abre el de la lección en curso y se cierran los demás,
-   * y ese valor por defecto se recalcula al navegar, así que el acordeón
-   * sigue al estudiante sin necesidad de ningún efecto.
+   * La versión anterior guardaba "qué módulos cambió el usuario respecto del
+   * valor por defecto", y ese valor por defecto -el módulo de la lección en
+   * curso- se recalcula al navegar. El efecto era desconcertante: abrías un
+   * módulo a mano, entrabas en una de sus lecciones y se cerraba solo, porque
+   * al pasar a ser el de por defecto la marca de "cambiado" lo invertía. Con
+   * el módulo plegado desaparecían sus lecciones, el carril encogía y el
+   * desplazamiento se iba arriba.
    *
-   * Lo que se guarda en estado no es "qué está abierto" sino "qué módulos
-   * cambió el usuario respecto de ese valor por defecto". Guardar el estado
-   * absoluto obligaba a corregirlo desde un useEffect en cada navegación,
-   * con el render en cascada que eso implica.
+   * Ahora solo se AÑADEN módulos: al entrar en una lección se abre el suyo,
+   * pero nunca se cierra ninguno por navegar. Cerrar es siempre un acto
+   * explícito.
    *
-   * No hace falta sessionStorage: este carril vive en el layout del aula, de
-   * modo que no se desmonta al pasar de una lección a otra y su estado
-   * sobrevive por sí solo.
+   * No hace falta sessionStorage: este carril vive en el layout del aula, así
+   * que no se desmonta al pasar de una lección a otra.
    */
   const moduloDeLaLeccion = useMemo(
     () => modulos.find((m) => m.lessons.some((l) => l.id === leccionActualId))?.id ?? modulos[0]?.id,
     [modulos, leccionActualId]
   );
-  const [alternados, setAlternados] = useState<Set<string>>(() => new Set());
+  const [abiertos, setAbiertos] = useState<Set<string>>(() =>
+    moduloDeLaLeccion ? new Set([moduloDeLaLeccion]) : new Set()
+  );
 
-  function alternar(id: string) {
-    setAlternados((previo) => {
+  // Ajuste de estado durante el render al cambiar de lección: es el patrón que
+  // React documenta para esto, y evita el useEffect que provocaba un render en
+  // cascada en cada navegación. Solo abre; jamás cierra.
+  const [moduloPrevio, setModuloPrevio] = useState(moduloDeLaLeccion);
+  if (moduloDeLaLeccion !== moduloPrevio) {
+    setModuloPrevio(moduloDeLaLeccion);
+    if (moduloDeLaLeccion && !abiertos.has(moduloDeLaLeccion)) {
+      setAbiertos(new Set(abiertos).add(moduloDeLaLeccion));
+    }
+  }
+
+  /**
+   * Abre o cierra un módulo SIN que se mueva la vista.
+   *
+   * Al plegar un módulo desaparecen sus lecciones, el contenido de arriba
+   * encoge y el navegador recorta el desplazamiento: el carril salta hacia
+   * arriba y parece que volviera a empezar. Al desplegarlo pasa lo contrario.
+   *
+   * La solución es anclar: se mide dónde está la cabecera pulsada respecto de
+   * la ventana, se deja que el DOM cambie y se corrige el desplazamiento del
+   * carril por la diferencia. El módulo que tocaste se queda exactamente
+   * donde estaba y solo se mueve lo que hay debajo.
+   */
+  function alternar(id: string, boton: HTMLElement) {
+    const carril = boton.closest<HTMLElement>("[data-carril]");
+    const antes = boton.getBoundingClientRect().top;
+
+    setAbiertos((previo) => {
       const siguiente = new Set(previo);
       if (siguiente.has(id)) siguiente.delete(id);
       else siguiente.add(id);
       return siguiente;
+    });
+
+    if (!carril) return;
+    // Un cuadro después: para entonces React ya pintó el nuevo alto.
+    requestAnimationFrame(() => {
+      const despues = boton.getBoundingClientRect().top;
+      if (despues !== antes) carril.scrollTop += despues - antes;
     });
   }
 
@@ -74,11 +112,7 @@ export function ContenidoCurso({
 
   // Al buscar se abren todos los que quedaron: obligar a desplegar uno por
   // uno para ver el resultado de la búsqueda no tiene sentido.
-  const estaAbierto = (id: string) => {
-    if (termino) return true;
-    const porDefecto = id === moduloDeLaLeccion;
-    return alternados.has(id) ? !porDefecto : porDefecto;
-  };
+  const estaAbierto = (id: string) => (termino ? true : abiertos.has(id));
 
   return (
     <div className="space-y-3">
@@ -106,7 +140,7 @@ export function ContenidoCurso({
               <section key={modulo.id}>
                 <button
                   type="button"
-                  onClick={() => alternar(modulo.id)}
+                  onClick={(e) => alternar(modulo.id, e.currentTarget)}
                   aria-expanded={abierto}
                   className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-muted/50"
                 >
