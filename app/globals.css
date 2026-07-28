@@ -72,7 +72,7 @@
   --secondary: oklch(95.43% 0.0101 238.51);
   --secondary-foreground: oklch(25.39% 0.0467 249.10);
   --muted: oklch(95.93% 0.0069 247.90);
-  --muted-foreground: oklch(53.81% 0.0397 244.69);
+  --muted-foreground: oklch(50% 0.0397 244.69);
   --accent: oklch(96.59% 0.0151 228.96);
   --accent-foreground: oklch(25.39% 0.0467 249.10);
   --destructive: oklch(62.37% 0.2028 21.62);
@@ -174,7 +174,7 @@
   --secondary: oklch(30.83% 0.0546 247.43);
   --secondary-foreground: oklch(95.43% 0.0101 238.51);
   --muted: oklch(30.83% 0.0546 247.43);
-  --muted-foreground: oklch(70.52% 0.0354 244.15);
+  --muted-foreground: oklch(76% 0.0354 244.15);
   --accent: oklch(30.83% 0.0546 247.43);
   --accent-foreground: oklch(95.43% 0.0101 238.51);
   --destructive: oklch(62.37% 0.2028 21.62);
@@ -255,6 +255,9 @@
   --glass-bg: color-mix(in oklch, var(--tint) 65%, transparent);
   --glass-border: color-mix(in oklch, var(--tint) 60%, transparent);
   --glass-inset: color-mix(in oklch, var(--tint) 80%, transparent);
+  /* Vidrio más opaco para lo que se lee de cerca y no puede competir con el
+     fondo: el dock inferior y el buscador. Mismo material, más cuerpo. */
+  --glass-strong: color-mix(in oklch, var(--tint) 86%, transparent);
 
   /* Lienzo nivel 0. El degradado completo es un token porque los blobs de
      color cambian de intencion entre temas: en claro tinen un fondo frio,
@@ -298,6 +301,7 @@
   --glass-bg: color-mix(in oklch, var(--tint) 9%, transparent);
   --glass-border: color-mix(in oklch, var(--tint) 14%, transparent);
   --glass-inset: color-mix(in oklch, var(--tint) 12%, transparent);
+  --glass-strong: color-mix(in oklch, var(--tint) 16%, transparent);
 
   --canvas-base: oklch(17.20% 0.0243 251.20);
   --canvas-page:
@@ -402,6 +406,137 @@
     backdrop-filter: blur(14px) saturate(160%);
     box-shadow: 0 1px 2px 0 color-mix(in oklch, var(--shade) 6%, transparent),
       0 8px 24px -12px color-mix(in oklch, var(--shade) 20%, transparent);
+  }
+
+  /*
+   * ---- Aula del estudiante: lecciones, evaluación y dock ----
+   *
+   * Todo esto es material NUEVO pero no un sistema nuevo: reutiliza
+   * --glass-*, --shade, --tint y el --accent del rol, igual que el resto.
+   *
+   * REGLA DE COSTO (la misma del sistema glass+clay, aquí es crítica):
+   * el vidrio con backdrop-filter va SOLO en contenedores de primer nivel
+   * -tarjeta de pregunta, panel, dock-. Los elementos que se repiten en
+   * listas largas (lecciones, opciones de respuesta, pasos del stepper)
+   * usan --glass-inset, que es color plano. Con 40 lecciones y 30 preguntas
+   * en pantalla, un backdrop-filter por ítem hace inusable la vista.
+   */
+
+  /* Superficie interior: hijo de un vidrio, nunca vidrio a su vez. */
+  .surface-inset {
+    @apply border;
+    border-radius: var(--radius-md);
+    border-color: var(--border);
+    background-color: var(--glass-inset);
+  }
+
+  /* ---- Lección del acordeón ---- */
+  .leccion {
+    @apply relative flex items-center gap-2.5 border px-3 py-2.5 text-sm transition-colors;
+    border-radius: var(--radius-md);
+    border-color: var(--border);
+    background-color: var(--glass-inset);
+  }
+  /* El punto de la línea de tiempo. Su color dice el estado, pero nunca va
+     solo: cada lección lleva además su ícono y su texto de estado. */
+  .leccion::before {
+    content: "";
+    position: absolute;
+    left: -1.4rem;
+    top: 50%;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    background-color: var(--muted-foreground);
+  }
+  .leccion[data-estado="completada"]::before {
+    background-color: var(--success);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--success) 18%, transparent);
+  }
+  .leccion[data-estado="en-curso"]::before {
+    background-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 22%, transparent);
+  }
+  .leccion[data-estado="en-curso"] {
+    border-color: color-mix(in oklch, var(--accent) 40%, transparent);
+    background-color: var(--card);
+    box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--shade) 12%, transparent);
+  }
+  .leccion[data-estado="bloqueada"] {
+    color: var(--muted-foreground);
+    opacity: 0.75;
+  }
+  .leccion:not([data-estado="bloqueada"]):hover {
+    border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+    background-color: var(--card);
+  }
+
+  /* Carril punteado que une las lecciones de un módulo. */
+  .carril-lecciones {
+    @apply relative flex flex-col gap-2 pl-5;
+    margin-left: 1.05rem;
+    border-left: 2px dashed var(--border);
+  }
+
+  /* ---- Paso del stepper de la evaluación ---- */
+  .paso {
+    @apply grid h-8 w-8 shrink-0 place-items-center border text-xs font-bold transition-colors;
+    border-radius: 50%;
+    border-color: var(--border);
+    background-color: var(--glass-inset);
+    color: var(--muted-foreground);
+  }
+  .paso[data-estado="actual"] {
+    background-image: linear-gradient(135deg in oklch, var(--accent), color-mix(in oklch, var(--accent) 62%, var(--navy)));
+    border-color: transparent;
+    color: white;
+  }
+  .paso[data-estado="respondida"] {
+    background-color: color-mix(in oklch, var(--success) 14%, var(--card));
+    border-color: color-mix(in oklch, var(--success) 32%, transparent);
+    color: var(--success);
+  }
+  .paso[data-estado="marcada"] {
+    background-color: color-mix(in oklch, var(--warning) 22%, var(--card));
+    border-color: color-mix(in oklch, var(--warning) 40%, transparent);
+    color: color-mix(in oklch, var(--warning) 60%, var(--navy));
+  }
+
+  /* ---- Opción de respuesta ---- */
+  .opcion {
+    @apply flex cursor-pointer items-center gap-3 border px-4 py-3 text-sm transition-colors;
+    border-radius: var(--radius-md);
+    border-color: var(--border);
+    background-color: var(--glass-inset);
+  }
+  .opcion:hover {
+    border-color: color-mix(in oklch, var(--accent) 50%, transparent);
+    background-color: var(--card);
+  }
+  .opcion[data-elegida="true"] {
+    border-color: var(--accent);
+    background-color: var(--card);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 14%, transparent);
+  }
+  /* El foco de teclado tiene que verse por encima del estado elegido: la
+     evaluación se debe poder responder sin ratón. */
+  .opcion:focus-within {
+    outline: 2.5px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* ---- Dock inferior fijo ---- */
+  .dock-aula {
+    @apply fixed bottom-4 left-1/2 z-50 flex items-center gap-4 border px-4 py-3;
+    width: min(1180px, calc(100% - 2rem));
+    transform: translateX(-50%);
+    border-radius: var(--radius-surface);
+    border-color: var(--glass-border);
+    background-color: var(--glass-strong);
+    -webkit-backdrop-filter: blur(24px) saturate(170%);
+    backdrop-filter: blur(24px) saturate(170%);
+    box-shadow: 0 16px 48px -20px color-mix(in oklch, var(--shade) 40%, transparent);
   }
 
   /*
@@ -608,6 +743,10 @@
   .aula-canvas {
     background-color: var(--canvas-base);
     background-image: var(--canvas-aula);
+    /* La malla se ancla al viewport en vez de desplazarse con el contenido.
+       Sin esto el navegador vuelve a componer los cuatro degradados en cada
+       scroll, que es justo lo que se nota en los equipos institucionales. */
+    background-attachment: fixed;
   }
 
   /*

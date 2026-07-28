@@ -334,6 +334,9 @@ model Question {
   quiz        Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
   type        QuestionType
   statement   String
+  // Área temática ("SST", "Talento Humano"). No se deriva del módulo porque
+  // la evaluación final del curso tiene moduleId nulo y mezcla áreas.
+  area        String?
   imageUrl    String? // imagen de apoyo del enunciado (p. ej. posturas a evaluar)
   expectedAnswer String? // respuesta modelo de las preguntas abiertas: se muestra en la revisión, nunca antes
   score       Int          @default(1)
@@ -406,6 +409,9 @@ model LessonProgress {
   enrollment   Enrollment     @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   status       ProgressStatus @default(PENDING)
   completedAt  DateTime?
+  // Punto donde quedó en un video o PDF. Permite reanudar donde se dejó y
+  // marcar completado al ~90 % sin depender de que el cliente lo recuerde.
+  lastPositionSeconds Int?
 
   @@unique([userId, lessonId])
   @@index([enrollmentId])
@@ -438,6 +444,10 @@ model QuizAnswer {
   question          Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
   selectedOptionIds String[] // ids de QuestionOption elegidos
   textAnswer        String? // respuesta libre (preguntas de tipo OPEN_TEXT)
+  // Marcada por el estudiante para volver a ella antes de enviar. Vive en el
+  // servidor, no en el navegador: si cambia de equipo a mitad del intento,
+  // sus marcas siguen ahí.
+  flagged           Boolean     @default(false)
   isCorrect         Boolean
   scoreObtained     Int
 
