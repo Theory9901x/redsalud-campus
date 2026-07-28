@@ -60,10 +60,20 @@ export class PdfNoDisponibleError extends Error {}
 export async function renderizarPdf({
   url,
   cookie,
+  cabecerasProxy,
   encabezado,
 }: {
   url: string;
   cookie: string;
+  /**
+   * Las cabeceras que nginx pone en la petición pública (x-forwarded-proto y
+   * x-forwarded-host). Hay que reenviarlas porque Auth.js decide el NOMBRE de
+   * la cookie de sesión según si la petición es segura: en HTTPS emite
+   * `__Secure-authjs.session-token`, pero al entrar por el loopback en HTTP
+   * plano buscaría `authjs.session-token`, sin prefijo, y no encontraría
+   * ninguna sesión aunque la cookie correcta viaje en la cabecera.
+   */
+  cabecerasProxy: Record<string, string>;
   encabezado: string;
 }): Promise<Buffer> {
   let navegador: Browser;
@@ -77,8 +87,7 @@ export async function renderizarPdf({
 
   const contexto = await navegador.newContext();
   try {
-    const origen = new URL(url).origin;
-    await contexto.setExtraHTTPHeaders({ cookie });
+    await contexto.setExtraHTTPHeaders({ cookie, ...cabecerasProxy });
 
     const pagina = await contexto.newPage();
     const respuesta = await pagina.goto(url, { waitUntil: "networkidle", timeout: 60_000 });
@@ -107,7 +116,6 @@ export async function renderizarPdf({
       margin: { top: "18mm", bottom: "16mm", left: "12mm", right: "12mm" },
     });
 
-    void origen;
     return pdf;
   } finally {
     await contexto.close();

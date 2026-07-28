@@ -38,6 +38,16 @@ export async function POST(request: Request) {
   // DNS para renderizar una página del propio proceso.
   const origen = process.env.PDF_ORIGEN ?? `http://127.0.0.1:${process.env.PORT ?? 3000}`;
   const cookie = request.headers.get("cookie") ?? "";
+
+  // Se reproducen las cabeceras de nginx para que Auth.js resuelva el mismo
+  // nombre de cookie que emitió. Si la petición pública era HTTPS y el
+  // navegador entra por HTTP, buscaría la cookie sin el prefijo __Secure- y
+  // la sesión no existiría para él.
+  const publica = new URL(request.url);
+  const cabecerasProxy: Record<string, string> = {
+    "x-forwarded-proto": request.headers.get("x-forwarded-proto") ?? publica.protocol.replace(":", ""),
+    "x-forwarded-host": request.headers.get("x-forwarded-host") ?? publica.host,
+  };
   if (!cookie) {
     return NextResponse.json({ error: "Falta la sesión en la petición." }, { status: 400 });
   }
@@ -50,6 +60,7 @@ export async function POST(request: Request) {
     const pdf = await renderizarPdf({
       url,
       cookie,
+      cabecerasProxy,
       encabezado: `${meta.titulo} · Red Salud Casanare E.S.E.`,
     });
 
