@@ -100,6 +100,10 @@ export const getAulaData = cache(async (courseId: string, userId: string) => {
           include: { lessons: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } },
         },
         quizzes: { where: { isActive: true }, orderBy: { title: "asc" } },
+        // Para el panel lateral de la evaluación: área y responsable salen de
+        // la ficha del curso, no se escriben a mano en la vista.
+        category: { select: { name: true } },
+        tutor: { select: { fullName: true } },
       },
     }),
     prisma.enrollment.findUnique({

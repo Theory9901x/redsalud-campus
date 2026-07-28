@@ -37,6 +37,7 @@ import {
   submitQuizAttemptAction,
   type QuizSubmitState,
 } from "@/app/aula/[courseId]/quiz/[quizId]/actions";
+import { PanelEvaluacion, RespuestaGuardada } from "@/components/aula/panel-evaluacion";
 import type { NotaRepasoItem, RespuestaBorrador } from "@/lib/aula";
 import type { QuestionType } from "@prisma/client";
 
@@ -121,6 +122,9 @@ export function QuizTakingForm({
   initialAttemptsRemaining,
   notaRepaso = [],
   borrador = [],
+  area,
+  tutor,
+  fechaLimite,
 }: {
   courseId: string;
   quizId: string;
@@ -138,6 +142,10 @@ export function QuizTakingForm({
   notaRepaso?: NotaRepasoItem[];
   /** Lo que ya llevaba respondido en este intento, recuperado del servidor. */
   borrador?: RespuestaBorrador[];
+  /** Ficha del curso para el panel lateral. */
+  area: string | null;
+  tutor: string;
+  fechaLimite: Date | null;
 }) {
   const router = useRouter();
   const action = submitQuizAttemptAction.bind(null, courseId, quizId);
@@ -546,9 +554,14 @@ export function QuizTakingForm({
         <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[var(--accent)]/25 blur-[90px]" />
         <div className="relative">
           <div className="flex flex-wrap items-center justify-between gap-2">
+            {/* Distintivo de intento en curso: el punto late para decir que la
+                evaluación está viva, no que haya cuenta atrás. */}
             <span className="chip-glass">
-              <ClipboardCheck className="h-3.5 w-3.5 text-[var(--accent)]" />
-              Evaluación final
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-70" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+              </span>
+              En progreso
             </span>
             {secondsLeft !== null && (
               <span className="chip-glass">
@@ -567,11 +580,21 @@ export function QuizTakingForm({
             </Chip>
             <Chip icon={Target}>Mínimo para aprobar: {passingScore}%</Chip>
             <Chip icon={ListChecks}>{questions.length} preguntas</Chip>
+            {/* Solo si el cuestionario tiene límite configurado: inventar un
+                "tiempo estimado" sería un dato que nadie ha decidido. */}
+            {timeLimitMinutes !== null && <Chip icon={Clock}>Tiempo límite: {timeLimitMinutes} min</Chip>}
           </div>
         </div>
       </section>
 
       {notaRepaso.length > 0 && <NotaRepaso nota={notaRepaso} />}
+
+      {/* A partir de aquí, dos columnas: preguntas y panel de apoyo. El panel
+          se coloca DESPUÉS en el orden del documento y se sube con grid en
+          pantallas anchas, para que quien navega con teclado o lector llegue
+          antes a las preguntas que a la información de contexto. */}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+      <div className="min-w-0 space-y-5">
 
       {/* Stepper: estado de cada pregunta y salto directo. Son botones reales,
           así que se recorren con Tab; Ctrl+flecha salta entre preguntas. */}
@@ -625,7 +648,16 @@ export function QuizTakingForm({
           aria-label={"Pregunta " + (index + 1) + " de " + questions.length}
         >
           <div className="flex gap-3">
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[var(--accent)]/15 text-[13px] font-bold text-[var(--accent)]">
+            {/* El número cambia a verde en cuanto la pregunta tiene respuesta:
+                el estado se ve en la propia tarjeta, no solo en el stepper. */}
+            <span
+              className={cn(
+                "grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white",
+                estaRespondida(question)
+                  ? "bg-gradient-to-br from-[color-mix(in_oklch,var(--success)_80%,white)] to-[var(--success)]"
+                  : "bg-gradient-to-br from-[var(--accent)] to-[color-mix(in_oklch,var(--accent)_60%,var(--navy))]"
+              )}
+            >
               {index + 1}
             </span>
             <p className="min-w-0 flex-1 break-words text-[15px] font-semibold leading-relaxed text-foreground">
@@ -723,6 +755,19 @@ export function QuizTakingForm({
                 ))}
               </div>
             )}
+            {/* Pie de la pregunta: cuánto vale y si ya quedó guardada. */}
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-muted-foreground">
+              <span>
+                {question.type === "OPEN_TEXT"
+                  ? "Respuesta abierta · la revisa Talento Humano"
+                  : question.type === "MULTIPLE_CHOICE"
+                    ? `Selección múltiple · ${question.score} puntos`
+                    : question.type === "TRUE_FALSE"
+                      ? `Verdadero o falso · ${question.score} puntos`
+                      : `Selección única · ${question.score} puntos`}
+              </span>
+              {estaRespondida(question) && guardado !== "guardando" && <RespuestaGuardada />}
+            </div>
           </div>
         </article>
       ))}
@@ -778,6 +823,23 @@ export function QuizTakingForm({
           {pending ? "Enviando…" : "Enviar evaluación"}
           <Send className="h-4 w-4" />
         </Button>
+      </div>
+
+      </div>
+
+      {/* Columna derecha: pegajosa, para que el resumen siga a la vista
+          mientras se baja por las preguntas. */}
+      <aside className="xl:sticky xl:top-4">
+        <PanelEvaluacion
+          respondidas={respondidas}
+          total={questions.length}
+          marcadas={marcadas.length}
+          area={area}
+          tutor={tutor}
+          fechaLimite={fechaLimite}
+          passingScore={passingScore}
+        />
+      </aside>
       </div>
 
       {/* Deshabilitar el envío sin decir por qué es una pared. En su lugar el

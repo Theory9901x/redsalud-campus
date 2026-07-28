@@ -77,7 +77,7 @@ export default async function AulaQuizPage({
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-[1200px]">
       {/*
         Importante: esta página SIEMPRE renderiza QuizTakingForm (nunca una
         rama servidor alternativa tipo "ya aprobaste"). El envío de la
@@ -105,6 +105,9 @@ export default async function AulaQuizPage({
         initialAttemptsRemaining={quizSummary.attemptsRemaining}
         notaRepaso={notaRepaso}
         borrador={borrador}
+        area={data.course.category?.name ?? null}
+        tutor={data.course.tutor.fullName}
+        fechaLimite={data.enrollment.deadlineAt}
       />
     </div>
   );
