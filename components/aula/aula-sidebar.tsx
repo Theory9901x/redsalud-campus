@@ -134,9 +134,16 @@ export function AulaSidebar({
         )}
       </AnimatePresence>
 
-      {/* Escritorio: carril que se desplaza dentro de sí mismo, para que un
-          temario largo no arrastre a toda la página. */}
-      <aside className="sticky top-4 hidden max-h-[calc(100vh-2rem)] w-[340px] shrink-0 flex-col gap-4 self-start overflow-y-auto px-4 pb-4 lg:flex">
+      {/* Escritorio: carril de altura FIJA con su propio desplazamiento.
+          Con max-h el carril crecía y encogía según el módulo abierto, y eso
+          movía la página entera cada vez. Con altura fija, abrir un módulo
+          solo desplaza dentro del carril.
+
+          overscroll-contain evita que al llegar al final del carril el scroll
+          continúe en la columna de al lado.
+          [&>*]:shrink-0 porque en un contenedor flex los hijos se comprimen
+          por defecto en vez de desbordar, y entonces no habría qué desplazar. */}
+      <aside className="hidden h-full w-[340px] shrink-0 flex-col gap-4 overflow-y-auto overscroll-contain px-4 py-4 lg:flex [&>*]:shrink-0">
         {cabecera}
         {contenido}
       </aside>

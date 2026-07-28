@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
+import type { QuestionType } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getAulaQuiz } from "@/lib/aula";
 import { recalculateEnrollmentProgress } from "@/lib/lesson-progress";
+import { registrarAuditoria } from "@/lib/audit";
 
 export type QuizFeedbackItem = {
   questionId: string;
@@ -37,6 +39,44 @@ export type QuizSubmitState = {
 /** El intento ya lo cerró otro envío en paralelo (doble clic, reintento). */
 class EnvioDuplicadoError extends Error {}
 
+/**
+ * Mensaje si la inscripción ya venció, o null si sigue vigente.
+ *
+ * Hoy ninguna inscripción tiene fecha límite, así que en la práctica esto
+ * nunca corta. Existe para que el día que Talento Humano las asigne la regla
+ * ya esté aplicada en el servidor y no haya que acordarse de añadirla.
+ */
+function venceEn(deadlineAt: Date | null): string | null {
+  if (!deadlineAt) return null;
+  if (deadlineAt.getTime() >= Date.now()) return null;
+  return `El plazo para esta formación venció el ${deadlineAt.toLocaleDateString("es-CO", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })}. Comunícate con Talento Humano.`;
+}
+
+/**
+ * Comprueba que lo enviado tenga sentido para el tipo de pregunta.
+ *
+ * No basta con calificar: sin esto, un formulario manipulado podía mandar
+ * tres opciones a una pregunta de selección única, o ids de opciones de otra
+ * pregunta. No cambiaba el resultado -se compara contra las correctas- pero
+ * quedaba guardado como respuesta del estudiante algo que la interfaz nunca
+ * habría permitido componer.
+ */
+function opcionesValidas(
+  tipo: QuestionType,
+  seleccionadas: string[],
+  idsDeLaPregunta: Set<string>
+): boolean {
+  if (seleccionadas.some((id) => !idsDeLaPregunta.has(id))) return false;
+  if (new Set(seleccionadas).size !== seleccionadas.length) return false;
+  if (tipo === "MULTIPLE_CHOICE") return true;
+  // Única y verdadero/falso: como mucho una opción.
+  return seleccionadas.length <= 1;
+}
+
 export async function submitQuizAttemptAction(
   courseId: string,
   quizId: string,
@@ -61,6 +101,8 @@ export async function submitQuizAttemptAction(
   if (aulaQuiz.quizSummary.attemptsRemaining <= 0) {
     return { error: "No te quedan intentos disponibles para este cuestionario." };
   }
+  const vencidaAlEnviar = venceEn(enrollment.deadlineAt);
+  if (vencidaAlEnviar) return { error: vencidaAlEnviar };
 
   const quiz = await prisma.quiz.findUnique({
     where: { id: quizId },
@@ -113,7 +155,12 @@ export async function submitQuizAttemptAction(
     }
 
     maxScore += question.score;
-    const selectedOptionIds = formData.getAll(`q_${question.id}`).map(String);
+    const enviadas = formData.getAll(`q_${question.id}`).map(String);
+    const idsDeLaPregunta = new Set(question.options.map((o) => o.id));
+    if (!opcionesValidas(question.type, enviadas, idsDeLaPregunta)) {
+      return { error: "Una de las respuestas no es válida para su tipo de pregunta. Vuelve a intentarlo." };
+    }
+    const selectedOptionIds = enviadas;
     const correctOptionIds = question.options.filter((o) => o.isCorrect).map((o) => o.id);
 
     let isCorrect: boolean;
@@ -200,7 +247,28 @@ export async function submitQuizAttemptAction(
     throw error;
   }
 
+  await registrarAuditoria({
+    userId,
+    action: "SUBMIT_QUIZ",
+    entity: "QuizAttempt",
+    entityId: quizId,
+    description:
+      `Envió el intento ${attemptNumber} de «${quiz.title}». ` +
+      `Calificación ${scorePercent}% sobre un mínimo de ${quiz.passingScore}%: ` +
+      `${passed ? "aprobó" : "no aprobó"}.`,
+  });
+
   const { certificateId } = await recalculateEnrollmentProgress(enrollment.id);
+
+  if (certificateId) {
+    await registrarAuditoria({
+      userId,
+      action: "ISSUE_CERT",
+      entity: "Certificate",
+      entityId: certificateId,
+      description: `Se emitió su certificado al completar «${aulaQuiz.course.title}».`,
+    });
+  }
 
   // OJO: no revalidar la propia página del quiz aquí. Next.js refresca el
   // segmento actual tras un Server Action que llama revalidatePath sobre esa
@@ -263,6 +331,12 @@ export async function guardarRespuestaBorradorAction(
     select: { id: true },
   });
 
+  // Fecha límite: se comprueba en el SERVIDOR, no solo al pintar la vista.
+  // Un cliente manipulado o una pestaña abierta desde antes del vencimiento
+  // podrían seguir enviando si esto se confiara al navegador.
+  const vencida = venceEn(aulaQuiz.enrollment.deadlineAt);
+  if (vencida) return { ok: false, error: vencida };
+
   let attemptId = abierto?.id;
   if (!attemptId) {
     if (aulaQuiz.quizSummary.attemptsRemaining <= 0) {
@@ -282,6 +356,17 @@ export async function guardarRespuestaBorradorAction(
         select: { id: true },
       });
       attemptId = nuevo.id;
+      // Solo se anota el INICIO, no cada guardado: con 292 personas y diez
+      // preguntas, registrar cada pulsación llenaría la bitácora de miles de
+      // filas sin valor y enterraría los eventos que sí importan. Lo que queda
+      // trazado es empezar, enviar y calificar.
+      await registrarAuditoria({
+        userId,
+        action: "START_QUIZ",
+        entity: "QuizAttempt",
+        entityId: attemptId,
+        description: `Inició el intento ${usados + 1} de la evaluación «${aulaQuiz.quizSummary.title}».`,
+      });
     } catch (error) {
       // Dos guardados casi simultáneos pueden intentar crear el mismo número
       // de intento; el perdedor reutiliza el que acaba de ganar.

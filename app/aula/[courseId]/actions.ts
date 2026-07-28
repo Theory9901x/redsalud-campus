@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getAulaData } from "@/lib/aula";
 import { recalculateEnrollmentProgress } from "@/lib/lesson-progress";
+import { registrarAuditoria } from "@/lib/audit";
 
 export async function markLessonCompleteAction(
   courseId: string,
@@ -33,7 +34,25 @@ export async function markLessonCompleteAction(
     },
   });
 
+  await registrarAuditoria({
+    userId,
+    action: "COMPLETE_LESSON",
+    entity: "Lesson",
+    entityId: lessonId,
+    description: `Completó la lección «${lesson.title}» de «${aulaData.course.title}».`,
+  });
+
   const { certificateId } = await recalculateEnrollmentProgress(aulaData.enrollment.id);
+
+  if (certificateId) {
+    await registrarAuditoria({
+      userId,
+      action: "ISSUE_CERT",
+      entity: "Certificate",
+      entityId: certificateId,
+      description: `Se emitió su certificado al completar «${aulaData.course.title}».`,
+    });
+  }
 
   revalidatePath(`/aula/${courseId}`);
   revalidatePath("/inicio");

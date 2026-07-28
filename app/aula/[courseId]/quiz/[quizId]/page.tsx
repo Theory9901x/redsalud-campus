@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAulaQuiz, getBorradorIntento, getNotaRepaso } from "@/lib/aula";
 import { seededShuffle } from "@/lib/quiz";
 import { QuizTakingForm } from "@/components/aula/quiz-taking-form";
+import { EvaluacionNoDisponible } from "@/components/aula/evaluacion-no-disponible";
 
 export default async function AulaQuizPage({
   params,
@@ -18,15 +19,28 @@ export default async function AulaQuizPage({
   if (!data) notFound();
   const { quizSummary } = data;
 
-  // El bloqueo por secuencia no cambia durante la propia sesión del quiz
-  // (depende de lecciones/otros módulos), así que sí puede resolverse aquí.
-  if (!quizSummary.unlocked) redirect(`/aula/${courseId}`);
-
   // El quiz ya viene completo dentro de data.course.quizzes (getAulaData lo
   // trae sin `select`, así que incluye todos los campos): evita una segunda
   // consulta idéntica a la que ya se hizo para armar quizSummary.
   const quiz = data.course.quizzes.find((q) => q.id === quizId);
-  if (!quiz || !quiz.isActive) notFound();
+  if (!quiz) notFound();
+
+  // Cada motivo se EXPLICA en vez de redirigir en silencio al temario, que
+  // dejaba al estudiante sin saber si había fallado algo o le faltaba
+  // contenido por delante.
+  // El instante se toma UNA vez, fuera de la comparación: leer el reloj en
+  // medio del render es una función impura y puede dar resultados distintos
+  // entre renders del mismo árbol.
+  const ahora = new Date();
+  const vencida = data.enrollment.deadlineAt !== null && data.enrollment.deadlineAt < ahora;
+  const motivo = !quizSummary.unlocked
+    ? ("bloqueada" as const)
+    : !quiz.isActive
+      ? ("inactiva" as const)
+      : vencida
+        ? ("vencida" as const)
+        : null;
+  if (motivo) return <EvaluacionNoDisponible motivo={motivo} courseId={courseId} />;
 
   const rawQuestions = await prisma.question.findMany({
     where: { quizId, isActive: true },

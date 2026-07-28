@@ -21,7 +21,10 @@ export type AuditAction =
   | "RESTORE_CERT"
   | "RESET_PASSWORD"
   | "IMPORT"
-  | "EXPORT";
+  | "EXPORT"
+  | "START_QUIZ"
+  | "SUBMIT_QUIZ"
+  | "COMPLETE_LESSON";
 
 export type AuditEntity =
   | "User"
@@ -33,7 +36,8 @@ export type AuditEntity =
   | "TrainingPlan"
   | "Notification"
   | "Settings"
-  | "Report";
+  | "Report"
+  | "QuizAttempt";
 
 export async function registrarAuditoria(params: {
   userId?: string | null;
