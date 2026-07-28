@@ -9,8 +9,6 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ClipboardCheck,
   Clock,
   Flag,
@@ -733,66 +731,53 @@ export function QuizTakingForm({
         <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{state.error}</p>
       )}
 
-      {/* Dock inferior fijo: progreso, estado de guardado y envío. */}
-      <div className="dock-aula flex-wrap">
-        <p className="text-[12.5px] font-semibold text-foreground">
-          {respondidas}/{questions.length} respondidas
-        </p>
+      {/*
+        Cierre de la evaluación, al final del listado y sin barra flotante.
+        La barra fija tapaba una franja de la última pregunta y acompañaba
+        todo el rato sin hacer falta: navegar ya se hace con el stepper de
+        arriba, así que aquí solo queda enviar.
 
-        {/* Indicador honesto de tres estados. El error no se queda callado:
-            ofrece reintentar sin perder lo escrito. */}
-        <span className="flex items-center gap-1.5 text-[11.5px]">
-          {guardado === "guardando" && (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-              <span className="text-muted-foreground">Guardando…</span>
-            </>
-          )}
-          {guardado === "guardado" && (
-            <>
-              <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-              <span className="text-muted-foreground">Guardado</span>
-            </>
-          )}
-          {guardado === "error" && (
-            <>
-              <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
-              <span className="text-destructive">No se guardó</span>
-              <button type="button" onClick={reintentarGuardado} className="underline underline-offset-2">
-                Reintentar
-              </button>
-            </>
-          )}
-        </span>
-
-        <div className="ml-auto flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={indiceActivo === 0}
-            onClick={() => irA(indiceActivo - 1)}
-            className="gap-1.5"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Anterior
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={indiceActivo >= questions.length - 1}
-            onClick={() => irA(indiceActivo + 1)}
-            className="gap-1.5"
-          >
-            Siguiente
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button type="button" onClick={() => setConfirmando(true)} disabled={pending} className="gap-2">
-            {pending ? "Enviando…" : "Enviar evaluación"}
-            <Send className="h-4 w-4" />
-          </Button>
+        El estado del guardado sí se conserva -en pequeño, junto al botón-:
+        quitarlo dejaría al estudiante sin saber si su borrador llegó al
+        servidor, que es justo lo que evita perder el trabajo.
+      */}
+      <div className="surface-glass flex flex-wrap items-center justify-between gap-3 p-5">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">
+            {respondidas} de {questions.length} respondidas
+          </p>
+          <span className="mt-0.5 flex items-center gap-1.5 text-[11.5px]">
+            {guardado === "guardando" && (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                <span className="text-muted-foreground">Guardando…</span>
+              </>
+            )}
+            {guardado === "guardado" && (
+              <>
+                <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                <span className="text-muted-foreground">Tus respuestas están guardadas</span>
+              </>
+            )}
+            {guardado === "error" && (
+              <>
+                <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                <span className="text-destructive">No se guardó</span>
+                <button type="button" onClick={reintentarGuardado} className="underline underline-offset-2">
+                  Reintentar
+                </button>
+              </>
+            )}
+            {guardado === "inactivo" && (
+              <span className="text-muted-foreground">Se guarda solo mientras respondes.</span>
+            )}
+          </span>
         </div>
+
+        <Button type="button" onClick={() => setConfirmando(true)} disabled={pending} className="gap-2 px-6">
+          {pending ? "Enviando…" : "Enviar evaluación"}
+          <Send className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Deshabilitar el envío sin decir por qué es una pared. En su lugar el
