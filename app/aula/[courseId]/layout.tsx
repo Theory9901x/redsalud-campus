@@ -23,14 +23,17 @@ export default async function AulaLayout({
   return (
     // aula-canvas: lienzo con blobs de marca desenfocados para que las
     // superficies glass del aula tengan color real que difuminar.
-    <div className="aula-canvas flex min-h-screen flex-col">
+    // accent-student fija --accent (turquesa del rol). Sin esta clase,
+    // var(--accent) cae al token neutro de shadcn -casi blanco en claro y
+    // gris pizarra en oscuro- y el anillo, los contadores y las barras se
+    // ven apagados.
+    <div className="accent-student aula-canvas flex min-h-screen flex-col">
       <AulaHeader
         courseId={courseId}
         title={data.course.title}
         imageUrl={data.course.imageUrl}
         courseType={data.course.courseType}
         durationHours={data.course.durationHours}
-        progress={data.enrollment.progressPercentage}
         moduleCount={data.modules.length}
         lessonCount={lessonCount}
       />
@@ -39,7 +42,8 @@ export default async function AulaLayout({
         <AulaSidebar
           courseId={courseId}
           courseTitle={data.course.title}
-          progress={data.enrollment.progressPercentage}
+          courseType={data.course.courseType}
+          progreso={data.progreso}
           modules={data.modules}
           finalQuizzes={data.finalQuizzes}
         />

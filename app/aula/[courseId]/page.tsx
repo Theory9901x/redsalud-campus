@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft, Layers } from "lucide-react";
 import { auth } from "@/auth";
-import { getFirstLessonId } from "@/lib/aula";
+import { getAulaData } from "@/lib/aula";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -11,9 +11,12 @@ export default async function AulaIndexPage({ params }: { params: Promise<{ cour
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const firstLessonId = await getFirstLessonId(courseId);
-  if (firstLessonId) {
-    redirect(`/aula/${courseId}/${firstLessonId}`);
+  // Reanudar: cae en la primera lección abierta sin completar, no en la
+  // primera del curso. Quien va por la lección 9 de 12 no quiere volver a
+  // empezar cada vez que entra.
+  const data = await getAulaData(courseId, session.user.id);
+  if (data?.leccionParaReanudar) {
+    redirect(`/aula/${courseId}/${data.leccionParaReanudar}`);
   }
 
   return (

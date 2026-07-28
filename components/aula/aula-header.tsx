@@ -24,7 +24,6 @@ export function AulaHeader({
   imageUrl,
   courseType,
   durationHours,
-  progress,
   moduleCount,
   lessonCount,
 }: {
@@ -33,7 +32,6 @@ export function AulaHeader({
   imageUrl: string | null;
   courseType: CourseType;
   durationHours: number;
-  progress: number;
   moduleCount: number;
   lessonCount: number;
 }) {
@@ -135,21 +133,9 @@ export function AulaHeader({
             </span>
           </motion.div>
 
-          {/* Barra de progreso gruesa con degradado animado + porcentaje en chip. */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.24 }}
-            className="mt-5 flex max-w-xl items-center gap-3"
-          >
-            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/20">
-              <div
-                className="progress-fill-animated h-full rounded-full transition-all duration-700"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <span className="chip-glass font-semibold">{progress}%</span>
-          </motion.div>
+          {/* El progreso NO se repite aquí: vive en la cabecera del carril
+              izquierdo, junto al anillo y al contador de lecciones. Tenerlo en
+              los dos sitios obligaba a mirar dos veces el mismo número. */}
         </div>
       </div>
     </header>

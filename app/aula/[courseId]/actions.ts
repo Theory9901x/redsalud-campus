@@ -41,3 +41,45 @@ export async function markLessonCompleteAction(
 
   return { certificateId };
 }
+
+/**
+ * Guarda dónde quedó la persona en un video o PDF.
+ *
+ * Se llama con frecuencia (cada pocos segundos de reproducción), así que no
+ * recalcula el avance del curso ni revalida rutas: solo escribe la posición.
+ * Marcar la lección completa es otra acción distinta.
+ */
+export async function guardarPosicionLeccionAction(
+  courseId: string,
+  lessonId: string,
+  segundos: number
+): Promise<{ ok: boolean }> {
+  const session = await auth();
+  if (!session?.user) return { ok: false };
+  const userId = session.user.id;
+
+  const aulaData = await getAulaData(courseId, userId);
+  if (!aulaData) return { ok: false };
+
+  const lesson = aulaData.flattenedLessons.find((l) => l.id === lessonId);
+  if (!lesson || !lesson.unlocked) return { ok: false };
+
+  const posicion = Math.max(0, Math.floor(segundos));
+
+  await prisma.lessonProgress.upsert({
+    where: { userId_lessonId: { userId, lessonId } },
+    // No se toca `status`: avanzar en el video no completa la lección por sí
+    // solo, y una lección ya completada no debe volver a PENDING si alguien
+    // la reabre y la rebobina.
+    update: { lastPositionSeconds: posicion },
+    create: {
+      userId,
+      lessonId,
+      enrollmentId: aulaData.enrollment.id,
+      status: "PENDING",
+      lastPositionSeconds: posicion,
+    },
+  });
+
+  return { ok: true };
+}

@@ -1,16 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 
-/** Consulta ligera: solo el id de la primera lección, para la redirección inicial del aula. */
-export async function getFirstLessonId(courseId: string): Promise<string | null> {
-  const lesson = await prisma.lesson.findFirst({
-    where: { isActive: true, module: { courseId, isActive: true } },
-    orderBy: [{ module: { sortOrder: "asc" } }, { sortOrder: "asc" }],
-    select: { id: true },
-  });
-  return lesson?.id ?? null;
-}
-
 export type AulaLesson = {
   id: string;
   title: string;
@@ -19,6 +9,13 @@ export type AulaLesson = {
   estimatedMinutes: number | null;
   completed: boolean;
   unlocked: boolean;
+  /**
+   * Qué falta para abrirla, en texto ya redactado. Null si está abierta.
+   * Se calcula en el servidor porque es la misma regla que decide el
+   * desbloqueo: si el texto se armara en el cliente podría explicar una
+   * cosa distinta de la que el servidor aplica.
+   */
+  motivoBloqueo: string | null;
 };
 
 export type AulaQuiz = {
@@ -40,6 +37,30 @@ export type AulaModule = {
   isRequired: boolean;
   lessons: AulaLesson[];
   quiz: AulaQuiz | null;
+  /** Contadores propios del módulo, para la cabecera del acordeón. */
+  completadas: number;
+  total: number;
+};
+
+/**
+ * Avance del curso calculado en la carga, no leído de
+ * Enrollment.progressPercentage.
+ *
+ * Ese campo se recalcula solo cuando la persona completa una lección o envía
+ * un cuestionario (ver lib/lesson-progress.ts). Si mientras tanto un
+ * administrador desactiva o añade una lección, el valor guardado queda
+ * obsoleto hasta la siguiente acción del estudiante. La cabecera muestra el
+ * número de ahora mismo.
+ *
+ * `lecciones` cuenta solo las obligatorias, igual que el recálculo del
+ * servidor, para que los dos números no se contradigan.
+ */
+export type AulaProgreso = {
+  totalRequeridas: number;
+  completadasRequeridas: number;
+  porcentaje: number;
+  /** Cuestionarios activos del curso que aún no se han aprobado. */
+  cuestionariosPendientes: number;
 };
 
 function buildQuizSummary(
@@ -116,6 +137,9 @@ export const getAulaData = cache(async (courseId: string, userId: string) => {
   }
 
   let priorGateComplete = true;
+  // Nombre de lo que está frenando el avance, para explicar el bloqueo.
+  let bloqueadorActual: string | null = null;
+
   const modules: AulaModule[] = course.modules.map((module_) => {
     let moduleLessonsAllRequiredDone = true;
     const lessons = module_.lessons.map((lesson) => {
@@ -130,6 +154,11 @@ export const getAulaData = cache(async (courseId: string, userId: string) => {
         estimatedMinutes: lesson.estimatedMinutes,
         completed,
         unlocked,
+        motivoBloqueo: unlocked
+          ? null
+          : bloqueadorActual
+            ? `Primero tienes que terminar ${bloqueadorActual}.`
+            : "Tienes que avanzar en orden por el contenido anterior.",
       };
     });
 
@@ -141,9 +170,22 @@ export const getAulaData = cache(async (courseId: string, userId: string) => {
     }
 
     const moduleGateComplete = moduleLessonsAllRequiredDone && (!quiz || quiz.passed);
+    // El primer módulo que no cierra su puerta es el que hay que nombrar en
+    // los bloqueos de todo lo que viene después.
+    if (priorGateComplete && !moduleGateComplete && bloqueadorActual === null) {
+      bloqueadorActual = `el módulo «${module_.title}»`;
+    }
     priorGateComplete = priorGateComplete && moduleGateComplete;
 
-    return { id: module_.id, title: module_.title, isRequired: module_.isRequired, lessons, quiz };
+    return {
+      id: module_.id,
+      title: module_.title,
+      isRequired: module_.isRequired,
+      lessons,
+      quiz,
+      completadas: lessons.filter((l) => l.completed).length,
+      total: lessons.length,
+    };
   });
 
   const finalQuizzes: AulaQuiz[] = (quizzesByModuleId.get(null) ?? []).map((quizRaw) => {
@@ -153,7 +195,31 @@ export const getAulaData = cache(async (courseId: string, userId: string) => {
 
   const flattenedLessons = modules.flatMap((m) => m.lessons);
 
-  return { course, enrollment, modules, finalQuizzes, flattenedLessons };
+  const requeridas = flattenedLessons.filter((l) => l.isRequired);
+  const progreso: AulaProgreso = {
+    totalRequeridas: requeridas.length,
+    completadasRequeridas: requeridas.filter((l) => l.completed).length,
+    porcentaje:
+      requeridas.length === 0
+        ? 100
+        : Math.round((requeridas.filter((l) => l.completed).length / requeridas.length) * 100),
+    cuestionariosPendientes: [...modules.flatMap((m) => (m.quiz ? [m.quiz] : [])), ...finalQuizzes].filter(
+      (q) => !q.passed
+    ).length,
+  };
+
+  /**
+   * Dónde retomar: la primera lección abierta sin completar. Si ya están
+   * todas, la última que vio, para que al volver no aterrice en la primera.
+   *
+   * Se deduce del progreso en vez de guardar un campo "última visitada":
+   * un campo más habría que mantenerlo sincronizado y puede mentir; esto
+   * siempre concuerda con lo que la persona tiene hecho.
+   */
+  const siguiente = flattenedLessons.find((l) => l.unlocked && !l.completed);
+  const leccionParaReanudar = siguiente?.id ?? flattenedLessons[flattenedLessons.length - 1]?.id ?? null;
+
+  return { course, enrollment, modules, finalQuizzes, flattenedLessons, progreso, leccionParaReanudar };
 });
 
 /** Datos de un quiz puntual dentro del aula, con acceso ya verificado. */

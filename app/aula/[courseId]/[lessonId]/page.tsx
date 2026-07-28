@@ -10,7 +10,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { LESSON_CONTENT_TYPE_LABELS, LESSON_CONTENT_TYPE_ICONS } from "@/components/cursos/labels";
-import { markLessonCompleteAction } from "../actions";
+import { CompletarLeccion } from "@/components/aula/completar-leccion";
 
 export default async function AulaLessonPage({
   params,
@@ -28,7 +28,14 @@ export default async function AulaLessonPage({
   if (!lessonMeta) notFound();
   if (!lessonMeta.unlocked) redirect(`/aula/${courseId}`);
 
-  const lesson = await prisma.lesson.findUnique({ where: { id: lessonId } });
+  const [lesson, progresoLeccion] = await Promise.all([
+    prisma.lesson.findUnique({ where: { id: lessonId } }),
+    // Dónde quedó en el video, para reanudar donde lo dejó.
+    prisma.lessonProgress.findUnique({
+      where: { userId_lessonId: { userId: session.user.id, lessonId } },
+      select: { lastPositionSeconds: true },
+    }),
+  ]);
   if (!lesson) notFound();
 
   const lessonIndex = data.flattenedLessons.findIndex((l) => l.id === lessonId);
@@ -104,15 +111,6 @@ export default async function AulaLessonPage({
           </div>
         )}
 
-        {showVideoFile && (
-          <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-black shadow-sm">
-            {/* fileUrl apunta a /api/media/[id], que ahora soporta Range/206 para permitir buscar/adelantar. */}
-            <video controls className="h-full w-full" src={lesson.fileUrl!}>
-              Tu navegador no soporta la reproducción de este video.
-            </video>
-          </div>
-        )}
-
         {showFile && lesson.contentType === "IMAGE" && (
           <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
             {/* unoptimized: fileUrl es una ruta privada (/api/media/[id]) protegida por sesión;
@@ -163,7 +161,9 @@ export default async function AulaLessonPage({
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-3">
+      {/* En pantallas estrechas los tres bloques no caben en una fila: el de
+          completar baja a su propia línea en vez de desbordar la página. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         {prevLesson ? (
           <Link
             href={`/aula/${courseId}/${prevLesson.id}`}
@@ -176,18 +176,16 @@ export default async function AulaLessonPage({
           <span />
         )}
 
-        <form
-          action={async () => {
-            "use server";
-            const { certificateId } = await markLessonCompleteAction(courseId, lessonId);
-            if (certificateId) redirect(`/mi-aula/certificados/${certificateId}?justIssued=1`);
-          }}
-        >
-          <Button type="submit" disabled={lessonMeta.completed} className="gap-1.5">
-            <CheckCircle2 className="h-4 w-4" />
-            {lessonMeta.completed ? "Completada" : "Marcar como completada"}
-          </Button>
-        </form>
+        <div className="order-last w-full sm:order-none sm:w-auto">
+          <CompletarLeccion
+            courseId={courseId}
+            lessonId={lessonId}
+            contentType={lesson.contentType}
+            fileUrl={lesson.fileUrl}
+            yaCompletada={lessonMeta.completed}
+            posicionInicial={progresoLeccion?.lastPositionSeconds ?? null}
+          />
+        </div>
 
         {nextLesson ? (
           <Link
