@@ -30,7 +30,13 @@ export async function POST(request: Request) {
     if (valor) filtros.set(clave, valor);
   }
 
-  const origen = new URL(request.url).origin;
+  // El navegador headless entra por el loopback, NO por el origen de la
+  // petición. Detrás de nginx, `request.url` dice "https://localhost:3200":
+  // el esquema viene de la petición pública pero el puerto es el interno, que
+  // habla HTTP plano, y el navegador fallaba con ERR_SSL_PROTOCOL_ERROR.
+  // Ir directo al puerto local también evita dar la vuelta por nginx y por
+  // DNS para renderizar una página del propio proceso.
+  const origen = process.env.PDF_ORIGEN ?? `http://127.0.0.1:${process.env.PORT ?? 3000}`;
   const cookie = request.headers.get("cookie") ?? "";
   if (!cookie) {
     return NextResponse.json({ error: "Falta la sesión en la petición." }, { status: 400 });
