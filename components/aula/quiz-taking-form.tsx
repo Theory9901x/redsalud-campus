@@ -4,12 +4,17 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  AlertTriangle,
   Award,
   Check,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ClipboardCheck,
   Clock,
+  Flag,
+  Loader2,
   Lightbulb,
   ListChecks,
   NotebookPen,
@@ -20,12 +25,30 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { submitQuizAttemptAction, type QuizSubmitState } from "@/app/aula/[courseId]/quiz/[quizId]/actions";
-import type { NotaRepasoItem } from "@/lib/aula";
+import {
+  guardarRespuestaBorradorAction,
+  submitQuizAttemptAction,
+  type QuizSubmitState,
+} from "@/app/aula/[courseId]/quiz/[quizId]/actions";
+import type { NotaRepasoItem, RespuestaBorrador } from "@/lib/aula";
 import type { QuestionType } from "@prisma/client";
 
 const initialState: QuizSubmitState = { error: null };
+
+/** Lo que el estudiante lleva marcado en una pregunta, en memoria. */
+type RespuestaLocal = { opciones: string[]; texto: string; marcada: boolean };
+
+/** Estado del autoguardado, tal y como se le muestra al estudiante. */
+type EstadoGuardado = "inactivo" | "guardando" | "guardado" | "error";
 
 type OptionView = { id: string; text: string };
 type QuestionView = {
@@ -33,6 +56,8 @@ type QuestionView = {
   type: QuestionType;
   statement: string;
   imageUrl?: string | null;
+  /** Área temática del enunciado (SST, Talento Humano…), si está definida. */
+  area?: string | null;
   score: number;
   options: OptionView[];
 };
@@ -97,6 +122,7 @@ export function QuizTakingForm({
   initialBestScore,
   initialAttemptsRemaining,
   notaRepaso = [],
+  borrador = [],
 }: {
   courseId: string;
   quizId: string;
@@ -112,27 +138,163 @@ export function QuizTakingForm({
   initialAttemptsRemaining: number;
   /** Respuestas correctas del intento anterior fallido (vacío en el primero). */
   notaRepaso?: NotaRepasoItem[];
+  /** Lo que ya llevaba respondido en este intento, recuperado del servidor. */
+  borrador?: RespuestaBorrador[];
 }) {
   const router = useRouter();
   const action = submitQuizAttemptAction.bind(null, courseId, quizId);
   const [state, formAction, pending] = useActionState(action, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   const [secondsLeft, setSecondsLeft] = useState(timeLimitMinutes ? timeLimitMinutes * 60 : null);
-  // Contador de respondidas: habilita el envío solo cuando están todas.
-  const [respondidas, setRespondidas] = useState(0);
 
-  function recontar() {
-    const form = formRef.current;
-    if (!form) return;
-    const contestadas = questions.filter((q) => {
-      if (q.type === "OPEN_TEXT") {
-        const ta = form.querySelector<HTMLTextAreaElement>(`[name="q_${q.id}_text"]`);
-        return Boolean(ta?.value.trim());
-      }
-      return form.querySelectorAll(`[name="q_${q.id}"]:checked`).length > 0;
-    }).length;
-    setRespondidas(contestadas);
+  /**
+   * Estado de las respuestas. Los campos son controlados, no se leen del DOM:
+   * el stepper, el contador y el autoguardado necesitan saber qué hay
+   * respondido en cada momento, y consultar el formulario con querySelector
+   * en cada tecla no sirve para eso.
+   *
+   * Arranca con el borrador que devuelve el servidor, así que recargar la
+   * página o entrar desde otro equipo recupera lo ya contestado.
+   */
+  const [respuestas, setRespuestas] = useState<Record<string, RespuestaLocal>>(() => {
+    const inicial: Record<string, RespuestaLocal> = {};
+    for (const q of questions) {
+      const guardada = borrador.find((b) => b.questionId === q.id);
+      inicial[q.id] = {
+        opciones: guardada?.selectedOptionIds ?? [],
+        texto: guardada?.textAnswer ?? "",
+        marcada: guardada?.flagged ?? false,
+      };
+    }
+    return inicial;
+  });
+
+  const [guardado, setGuardado] = useState<EstadoGuardado>("inactivo");
+  const temporizadores = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const pendientes = useRef<Record<string, RespuestaLocal>>({});
+  /**
+   * Los guardados se encadenan uno tras otro en vez de lanzarse en paralelo.
+   * El primero es el que crea el intento; si dos salieran a la vez, ambos
+   * verían "cero intentos usados" y crearían uno cada uno, repartiendo las
+   * respuestas entre dos intentos y gastando dos de los diez disponibles.
+   */
+  const cola = useRef<Promise<unknown>>(Promise.resolve());
+
+  function encolarGuardado(questionId: string, valor: RespuestaLocal) {
+    pendientes.current[questionId] = valor;
+    setGuardado("guardando");
+    cola.current = cola.current
+      .then(async () => {
+        const v = pendientes.current[questionId];
+        const r = await guardarRespuestaBorradorAction(courseId, quizId, questionId, {
+          selectedOptionIds: v.opciones,
+          textAnswer: v.texto || null,
+          flagged: v.marcada,
+        });
+        setGuardado(r.ok ? "guardado" : "error");
+      })
+      .catch(() => setGuardado("error"));
+    return cola.current;
   }
+
+  /**
+   * Marcar una opción o una pregunta es un acto discreto: se guarda al
+   * instante. Solo el texto libre espera 800 ms desde la última tecla, porque
+   * si no dispararía una petición por carácter.
+   *
+   * Esta distinción importa: con espera para todo, cerrar la pestaña justo
+   * después de responder perdía esa respuesta.
+   */
+  function actualizar(questionId: string, cambio: Partial<RespuestaLocal>) {
+    // El valor nuevo se calcula AQUÍ, no dentro del updater de setState.
+    // React puede ejecutar el updater más tarde, durante el render; si los
+    // efectos (registrar lo pendiente, programar el guardado) vivieran ahí,
+    // un blur inmediatamente posterior no encontraría nada que vaciar y la
+    // respuesta se perdía al recargar. Es exactamente lo que pasaba con el
+    // texto libre.
+    const valor = { ...respuestas[questionId], ...cambio };
+    setRespuestas((previo) => ({ ...previo, [questionId]: valor }));
+
+    pendientes.current[questionId] = valor;
+    clearTimeout(temporizadores.current[questionId]);
+
+    const soloTexto = Object.keys(cambio).length === 1 && "texto" in cambio;
+    if (soloTexto) {
+      temporizadores.current[questionId] = setTimeout(() => {
+        delete temporizadores.current[questionId];
+        void encolarGuardado(questionId, pendientes.current[questionId]);
+      }, 800);
+    } else {
+      void encolarGuardado(questionId, valor);
+    }
+  }
+
+  /** Envía ya lo que estuviera esperando su turno. */
+  function vaciarPendientes() {
+    for (const [questionId, timer] of Object.entries(temporizadores.current)) {
+      clearTimeout(timer);
+      const v = pendientes.current[questionId];
+      if (v) void encolarGuardado(questionId, v);
+    }
+    temporizadores.current = {};
+  }
+
+  // Al ocultarse la pestaña (cambiar de app, cerrar, bloquear el móvil) se
+  // vacía lo pendiente. visibilitychange es más fiable que beforeunload, que
+  // los navegadores móviles se saltan.
+  useEffect(() => {
+    function alOcultar() {
+      if (document.visibilityState === "hidden") vaciarPendientes();
+    }
+    document.addEventListener("visibilitychange", alOcultar);
+    return () => document.removeEventListener("visibilitychange", alOcultar);
+  });
+
+  /** Reintento manual: reenvía todo lo que haya, sin esperar la espera. */
+  async function reintentarGuardado() {
+    setGuardado("guardando");
+    const resultados = await Promise.all(
+      questions.map((q) =>
+        guardarRespuestaBorradorAction(courseId, quizId, q.id, {
+          selectedOptionIds: respuestas[q.id].opciones,
+          textAnswer: respuestas[q.id].texto || null,
+          flagged: respuestas[q.id].marcada,
+        })
+      )
+    );
+    setGuardado(resultados.every((r) => r.ok) ? "guardado" : "error");
+  }
+
+  const estaRespondida = (q: QuestionView) =>
+    q.type === "OPEN_TEXT" ? respuestas[q.id].texto.trim().length > 0 : respuestas[q.id].opciones.length > 0;
+  const respondidas = questions.filter(estaRespondida).length;
+  const sinResponder = questions.filter((q) => !estaRespondida(q));
+  const marcadas = questions.filter((q) => respuestas[q.id].marcada);
+  const [confirmando, setConfirmando] = useState(false);
+  const [indiceActivo, setIndiceActivo] = useState(0);
+
+  /** Lleva el foco y la vista a una pregunta. */
+  function irA(indice: number) {
+    const destino = Math.min(Math.max(0, indice), questions.length - 1);
+    setIndiceActivo(destino);
+    const nodo = document.getElementById("pregunta-" + (destino + 1));
+    nodo?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // El foco va al primer control de la pregunta: sin esto, quien navega con
+    // teclado salta de vista pero sigue con el foco en el stepper.
+    nodo?.querySelector<HTMLElement>("input, textarea, button")?.focus({ preventScroll: true });
+  }
+
+  // Ctrl+flecha salta de pregunta sin tocar el ratón. Ctrl y no la flecha
+  // sola porque dentro de un textarea las flechas mueven el cursor.
+  useEffect(() => {
+    function alPulsar(e: KeyboardEvent) {
+      if (!e.ctrlKey) return;
+      if (e.key === "ArrowRight") { e.preventDefault(); irA(indiceActivo + 1); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); irA(indiceActivo - 1); }
+    }
+    window.addEventListener("keydown", alPulsar);
+    return () => window.removeEventListener("keydown", alPulsar);
+  });
 
   useEffect(() => {
     if (secondsLeft === null || state.result) return;
@@ -380,7 +542,7 @@ export function QuizTakingForm({
 
   // ---------- Formulario del intento ----------
   return (
-    <form ref={formRef} action={formAction} onChange={recontar} onInput={recontar} className="space-y-5">
+    <form id="form-evaluacion" ref={formRef} action={formAction} className="space-y-5">
       {/* Cabecera */}
       <section className="hud-hero noise-overlay accent-student relative overflow-hidden p-6 sm:p-7">
         <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[var(--accent)]/25 blur-[90px]" />
@@ -413,9 +575,57 @@ export function QuizTakingForm({
 
       {notaRepaso.length > 0 && <NotaRepaso nota={notaRepaso} />}
 
+      {/* Stepper: estado de cada pregunta y salto directo. Son botones reales,
+          así que se recorren con Tab; Ctrl+flecha salta entre preguntas. */}
+      <nav
+        className="surface-glass flex flex-wrap items-center gap-3 px-4 py-3"
+        aria-label="Progreso de la evaluación"
+      >
+        <span className="text-[12.5px] text-muted-foreground">Tu progreso</span>
+        <ol className="flex flex-1 flex-wrap items-center gap-2">
+          {questions.map((q, i) => {
+            const estado = respuestas[q.id].marcada
+              ? "marcada"
+              : estaRespondida(q)
+                ? "respondida"
+                : "pendiente";
+            return (
+              <li key={q.id}>
+                <button
+                  type="button"
+                  className="paso"
+                  data-estado={estado}
+                  aria-current={i === indiceActivo ? "step" : undefined}
+                  onClick={() => irA(i)}
+                  aria-label={
+                    "Pregunta " +
+                    (i + 1) +
+                    " de " +
+                    questions.length +
+                    ": " +
+                    (estado === "marcada"
+                      ? "marcada para revisar"
+                      : estado === "respondida"
+                        ? "respondida"
+                        : "sin responder")
+                  }
+                >
+                  {i + 1}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+
       {/* Preguntas */}
       {questions.map((question, index) => (
-        <article key={question.id} className="surface-glass p-5 sm:p-6">
+        <article
+          key={question.id}
+          id={"pregunta-" + (index + 1)}
+          className="surface-glass scroll-mt-4 p-5 sm:p-6"
+          aria-label={"Pregunta " + (index + 1) + " de " + questions.length}
+        >
           <div className="flex gap-3">
             <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[var(--accent)]/15 text-[13px] font-bold text-[var(--accent)]">
               {index + 1}
@@ -423,6 +633,28 @@ export function QuizTakingForm({
             <p className="min-w-0 flex-1 break-words text-[15px] font-semibold leading-relaxed text-foreground">
               {question.statement}
             </p>
+            {/* chip-glass NO sirve aquí: está pensado para el navy del hero y
+                su texto es blanco, así que sobre la tarjeta clara quedaba
+                invisible. */}
+            {question.area && (
+              <span className="shrink-0 rounded-md bg-[color-mix(in_oklch,var(--accent)_16%,transparent)] px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-[color-mix(in_oklch,var(--accent)_65%,var(--navy))]">
+                {question.area}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => actualizar(question.id, { marcada: !respuestas[question.id].marcada })}
+              aria-pressed={respuestas[question.id].marcada}
+              aria-label={
+                respuestas[question.id].marcada ? "Quitar la marca de revisión" : "Marcar para revisar"
+              }
+              className={cn(
+                "shrink-0 transition-colors",
+                respuestas[question.id].marcada ? "text-warning" : "text-muted-foreground hover:text-warning"
+              )}
+            >
+              <Flag className="h-4 w-4" fill={respuestas[question.id].marcada ? "currentColor" : "none"} />
+            </button>
           </div>
 
           <div className="mt-4 sm:pl-10">
@@ -436,12 +668,21 @@ export function QuizTakingForm({
             )}
 
             {question.type === "OPEN_TEXT" ? (
-              <textarea
-                name={`q_${question.id}_text`}
-                rows={4}
-                placeholder="Escribe tu respuesta..."
-                className="w-full resize-y rounded-xl border border-border bg-card/50 p-4 text-[14px] leading-relaxed text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-[var(--accent)]/50 focus-visible:ring-2 focus-visible:ring-[var(--accent)]/15"
-              />
+              <div className="space-y-1.5">
+                <textarea
+                  name={`q_${question.id}_text`}
+                  rows={4}
+                  value={respuestas[question.id].texto}
+                  onChange={(e) => actualizar(question.id, { texto: e.target.value })}
+                  onBlur={vaciarPendientes}
+                  placeholder="Escribe tu respuesta..."
+                  aria-describedby={`ayuda-${question.id}`}
+                  className="w-full resize-y rounded-xl border border-border bg-card/50 p-4 text-[14px] leading-relaxed text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-[var(--accent)]/50 focus-visible:ring-2 focus-visible:ring-[var(--accent)]/15"
+                />
+                <p id={`ayuda-${question.id}`} className="text-[11px] text-muted-foreground">
+                  {respuestas[question.id].texto.trim().length} caracteres · se sugieren al menos 3 ideas claras.
+                </p>
+              </div>
             ) : (
               <div className="space-y-2.5">
                 {question.options.map((option) => (
@@ -466,6 +707,17 @@ export function QuizTakingForm({
                       type={question.type === "MULTIPLE_CHOICE" ? "checkbox" : "radio"}
                       name={`q_${question.id}`}
                       value={option.id}
+                      checked={respuestas[question.id].opciones.includes(option.id)}
+                      onChange={(e) => {
+                        const previas = respuestas[question.id].opciones;
+                        const opciones =
+                          question.type === "MULTIPLE_CHOICE"
+                            ? e.target.checked
+                              ? [...previas, option.id]
+                              : previas.filter((id) => id !== option.id)
+                            : [option.id];
+                        actualizar(question.id, { opciones });
+                      }}
                       className="sr-only"
                     />
                     <span className="min-w-0 break-words text-[14px] text-foreground">{option.text}</span>
@@ -481,16 +733,152 @@ export function QuizTakingForm({
         <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{state.error}</p>
       )}
 
-      {/* Pie de acciones, pegado abajo. */}
-      <div className="surface-glass sticky bottom-4 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-        <p className="text-[12.5px] text-muted-foreground">
+      {/* Dock inferior fijo: progreso, estado de guardado y envío. */}
+      <div className="dock-aula flex-wrap">
+        <p className="text-[12.5px] font-semibold text-foreground">
           {respondidas}/{questions.length} respondidas
         </p>
-        <Button type="submit" disabled={pending || respondidas < questions.length} className="gap-2 px-6">
-          {pending ? "Enviando..." : "Enviar evaluación"}
-          <Send className="h-4 w-4" />
-        </Button>
+
+        {/* Indicador honesto de tres estados. El error no se queda callado:
+            ofrece reintentar sin perder lo escrito. */}
+        <span className="flex items-center gap-1.5 text-[11.5px]">
+          {guardado === "guardando" && (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              <span className="text-muted-foreground">Guardando…</span>
+            </>
+          )}
+          {guardado === "guardado" && (
+            <>
+              <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+              <span className="text-muted-foreground">Guardado</span>
+            </>
+          )}
+          {guardado === "error" && (
+            <>
+              <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+              <span className="text-destructive">No se guardó</span>
+              <button type="button" onClick={reintentarGuardado} className="underline underline-offset-2">
+                Reintentar
+              </button>
+            </>
+          )}
+        </span>
+
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={indiceActivo === 0}
+            onClick={() => irA(indiceActivo - 1)}
+            className="gap-1.5"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Anterior
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={indiceActivo >= questions.length - 1}
+            onClick={() => irA(indiceActivo + 1)}
+            className="gap-1.5"
+          >
+            Siguiente
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button type="button" onClick={() => setConfirmando(true)} disabled={pending} className="gap-2">
+            {pending ? "Enviando…" : "Enviar evaluación"}
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
+
+      {/* Deshabilitar el envío sin decir por qué es una pared. En su lugar el
+          botón siempre abre esta confirmación, que enumera lo que falta. */}
+      <Dialog open={confirmando} onOpenChange={setConfirmando}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>¿Enviar la evaluación?</DialogTitle>
+            <DialogDescription>
+              {sinResponder.length === 0
+                ? "Respondiste todas las preguntas. Después de enviar no podrás cambiarlas."
+                : "Te faltan " + sinResponder.length + " de " + questions.length + " preguntas por responder."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {sinResponder.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sin responder</p>
+              <ul className="flex flex-wrap gap-1.5">
+                {sinResponder.map((q) => (
+                  <li key={q.id}>
+                    <button
+                      type="button"
+                      className="paso"
+                      data-estado="pendiente"
+                      onClick={() => {
+                        setConfirmando(false);
+                        irA(questions.indexOf(q));
+                      }}
+                    >
+                      {questions.indexOf(q) + 1}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {marcadas.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Marcadas para revisar
+              </p>
+              <ul className="flex flex-wrap gap-1.5">
+                {marcadas.map((q) => (
+                  <li key={q.id}>
+                    <button
+                      type="button"
+                      className="paso"
+                      data-estado="marcada"
+                      onClick={() => {
+                        setConfirmando(false);
+                        irA(questions.indexOf(q));
+                      }}
+                    >
+                      {questions.indexOf(q) + 1}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmando(false)}>
+              Seguir respondiendo
+            </Button>
+            {/* form="form-evaluacion": el diálogo se renderiza en un portal,
+                fuera del <form>, así que sin este atributo el botón de tipo
+                submit no envía nada. */}
+            <Button
+              type="submit"
+              form="form-evaluacion"
+              disabled={pending}
+              onClick={() => {
+                vaciarPendientes();
+                setConfirmando(false);
+              }}
+              className="gap-2"
+            >
+              Enviar ahora
+              <Send className="h-4 w-4" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

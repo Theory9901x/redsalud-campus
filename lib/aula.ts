@@ -291,3 +291,33 @@ export async function getNotaRepaso(quizId: string, userId: string): Promise<Not
       acertada: a.isCorrect,
     }));
 }
+
+export type RespuestaBorrador = {
+  questionId: string;
+  selectedOptionIds: string[];
+  textAnswer: string | null;
+  flagged: boolean;
+};
+
+/**
+ * Borrador en curso de una evaluación: lo que el estudiante lleva respondido
+ * sin haber enviado todavía.
+ *
+ * Se lee del servidor en cada carga, de modo que recargar la página o
+ * continuar desde otro equipo recupera exactamente lo mismo. Devuelve lista
+ * vacía cuando no hay ningún intento abierto.
+ *
+ * No expone nada sobre si las respuestas son correctas: mientras el intento
+ * siga abierto, esa información no sale del servidor.
+ */
+export async function getBorradorIntento(quizId: string, userId: string): Promise<RespuestaBorrador[]> {
+  const abierto = await prisma.quizAttempt.findFirst({
+    where: { userId, quizId, finishedAt: null },
+    select: {
+      answers: {
+        select: { questionId: true, selectedOptionIds: true, textAnswer: true, flagged: true },
+      },
+    },
+  });
+  return abierto?.answers ?? [];
+}

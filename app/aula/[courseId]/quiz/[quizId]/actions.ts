@@ -34,6 +34,9 @@ export type QuizSubmitState = {
   };
 };
 
+/** El intento ya lo cerró otro envío en paralelo (doble clic, reintento). */
+class EnvioDuplicadoError extends Error {}
+
 export async function submitQuizAttemptAction(
   courseId: string,
   quizId: string,
@@ -65,8 +68,16 @@ export async function submitQuizAttemptAction(
   });
   if (!quiz || !quiz.isActive) return { error: "Cuestionario no disponible." };
 
+  // Si el estudiante venía guardando borrador, ya existe un intento en curso:
+  // hay que CERRARLO, no abrir otro. Crear uno nuevo gastaría dos intentos por
+  // una sola evaluación.
+  const intentoAbierto = await prisma.quizAttempt.findFirst({
+    where: { userId, quizId, finishedAt: null },
+    select: { id: true, attemptNumber: true },
+  });
+
   const attemptsSoFar = await prisma.quizAttempt.count({ where: { userId, quizId } });
-  const attemptNumber = attemptsSoFar + 1;
+  const attemptNumber = intentoAbierto?.attemptNumber ?? attemptsSoFar + 1;
   if (attemptNumber > quiz.maxAttempts) {
     return { error: "No te quedan intentos disponibles para este cuestionario." };
   }
@@ -135,20 +146,38 @@ export async function submitQuizAttemptAction(
 
   try {
     await prisma.$transaction(async (tx) => {
-      const attempt = await tx.quizAttempt.create({
-        data: {
-          userId,
-          quizId,
-          enrollmentId: enrollment.id,
-          attemptNumber,
-          score: scorePercent,
-          passed,
-          finishedAt: new Date(),
-        },
-      });
+      let attemptId: string;
+
+      if (intentoAbierto) {
+        // updateMany con finishedAt null en el WHERE: si otro envío simultáneo
+        // ya lo cerró, este actualiza 0 filas y se sabe que llegó tarde, en vez
+        // de sobrescribir un resultado ya calificado.
+        const cerrado = await tx.quizAttempt.updateMany({
+          where: { id: intentoAbierto.id, finishedAt: null },
+          data: { score: scorePercent, passed, finishedAt: new Date() },
+        });
+        if (cerrado.count === 0) throw new EnvioDuplicadoError();
+        attemptId = intentoAbierto.id;
+        // Las del borrador se reemplazan por las calificadas.
+        await tx.quizAnswer.deleteMany({ where: { attemptId } });
+      } else {
+        const attempt = await tx.quizAttempt.create({
+          data: {
+            userId,
+            quizId,
+            enrollmentId: enrollment.id,
+            attemptNumber,
+            score: scorePercent,
+            passed,
+            finishedAt: new Date(),
+          },
+        });
+        attemptId = attempt.id;
+      }
+
       await tx.quizAnswer.createMany({
         data: answerRows.map((a) => ({
-          attemptId: attempt.id,
+          attemptId,
           questionId: a.questionId,
           selectedOptionIds: a.selectedOptionIds,
           textAnswer: a.textAnswer,
@@ -158,6 +187,9 @@ export async function submitQuizAttemptAction(
       });
     });
   } catch (error) {
+    if (error instanceof EnvioDuplicadoError) {
+      return { error: "Esta evaluación ya se envió. Recarga la página para ver tu resultado." };
+    }
     // Un doble envío (doble clic, reintento de red) puede pasar el chequeo de
     // intentos restantes de arriba antes de que el otro confirme su insert.
     // La restricción única (userId, quizId, attemptNumber) hace perder al más
@@ -190,4 +222,101 @@ export async function submitQuizAttemptAction(
       certificateId,
     },
   };
+}
+
+/**
+ * Guarda una respuesta del borrador mientras el estudiante responde.
+ *
+ * El borrador vive en el SERVIDOR, no en localStorage: quien empieza la
+ * evaluación en el computador de la sede tiene que poder terminarla en otro
+ * equipo, y una respuesta guardada solo en el navegador se pierde con el
+ * historial o al cambiar de máquina.
+ *
+ * El intento se crea con la PRIMERA respuesta, no al abrir la página: entrar
+ * a mirar la evaluación no debe gastar un intento.
+ */
+export async function guardarRespuestaBorradorAction(
+  courseId: string,
+  quizId: string,
+  questionId: string,
+  datos: { selectedOptionIds?: string[]; textAnswer?: string | null; flagged?: boolean }
+): Promise<{ ok: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user) return { ok: false, error: "No autenticado." };
+  const userId = session.user.id;
+
+  const aulaQuiz = await getAulaQuiz(courseId, quizId, userId);
+  if (!aulaQuiz) return { ok: false, error: "Cuestionario no encontrado." };
+  if (!aulaQuiz.quizSummary.unlocked) return { ok: false, error: "Este cuestionario está bloqueado." };
+  if (aulaQuiz.quizSummary.passed) return { ok: false, error: "Ya aprobaste este cuestionario." };
+
+  // La pregunta tiene que pertenecer a ESTE cuestionario: sin esta
+  // comprobación, un id manipulado podría escribir sobre otra evaluación.
+  const pregunta = await prisma.question.findFirst({
+    where: { id: questionId, quizId, isActive: true },
+    select: { id: true },
+  });
+  if (!pregunta) return { ok: false, error: "Pregunta no encontrada." };
+
+  const abierto = await prisma.quizAttempt.findFirst({
+    where: { userId, quizId, finishedAt: null },
+    select: { id: true },
+  });
+
+  let attemptId = abierto?.id;
+  if (!attemptId) {
+    if (aulaQuiz.quizSummary.attemptsRemaining <= 0) {
+      return { ok: false, error: "No te quedan intentos disponibles." };
+    }
+    const usados = await prisma.quizAttempt.count({ where: { userId, quizId } });
+    try {
+      const nuevo = await prisma.quizAttempt.create({
+        data: {
+          userId,
+          quizId,
+          enrollmentId: aulaQuiz.enrollment.id,
+          attemptNumber: usados + 1,
+          // score y passed quedan nulos: el intento está en curso, todavía no
+          // se ha calificado nada.
+        },
+        select: { id: true },
+      });
+      attemptId = nuevo.id;
+    } catch (error) {
+      // Dos guardados casi simultáneos pueden intentar crear el mismo número
+      // de intento; el perdedor reutiliza el que acaba de ganar.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        const existente = await prisma.quizAttempt.findFirst({
+          where: { userId, quizId, finishedAt: null },
+          select: { id: true },
+        });
+        if (!existente) return { ok: false, error: "No se pudo iniciar el intento." };
+        attemptId = existente.id;
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  // isCorrect y scoreObtained quedan en cero: son del borrador, no de una
+  // calificación. Se recalculan al enviar, en el servidor.
+  await prisma.quizAnswer.upsert({
+    where: { attemptId_questionId: { attemptId, questionId } },
+    update: {
+      ...(datos.selectedOptionIds !== undefined ? { selectedOptionIds: datos.selectedOptionIds } : {}),
+      ...(datos.textAnswer !== undefined ? { textAnswer: datos.textAnswer } : {}),
+      ...(datos.flagged !== undefined ? { flagged: datos.flagged } : {}),
+    },
+    create: {
+      attemptId,
+      questionId,
+      selectedOptionIds: datos.selectedOptionIds ?? [],
+      textAnswer: datos.textAnswer ?? null,
+      flagged: datos.flagged ?? false,
+      isCorrect: false,
+      scoreObtained: 0,
+    },
+  });
+
+  return { ok: true };
 }

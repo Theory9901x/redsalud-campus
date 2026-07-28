@@ -1,7 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getAulaQuiz, getNotaRepaso } from "@/lib/aula";
+import { getAulaQuiz, getBorradorIntento, getNotaRepaso } from "@/lib/aula";
 import { seededShuffle } from "@/lib/quiz";
 import { QuizTakingForm } from "@/components/aula/quiz-taking-form";
 
@@ -36,6 +36,7 @@ export default async function AulaQuizPage({
       type: true,
       statement: true,
       imageUrl: true,
+      area: true,
       score: true,
       options: {
         orderBy: { sortOrder: "asc" },
@@ -48,7 +49,10 @@ export default async function AulaQuizPage({
   // la información se gana al haber intentado, no antes.
   const notaRepaso = await getNotaRepaso(quizId, session.user.id);
 
-  const nextAttemptNumber = quizSummary.attemptsUsed + 1;
+  // Lo que llevaba respondido sin enviar. Si hay borrador, el intento en curso
+  // YA está contado en attemptsUsed: sumarle uno anunciaría un intento de más.
+  const borrador = await getBorradorIntento(quizId, session.user.id);
+  const nextAttemptNumber = borrador.length > 0 ? quizSummary.attemptsUsed : quizSummary.attemptsUsed + 1;
   const seed = `${quizId}:${session.user.id}:${nextAttemptNumber}`;
   let questions = rawQuestions;
   if (quiz.randomizeQuestions) {
@@ -86,6 +90,7 @@ export default async function AulaQuizPage({
         initialBestScore={quizSummary.bestScore}
         initialAttemptsRemaining={quizSummary.attemptsRemaining}
         notaRepaso={notaRepaso}
+        borrador={borrador}
       />
     </div>
   );
