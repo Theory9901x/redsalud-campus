@@ -31,26 +31,36 @@ export function BuscadorGlobal() {
   // pisar los resultados buenos con los viejos.
   const peticion = useRef(0);
 
+  /*
+   * Limpiar al cerrar se hace en `cerrar()`, no en un efecto sobre `abierto`:
+   * vaciar el estado desde el efecto obligaba a pintar el panel ya cerrado con
+   * los resultados viejos y volver a pintarlo vacío.
+   *
+   * Enfocar sí se queda aquí, porque mover el foco es tocar el DOM, que es
+   * justo para lo que están los efectos.
+   */
+  useEffect(() => {
+    if (abierto) inputRef.current?.focus();
+  }, [abierto]);
+
+  const cerrar = useCallback(() => {
+    setAbierto(false);
+    setTexto("");
+    setResultados([]);
+    setIndice(0);
+  }, []);
+
   useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setAbierto((v) => !v);
       }
-      if (e.key === "Escape") setAbierto(false);
+      if (e.key === "Escape") cerrar();
     };
     window.addEventListener("keydown", alPulsar);
     return () => window.removeEventListener("keydown", alPulsar);
-  }, []);
-
-  useEffect(() => {
-    if (abierto) inputRef.current?.focus();
-    else {
-      setTexto("");
-      setResultados([]);
-      setIndice(0);
-    }
-  }, [abierto]);
+  }, [cerrar]);
 
   useEffect(() => {
     if (!abierto) return;
@@ -93,7 +103,6 @@ export function BuscadorGlobal() {
 
   // Los resultados llegan ya ordenados por grupo; aquí solo se detecta dónde
   // empieza cada uno para pintar su encabezado.
-  let grupoAnterior: string | null = null;
 
   return (
     <>
@@ -154,8 +163,10 @@ export function BuscadorGlobal() {
 
               {resultados.map((r, i) => {
                 const Icono = ICONO[r.grupo];
-                const encabezado = r.grupo !== grupoAnterior ? r.grupo : null;
-                grupoAnterior = r.grupo;
+                // El encabezado se decide mirando el resultado anterior, no
+                // acumulando en una variable que se reasigna durante el
+                // render: eso rompe si React reintenta el render.
+                const encabezado = r.grupo !== resultados[i - 1]?.grupo ? r.grupo : null;
                 return (
                   <div key={r.id}>
                     {encabezado && (

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { useEstaMontado } from "@/lib/use-cliente";
 import { Monitor, Moon, Sun } from "lucide-react";
 
 const OPCIONES = [
@@ -18,12 +18,11 @@ const OPCIONES = [
  */
 export function ThemeToggle({ className = "" }: { className?: string }) {
   const { theme, setTheme } = useTheme();
-  const [montado, setMontado] = useState(false);
+  const montado = useEstaMontado();
 
   // En el servidor no se sabe qué tema tiene la persona (vive en su navegador),
   // así que hasta que el componente monta se pinta el marco sin ninguna opción
   // marcada. Marcar una al azar produciría un salto visible al hidratar.
-  useEffect(() => setMontado(true), []);
 
   return (
     <div

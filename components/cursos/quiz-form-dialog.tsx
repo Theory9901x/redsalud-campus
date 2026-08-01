@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { QuizFormState } from "@/app/admin/cursos/quiz-actions";
+import { useAlTenerExito } from "@/lib/use-exito-accion";
 
 const initialState: QuizFormState = { error: null };
 
@@ -46,9 +47,8 @@ export function QuizFormDialog({
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(action, initialState);
 
-  useEffect(() => {
-    if (state.success) setOpen(false);
-  }, [state]);
+  // Cierra el diálogo cuando el envío acaba de terminar bien.
+  useAlTenerExito(state, () => setOpen(false));
 
   return (
     <>

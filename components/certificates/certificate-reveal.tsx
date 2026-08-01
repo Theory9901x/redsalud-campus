@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { usePrefiereMenosMovimiento } from "@/lib/use-cliente";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -12,25 +12,36 @@ import type { CourseType, CertificateStatus } from "@prisma/client";
 
 type Particle = { angle: number; distance: number; delay: number; size: number; color: "primary" | "success" | "warning" };
 
-/** Estalla una sola vez desde el sello: se genera solo en cliente, después del montaje, para no desincronizar el HTML del servidor con valores aleatorios. */
+/*
+ * El estallido del sello es DETERMINISTA, no aleatorio.
+ *
+ * Antes se generaba con Math.random() dentro de un efecto, y ese efecto
+ * existía justamente por la aleatoriedad: valores distintos en servidor y
+ * cliente rompen la hidratación, así que había que esperar al montaje y
+ * guardar el resultado en estado, con el render de más que eso implica.
+ *
+ * Con una dispersión calculada a partir del índice se ve exactamente igual
+ * -nadie distingue 22 partículas "al azar" de 22 bien repartidas- y se cae
+ * todo lo demás: sin efecto, sin estado y sin desincronización posible.
+ */
+const COLORES: Particle["color"][] = ["primary", "success", "warning"];
+
+const PARTICULAS: Particle[] = Array.from({ length: 22 }, (_, i) => {
+  // Desfases irregulares pero fijos: el número áureo reparte sin repetir patrón.
+  const dispersion = (i * 0.6180339887) % 1;
+  return {
+    angle: (360 / 22) * i + (dispersion * 20 - 10),
+    distance: 70 + dispersion * 60,
+    delay: ((i * 0.381966) % 1) * 0.15,
+    size: 5 + (((i * 0.7548776662) % 1)) * 5,
+    color: COLORES[i % COLORES.length],
+  };
+});
+
+/** Las partículas del sello, o ninguna si sobran (sin confeti o sin movimiento). */
 function useConfettiBurst(enabled: boolean) {
-  const [particles, setParticles] = useState<Particle[]>([]);
-
-  useEffect(() => {
-    if (!enabled) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const colors: Particle["color"][] = ["primary", "success", "warning"];
-    const next = Array.from({ length: 22 }, (_, i) => ({
-      angle: (360 / 22) * i + (Math.random() * 20 - 10),
-      distance: 70 + Math.random() * 60,
-      delay: Math.random() * 0.15,
-      size: 5 + Math.random() * 5,
-      color: colors[i % colors.length],
-    }));
-    setParticles(next);
-  }, [enabled]);
-
-  return particles;
+  const sinMovimiento = usePrefiereMenosMovimiento();
+  return enabled && !sinMovimiento ? PARTICULAS : [];
 }
 
 const PARTICLE_COLOR_VAR: Record<Particle["color"], string> = {

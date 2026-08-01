@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ import { RichTextEditor } from "@/components/cursos/rich-text-editor";
 import { LESSON_CONTENT_TYPE_LABELS } from "@/components/cursos/labels";
 import type { LessonContentType } from "@prisma/client";
 import type { LessonFormState } from "@/app/admin/cursos/lesson-actions";
+import { useAlTenerExito } from "@/lib/use-exito-accion";
 
 const initialState: LessonFormState = { error: null };
 
@@ -61,9 +62,8 @@ export function LessonFormDialog({
   const values = { ...EMPTY_DEFAULTS, ...defaultValues };
   const [contentType, setContentType] = useState<LessonContentType>(values.contentType);
 
-  useEffect(() => {
-    if (state.success) setOpen(false);
-  }, [state]);
+  // Cierra el diálogo cuando el envío acaba de terminar bien.
+  useAlTenerExito(state, () => setOpen(false));
 
   const showText = contentType === "TEXT" || contentType === "MIXED";
   const showYoutube = contentType === "YOUTUBE" || contentType === "MIXED";

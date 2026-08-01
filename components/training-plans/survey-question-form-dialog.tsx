@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import {
 import { SURVEY_QUESTION_TYPE_LABELS } from "@/components/training-plans/survey-labels";
 import type { SurveyQuestionFormState } from "@/app/admin/planes-capacitacion/survey-actions";
 import type { SurveyQuestionType } from "@prisma/client";
+import { useAlTenerExito } from "@/lib/use-exito-accion";
 
 const initialState: SurveyQuestionFormState = { error: null };
 
@@ -35,12 +36,11 @@ export function SurveyQuestionFormDialog({
   const [type, setType] = useState<SurveyQuestionType>("SINGLE_CHOICE");
   const [options, setOptions] = useState<{ text: string }[]>(EMPTY_OPTIONS);
 
-  useEffect(() => {
-    if (state.success) {
-      setOpen(false);
-      setOptions(EMPTY_OPTIONS);
-    }
-  }, [state]);
+  // Al guardar bien: cierra y deja el formulario limpio para la siguiente.
+  useAlTenerExito(state, () => {
+    setOpen(false);
+    setOptions(EMPTY_OPTIONS);
+  });
 
   const isChoice = type === "SINGLE_CHOICE" || type === "MULTIPLE_CHOICE";
 

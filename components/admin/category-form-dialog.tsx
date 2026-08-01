@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Plus, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { CategoryFormState } from "@/app/admin/cursos/categorias/actions";
+import { useAlTenerExito } from "@/lib/use-exito-accion";
 
 const initialState: CategoryFormState = { error: null };
 
@@ -30,9 +31,8 @@ export function CategoryFormDialog({
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(action, initialState);
 
-  useEffect(() => {
-    if (state.success) setOpen(false);
-  }, [state]);
+  // Cierra el diálogo cuando el envío acaba de terminar bien.
+  useAlTenerExito(state, () => setOpen(false));
 
   return (
     <>

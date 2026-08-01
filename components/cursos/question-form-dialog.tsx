@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
 import { QUESTION_TYPE_LABELS } from "@/components/cursos/labels";
 import type { QuizFormState } from "@/app/admin/cursos/quiz-actions";
 import type { QuestionType } from "@prisma/client";
+import { useAlTenerExito } from "@/lib/use-exito-accion";
 
 const initialState: QuizFormState = { error: null };
 
@@ -60,9 +61,8 @@ export function QuestionFormDialog({
     defaultValues?.options ?? (defaultValues?.type === "TRUE_FALSE" ? TRUE_FALSE_OPTIONS : EMPTY_OPTIONS)
   );
 
-  useEffect(() => {
-    if (state.success) setOpen(false);
-  }, [state]);
+  // Cierra el diálogo cuando el envío acaba de terminar bien.
+  useAlTenerExito(state, () => setOpen(false));
 
   function handleTypeChange(nextType: QuestionType) {
     setType(nextType);

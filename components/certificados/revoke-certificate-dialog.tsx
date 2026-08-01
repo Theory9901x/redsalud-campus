@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { revokeCertificateAction, type RevokeCertificateState } from "@/app/admin/certificados/actions";
+import { useAlTenerExito } from "@/lib/use-exito-accion";
 
 const initialState: RevokeCertificateState = { error: null };
 
@@ -21,9 +22,8 @@ export function RevokeCertificateDialog({ certificateId, studentName }: { certif
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(revokeCertificateAction.bind(null, certificateId), initialState);
 
-  useEffect(() => {
-    if (state.success) setOpen(false);
-  }, [state]);
+  // Cierra el diálogo cuando el envío acaba de terminar bien.
+  useAlTenerExito(state, () => setOpen(false));
 
   return (
     <>

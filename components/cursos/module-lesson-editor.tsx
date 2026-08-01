@@ -119,13 +119,19 @@ export function ModuleLessonEditor({
   const [quizzes, setQuizzes] = useState(initialQuizzes);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    setModules(initialModules);
-  }, [initialModules]);
-
-  useEffect(() => {
-    setQuizzes(initialQuizzes);
-  }, [initialQuizzes]);
+  /*
+   * El servidor vuelve a enviar módulos y cuestionarios tras cada cambio, y el
+   * editor tiene que adoptarlos descartando su copia local. Se hace durante el
+   * render comparando la identidad de las props -es el patrón que documenta
+   * React para esto- en vez de con dos efectos que provocaban un render extra
+   * cada vez que se guardaba algo.
+   */
+  const [propsPrevias, setPropsPrevias] = useState({ initialModules, initialQuizzes });
+  if (propsPrevias.initialModules !== initialModules || propsPrevias.initialQuizzes !== initialQuizzes) {
+    setPropsPrevias({ initialModules, initialQuizzes });
+    if (propsPrevias.initialModules !== initialModules) setModules(initialModules);
+    if (propsPrevias.initialQuizzes !== initialQuizzes) setQuizzes(initialQuizzes);
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

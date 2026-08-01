@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePrefiereMenosMovimiento } from "@/lib/use-cliente";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, ShieldX, ShieldQuestion } from "lucide-react";
 import { COURSE_TYPE_LABELS } from "@/components/cursos/labels";
@@ -45,16 +47,22 @@ const SEAL_STYLES = {
  * hacia el estado real. prefers-reduced-motion salta directo al resultado.
  */
 export function CertificateValidation({ result }: { result: ValidationResult }) {
-  const [phase, setPhase] = useState<"checking" | "settled">("checking");
+  const [phaseInterna, setPhase] = useState<"checking" | "settled">("checking");
+
+  /*
+   * La fase se asienta sola a los 700 ms. Antes, quien pedía menos movimiento
+   * se resolvía con un setState sincrónico dentro del efecto, que obliga a un
+   * render de más; ahora se deriva aquí mismo y el efecto solo programa el
+   * temporizador de quien sí quiere la animación.
+   */
+  const sinMovimiento = usePrefiereMenosMovimiento();
+  const phase = sinMovimiento ? "settled" : phaseInterna;
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setPhase("settled");
-      return;
-    }
+    if (sinMovimiento) return;
     const timer = setTimeout(() => setPhase("settled"), 700);
     return () => clearTimeout(timer);
-  }, []);
+  }, [sinMovimiento]);
 
   const sealKey = phase === "checking" ? "checking" : result.state;
   const Seal = SEAL_STYLES[sealKey];
@@ -62,9 +70,9 @@ export function CertificateValidation({ result }: { result: ValidationResult }) 
   return (
     <div className="page-canvas flex min-h-screen flex-col">
       <header className="border-b border-border bg-card/80 px-4 py-3.5 backdrop-blur sm:px-6">
-        <a href="/" className="flex w-fit items-center gap-2">
+        <Link href="/" className="flex w-fit items-center gap-2">
           <span className="font-display text-sm font-extrabold text-foreground">RedSalud Te Forma</span>
-        </a>
+        </Link>
       </header>
 
       <main className="flex flex-1 items-center justify-center px-4 py-16">

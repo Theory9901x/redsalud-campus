@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Activity, ShieldCheck, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useHashActual } from "@/lib/use-cliente";
 
 export type ItemNav = {
   href: string;
@@ -55,17 +56,11 @@ export function AppSidebar({
   pie?: { titulo: string; texto: string };
 }) {
   const pathname = usePathname();
-  const [hash, setHash] = useState("");
 
   // usePathname() no incluye el fragmento (#...): sin esto, dos enlaces a la
   // misma ruta —"Mis cursos" y "Mis certificados", ambos en /mi-aula— se
   // marcarían activos a la vez.
-  useEffect(() => setHash(window.location.hash), [pathname]);
-  useEffect(() => {
-    const alCambiar = () => setHash(window.location.hash);
-    window.addEventListener("hashchange", alCambiar);
-    return () => window.removeEventListener("hashchange", alCambiar);
-  }, []);
+  const hash = useHashActual(pathname);
 
   const estaActivo = (item: ItemNav) => {
     const ruta = item.match ?? item.href;
@@ -140,10 +135,9 @@ export function AppSidebar({
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={() => {
-                        onClose();
-                        if (item.hash !== undefined) setHash(item.hash);
-                      }}
+                      // Ya no hace falta adelantar el hash a mano: se lee del
+                      // navegador, que es quien lo cambia al navegar.
+                      onClick={onClose}
                       aria-current={activo ? "page" : undefined}
                       className={cn(
                         "group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-300",
