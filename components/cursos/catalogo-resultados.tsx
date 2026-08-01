@@ -1,6 +1,7 @@
 import { Layers } from "lucide-react";
 import { CourseStateCard, type CursoTarjeta, type EstadoTarjeta } from "@/components/cursos/course-state-card";
 import { OrdenSelect } from "@/components/cursos/orden-select";
+import { SelectorVista, type VistaCatalogo } from "@/components/cursos/selector-vista";
 import { EmptyState } from "@/components/brand/empty-state";
 import type { CourseType } from "@prisma/client";
 
@@ -61,14 +62,25 @@ function aTarjeta(c: CursoResultado): CursoTarjeta {
  * maqueta aprobada). El orden ya viene resuelto desde el servidor; esta parte
  * es un Server Component sin estado.
  */
-export function CatalogoResultados({ courses }: { courses: CursoResultado[] }) {
+export function CatalogoResultados({
+  courses,
+  vista = "cuadricula",
+}: {
+  courses: CursoResultado[];
+  vista?: VistaCatalogo;
+}) {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
         <span className="text-sm font-medium text-muted-foreground">
           {courses.length} {courses.length === 1 ? "curso encontrado" : "cursos encontrados"}
         </span>
-        {courses.length > 0 && <OrdenSelect />}
+        {courses.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <OrdenSelect />
+            <SelectorVista vista={vista} />
+          </div>
+        )}
       </div>
 
       {courses.length === 0 ? (
@@ -78,9 +90,15 @@ export function CatalogoResultados({ courses }: { courses: CursoResultado[] }) {
           description="Ajusta la búsqueda o quita alguno de los filtros activos."
         />
       ) : (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div
+          className={
+            vista === "lista"
+              ? "grid grid-cols-1 gap-4"
+              : "grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"
+          }
+        >
           {courses.map((c) => (
-            <CourseStateCard key={c.id} curso={aTarjeta(c)} />
+            <CourseStateCard key={c.id} curso={aTarjeta(c)} vista={vista} />
           ))}
         </div>
       )}

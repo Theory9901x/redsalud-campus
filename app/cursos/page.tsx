@@ -1,7 +1,8 @@
-import { Layers } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { CatalogoResultados } from "@/components/cursos/catalogo-resultados";
+import { HeroCatalogo } from "@/components/cursos/hero-catalogo";
+import type { VistaCatalogo } from "@/components/cursos/selector-vista";
 import { FiltrosCatalogo } from "@/components/cursos/filtros-catalogo";
 import { COURSE_TYPE_LABELS, COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import { StaggerSections } from "@/components/brand/stagger-sections";
@@ -16,7 +17,14 @@ import type { Prisma } from "@prisma/client";
 export default async function CatalogoCursosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; categoria?: string; tipo?: string; estado?: string; orden?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    categoria?: string;
+    tipo?: string;
+    estado?: string;
+    orden?: string;
+    vista?: string;
+  }>;
 }) {
   const session = await auth();
   const sp = await searchParams;
@@ -42,7 +50,14 @@ export default async function CatalogoCursosPage({
     session?.user
       ? prisma.enrollment.findMany({
           where: { userId: session.user.id },
-          select: { courseId: true, status: true, progressPercentage: true, completedAt: true },
+          select: {
+            courseId: true,
+            status: true,
+            progressPercentage: true,
+            completedAt: true,
+            // La intensidad horaria vive en el curso, no en la inscripción.
+            course: { select: { durationHours: true } },
+          },
         })
       : Promise.resolve([]),
   ]);
@@ -58,6 +73,29 @@ export default async function CatalogoCursosPage({
     if (e.status === "COMPLETED") return "completado";
     return e.progressPercentage > 0 ? "en-curso" : "pendiente";
   };
+
+  /*
+   * Indicadores del encabezado, todos derivados de la base de datos:
+   *
+   *  - disponibles: el mismo conjunto que lista la página, es decir los
+   *    publicados que le corresponden a esta persona por tipo de personal.
+   *  - enCurso / completados: sus inscripciones reales.
+   *  - horas: suma de la intensidad horaria de los cursos COMPLETADOS. No es
+   *    tiempo de uso de la plataforma -eso no se mide en ningún sitio- sino la
+   *    intensidad certificada, que es la cifra que le sirve a Talento Humano.
+   *
+   * Si alguien no ha empezado nada, los tres últimos son cero y se muestran
+   * como cero. Hoy en producción esa es la situación de casi todo el personal.
+   */
+  const enCurso = misInscripciones.filter(
+    (e) => e.status === "ACTIVE" && e.progressPercentage > 0
+  ).length;
+  const completados = misInscripciones.filter((e) => e.status === "COMPLETED").length;
+  const horasAcumuladas = misInscripciones
+    .filter((e) => e.status === "COMPLETED")
+    .reduce((total, e) => total + e.course.durationHours, 0);
+
+  const vista: VistaCatalogo = sp.vista === "lista" ? "lista" : "cuadricula";
 
   const filtrosCategoria = lista(sp.categoria);
   const filtrosTipo = lista(sp.tipo);
@@ -116,23 +154,18 @@ export default async function CatalogoCursosPage({
 
   const content = (
     <StaggerSections className="space-y-6">
-      {/* Header en un cuadro glass, con solo título y descripción, para que no
-          quede plano. La intro grande (saludo + números) vive en el dashboard. */}
-      <div className="surface-glass surface-accent-top flex items-center gap-4 p-5 sm:p-6">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)]/15 text-[var(--accent)]">
-          <Layers className="h-6 w-6" />
-        </span>
-        <div className="min-w-0">
-          <h1 className="font-display text-2xl font-extrabold tracking-tight text-foreground">Catálogo de cursos</h1>
-          <p className="text-[13px] text-muted-foreground">
-            Inducción, reinducción y capacitación del talento humano de Red Salud Casanare E.S.E.
-          </p>
-        </div>
-      </div>
+      <HeroCatalogo
+        disponibles={todos.length}
+        enCurso={enCurso}
+        completados={completados}
+        horas={horasAcumuladas}
+        mostrarPersonales={Boolean(session?.user)}
+      />
 
       <FiltrosCatalogo facetas={facetas} total={courses.length} />
 
       <CatalogoResultados
+        vista={vista}
         courses={courses.map((course) => ({
           id: course.id,
           href: `/cursos/${course.slug}`,

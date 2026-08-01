@@ -50,7 +50,14 @@ export type CursoTarjeta = {
  * sobre el cuerpo sólido de la tarjeta, siempre legible. Todas las tarjetas
  * comparten la misma estructura: cambia el encabezado, no la maqueta.
  */
-export function CourseStateCard({ curso }: { curso: CursoTarjeta }) {
+export function CourseStateCard({
+  curso,
+  vista = "cuadricula",
+}: {
+  curso: CursoTarjeta;
+  /** En "lista" la tarjeta se tumba: foto a la izquierda y texto al lado. */
+  vista?: "cuadricula" | "lista";
+}) {
   const e = ESTADOS[curso.estado];
   const { color } = e;
   const Icono = e.icono;
@@ -60,12 +67,20 @@ export function CourseStateCard({ curso }: { curso: CursoTarjeta }) {
     <Link
       href={curso.href}
       style={{ borderColor: `color-mix(in oklch, ${color} 30%, transparent)` }}
-      className="group flex flex-col overflow-hidden rounded-2xl border bg-card shadow-[var(--shadow-1)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-2)]"
+      className={cn(
+        "group overflow-hidden rounded-2xl border bg-card shadow-[var(--shadow-1)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-2)]",
+        vista === "lista" ? "flex flex-col sm:flex-row sm:items-stretch" : "flex flex-col"
+      )}
     >
       {/* Encabezado: la foto limpia, o una banda con el color y el ícono del
           estado cuando el curso no tiene portada. Solo la insignia y el
           marcador van encima. */}
-      <div className="relative h-36 shrink-0 overflow-hidden">
+      <div
+        className={cn(
+          "relative shrink-0 overflow-hidden",
+          vista === "lista" ? "h-36 sm:h-auto sm:w-56" : "h-36"
+        )}
+      >
         {conFoto ? (
           <>
             <Image
