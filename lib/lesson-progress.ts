@@ -68,7 +68,24 @@ export async function recalculateEnrollmentProgress(
   const isNowFailed = lessonsComplete && !quizzesComplete && quizExhausted;
   const finalScore = passedScores.length > 0 ? Math.round(passedScores.reduce((a, b) => a + b, 0) / passedScores.length) : null;
 
-  const justCompleted = isNowComplete && enrollment.status === "ACTIVE";
+  const estabaCompleta = enrollment.status === "COMPLETED";
+
+  /*
+   * Una inscripción marcada COMPLETED vuelve a ACTIVE si el curso creció.
+   *
+   * Antes el estado solo avanzaba: quien terminaba una versión del curso
+   * seguía "completado al 100 %" aunque después se añadieran módulos. Pasó de
+   * verdad al montar los contenidos nuevos: había gente con 3 de 14 lecciones
+   * contada como completada, y el panel de Talento Humano la sumaba así.
+   *
+   * Y tenía una segunda consecuencia peor: como el estado ya era COMPLETED,
+   * al terminar el curso de verdad no había transición y NO se anunciaba el
+   * certificado. El aviso dependía de un cambio de estado que nunca ocurría.
+   *
+   * El certificado ya emitido no se toca: se ganó con lo que había entonces.
+   */
+  const reabrir = !isNowComplete && estabaCompleta;
+  const justCompleted = isNowComplete && !estabaCompleta;
 
   await prisma.enrollment.update({
     where: { id: enrollmentId },
@@ -77,13 +94,21 @@ export async function recalculateEnrollmentProgress(
       startedAt: enrollment.startedAt ?? new Date(),
       ...(finalScore !== null ? { finalScore } : {}),
       ...(justCompleted ? { status: "COMPLETED", completedAt: new Date() } : {}),
+      ...(reabrir ? { status: "ACTIVE", completedAt: null } : {}),
       ...(isNowFailed && enrollment.status === "ACTIVE" ? { status: "FAILED", completedAt: new Date() } : {}),
     },
   });
 
-  if (justCompleted) {
+  // El certificado se asegura siempre que el curso esté completo, no solo en
+  // el instante de la transición: si por lo que sea faltaba, aquí aparece.
+  if (isNowComplete) {
+    const yaTenia = await prisma.certificate.findUnique({
+      where: { enrollmentId },
+      select: { id: true },
+    });
     const certificateId = await issueCertificateIfEligible(enrollmentId);
-    return { certificateId };
+    // Se anuncia cuando acaba de completarse o cuando el certificado es nuevo.
+    return { certificateId: justCompleted || !yaTenia ? certificateId : null };
   }
 
   return { certificateId: null };
