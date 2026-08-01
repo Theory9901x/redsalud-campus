@@ -24,8 +24,18 @@ export default async function AulaLessonPage({
   const data = await getAulaData(courseId, session.user.id);
   if (!data) notFound();
 
+  /*
+   * Una lección que ya no existe NO es un 404.
+   *
+   * Al reemplazar el contenido de un módulo, las lecciones nuevas reciben
+   * identificadores nuevos, así que cualquier enlace guardado, pestaña
+   * abierta o marcador del temario anterior apunta a algo que se borró.
+   * Devolver "página no encontrada" deja al estudiante en un callejón sin
+   * salida sobre un curso en el que sí está inscrito; se le lleva al curso,
+   * que además lo reanuda donde le corresponde ahora.
+   */
   const lessonMeta = data.flattenedLessons.find((l) => l.id === lessonId);
-  if (!lessonMeta) notFound();
+  if (!lessonMeta) redirect(`/aula/${courseId}`);
   if (!lessonMeta.unlocked) redirect(`/aula/${courseId}`);
 
   const [lesson, progresoLeccion] = await Promise.all([
