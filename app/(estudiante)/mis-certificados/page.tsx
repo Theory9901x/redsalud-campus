@@ -69,7 +69,7 @@ export default async function MisCertificadosPage() {
                       <span className="h-3 w-px bg-border" />
                       <span>Emitido el {c.issuedAt.toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}</span>
                       <span className="h-3 w-px bg-border" />
-                      <span>{c.course.durationHours} h</span>
+                      {c.course.durationHours > 0 && <span>{c.course.durationHours} h</span>}
                     </div>
                   </div>
 

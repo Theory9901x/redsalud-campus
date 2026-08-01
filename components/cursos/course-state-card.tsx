@@ -138,11 +138,15 @@ export function CourseStateCard({
         </p>
 
         <div className="mt-3 flex items-center gap-3 text-[11.5px] text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5" />
-            {curso.horas} h
-          </span>
-          <span className="h-3 w-px bg-border" />
+          {curso.horas > 0 && (
+            <>
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                {curso.horas} h
+              </span>
+              <span className="h-3 w-px bg-border" />
+            </>
+          )}
           <span className="inline-flex min-w-0 items-center gap-1.5">
             <Building2 className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{curso.institucion}</span>

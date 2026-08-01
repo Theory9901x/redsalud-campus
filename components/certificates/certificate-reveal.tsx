@@ -175,7 +175,9 @@ export function CertificateReveal({
 
             <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-navy/10 pt-5 text-left text-xs text-muted-foreground">
               <div>
-                <p className="font-semibold text-navy">{durationHours}h de intensidad horaria</p>
+                {durationHours > 0 && (
+                  <p className="font-semibold text-navy">{durationHours}h de intensidad horaria</p>
+                )}
                 <p>Emitido el {formattedDate}</p>
               </div>
               <p className="font-mono text-navy">{certificateCode}</p>

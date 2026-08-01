@@ -87,7 +87,9 @@ export function PanelInscripcion({
         {/* Ficha técnica: etiqueta arriba y valor abajo, en vez de frases
             sueltas. Así se leen en vertical y se comparan de un vistazo. */}
         <dl className="divide-y divide-border rounded-2xl border border-border bg-card/50">
-          <Dato icono={Clock} tinte="primary" etiqueta="Duración" valor={`${durationHours} horas`} />
+          {durationHours > 0 && (
+            <Dato icono={Clock} tinte="primary" etiqueta="Duración" valor={`${durationHours} horas`} />
+          )}
           <Dato icono={Target} tinte="warning" etiqueta="Puntaje mínimo" valor={`${passingScore}%`} />
           <Dato
             icono={Layers}

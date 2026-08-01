@@ -115,10 +115,15 @@ export function AulaHeader({
             transition={{ duration: 0.4, delay: 0.16 }}
             className="mt-4 flex flex-wrap items-center gap-2"
           >
-            <span className="chip-glass">
-              <Clock className="h-3.5 w-3.5 text-primary" />
-              {durationHours}h de intensidad
-            </span>
+            {/* durationHours = 0 significa "sin definir todavía", no "cero
+                horas": la intensidad solo se conoce al terminar de montar el
+                curso, y un 0 se leería como un curso vacío. */}
+            {durationHours > 0 && (
+              <span className="chip-glass">
+                <Clock className="h-3.5 w-3.5 text-primary" />
+                {durationHours}h de intensidad
+              </span>
+            )}
             <span className="chip-glass">
               <Layers className="h-3.5 w-3.5 text-primary" />
               {moduleCount} {moduleCount === 1 ? "módulo" : "módulos"}

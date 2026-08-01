@@ -132,10 +132,12 @@ export default async function CursoDetallePage({
               Por <span className="font-medium text-white">{course.tutor.fullName}</span>
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5">
-              <span className="chip-glass">
+              {course.durationHours > 0 && (
+                <span className="chip-glass">
                 <Clock className="h-3.5 w-3.5" />
                 {course.durationHours}h
               </span>
+              )}
               {course.modules.length > 0 && (
                 <span className="chip-glass">
                   <Layers className="h-3.5 w-3.5" />
