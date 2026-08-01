@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Award, Clock, FileText, Target, Users, Info, User, ClipboardList, Layers } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, Clock, FileText, Info, User, ClipboardList, Layers } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/brand/empty-state";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { DotPattern } from "@/components/brand/dot-pattern";
 import { EnrollButton } from "@/components/cursos/enroll-button";
+import { PanelInscripcion } from "@/components/cursos/panel-inscripcion";
 import { CourseDetailCard } from "@/components/cursos/course-detail-card";
 import { CourseCreatorCard } from "@/components/cursos/course-creator-card";
 import { CourseLessonAccordion } from "@/components/cursos/course-lesson-accordion";
@@ -21,7 +22,6 @@ import {
   COURSE_TYPE_LABELS,
   COURSE_TYPE_ICONS,
   COURSE_TYPE_COLORS,
-  ENROLLMENT_MODE_LABELS,
 } from "@/components/cursos/labels";
 
 function roleHome(role: string | undefined) {
@@ -238,81 +238,67 @@ export default async function CursoDetallePage({
         </StaggerSections>
 
         <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
-          <div className="surface-panel surface-hover p-6">
-            {!session?.user && (
-              <Link
-                href="/login"
-                className={cn(
-                  buttonVariants(),
-                  "glow-brand w-full gap-1.5 bg-gradient-to-r from-primary to-teal-400 text-white hover:opacity-90"
+          <PanelInscripcion
+            courseId={course.id}
+            progreso={session?.user && enrollment ? enrollment.progressPercentage : null}
+            completado={enrollment?.status === "COMPLETED"}
+            durationHours={course.durationHours}
+            passingScore={course.passingScore}
+            enrollmentMode={course.enrollmentMode}
+            modulos={course.modules.length}
+            lecciones={totalLessons}
+            inscritos={course._count.enrollments}
+            accion={
+              <>
+                {!session?.user && (
+                  <Link
+                    href="/login"
+                    className={cn(
+                      buttonVariants({ size: "lg" }),
+                      "glow-brand w-full gap-1.5 bg-gradient-to-r from-primary to-[var(--accent)] text-white hover:opacity-90"
+                    )}
+                  >
+                    Inicia sesión para inscribirte
+                  </Link>
                 )}
-              >
-                Inicia sesión para inscribirte
-              </Link>
-            )}
 
-            {session?.user && enrollment && (
-              <div className="space-y-2">
-                {enrollment.progressPercentage > 0 && (
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-primary to-teal-400"
-                      style={{ width: `${enrollment.progressPercentage}%` }}
-                    />
+                {session?.user && enrollment && (
+                  <Link
+                    href={`/aula/${course.id}`}
+                    className={cn(
+                      buttonVariants({ size: "lg" }),
+                      "glow-brand w-full gap-1.5 bg-gradient-to-r from-primary to-[var(--accent)] text-white hover:opacity-90"
+                    )}
+                  >
+                    {enrollment.status === "COMPLETED"
+                      ? "Ver curso completado"
+                      : enrollment.progressPercentage > 0
+                        ? "Continuar curso"
+                        : "Empezar el curso"}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                )}
+
+                {session?.user && !enrollment && course.enrollmentMode === "OPEN" && (
+                  <EnrollButton courseId={course.id} slug={course.slug} />
+                )}
+
+                {session?.user && !enrollment && course.enrollmentMode === "ASSIGNED" && (
+                  <div className="space-y-2">
+                    <p className="rounded-xl border border-border bg-muted/60 px-4 py-3 text-center text-[13px] text-muted-foreground">
+                      Aún no estás inscrito. Un administrador debe asignarte este curso.
+                    </p>
+                    <Link
+                      href={roleHome(session.user.role)}
+                      className={cn(buttonVariants({ variant: "outline" }), "w-full")}
+                    >
+                      Ir a mi panel
+                    </Link>
                   </div>
                 )}
-                <Link
-                  href={`/aula/${course.id}`}
-                  className={cn(
-                    buttonVariants(),
-                    "glow-brand w-full gap-1.5 bg-gradient-to-r from-primary to-teal-400 text-white hover:opacity-90"
-                  )}
-                >
-                  {enrollment.status === "COMPLETED"
-                    ? "Ver curso completado"
-                    : enrollment.progressPercentage > 0
-                      ? "Continuar curso"
-                      : "Realizar curso"}
-                </Link>
-              </div>
-            )}
-
-            {session?.user && !enrollment && course.enrollmentMode === "OPEN" && (
-              <EnrollButton courseId={course.id} slug={course.slug} />
-            )}
-
-            {session?.user && !enrollment && course.enrollmentMode === "ASSIGNED" && (
-              <div className="space-y-2">
-                <div className="rounded-md bg-secondary px-3 py-2.5 text-center text-sm text-secondary-foreground">
-                  Aún no estás inscrito. Un administrador debe asignarte este curso.
-                </div>
-                <Link href={roleHome(session.user.role)} className={cn(buttonVariants({ variant: "outline" }), "w-full")}>
-                  Ir a mi panel
-                </Link>
-              </div>
-            )}
-
-            <div className="mt-5 space-y-3 border-t border-border pt-4 text-sm">
-              <div className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Clock className="h-4 w-4" />
-                </span>
-                <span className="text-foreground/80">{course.durationHours} horas de duración</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-warning/15 text-warning-foreground">
-                  <Target className="h-4 w-4" />
-                </span>
-                <span className="text-foreground/80">Puntaje mínimo: {course.passingScore}%</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success">
-                  <Users className="h-4 w-4" />
-                </span>
-                <span className="text-foreground/80">{ENROLLMENT_MODE_LABELS[course.enrollmentMode]}</span>
-              </div>
-            </div>
-          </div>
+              </>
+            }
+          />
         </aside>
       </div>
     </div>
