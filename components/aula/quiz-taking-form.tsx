@@ -32,11 +32,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import {
-  guardarRespuestaBorradorAction,
-  submitQuizAttemptAction,
-  type QuizSubmitState,
-} from "@/app/aula/[courseId]/quiz/[quizId]/actions";
+import { submitQuizAttemptAction, type QuizSubmitState } from "@/app/aula/[courseId]/quiz/[quizId]/actions";
 import { PanelEvaluacion, RespuestaGuardada } from "@/components/aula/panel-evaluacion";
 import type { NotaRepasoItem, RespuestaBorrador } from "@/lib/aula";
 import type { QuestionType } from "@prisma/client";
@@ -186,18 +182,37 @@ export function QuizTakingForm({
    */
   const cola = useRef<Promise<unknown>>(Promise.resolve());
 
+  /**
+   * El borrador se escribe contra una ruta de API, no contra una Server
+   * Action. Toda Server Action hace que Next vuelva a renderizar la ruta
+   * entera y devuelva el árbol -hero, stepper, las diez preguntas, el panel y
+   * el temario del layout-, y eso ocurría en CADA opción marcada. Las
+   * consultas tardan 10 ms; el repintado era el lag. Una ruta de API responde
+   * dos campos y no repinta nada.
+   */
+  async function guardarEnServidor(questionId: string, v: RespuestaLocal) {
+    const r = await fetch("/api/aula/borrador", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        courseId,
+        quizId,
+        questionId,
+        selectedOptionIds: v.opciones,
+        textAnswer: v.texto || null,
+        flagged: v.marcada,
+      }),
+    });
+    return r.ok;
+  }
+
   function encolarGuardado(questionId: string, valor: RespuestaLocal) {
     pendientes.current[questionId] = valor;
     setGuardado("guardando");
     cola.current = cola.current
       .then(async () => {
-        const v = pendientes.current[questionId];
-        const r = await guardarRespuestaBorradorAction(courseId, quizId, questionId, {
-          selectedOptionIds: v.opciones,
-          textAnswer: v.texto || null,
-          flagged: v.marcada,
-        });
-        setGuardado(r.ok ? "guardado" : "error");
+        const ok = await guardarEnServidor(questionId, pendientes.current[questionId]);
+        setGuardado(ok ? "guardado" : "error");
       })
       .catch(() => setGuardado("error"));
     return cola.current;
@@ -259,16 +274,8 @@ export function QuizTakingForm({
   /** Reintento manual: reenvía todo lo que haya, sin esperar la espera. */
   async function reintentarGuardado() {
     setGuardado("guardando");
-    const resultados = await Promise.all(
-      questions.map((q) =>
-        guardarRespuestaBorradorAction(courseId, quizId, q.id, {
-          selectedOptionIds: respuestas[q.id].opciones,
-          textAnswer: respuestas[q.id].texto || null,
-          flagged: respuestas[q.id].marcada,
-        })
-      )
-    );
-    setGuardado(resultados.every((r) => r.ok) ? "guardado" : "error");
+    const resultados = await Promise.all(questions.map((q) => guardarEnServidor(q.id, respuestas[q.id])));
+    setGuardado(resultados.every(Boolean) ? "guardado" : "error");
   }
 
   const estaRespondida = (q: QuestionView) =>
@@ -290,17 +297,33 @@ export function QuizTakingForm({
     nodo?.querySelector<HTMLElement>("input, textarea, button")?.focus({ preventScroll: true });
   }
 
-  // Ctrl+flecha salta de pregunta sin tocar el ratón. Ctrl y no la flecha
-  // sola porque dentro de un textarea las flechas mueven el cursor.
+  /*
+   * Ctrl+flecha salta de pregunta sin tocar el ratón. Ctrl y no la flecha
+   * sola porque dentro de un textarea las flechas mueven el cursor.
+   *
+   * El efecto no tenía lista de dependencias, así que se volvía a suscribir en
+   * CADA render: en cada tecla escrita en una respuesta abierta se quitaba y
+   * se volvía a poner una escucha global de teclado. Con la dependencia
+   * correcta solo ocurre al cambiar de pregunta.
+   */
   useEffect(() => {
     function alPulsar(e: KeyboardEvent) {
       if (!e.ctrlKey) return;
-      if (e.key === "ArrowRight") { e.preventDefault(); irA(indiceActivo + 1); }
-      if (e.key === "ArrowLeft") { e.preventDefault(); irA(indiceActivo - 1); }
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        irA(indiceActivo + 1);
+      }
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        irA(indiceActivo - 1);
+      }
     }
     window.addEventListener("keydown", alPulsar);
     return () => window.removeEventListener("keydown", alPulsar);
-  });
+    // Solo se vuelve a suscribir al cambiar de pregunta -un puñado de veces
+    // por evaluación-, no en cada tecla escrita.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [indiceActivo]);
 
   useEffect(() => {
     if (secondsLeft === null || state.result) return;
