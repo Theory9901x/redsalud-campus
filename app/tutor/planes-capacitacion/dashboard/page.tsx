@@ -1,6 +1,7 @@
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getTrainingDashboardData } from "@/lib/training-dashboard";
 import { getPlanMetricsData } from "@/lib/plan-metrics";
+import { getAreaCoverageBreakdown } from "@/lib/training-plans";
 import { TrainingDashboardView } from "@/components/training-plans/training-dashboard-view";
 
 const BASE_PATH = "/tutor/planes-capacitacion";
@@ -12,7 +13,10 @@ export default async function TutorPlanesCapacitacionDashboardPage({
 }) {
   const session = await requireTutorOrAdmin();
   const { tab, plan: planParam } = await searchParams;
-  const data = await getTrainingDashboardData(session.user.role, session.user.id);
+  const [data, areaCoverage] = await Promise.all([
+    getTrainingDashboardData(session.user.role, session.user.id),
+    getAreaCoverageBreakdown(),
+  ]);
 
   const isPlanInScope = !!planParam && data.planRows.some((p) => p.id === planParam);
   const selectedPlanMetrics = isPlanInScope ? await getPlanMetricsData(planParam) : null;
@@ -27,6 +31,7 @@ export default async function TutorPlanesCapacitacionDashboardPage({
       </div>
       <TrainingDashboardView
         data={data}
+        areaCoverage={areaCoverage}
         basePath={BASE_PATH}
         activeTab={tab ?? "total"}
         selectedPlanId={isPlanInScope ? planParam! : null}

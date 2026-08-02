@@ -107,6 +107,43 @@ export async function getTrainingActivityDetail(activityId: string) {
   });
 }
 
+/**
+ * Cuánto de lo que cada área debe entregar ya está montado en la
+ * plataforma: cuántas de sus capacitaciones tienen curso vinculado.
+ *
+ * Es el indicador más honesto que existe hoy sobre el plan: no depende de
+ * inscripciones ni de quién ya vio qué -eso todavía es cero en casi todo
+ * porque el contenido acaba de empezar a subirse-, depende solo de si el
+ * área ya hizo su parte. Global a la institución, no se filtra por rol:
+ * cualquier tutor de área ya puede leer el plan completo (Fase 3), así que
+ * ver cómo van las demás no revela nada que no pueda ver entrando al plan.
+ */
+export async function getAreaCoverageBreakdown() {
+  const areas = await prisma.trainingArea.findMany({
+    where: { isActive: true },
+    orderBy: { sortOrder: "asc" },
+    select: {
+      id: true,
+      name: true,
+      tutor: { select: { fullName: true } },
+      activities: { select: { courseId: true } },
+    },
+  });
+
+  return areas.map((a) => {
+    const total = a.activities.length;
+    const conContenido = a.activities.filter((x) => x.courseId).length;
+    return {
+      id: a.id,
+      name: a.name,
+      tutorName: a.tutor?.fullName ?? null,
+      total,
+      conContenido,
+      percentage: total > 0 ? Math.round((conContenido / total) * 100) : null,
+    };
+  });
+}
+
 /** Municipios activos, para el selector de la jornada presencial/mixta. */
 export async function getMunicipioOptions() {
   return prisma.municipio.findMany({

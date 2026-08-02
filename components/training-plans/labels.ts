@@ -68,6 +68,30 @@ export function etiquetaJornada(sesion: { startsAt: Date; endsAt: Date | null })
   return sesion.endsAt ? `${inicio} – ${FORMATO_HORA.format(sesion.endsAt)}` : inicio;
 }
 
+/**
+ * Semaforización única para todo el módulo: verde cumple el objetivo,
+ * amarillo requiere seguimiento, rojo requiere acción, gris es "todavía sin
+ * datos" -no es lo mismo que 0%, que sí es una medición real-.
+ *
+ * Un solo lugar para el umbral evita que cada pantalla invente su propio
+ * corte y dos tableros digan cosas distintas del mismo número.
+ */
+export type NivelSemaforo = "success" | "warning" | "destructive" | "muted";
+
+export function nivelSemaforo(porcentaje: number | null): NivelSemaforo {
+  if (porcentaje === null) return "muted";
+  if (porcentaje >= 85) return "success";
+  if (porcentaje >= 70) return "warning";
+  return "destructive";
+}
+
+export const SEMAFORO_CLASSES: Record<NivelSemaforo, string> = {
+  success: "bg-success/10 text-success",
+  warning: "bg-warning/10 text-warning",
+  destructive: "bg-destructive/10 text-destructive",
+  muted: "bg-muted text-muted-foreground",
+};
+
 const NUMERO_ROMANO = ["I", "II", "III", "IV"] as const;
 const FORMATO_FECHA = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" });
 

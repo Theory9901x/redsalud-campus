@@ -2,12 +2,12 @@ import Link from "next/link";
 import {
   ClipboardCheck,
   CalendarRange,
-  Building2,
   TrendingUp,
   ClipboardList,
   Download,
   Gauge,
   Users2,
+  LayoutGrid,
 } from "lucide-react";
 import { MetricCard } from "@/components/admin/metric-card";
 import { StaggerGrid } from "@/components/brand/stagger-grid";
@@ -16,9 +16,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { AdherenceBarChart } from "@/components/training-plans/adherence-bar-chart";
+import { ContentCoverageChart } from "@/components/training-plans/content-coverage-chart";
 import { PlanMetricsView } from "@/components/training-plans/plan-metrics-view";
-import { TRAINING_PLAN_STATUS_LABELS, TRAINING_PLAN_STATUS_CLASSES } from "@/components/training-plans/labels";
+import {
+  TRAINING_PLAN_STATUS_LABELS,
+  TRAINING_PLAN_STATUS_CLASSES,
+  SEMAFORO_CLASSES,
+  nivelSemaforo,
+} from "@/components/training-plans/labels";
 import type { TrainingDashboardData } from "@/lib/training-dashboard";
+import type { getAreaCoverageBreakdown } from "@/lib/training-plans";
 import type { AdherenceBarDatum } from "@/components/training-plans/adherence-bar-chart";
 import type { ActivityStatusDatum } from "@/components/training-plans/activity-status-pie-chart";
 
@@ -32,19 +39,29 @@ export type SelectedPlanMetrics = {
   totalSurveys: number;
 };
 
+type AreaCoverage = Awaited<ReturnType<typeof getAreaCoverageBreakdown>>;
+
 export function TrainingDashboardView({
   data,
+  areaCoverage,
   basePath,
   activeTab,
   selectedPlanId,
   selectedPlanMetrics,
 }: {
   data: TrainingDashboardData;
+  areaCoverage: AreaCoverage;
   basePath: string;
   activeTab: string;
   selectedPlanId: string | null;
   selectedPlanMetrics: SelectedPlanMetrics | null;
 }) {
+  const totalConContenido = areaCoverage.reduce((sum, a) => sum + a.conContenido, 0);
+  const totalCapacitaciones = areaCoverage.reduce((sum, a) => sum + a.total, 0);
+  // "Sin datos" (nadie ha medido nada) es distinto de "0%" (se midió y dio
+  // cero): el nivel se calcula sobre el valor real, nullable, no sobre el
+  // valor ya rellenado con 0 que solo sirve para pintar el número.
+  const nivelCumplimiento = nivelSemaforo(data.globalCompliance);
   return (
     <Tabs defaultValue={activeTab}>
       <TabsList>
@@ -62,7 +79,7 @@ export function TrainingDashboardView({
             value={data.globalCompliance ?? 0}
             suffix="%"
             icon={ClipboardCheck}
-            accent="success"
+            accent={nivelCumplimiento === "muted" ? "primary" : nivelCumplimiento}
           />
           <MetricCard
             label="Tasa de respuesta a encuestas"
@@ -73,47 +90,83 @@ export function TrainingDashboardView({
           />
         </StaggerGrid>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <section className="surface space-y-4 p-6">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary" />
-              <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
-                Adherencia por dependencia
-              </h2>
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <LayoutGrid className="h-4 w-4 text-primary" />
+            <h2 className="font-display text-lg font-bold text-foreground">Cobertura de contenido por área</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            De las {totalCapacitaciones} capacitaciones del plan institucional, {totalConContenido} ya tienen
+            presentación y evaluación montadas. Es el indicador más real hoy: la adherencia de aprendizaje todavía
+            está en cero porque el contenido apenas se está subiendo.
+          </p>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="surface-panel overflow-hidden lg:col-span-2">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Área</TableHead>
+                    <TableHead>Responsable</TableHead>
+                    <TableHead className="text-center">Con contenido</TableHead>
+                    <TableHead className="text-center">Cobertura</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {areaCoverage.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                        Sin áreas todavía.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {areaCoverage.map((area) => (
+                    <TableRow key={area.id}>
+                      <TableCell className="font-medium text-foreground">{area.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{area.tutorName ?? "Sin asignar"}</TableCell>
+                      <TableCell className="text-center text-muted-foreground">
+                        {area.conContenido} de {area.total}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge className={SEMAFORO_CLASSES[nivelSemaforo(area.percentage)]}>
+                          {area.percentage !== null ? `${area.percentage}%` : "Sin capacitaciones"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-            {data.departmentBreakdown.length === 0 ? (
-              <EmptyState
-                icon={Building2}
-                title="Sin datos todavía"
-                description="Aparecerá cuando haya actividades con audiencia objetivo real."
-                className="py-10"
-              />
-            ) : (
-              <AdherenceBarChart
-                data={data.departmentBreakdown.map((row) => ({ label: row.department, percentage: row.averagePercentage }))}
-              />
-            )}
-          </section>
 
-          <section className="surface space-y-4 p-6">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
-                Evolución del cumplimiento en el tiempo
-              </h2>
-            </div>
-            {data.evolution.length === 0 ? (
-              <EmptyState
-                icon={TrendingUp}
-                title="Sin datos todavía"
-                description="Aparecerá a medida que las actividades avancen en el calendario."
-                className="py-10"
+            <section className="surface space-y-2 p-6">
+              <h3 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
+                Total institucional
+              </h3>
+              <ContentCoverageChart
+                conContenido={totalConContenido}
+                sinContenido={totalCapacitaciones - totalConContenido}
               />
-            ) : (
+            </section>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            <h2 className="font-display text-lg font-bold text-foreground">Evolución del cumplimiento en el tiempo</h2>
+          </div>
+          {data.evolution.length === 0 ? (
+            <EmptyState
+              icon={TrendingUp}
+              title="Sin datos todavía"
+              description="Aparecerá a medida que las jornadas agendadas con fecha real avancen en el calendario."
+              className="py-10"
+            />
+          ) : (
+            <div className="surface p-6">
               <AdherenceBarChart data={data.evolution.map((row) => ({ label: row.label, percentage: row.averagePercentage }))} />
-            )}
-          </section>
-        </div>
+            </div>
+          )}
+        </section>
 
         <section className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -160,8 +213,10 @@ export function TrainingDashboardView({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center text-muted-foreground">{plan.activityCount}</TableCell>
-                    <TableCell className="text-center text-muted-foreground">
-                      {plan.overallPercentage !== null ? `${plan.overallPercentage}%` : "Sin datos"}
+                    <TableCell className="text-center">
+                      <Badge className={SEMAFORO_CLASSES[nivelSemaforo(plan.overallPercentage)]}>
+                        {plan.overallPercentage !== null ? `${plan.overallPercentage}%` : "Sin datos"}
+                      </Badge>
                     </TableCell>
                   </TableRow>
                 ))}
