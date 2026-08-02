@@ -109,12 +109,13 @@ export function TrainingDashboardView({
                     <TableHead>Responsable</TableHead>
                     <TableHead className="text-center">Con contenido</TableHead>
                     <TableHead className="text-center">Cobertura</TableHead>
+                    <TableHead className="text-center">Informe</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {areaCoverage.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                      <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                         Sin áreas todavía.
                       </TableCell>
                     </TableRow>
@@ -130,6 +131,15 @@ export function TrainingDashboardView({
                         <Badge className={SEMAFORO_CLASSES[nivelSemaforo(area.percentage)]}>
                           {area.percentage !== null ? `${area.percentage}%` : "Sin capacitaciones"}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <a
+                          href={`/api/planes-capacitacion/areas/${area.id}/informe`}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                        >
+                          <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                          PDF
+                        </a>
                       </TableCell>
                     </TableRow>
                   ))}
