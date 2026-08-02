@@ -40,7 +40,21 @@ async function attachLessonFile(
   uploadedBy: string
 ): Promise<{ error: string | null }> {
   const file = formData.get("file");
-  const acceptsFile = contentType === "PDF" || contentType === "IMAGE" || contentType === "VIDEO";
+
+  /*
+   * MIXED entra en la lista a propósito.
+   *
+   * El formulario ofrece el campo de archivo cuando el tipo es PDF, imagen o
+   * MIXED, pero aquí solo se aceptaban los tres primeros. Resultado: en una
+   * lección mixta se elegía un PDF, se guardaba sin error y el archivo se
+   * descartaba en silencio. Desde fuera "no pasaba nada", que es la peor
+   * forma de fallar: ni el archivo, ni un aviso.
+   */
+  const acceptsFile =
+    contentType === "PDF" ||
+    contentType === "IMAGE" ||
+    contentType === "VIDEO" ||
+    contentType === "MIXED";
   if (!acceptsFile || !(file instanceof File) || file.size === 0) {
     return { error: null };
   }
@@ -53,6 +67,10 @@ async function attachLessonFile(
   }
   if (contentType === "VIDEO" && !file.type.startsWith("video/")) {
     return { error: "El archivo debe ser un video." };
+  }
+  // En una lección mixta el adjunto puede ser documento o imagen.
+  if (contentType === "MIXED" && file.type !== "application/pdf" && !file.type.startsWith("image/")) {
+    return { error: "En una lección mixta el archivo debe ser un PDF o una imagen." };
   }
   if (contentType !== "VIDEO" && file.size > MAX_LESSON_FILE_SIZE) {
     return { error: "El archivo no puede pesar más de 20 MB." };

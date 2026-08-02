@@ -1,5 +1,7 @@
 "use client";
 
+import { Check, Paperclip } from "lucide-react";
+
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +63,9 @@ export function LessonFormDialog({
   const [state, formAction, pending] = useActionState(action, initialState);
   const values = { ...EMPTY_DEFAULTS, ...defaultValues };
   const [contentType, setContentType] = useState<LessonContentType>(values.contentType);
+  // Qué archivo se acaba de elegir: sin esto no hay forma de saber si el
+  // clic en "examinar" surtió efecto hasta después de guardar.
+  const [archivoElegido, setArchivoElegido] = useState<string | null>(null);
 
   // Cierra el diálogo cuando el envío acaba de terminar bien.
   useAlTenerExito(state, () => setOpen(false));
@@ -130,25 +135,41 @@ export function LessonFormDialog({
             {showFile && (
               <div className="space-y-1.5">
                 <Label htmlFor="file">
-                  {contentType === "IMAGE" ? "Imagen" : "Archivo PDF"}
+                  {contentType === "IMAGE"
+                    ? "Imagen"
+                    : contentType === "MIXED"
+                      ? "Archivo adjunto (PDF o imagen)"
+                      : "Archivo PDF"}
                 </Label>
-                <Input id="file" name="file" type="file" accept={contentType === "IMAGE" ? "image/*" : "application/pdf"} />
-                {values.fileUrl && (
-                  <p className="text-xs text-muted-foreground">
-                    Ya hay un archivo cargado. Sube uno nuevo solo si quieres reemplazarlo.
-                  </p>
-                )}
+                <Input
+                  id="file"
+                  name="file"
+                  type="file"
+                  accept={
+                    contentType === "IMAGE"
+                      ? "image/*"
+                      : contentType === "MIXED"
+                        ? "application/pdf,image/*"
+                        : "application/pdf"
+                  }
+                  onChange={(e) => setArchivoElegido(e.target.files?.[0]?.name ?? null)}
+                />
+                <EstadoArchivo elegido={archivoElegido} yaHay={Boolean(values.fileUrl)} />
               </div>
             )}
 
             {showVideoFile && (
               <div className="space-y-1.5">
                 <Label htmlFor="file">Archivo de video</Label>
-                <Input id="file" name="file" type="file" accept="video/mp4,video/webm,video/ogg" />
-                <p className="text-xs text-muted-foreground">
-                  Formatos MP4, WebM u Ogg, hasta 200 MB.
-                  {values.fileUrl && " Ya hay un video cargado. Sube uno nuevo solo si quieres reemplazarlo."}
-                </p>
+                <Input
+                  id="file"
+                  name="file"
+                  type="file"
+                  accept="video/mp4,video/webm,video/ogg"
+                  onChange={(e) => setArchivoElegido(e.target.files?.[0]?.name ?? null)}
+                />
+                <p className="text-xs text-muted-foreground">Formatos MP4, WebM u Ogg, hasta 200 MB.</p>
+                <EstadoArchivo elegido={archivoElegido} yaHay={Boolean(values.fileUrl)} />
               </div>
             )}
 
@@ -192,4 +213,31 @@ export function LessonFormDialog({
       </Dialog>
     </>
   );
+}
+
+/**
+ * Dice si la lección ya tiene archivo y cuál se va a subir.
+ *
+ * Antes el campo solo avisaba "ya hay un archivo cargado", sin nombre y sin
+ * confirmar la selección: no se distinguía haber elegido un archivo de no
+ * haberlo elegido, y por tanto tampoco se notaba cuando la subida se perdía.
+ */
+function EstadoArchivo({ elegido, yaHay }: { elegido: string | null; yaHay: boolean }) {
+  if (elegido) {
+    return (
+      <p className="flex items-center gap-1.5 text-xs font-medium text-success">
+        <Check className="h-3.5 w-3.5" />
+        Se subirá «{elegido}» al guardar.
+      </p>
+    );
+  }
+  if (yaHay) {
+    return (
+      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Paperclip className="h-3.5 w-3.5" />
+        Ya hay un archivo cargado. Elige uno nuevo solo si quieres reemplazarlo.
+      </p>
+    );
+  }
+  return <p className="text-xs text-muted-foreground">Todavía no has adjuntado ningún archivo.</p>;
 }
