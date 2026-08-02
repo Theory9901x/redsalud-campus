@@ -7,6 +7,7 @@ import { ListTree, X } from "lucide-react";
 import { SIGNATURE_DURATION, SIGNATURE_EASE } from "@/lib/motion";
 import { AnilloProgreso } from "@/components/aula/anillo-progreso";
 import { ContenidoCurso } from "@/components/aula/contenido-curso";
+import { HerramientasAdmin } from "@/components/aula/herramientas-admin";
 import { COURSE_TYPE_LABELS } from "@/components/cursos/labels";
 import type { AulaModule, AulaProgreso, AulaQuiz } from "@/lib/aula";
 import type { CourseType } from "@prisma/client";
@@ -19,6 +20,7 @@ import type { CourseType } from "@prisma/client";
  * no hay dos versiones del temario que puedan divergir.
  */
 export function AulaSidebar({
+  esAdmin = false,
   courseId,
   courseTitle,
   courseType,
@@ -26,6 +28,8 @@ export function AulaSidebar({
   modules,
   finalQuizzes,
 }: {
+  /** Solo el administrador ve los atajos de prueba. */
+  esAdmin?: boolean;
   courseId: string;
   courseTitle: string;
   courseType: CourseType;
@@ -78,12 +82,15 @@ export function AulaSidebar({
   );
 
   const contenido = (
-    <ContenidoCurso
-      courseId={courseId}
-      leccionActualId={leccionActualId}
-      modulos={modules}
-      cuestionariosFinales={finalQuizzes}
-    />
+    <>
+      <ContenidoCurso
+        courseId={courseId}
+        leccionActualId={leccionActualId}
+        modulos={modules}
+        cuestionariosFinales={finalQuizzes}
+      />
+      {esAdmin && <HerramientasAdmin courseId={courseId} />}
+    </>
   );
 
   return (

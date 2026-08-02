@@ -48,6 +48,7 @@ export default async function AulaLayout({
           encogerse y desborda el contenedor en vez de desplazarse. */}
       <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
         <AulaSidebar
+          esAdmin={session.user.role === "ADMIN"}
           courseId={courseId}
           courseTitle={data.course.title}
           courseType={data.course.courseType}
