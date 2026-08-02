@@ -46,3 +46,7 @@ next-env.d.ts
 # archivos subidos por usuarios (contenido de cursos, imágenes, etc.)
 /uploads
 /public/uploads
+
+# Presentaciones que entregan las áreas: fuente para montar los cursos,
+# no forma parte del código.
+/contenidos-areas

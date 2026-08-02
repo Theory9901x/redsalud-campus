@@ -1,0 +1,1073 @@
+{
+  "extraidoEl": "2026-08-02",
+  "evaluaciones": [
+    {
+      "archivo": "Evaluación 2 - Trato digno y calidad del servicio (1).docx",
+      "titulo": "EVALUACIÓN DE REALIMENTACIÓN — Módulo 2 – Trato digno y calidad del servicio",
+      "fuenteClave": "SUBRAYADO",
+      "preguntas": [
+        {
+          "numero": 1,
+          "enunciado": "¿Qué norma define el concepto de calidad utilizado en este módulo?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "La Resolución 3100 de 2019.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "El Decreto 1011 de 2006.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "La norma ISO 9000-9001.",
+              "correcta": true
+            },
+            {
+              "letra": "D",
+              "texto": "La Ley 1751 de 2015.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 2,
+          "enunciado": "¿Cuál de las siguientes opciones agrupa mejor los elementos que caracterizan la atención humanizada, según el módulo?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Respeto, humildad, cuidado, compasión, calidez, trato digno y empatía.",
+              "correcta": true
+            },
+            {
+              "letra": "B",
+              "texto": "Eficiencia, rapidez, tecnología y cumplimiento de protocolos.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Puntualidad, disciplina, jerarquía y control.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Cobertura, indicadores, metas y presupuesto.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 3,
+          "enunciado": "Según el módulo, ¿qué debe hacer el personal médico al iniciar el contacto con el paciente?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Registrar sus datos en el sistema antes de hablarle.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Saludarlo, presentarse y dirigirse a él por su nombre.",
+              "correcta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Explicarle los costos del procedimiento.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Solicitarle firmar el consentimiento informado.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 4,
+          "enunciado": "¿Qué debe garantizar el personal de salud para que la estancia del paciente sea agradable, según el módulo?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Entretenimiento con televisión y wifi gratuito.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Reducir el tiempo de visita de los familiares.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Evitar explicarle detalles del tratamiento.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Un ambiente de confort, intimidad y seguridad, tratándolo con respeto.",
+              "correcta": true
+            }
+          ]
+        },
+        {
+          "numero": 5,
+          "enunciado": "¿Qué actitudes generan una buena impresión del servicio en el usuario?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Entender sus problemas, ser respetuoso, orientarlo con claridad y precisión, y atenderlo con calidez y agilidad.",
+              "correcta": true
+            },
+            {
+              "letra": "B",
+              "texto": "Resolver todo por escrito sin contacto directo.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Delegar siempre la atención a otro compañero.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Mantener distancia profesional evitando el contacto visual.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 6,
+          "enunciado": "¿Qué se debe hacer si un usuario es grosero o violento durante la atención?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Solicitarle de manera cortés que guarde respeto; si persiste, remitir el caso al jefe inmediato.",
+              "correcta": true
+            },
+            {
+              "letra": "B",
+              "texto": "Responderle en el mismo tono para poner límites.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Ignorarlo hasta que se calme por sí solo.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Suspender inmediatamente la atención sin informar a nadie.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 7,
+          "enunciado": "¿Cómo debe ser el lenguaje utilizado con el usuario, según el módulo?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Breve y cortante, para ahorrar tiempo.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Respetuoso, claro y sencillo, evitando tecnicismos, jergas y abreviaturas.",
+              "correcta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Técnico y detallado, para demostrar conocimiento profesional.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Informal y cercano, tuteando siempre al usuario.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 8,
+          "enunciado": "¿Cómo se debe dirigir el funcionario a un usuario, según el protocolo?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Con “Señor” o “Señora”, sin tutearlo ni usar frases afectuosas.",
+              "correcta": true
+            },
+            {
+              "letra": "B",
+              "texto": "Por su primer nombre, para generar confianza.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Con “mi amor” o “cariño”, para ser más cercano.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Sin usar ningún título, solo con un saludo genérico.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 9,
+          "enunciado": "¿Antes de cuántos timbres se debe contestar el teléfono, según el protocolo de atención telefónica?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Antes del quinto timbre.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "No hay un límite establecido.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Antes del tercer timbre.",
+              "correcta": true
+            },
+            {
+              "letra": "D",
+              "texto": "Antes del primer timbre.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 10,
+          "enunciado": "¿Cuál es el saludo institucional recomendado para atender una llamada?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Decir el nombre del funcionario únicamente.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "“IPS – [municipio] – Red Salud Casanare E.S.E.”, el nombre de la dependencia, el saludo, el nombre del funcionario y “¿En qué le puedo colaborar?”.",
+              "correcta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Solo decir “Aló, buenos días”.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Contestar directamente con el motivo de la llamada, sin saludo.",
+              "correcta": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "archivo": "Evaluación de Capacitación manejo del estres.docx",
+      "titulo": "Evaluación de Capacitación: Manejo del Estrés y Autocuidado",
+      "fuenteClave": "TEXTO_EXPLICITO",
+      "preguntas": [
+        {
+          "numero": 1,
+          "enunciado": "Según la Organización Mundial de la Salud (2026), ¿cómo se define el estrés?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Una alteración genética que afecta el comportamiento.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Un estado de preocupación o tensión mental generado por una situación difícil, siendo una respuesta natural a las amenazas.",
+              "correcta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Una enfermedad mental grave e irreversible.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Una reacción exclusivamente física sin componentes psicológicos.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 2,
+          "enunciado": "De acuerdo con el Modelo Transaccional de Richard Lazarus y Susan Folkman, el estrés es:",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Una simple reacción automática del cuerpo.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Una condición que depende únicamente de la genética de la persona.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Una interacción (o transacción) entre la persona y su ambiente, que depende de evaluaciones mentales consecutivas.",
+              "correcta": true
+            },
+            {
+              "letra": "D",
+              "texto": "Un estado que se produce cuando no hay retos en el entorno.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 3,
+          "enunciado": "¿Cuáles son los dos tipos de estrés según su impacto y duración mencionados en la capacitación?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Estrés primario y estrés secundario.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Eustrés (estrés positivo) y Distrés (estrés negativo).",
+              "correcta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Estrés cognitivo y estrés conductual.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Estrés real y estrés imaginario.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 4,
+          "enunciado": "¿Cuál de las siguientes opciones describe el componente fisiológico de la respuesta al estrés?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Pensamientos de preocupación, bloqueos mentales y problemas de concentración.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Irritabilidad, inquietud motora, evitación de tareas o cambios de hábitos.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Activación del sistema nervioso simpático, liberando hormonas como el cortisol y la adrenalina, aumentando el ritmo cardíaco y la tensión muscular.",
+              "correcta": true
+            },
+            {
+              "letra": "D",
+              "texto": "Sentimientos de culpa y tristeza constante.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 5,
+          "enunciado": "En cuanto a los pensamientos y las distorsiones cognitivas que alimentan el estrés, es fundamental recordar que:",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "El estrés no se ve afectado por la forma en que pensamos.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Tu mente y tu cuerpo no distinguen lo que es real de lo que es imaginario.",
+              "correcta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Todos los pensamientos representan siempre una realidad objetiva e innegable.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Solo los eventos reales del pasado generan estrés crónico.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 6,
+          "enunciado": "¿Cómo se define el Autocuidado en el material de capacitación?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Acudir al médico únicamente cuando se presentan síntomas graves de estrés.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Ignorar los problemas hasta que la tensión desaparezca por sí sola.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Un conjunto de acciones y hábitos conscientes que se realizan para promover la salud, prevenir enfermedades y mantener el bienestar físico, mental y emocional.",
+              "correcta": true
+            },
+            {
+              "letra": "D",
+              "texto": "La responsabilidad exclusiva de la empresa de velar por la salud de los trabajadores.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 7,
+          "enunciado": "Según la OMS, ¿cuáles son algunas prácticas recomendadas para gestionar el estrés?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Aislarse de amigos y familiares para tener tiempo de pensar.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Mantener la higiene del sueño, llevar una dieta saludable, hacer ejercicio regular y limitar el tiempo de exposición a las noticias.",
+              "correcta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Dormir menos para tener más tiempo de resolver los problemas pendientes.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Ver noticias de forma constante para estar al tanto de todas las amenazas.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 8,
+          "enunciado": "La técnica de \"Poner los pies sobre la tierra\" sirve principalmente para:",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Caminar descalzo obligatoriamente todos los días.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Distraer la mente ignorando por completo los problemas que causan estrés.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Conectar con la vida, prestando toda tu atención al momento presente, bajando el ritmo y conectando con tu cuerpo y el mundo que te rodea.",
+              "correcta": true
+            },
+            {
+              "letra": "D",
+              "texto": "Cambiar la personalidad y evitar sentir emociones negativas.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 9,
+          "enunciado": "¿Qué se entiende por una \"tormenta emocional\"?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Experimentar pensamientos y sentimientos muy intensos y difíciles que son tan fuertes que pueden llegar a dominarte fácilmente.",
+              "correcta": true
+            },
+            {
+              "letra": "B",
+              "texto": "Una técnica de relajación que simula sonidos de la naturaleza.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Un trastorno crónico del sueño derivado del estrés prolongado.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Una discusión familiar fuerte que no tiene solución.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 10,
+          "enunciado": "Frente a los pensamientos poco amables y los juicios severos sobre nosotros mismos, la guía propone:",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Exigirnos más para superar nuestras propias debilidades.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Darnos cuenta de esos pensamientos, ponerles nombre, desengancharnos y responder con amabilidad hacia nuestro propio dolor.",
+              "correcta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Aislarse de los demás hasta sentirse merecedor de afecto.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Ignorarlos rápidamente pensando en cosas felices y positivas.",
+              "correcta": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "archivo": "Evaluación 3 - Participación social en salud (1).docx",
+      "titulo": "EVALUACIÓN DE REALIMENTACIÓN — Módulo 3 – Participación Social en Salud",
+      "fuenteClave": "SUBRAYADO",
+      "preguntas": [
+        {
+          "numero": 1,
+          "enunciado": "¿Qué es la participación social en salud, según el módulo?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Es el ejercicio de los deberes y derechos del individuo para propender por la conservación de la salud personal, familiar y comunitaria.",
+              "correcta": true
+            },
+            {
+              "letra": "B",
+              "texto": "Es una obligación exclusiva de las autoridades de salud.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Es el pago de aportes al sistema de seguridad social.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Es la afiliación obligatoria a una EPS.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 2,
+          "enunciado": "¿Cuál de las siguientes normas hace parte del marco normativo de la política de participación social en salud?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "El Decreto 1011 de 2006.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "La Resolución 5596 de 2015.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "La Ley 100 de 1993.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "La Resolución 2063 de 2017.",
+              "correcta": true
+            }
+          ]
+        },
+        {
+          "numero": 3,
+          "enunciado": "¿Cuál de los siguientes es un objetivo de la política de participación social en salud?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Incentivar el ejercicio de control social y veedurías de los recursos del sector salud.",
+              "correcta": true
+            },
+            {
+              "letra": "B",
+              "texto": "Reducir el número de EPS que operan en el país.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Centralizar todas las decisiones en el nivel nacional.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Eliminar los comités de participación comunitaria.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 4,
+          "enunciado": "¿Cuál de las siguientes es un canal oficial de participación en Red Salud Casanare?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Redes sociales personales de los funcionarios.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Grupos de mensajería informal entre pacientes.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Asociación de Usuarios de la IPS.",
+              "correcta": true
+            },
+            {
+              "letra": "D",
+              "texto": "Reuniones exclusivas del personal directivo.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 5,
+          "enunciado": "¿Qué es el COPACOS?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "El Comité de Auditoría de Cuentas de Salud.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "El Consejo de Política Comunitaria en Salud.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "El Comité de Participación Comunitaria en Salud.",
+              "correcta": true
+            },
+            {
+              "letra": "D",
+              "texto": "El Comité de Pacientes y Colaboradores en Salud.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 6,
+          "enunciado": "¿Cuáles son las tres etapas de implementación de la PPSS en Red Salud?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Diagnóstico, contratación y auditoría.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Convocatoria, votación y publicación.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Planeación, financiación y cierre.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Formulación del plan de acción, socialización y ejecución, y evaluación.",
+              "correcta": true
+            }
+          ]
+        },
+        {
+          "numero": 7,
+          "enunciado": "¿Cuál de las siguientes es una actividad programada dentro de la PPSS en Red Salud?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Participación en COPACOS.",
+              "correcta": true
+            },
+            {
+              "letra": "B",
+              "texto": "Auditoría financiera trimestral.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Evaluación de desempeño del personal.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Actualización del manual de funciones.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 8,
+          "enunciado": "¿Cuál de las siguientes es una función de la Asociación de Usuarios?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Aprobar el presupuesto anual de la institución.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Contratar al personal asistencial.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Velar por la calidad de los servicios de salud y defender los derechos de los usuarios.",
+              "correcta": true
+            },
+            {
+              "letra": "D",
+              "texto": "Definir las tarifas de los servicios de salud.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 9,
+          "enunciado": "Según el módulo, ¿por qué es importante participar?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Porque es un requisito para recibir atención médica.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Porque permite obtener descuentos en los servicios.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Porque es obligatorio por ley asistir a todas las reuniones.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Porque se pueden aportar opiniones, se incentivan las formas de control social y se ejerce el derecho a la participación.",
+              "correcta": true
+            }
+          ]
+        },
+        {
+          "numero": 10,
+          "enunciado": "¿Cuál de las siguientes es una línea de acción para implementar la PPSS en Red Salud?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Empoderamiento de la ciudadanía y organizaciones sociales en salud.",
+              "correcta": true
+            },
+            {
+              "letra": "B",
+              "texto": "Reducción del personal administrativo.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Estandarización de historias clínicas.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Digitalización de la facturación.",
+              "correcta": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "archivo": "Evaluación 4 - Humanización en salud (1).docx",
+      "titulo": "EVALUACIÓN DE REALIMENTACIÓN — Módulo 4 – Humanización en salud",
+      "fuenteClave": "SUBRAYADO",
+      "preguntas": [
+        {
+          "numero": 1,
+          "enunciado": "¿Qué significa el eslogan “Paraguas de Colores” del programa de humanización?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Que cada IPS tiene un color institucional distinto.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Que Red Salud Casanare cuenta con personal calificado basado en valores éticos; el paraguas es sinónimo de lucha, entrega, sacrificio y protección.",
+              "correcta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Que el programa se enfoca solo en la atención infantil.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Que representa las diferentes especialidades médicas de la E.S.E.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 2,
+          "enunciado": "¿Cuál es el valor general del programa de humanización “Paraguas de Colores”?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "La eficiencia.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "La puntualidad.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "La productividad.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "La empatía.",
+              "correcta": true
+            }
+          ]
+        },
+        {
+          "numero": 3,
+          "enunciado": "¿Cuáles son los tres elementos que integra la definición de empatía dada en el módulo?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "La escucha activa, el apoyo emocional y la comprensión.",
+              "correcta": true
+            },
+            {
+              "letra": "B",
+              "texto": "La rapidez, la eficiencia y el control emocional.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "La disciplina, la puntualidad y el orden.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "La autoridad, la firmeza y la distancia profesional.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 4,
+          "enunciado": "¿Cuáles son las cinco competencias del modelo de humanización?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Planear, Ejecutar, Verificar, Actuar y Mejorar.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Diagnosticar, Tratar, Referir, Registrar y Facturar.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Acoger, Escuchar, Informar, Servir e Incluir.",
+              "correcta": true
+            },
+            {
+              "letra": "D",
+              "texto": "Saludar, Atender, Cobrar, Despedir y Evaluar.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 5,
+          "enunciado": "¿Con qué valor institucional se relaciona la competencia “Escuchar”?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Con el valor de la honestidad.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Con el valor del respeto.",
+              "correcta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Con el valor de la justicia.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Con el valor del compromiso.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 6,
+          "enunciado": "Según el decálogo, ¿cómo se debe llamar siempre al paciente?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Por su número de cama o habitación.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Por su diagnóstico médico.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Por el nombre de su EPS.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Por su nombre, considerándolo un ser único.",
+              "correcta": true
+            }
+          ]
+        },
+        {
+          "numero": 7,
+          "enunciado": "¿Cada cuánto se debe realizar la Ronda de Humanización, según el programa?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Semanalmente.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "De manera bimensual.",
+              "correcta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Una vez al año.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Cada tres días.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 8,
+          "enunciado": "¿Cada cuánto se realiza la Feria de la Humanización?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Una vez al mes.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Una vez cada cuatro años.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Dos veces al año (semestralmente).",
+              "correcta": true
+            },
+            {
+              "letra": "D",
+              "texto": "Solo cuando lo solicite la Gerencia.",
+              "correcta": false
+            }
+          ]
+        },
+        {
+          "numero": 9,
+          "enunciado": "Según el decálogo, ¿qué debe hacer el personal de salud además de cuidar al paciente?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "Evitar mostrar emociones frente al paciente.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Priorizar siempre las tareas administrativas.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Delegar el cuidado emocional a un especialista externo.",
+              "correcta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Cuidarse a sí mismo, siendo empático con su propio sufrimiento, para poder cuidar.",
+              "correcta": true
+            }
+          ]
+        },
+        {
+          "numero": 10,
+          "enunciado": "¿Cuál de las siguientes es un responsable del programa de humanización según el módulo?",
+          "opciones": [
+            {
+              "letra": "A",
+              "texto": "El área de Facturación.",
+              "correcta": false
+            },
+            {
+              "letra": "B",
+              "texto": "El área de Sistemas.",
+              "correcta": false
+            },
+            {
+              "letra": "C",
+              "texto": "SIAU (Coordinador y Líderes IPS).",
+              "correcta": true
+            },
+            {
+              "letra": "D",
+              "texto": "El proveedor de insumos médicos.",
+              "correcta": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

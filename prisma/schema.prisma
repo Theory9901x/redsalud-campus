@@ -156,6 +156,7 @@ model User {
   auditLogs      AuditLog[]
   trainingPlansAsTutor TrainingPlan[] @relation("TrainingPlanTutor")
   trainingActivitiesResponsible TrainingActivity[] @relation("TrainingActivityResponsible")
+  trainingAreasLed              TrainingArea[]     @relation("TrainingAreaTutor")
   trainingAttendances TrainingAttendance[] @relation("TrainingAttendanceUser")
   trainingAttendancesRegistered TrainingAttendance[] @relation("TrainingAttendanceRegisteredBy")
   surveysCreated  Survey[]         @relation("SurveyCreatedBy")
@@ -673,9 +674,21 @@ model TrainingArea {
   sortOrder Int
   isActive  Boolean @default(true)
 
+  /**
+   * Quién responde por las capacitaciones del área.
+   *
+   * El plan nombra responsables por CARGO ("Profesional Lider PAI",
+   * "Coordinacion SIAU"), no por persona. Esta relación es la que convierte
+   * ese texto en alguien que de verdad puede entrar a la plataforma, subir
+   * su presentación y cerrar sus jornadas.
+   */
+  tutorId String?
+  tutor   User?   @relation("TrainingAreaTutor", fields: [tutorId], references: [id])
+
   activities TrainingActivity[]
 
   @@index([isActive])
+  @@index([tutorId])
 }
 
 /** Cómo se dicta. MIXTA = el PIC la programa virtual en unos trimestres y presencial en otros. */
