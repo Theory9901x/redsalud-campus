@@ -92,6 +92,35 @@ export async function getTrainingPlanDetailForStudent(id: string, userId: string
   return plan;
 }
 
+/**
+ * Curso y avance real del estudiante, para cada capacitación del plan que ya
+ * tiene contenido montado.
+ *
+ * Aparte de `getTrainingPlanDetail` -que la usan admin y tutor y no necesitan
+ * nada de esto- porque aquí hace falta lo que se ve en la tarjeta de curso
+ * (imagen, resumen, horas) y la inscripción de ESTA persona, dos cosas que
+ * inflarían sin motivo la consulta que usa el panel de gestión.
+ */
+export async function getStudentCourseProgress(courseIds: string[], userId: string) {
+  if (courseIds.length === 0) return new Map<string, never>();
+
+  const [courses, enrollments] = await Promise.all([
+    prisma.course.findMany({
+      where: { id: { in: courseIds }, status: "PUBLISHED" },
+      select: { id: true, title: true, slug: true, shortDescription: true, imageUrl: true, durationHours: true },
+    }),
+    prisma.enrollment.findMany({
+      where: { userId, courseId: { in: courseIds }, status: { not: "CANCELLED" } },
+      select: { courseId: true, status: true, progressPercentage: true, completedAt: true },
+    }),
+  ]);
+
+  const inscripcionPorCurso = new Map(enrollments.map((e) => [e.courseId, e]));
+  return new Map(
+    courses.map((c) => [c.id, { course: c, enrollment: inscripcionPorCurso.get(c.id) ?? null }])
+  );
+}
+
 /** Actividad puntual con su plan (para el encabezado) y sus documentos propios (Etapa 2). */
 export async function getTrainingActivityDetail(activityId: string) {
   return prisma.trainingActivity.findUnique({
