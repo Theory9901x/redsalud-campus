@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getAulaQuiz, getBorradorIntento, getNotaRepaso } from "@/lib/aula";
+import { registrarAsistenciaAutomatica } from "@/lib/training-plans";
 import { seededShuffle } from "@/lib/quiz";
 import { QuizTakingForm } from "@/components/aula/quiz-taking-form";
 import { EvaluacionNoDisponible } from "@/components/aula/evaluacion-no-disponible";
@@ -41,6 +42,17 @@ export default async function AulaQuizPage({
         ? ("vencida" as const)
         : null;
   if (motivo) return <EvaluacionNoDisponible motivo={motivo} courseId={courseId} />;
+
+  // Asistencia automática: la persona llegó hasta aquí de verdad, con la
+  // evaluación desbloqueada y activa. Es un efecto secundario del render, no
+  // el propósito de la página, así que una falla aquí nunca debe tumbar la
+  // evaluación -por ejemplo si el curso no está vinculado a ninguna línea
+  // del plan, que es el caso normal para la enorme mayoría de cursos-.
+  try {
+    await registrarAsistenciaAutomatica(courseId, session.user.id);
+  } catch (error) {
+    console.error("No se pudo registrar la asistencia automática:", error);
+  }
 
   const rawQuestions = await prisma.question.findMany({
     where: { quizId, isActive: true },

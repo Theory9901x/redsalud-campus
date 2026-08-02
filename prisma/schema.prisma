@@ -821,6 +821,12 @@ model TrainingSession {
  * Las actividades con curso vinculado calculan adherencia en vivo desde
  * Enrollment, sin necesidad de esta tabla.
  */
+/** Quién registró la asistencia: una persona a mano, o el sistema al entrar a la evaluación. */
+enum AttendanceSource {
+  MANUAL
+  AUTOMATIC
+}
+
 model TrainingAttendance {
   id           String           @id @default(cuid())
   activityId   String
@@ -829,8 +835,13 @@ model TrainingAttendance {
   user         User             @relation("TrainingAttendanceUser", fields: [userId], references: [id], onDelete: Cascade)
   attended     Boolean          @default(false)
   registeredAt DateTime         @default(now())
-  registeredBy String
-  registeredByUser User         @relation("TrainingAttendanceRegisteredBy", fields: [registeredBy], references: [id])
+  // Nula cuando el registro lo hizo el sistema: la asistencia automática no
+  // la marca ninguna persona, y forzar aquí un usuario habría significado
+  // inventar quién "la registró" cuando en realidad fue el propio estudiante
+  // al entrar a su evaluación.
+  registeredBy String?
+  registeredByUser User?        @relation("TrainingAttendanceRegisteredBy", fields: [registeredBy], references: [id])
+  source       AttendanceSource @default(MANUAL)
 
   @@unique([activityId, userId])
   @@index([activityId])

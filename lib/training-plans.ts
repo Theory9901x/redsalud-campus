@@ -164,6 +164,51 @@ export async function getSessionsForPlan(planId: string) {
   });
 }
 
+/**
+ * Registra que alguien asistió, en el instante en que entra a SU evaluación.
+ *
+ * Es la señal de asistencia más temprana y honesta que existe: no espera a
+ * que termine el curso completo -eso ya se mide aparte como adherencia de
+ * aprendizaje, vía Enrollment.status-, solo confirma que la persona se
+ * presentó a la capacitación que el curso desarrolla. Nadie "la registra":
+ * por eso `registeredBy` queda vacío y `source` dice AUTOMATIC.
+ *
+ * No toca actividades ya CERRADAS: ahí la participación quedó congelada al
+ * cerrar la jornada, igual que rige para el registro manual.
+ */
+export async function registrarAsistenciaAutomatica(courseId: string, userId: string) {
+  const actividades = await prisma.trainingActivity.findMany({
+    where: { courseId, status: { not: "CLOSED" } },
+    select: { id: true },
+  });
+
+  for (const actividad of actividades) {
+    await prisma.trainingAttendance.upsert({
+      where: { activityId_userId: { activityId: actividad.id, userId } },
+      update: { attended: true },
+      create: { activityId: actividad.id, userId, attended: true, source: "AUTOMATIC" },
+    });
+  }
+}
+
+/**
+ * Quién ya asistió a una capacitación CON curso vinculado: la lista nominal
+ * que complementa el % agregado de `ActivityAdherencePanel`. Antes esto
+ * no existía para actividades con curso -solo se veía para las de gestión
+ * directa- porque no había ninguna fuente de asistencia; ahora la hay.
+ */
+export async function getAutomaticAttendanceRoster(activityId: string) {
+  return prisma.trainingAttendance.findMany({
+    where: { activityId, attended: true },
+    orderBy: { registeredAt: "asc" },
+    select: {
+      registeredAt: true,
+      source: true,
+      user: { select: { id: true, fullName: true, documentNumber: true } },
+    },
+  });
+}
+
 /** Municipios activos, para el selector de la jornada presencial/mixta. */
 export async function getMunicipioOptions() {
   return prisma.municipio.findMany({

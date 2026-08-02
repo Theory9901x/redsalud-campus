@@ -7,6 +7,7 @@ import {
   getActivityAdherence,
   getActivityAttendanceRoster,
   getActivityCompletionRoster,
+  getAutomaticAttendanceRoster,
 } from "@/lib/training-plans";
 import { getSurveysForActivity } from "@/lib/surveys";
 import { getLinkableCoursesForUser, getMunicipioOptions } from "@/lib/training-plans";
@@ -29,6 +30,7 @@ import { TrainingDocumentList } from "@/components/training-plans/training-docum
 import { TrainingDocumentUploadForm } from "@/components/training-plans/training-document-upload-form";
 import { ActivityAdherencePanel } from "@/components/training-plans/activity-adherence-panel";
 import { AttendanceRoster } from "@/components/training-plans/attendance-roster";
+import { AutomaticAttendanceList } from "@/components/training-plans/automatic-attendance-list";
 import { ActivityLifecycleActions } from "@/components/training-plans/activity-lifecycle-actions";
 import { NonAdherentList } from "@/components/training-plans/non-adherent-list";
 import { SurveyList } from "@/components/training-plans/survey-list";
@@ -67,13 +69,14 @@ export default async function AdminActividadDetallePage({
   };
   const isClosed = activity.status === "CLOSED";
 
-  const [adherence, roster, completionRoster, surveys] = await Promise.all([
+  const [adherence, roster, completionRoster, surveys, asistenciasAutomaticas] = await Promise.all([
     getActivityAdherence(activityForAdherence),
     activity.courseId ? Promise.resolve(null) : getActivityAttendanceRoster(activityForAdherence),
     activity.courseId && isClosed
       ? getActivityCompletionRoster({ ...activityForAdherence, courseId: activity.courseId })
       : Promise.resolve(null),
     getSurveysForActivity(activityId),
+    activity.courseId ? getAutomaticAttendanceRoster(activityId) : Promise.resolve([]),
   ]);
 
   const nonAdherentUsers = activity.courseId
@@ -168,7 +171,13 @@ export default async function AdminActividadDetallePage({
       <div className="space-y-3">
         <h2 className="font-display text-lg font-bold text-foreground">Adherencia y cumplimiento</h2>
         {activity.courseId ? (
-          <ActivityAdherencePanel adherence={adherence} />
+          <div className="space-y-4">
+            <ActivityAdherencePanel adherence={adherence} />
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-foreground">Quién ya entró a la evaluación</h3>
+              <AutomaticAttendanceList asistencias={asistenciasAutomaticas} />
+            </div>
+          </div>
         ) : (
           <AttendanceRoster activityId={activity.id} roster={roster!} locked={isClosed} />
         )}
