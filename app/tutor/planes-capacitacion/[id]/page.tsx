@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrainingActivityTimeline } from "@/components/training-plans/training-activity-timeline";
+import { CronogramaView } from "@/components/training-plans/cronograma-view";
 import { TrainingActivityForm } from "@/components/training-plans/training-activity-form";
 import { ImportScheduleDialog } from "@/components/training-plans/import-schedule-dialog";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
@@ -120,7 +120,7 @@ export default async function TutorPlanCapacitacionDetallePage({
         <TabsContent value="cronograma" className="space-y-6 pt-4">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className={puedeEditarPlan ? "space-y-3 lg:col-span-2" : "space-y-3 lg:col-span-3"}>
-              <TrainingActivityTimeline
+              <CronogramaView
                 activities={plan.activities}
                 basePath={BASE_PATH}
                 planId={id}

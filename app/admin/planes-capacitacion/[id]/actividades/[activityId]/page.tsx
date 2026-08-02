@@ -9,10 +9,13 @@ import {
   getActivityCompletionRoster,
 } from "@/lib/training-plans";
 import { getSurveysForActivity } from "@/lib/surveys";
+import { getLinkableCoursesForUser } from "@/lib/training-plans";
 import {
   uploadTrainingActivityDocumentAction,
   enableActivityAction,
   closeActivityAction,
+  linkCourseToActivityAction,
+  unlinkCourseFromActivityAction,
 } from "@/app/admin/planes-capacitacion/actions";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -26,6 +29,8 @@ import { ActivityLifecycleActions } from "@/components/training-plans/activity-l
 import { NonAdherentList } from "@/components/training-plans/non-adherent-list";
 import { SurveyList } from "@/components/training-plans/survey-list";
 import { ActivityPlanCard } from "@/components/training-plans/activity-plan-card";
+import { LinkCourseForm } from "@/components/training-plans/link-course-form";
+import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
 import {
   TRAINING_ACTIVITY_TYPE_LABELS,
   TRAINING_ACTIVITY_STATUS_LABELS,
@@ -43,7 +48,7 @@ export default async function AdminActividadDetallePage({
   params: Promise<{ id: string; activityId: string }>;
 }) {
   const { id, activityId } = await params;
-  await requireTrainingActivityAccess(activityId);
+  const { session } = await requireTrainingActivityAccess(activityId);
 
   const activity = await getTrainingActivityDetail(activityId);
   if (!activity || activity.planId !== id) notFound();
@@ -72,6 +77,9 @@ export default async function AdminActividadDetallePage({
   const uploadDocumentAction = uploadTrainingActivityDocumentAction.bind(null, BASE_PATH, id, activityId);
   const enableAction = enableActivityAction.bind(null, BASE_PATH, id, activityId);
   const closeAction = closeActivityAction.bind(null, BASE_PATH, id, activityId);
+  const linkCourseAction = linkCourseToActivityAction.bind(null, BASE_PATH, id, activityId);
+  const unlinkCourseAction = unlinkCourseFromActivityAction.bind(null, BASE_PATH, id, activityId);
+  const linkableCourses = activity.course ? [] : await getLinkableCoursesForUser(session.user.role, session.user.id);
 
   return (
     <div className="space-y-6">
@@ -137,6 +145,34 @@ export default async function AdminActividadDetallePage({
           <AttendanceRoster activityId={activity.id} roster={roster!} locked={isClosed} />
         )}
         {isClosed && <NonAdherentList users={nonAdherentUsers} />}
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg font-bold text-foreground">Contenido del curso</h2>
+          {activity.course && (
+            <DeleteEntityButton
+              action={unlinkCourseAction}
+              nombre="El vínculo con el curso"
+              descripcion="La capacitación vuelve a quedar «sin contenido todavía». El curso en sí no se toca."
+              etiquetaBoton="Desvincular"
+              size="sm"
+            />
+          )}
+        </div>
+        {activity.course ? (
+          <p className="surface p-4 text-sm text-muted-foreground">
+            Esta capacitación se desarrolla con{" "}
+            <Link href={`/cursos/${activity.course.slug}`} target="_blank" className="font-medium text-primary hover:underline">
+              {activity.course.title}
+            </Link>
+            .
+          </p>
+        ) : (
+          <div className="surface p-4">
+            <LinkCourseForm action={linkCourseAction} courses={linkableCourses} />
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">

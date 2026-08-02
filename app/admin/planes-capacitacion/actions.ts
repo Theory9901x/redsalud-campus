@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTutorOrAdmin, requireTrainingPlanAccess, requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import { saveTrainingPlanDocument, saveTrainingActivityDocument } from "@/lib/storage";
 import { trainingPlanSchema, trainingActivitySchema } from "@/lib/validations/training-plan";
+import { getLinkableCoursesForUser } from "@/lib/training-plans";
 import { parseTrainingScheduleFile, type ImportRowError } from "@/lib/training-plan-import";
 
 export type TrainingPlanFormState = { error: string | null };
@@ -223,6 +224,57 @@ export async function closeActivityAction(basePath: string, planId: string, acti
 
   revalidatePath(`${basePath}/${planId}`);
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+}
+
+export type LinkCourseState = { error: string | null };
+
+/**
+ * Engancha una capacitación del plan al curso que la desarrolla.
+ *
+ * Es lo que convierte "sin contenido todavía" en una capacitación completa:
+ * hasta este punto un área podía subir su presentación y armar su evaluación
+ * como curso, pero no había forma de decirle a SU línea del PIC cuál de sus
+ * cursos era. Solo yo podía hacerlo, por script.
+ *
+ * No exige que el curso esté vacío de asignación: un curso ya puede tener
+ * estudiantes inscritos por otra vía y de todas formas ser "el" contenido de
+ * esta línea del plan.
+ */
+export async function linkCourseToActivityAction(
+  basePath: string,
+  planId: string,
+  activityId: string,
+  _prevState: LinkCourseState,
+  formData: FormData
+): Promise<LinkCourseState> {
+  const { session } = await requireTrainingActivityAccess(activityId);
+
+  const courseId = String(formData.get("courseId") ?? "").trim();
+  if (!courseId) return { error: "Elige un curso." };
+
+  const opciones = await getLinkableCoursesForUser(session.user.role, session.user.id);
+  if (!opciones.some((c) => c.id === courseId)) {
+    return { error: "Ese curso no está disponible para vincular." };
+  }
+
+  await prisma.trainingActivity.update({ where: { id: activityId }, data: { courseId } });
+
+  revalidatePath(`${basePath}/${planId}`);
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+  return { error: null };
+}
+
+/** Deshace el enganche: la capacitación vuelve a "sin contenido todavía". */
+export async function unlinkCourseFromActivityAction(
+  basePath: string,
+  planId: string,
+  activityId: string
+): Promise<{ error: string | null }> {
+  await requireTrainingActivityAccess(activityId);
+  await prisma.trainingActivity.update({ where: { id: activityId }, data: { courseId: null } });
+  revalidatePath(`${basePath}/${planId}`);
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+  return { error: null };
 }
 
 export type DeleteState = { error: string | null };

@@ -296,3 +296,19 @@ export async function getLinkableCourses() {
     orderBy: { title: "asc" },
   });
 }
+
+/**
+ * Cursos que ESTA persona puede vincular a una capacitación del plan.
+ *
+ * Un ADMIN puede enganchar cualquier curso publicado, igual que siempre. Un
+ * área solo puede enganchar los cursos que ella misma tutoriza: no tendría
+ * sentido que el área de Calidad vinculara su línea del PIC a un curso que
+ * hizo Talento Humano.
+ */
+export async function getLinkableCoursesForUser(role: Role, userId: string) {
+  return prisma.course.findMany({
+    where: { status: "PUBLISHED", ...(role === "ADMIN" ? {} : { tutorId: userId }) },
+    select: { id: true, title: true },
+    orderBy: { title: "asc" },
+  });
+}
