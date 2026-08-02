@@ -25,6 +25,7 @@ import { AttendanceRoster } from "@/components/training-plans/attendance-roster"
 import { ActivityLifecycleActions } from "@/components/training-plans/activity-lifecycle-actions";
 import { NonAdherentList } from "@/components/training-plans/non-adherent-list";
 import { SurveyList } from "@/components/training-plans/survey-list";
+import { ActivityPlanCard } from "@/components/training-plans/activity-plan-card";
 import {
   TRAINING_ACTIVITY_TYPE_LABELS,
   TRAINING_ACTIVITY_STATUS_LABELS,
@@ -125,6 +126,8 @@ export default async function TutorActividadDetallePage({
           </span>
         </div>
       </div>
+
+      <ActivityPlanCard activity={activity} responsibleUserName={activity.responsibleUser?.fullName ?? null} />
 
       <div className="space-y-3">
         <h2 className="font-display text-lg font-bold text-foreground">Adherencia y cumplimiento</h2>

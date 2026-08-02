@@ -95,6 +95,8 @@ export async function getTrainingActivityDetail(activityId: string) {
     include: {
       plan: { select: { id: true, title: true, tutorId: true, targetDepartment: true } },
       course: { select: { id: true, title: true, slug: true } },
+      area: { select: { id: true, name: true } },
+      responsibleUser: { select: { id: true, fullName: true, username: true } },
       documents: documentInclude,
     },
   });

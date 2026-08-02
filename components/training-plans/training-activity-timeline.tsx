@@ -27,6 +27,7 @@ export type TrainingActivityTimelineItem = {
   course: { id: string; title: string; slug: string } | null;
   area: { id: string; name: string; sortOrder: number } | null;
   programa: string | null;
+  responsibleLabel: string | null;
 };
 
 
@@ -177,6 +178,12 @@ export function TrainingActivityTimeline({
                       )}
                       {" · "}
                       {COURSE_AUDIENCE_LABELS[activity.targetAudience]}
+                      {activity.responsibleLabel && (
+                        <>
+                          {" · "}
+                          {activity.responsibleLabel}
+                        </>
+                      )}
                     </p>
                   </div>
 
