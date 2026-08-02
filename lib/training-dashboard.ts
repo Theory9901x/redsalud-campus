@@ -91,6 +91,13 @@ export async function getTrainingDashboardData(role: Role, userId: string) {
 
       const activity = plan.activities.find((a) => a.id === result.activityId);
       if (!activity) continue;
+
+      // Las actividades del PIC se programan por trimestre y no tienen mes:
+      // meterlas aquí obligaría a inventarles uno. Quedan fuera de la
+      // evolución mensual hasta que se les agende una jornada con fecha
+      // real, que es de donde esta serie debería leer a futuro.
+      if (!activity.startDate) continue;
+
       const sortKey = `${activity.startDate.getFullYear()}-${String(activity.startDate.getMonth()).padStart(2, "0")}`;
       const monthEntry = monthAgg.get(sortKey) ?? { sum: 0, count: 0, sortKey };
       monthEntry.sum += result.percentage;

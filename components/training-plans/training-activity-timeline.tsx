@@ -10,6 +10,7 @@ import {
   TRAINING_ACTIVITY_TYPE_ICONS,
   TRAINING_ACTIVITY_STATUS_LABELS,
   TRAINING_ACTIVITY_STATUS_CLASSES,
+  etiquetaProgramacion,
 } from "@/components/training-plans/labels";
 import type { TrainingActivityStatus, TrainingActivityType, CourseAudience } from "@prisma/client";
 
@@ -17,8 +18,9 @@ export type TrainingActivityTimelineItem = {
   id: string;
   title: string;
   type: TrainingActivityType;
-  startDate: Date;
+  startDate: Date | null;
   endDate: Date | null;
+  quarters: number[];
   targetAudience: CourseAudience;
   isRequired: boolean;
   status: TrainingActivityStatus;
@@ -26,21 +28,52 @@ export type TrainingActivityTimelineItem = {
 };
 
 const MONTH_FORMAT = new Intl.DateTimeFormat("es-CO", { month: "long", year: "numeric" });
-const DATE_FORMAT = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short" });
+const NUMERO_ROMANO = ["I", "II", "III", "IV"] as const;
 
-function groupByMonth(activities: TrainingActivityTimelineItem[]) {
-  const groups = new Map<string, TrainingActivityTimelineItem[]>();
+/**
+ * Agrupa el cronograma por el periodo al que pertenece cada actividad.
+ *
+ * Conviven dos formas de programar y las dos son legítimas: el PIC define el
+ * año por TRIMESTRES, y una jornada ya agendada tiene su día exacto. Se
+ * ordenan en la misma línea de tiempo llevando el trimestre a su primer mes
+ * (I -> enero, II -> abril...), de modo que "Trimestre II" cae donde le
+ * corresponde y no al final de la lista.
+ */
+function agruparPorPeriodo(activities: TrainingActivityTimelineItem[]) {
+  const groups = new Map<string, { label: string; orden: number; items: TrainingActivityTimelineItem[] }>();
+
   for (const activity of activities) {
-    const key = `${activity.startDate.getFullYear()}-${activity.startDate.getMonth()}`;
-    const list = groups.get(key) ?? [];
-    list.push(activity);
-    groups.set(key, list);
+    let key: string;
+    let label: string;
+    let orden: number;
+
+    if (activity.startDate) {
+      key = `f-${activity.startDate.getFullYear()}-${activity.startDate.getMonth()}`;
+      label = MONTH_FORMAT.format(activity.startDate);
+      orden = activity.startDate.getFullYear() * 12 + activity.startDate.getMonth();
+    } else {
+      // Sin fecha manda el primer trimestre programado; el resto se ve en la
+      // etiqueta de la propia actividad ("Trimestres I y III").
+      const primerTrimestre = Math.min(...(activity.quarters.length > 0 ? activity.quarters : [0]));
+      if (primerTrimestre === 0) {
+        key = "sin-programar";
+        label = "Sin programar";
+        orden = Number.MAX_SAFE_INTEGER;
+      } else {
+        key = `t-${primerTrimestre}`;
+        label = `Trimestre ${NUMERO_ROMANO[primerTrimestre - 1]}`;
+        orden = (primerTrimestre - 1) * 3;
+      }
+    }
+
+    const grupo = groups.get(key) ?? { label, orden, items: [] };
+    grupo.items.push(activity);
+    groups.set(key, grupo);
   }
-  return [...groups.entries()].map(([key, items]) => ({
-    label: MONTH_FORMAT.format(items[0].startDate),
-    key,
-    items,
-  }));
+
+  return [...groups.entries()]
+    .map(([key, g]) => ({ key, ...g }))
+    .sort((a, b) => a.orden - b.orden);
 }
 
 export function TrainingActivityTimeline({
@@ -69,11 +102,11 @@ export function TrainingActivityTimeline({
     );
   }
 
-  const months = groupByMonth(activities);
+  const periodos = agruparPorPeriodo(activities);
 
   return (
     <div className="space-y-6">
-      {months.map((month) => (
+      {periodos.map((month) => (
         <div key={month.key} className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{month.label}</p>
           <div className="space-y-2.5">
@@ -123,8 +156,7 @@ export function TrainingActivityTimeline({
 
                   <div className="flex shrink-0 items-center gap-2">
                     <span className="text-xs font-medium text-muted-foreground">
-                      {DATE_FORMAT.format(activity.startDate)}
-                      {activity.endDate ? ` — ${DATE_FORMAT.format(activity.endDate)}` : ""}
+                      {etiquetaProgramacion(activity)}
                     </span>
                     <Badge className={TRAINING_ACTIVITY_STATUS_CLASSES[activity.status]}>
                       {TRAINING_ACTIVITY_STATUS_LABELS[activity.status]}

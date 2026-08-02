@@ -1,5 +1,10 @@
 import { GraduationCap, Presentation } from "lucide-react";
-import type { TrainingPlanStatus, TrainingActivityType, TrainingActivityStatus } from "@prisma/client";
+import type {
+  TrainingPlanStatus,
+  TrainingActivityType,
+  TrainingActivityStatus,
+  TrainingModality,
+} from "@prisma/client";
 
 export const TRAINING_PLAN_STATUS_LABELS: Record<TrainingPlanStatus, string> = {
   DRAFT: "Borrador",
@@ -35,3 +40,43 @@ export const TRAINING_ACTIVITY_STATUS_CLASSES: Record<TrainingActivityStatus, st
   OPEN: "bg-success/10 text-success",
   CLOSED: "bg-navy/10 text-navy",
 };
+
+export const TRAINING_MODALITY_LABELS: Record<TrainingModality, string> = {
+  VIRTUAL: "Virtual",
+  PRESENCIAL: "Presencial",
+  MIXTA: "Mixta",
+};
+
+const NUMERO_ROMANO = ["I", "II", "III", "IV"] as const;
+const FORMATO_FECHA = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" });
+
+/** "I", "I y III", "I, II y IV" — como los nombra el PIC. */
+export function etiquetaTrimestres(quarters: number[]): string | null {
+  const romanos = [...quarters]
+    .sort((a, b) => a - b)
+    .map((q) => NUMERO_ROMANO[q - 1])
+    .filter(Boolean);
+  if (romanos.length === 0) return null;
+  if (romanos.length === 1) return `Trimestre ${romanos[0]}`;
+  return `Trimestres ${romanos.slice(0, -1).join(", ")} y ${romanos[romanos.length - 1]}`;
+}
+
+/**
+ * Cómo se anuncia CUÁNDO ocurre una actividad.
+ *
+ * El PIC programa por trimestre, no por fecha: la mayoría de las actividades
+ * no tiene día hasta que alguien agenda la jornada. Antes de esto la fecha
+ * era obligatoria y había que inventarse una para poder importar el plan
+ * —un 1 de enero falso en el cronograma es peor que decir "Trimestre I"—.
+ */
+export function etiquetaProgramacion(activity: {
+  startDate: Date | null;
+  endDate?: Date | null;
+  quarters?: number[];
+}): string {
+  if (activity.startDate) {
+    const inicio = FORMATO_FECHA.format(activity.startDate);
+    return activity.endDate ? `${inicio} — ${FORMATO_FECHA.format(activity.endDate)}` : inicio;
+  }
+  return etiquetaTrimestres(activity.quarters ?? []) ?? "Sin programar";
+}

@@ -28,8 +28,14 @@ export async function getTrainingPlanDetail(id: string) {
     include: {
       tutor: { select: { fullName: true } },
       activities: {
-        orderBy: { startDate: "asc" },
-        include: { course: { select: { id: true, title: true, slug: true } } },
+        // Primero lo que tiene fecha; lo programado solo por trimestre va
+        // después en orden de trimestre, y el título desempata para que el
+        // cronograma no cambie de orden entre recargas.
+        orderBy: [{ startDate: "asc" }, { quarters: "asc" }, { title: "asc" }],
+        include: {
+          course: { select: { id: true, title: true, slug: true } },
+          area: { select: { id: true, name: true } },
+        },
       },
       documents: documentInclude,
     },

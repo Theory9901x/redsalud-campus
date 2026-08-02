@@ -29,6 +29,7 @@ import {
   TRAINING_ACTIVITY_TYPE_LABELS,
   TRAINING_ACTIVITY_STATUS_LABELS,
   TRAINING_ACTIVITY_STATUS_CLASSES,
+  etiquetaProgramacion,
 } from "@/components/training-plans/labels";
 
 const BASE_PATH = "/tutor/planes-capacitacion";
@@ -116,8 +117,7 @@ export default async function TutorActividadDetallePage({
         <div className="mt-4 flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <CalendarRange className="h-4 w-4 text-primary" />
-            {DATE_FORMAT.format(activity.startDate)}
-            {activity.endDate ? ` — ${DATE_FORMAT.format(activity.endDate)}` : ""}
+            {etiquetaProgramacion(activity)}
           </span>
           <span className="flex items-center gap-1.5">
             <Users2 className="h-4 w-4 text-primary" />

@@ -1,0 +1,1251 @@
+{
+  "origen": "CRONOGRAMA DE CAPACITACIONES 2026.xlsx",
+  "extraidoEl": "2026-08-02",
+  "anio": 2026,
+  "areas": [
+    "CALIDAD - IAAS- PROA -PMMHM",
+    "CALIDAD - SEGURIDAD DEL PACIENTE",
+    "RUTAS INTEGRALES - PAI",
+    "ATENCION AL USUARIO",
+    "RUTAS INTEGRALES - RIAMP",
+    "RUTAS INTEGRALES - PMS",
+    "RUTAS INTEGRALES - PRECURSORAS",
+    "RUTAS INTEGRALES - SALUD ORAL",
+    "SERVICIOS FARMACEUTICOS",
+    "MANTENIMIENTO - AMBIENTAL",
+    "SEGURIDAD Y SALUD EN EL TRABAJO",
+    "SALUD PUBLICA",
+    "TALENTO HUMANO",
+    "Talento Humano -Personal de carrera administrativa"
+  ],
+  "actividades": [
+    {
+      "area": "CALIDAD - IAAS- PROA -PMMHM",
+      "titulo": "CAPACITACION EN PROGRAMA DE PREVENCION DE INFECCIONES ASOCIADAS A LA ATENCION EN SALUD",
+      "objetivo": "contribuir a mejorar la competencias del personal en las medidas de prevencion de infecciones y por ende mejorar la calidad de la atención de los servicios hospitalarios, reduciendo las IAAS",
+      "metodologia": "VIRTUAL: Se realizará en el I trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se llevará a cabo la capacitacion en las IPS durante el II y III trimestre del año",
+      "dirigidoA": "Personal de salud de todos los perfiles",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Calidad - Profesional lider del programa",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacio"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 5
+    },
+    {
+      "area": "CALIDAD - IAAS- PROA -PMMHM",
+      "titulo": "CAPACITACION EN EL PROGRAMA DE OPTIMIZACION DE ANTIMICROBIANOS",
+      "objetivo": "mejorar la atención del paciente que necesita antibióticos, reduciendo la resistencia bacteriana, minimizando efectos adversos y garantizando tratamientos costo-efectivos, mediante la educación para toma de decisiones para un uso racional de estos fármacos esenciales.",
+      "metodologia": "VIRTUAL: Se realizará en el primer trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se llevará a cabo la capacitacion en las IPS durante el II y III trimestre del año",
+      "dirigidoA": "Personal medico y de enfermería",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Calidad - Profesional lider del programa",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 6
+    },
+    {
+      "area": "CALIDAD - IAAS- PROA -PMMHM",
+      "titulo": "REINDUCCION - CAPACITACION EN EL PROGRAMA. MULTIMODAL DE HIGIENE DE MANOS",
+      "objetivo": "Contribuir en la mejora sistemática del cumplimiento de la higiene de manos en todo el persona , protegiendo así la seguridad del paciente y la del personal.",
+      "metodologia": "VIRTUAL: Se realizará en el primer trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se llevará a cabo la capacitacion en las IPS durante el II y III trimestre del año",
+      "dirigidoA": "Personal de salud de todos los perfiles",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Calidad - Profesional lider del programa",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Evaluación de satisfacción",
+        "Informe de capacitación"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 7
+    },
+    {
+      "area": "CALIDAD - SEGURIDAD DEL PACIENTE",
+      "titulo": "PAQUETES INSTRUCCIONALES SEGURIDAD EL PACIENTE",
+      "objetivo": "Dar continuidad con la implementacion de las estrategias de prevenciòn de eventos adversos, segun los paquetes instruccionales defindios de manera obligatoria por el Minsiterio de Salud y Proteccion Social",
+      "metodologia": "VIRTUAL: Se realizará en el primer y segundo semestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Todos los colaboradores de la IPS(OPS, Planta, Outsoursing)",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Calidad - Profesional lider del programa",
+      "trimestres": [
+        1,
+        2
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 8
+    },
+    {
+      "area": "CALIDAD - SEGURIDAD DEL PACIENTE",
+      "titulo": "NOTIFICACION DE EVENTOS ADVERSOS",
+      "objetivo": "Generar estategias de cultura hacia el reporte de eventos adversos desde todas las areas de la insitucion",
+      "metodologia": "VIRTUAL: Se realizará en el primer y segundo semestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Todos los colaboradores de la IPS(OPS, Planta, Outsoursing)",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Calidad - Profesional lider del programa",
+      "trimestres": [
+        1,
+        2
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 9
+    },
+    {
+      "area": "CALIDAD - SEGURIDAD DEL PACIENTE",
+      "titulo": "DESARROLLO DE COMITE DE SEGURIDAD DEL PACIENTE",
+      "objetivo": "Realizar reinduccion al desarrollo de comites de seguridad del paciente como mencanismo de mejora a la ocurrencia de eventos adversos insitucionales",
+      "metodologia": "VIRTUAL: Se realizará en el primer y segundo semestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Miembros del comite de seguridad del paciente institucional",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Calidad - Profesional lider del programa",
+      "trimestres": [
+        1,
+        2
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 10
+    },
+    {
+      "area": "RUTAS INTEGRALES - PAI",
+      "titulo": "ESQUEMA DE VACUNACION Y VACUNACION EN ESQUEMAS INCOMPLETOS EN LOS MENORES DE 6 AÑOS DE EDAD",
+      "objetivo": "Actualizar al personal de salud sobre los esquemas de vacunacion vigentes y su correcta aplicación, de acuerdo a los lineamientos del Programa Ampliado de Inmunizaciones (PAI) en Colombia.",
+      "metodologia": "VIRTUAL: Se realizará en el primer y tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se llevará a cabo la capacitacion en las IPS durante el segundo y cuarto trimestre.",
+      "dirigidoA": "Vacunadores, auxiliares de enfermeria de APS, medicos y enfermeros",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Profesional Lider PAI",
+      "trimestres": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 11
+    },
+    {
+      "area": "RUTAS INTEGRALES - PAI",
+      "titulo": "RED DE FRIO-TOMA DE TEMPERATURA Y DILIGENCIAMIENTO DE FORMATOS",
+      "objetivo": "Fortalecer los conocimientos y competencias del personanal auxiliar de enfermeria que ejerce las actividades de vacunacion, mediante la capacitacion integral en el manjeo de la red de frio de los inmunobiologicos con el fin de garantizar la calidad, seguridad y efectividad del proceso de inmunizacion.",
+      "metodologia": "VIRTUAL: Se realizará en el primer y cuarto trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: se realizara en la asistencias tecnicas que se programen a cada servicio de vacunacion",
+      "dirigidoA": "Vacunadores y auxiliares de enfermeria de APS",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Profesional Lider PAI",
+      "trimestres": [
+        1,
+        4
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 12
+    },
+    {
+      "area": "RUTAS INTEGRALES - PAI",
+      "titulo": "VACUNACION SEGURA Y POLITICA DE FRASCOS ABIERTOS",
+      "objetivo": "Capacitar en los principios y praticas de la vacunacion segura para prevenir eventos adversos, asi como la socializacion de la politica de frascos abiertos y su correcta implementacion.",
+      "metodologia": "VIRTUAL: Se realizará en el primer y tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se llevará a cabo la capacitacion en las IPS durante el segundo y cuarto trimestre.",
+      "dirigidoA": "Vacunadores , enfermeros jefes y auxiliares de enfermeria de APS",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Profesional Lider PAI",
+      "trimestres": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 13
+    },
+    {
+      "area": "RUTAS INTEGRALES - PAI",
+      "titulo": "VACUNACION ANTIRRABICA-VACUNACION EN VICTIMAS DE VIOLENCIA SEXUAL-VACUNACION A GESTANTES Y ADULTOS",
+      "objetivo": "Fortalecer los conocimientos y competencias del personanal de salud, mediante la capacitacion integral en los lineamientos para la vacunacion antirrabica y vacunacion a victimas de violencia sexual, asi como dar a conocer el esquema de vacunacion en la poblacion gestantes y adultos.",
+      "metodologia": "VIRTUAL: Se realizará en el primer y tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: se realizara en segundo y cuarto trimestre",
+      "dirigidoA": "Vacunadores, auxiliares de enfermeria de APS, medicos y enfermeros",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Profesional Lider PAI",
+      "trimestres": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 14
+    },
+    {
+      "area": "RUTAS INTEGRALES - PAI",
+      "titulo": "MANEJO DE DERRAMES-LIMPIEZA Y DESINFECCION",
+      "objetivo": "Instruir sobre el manejo adecuado de derrames de biologicos y residuos asociados, asi como realizar la capacitacion en los procedimientos de limpieza y desinfeccion de los equipos de red de frio.",
+      "metodologia": "VIRTUAL: Se realizará en el primer y tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Vacunadores y auxiliares de enfermeria de APS",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Profesional Lider PAI",
+      "trimestres": [
+        1,
+        3
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 15
+    },
+    {
+      "area": "RUTAS INTEGRALES - PAI",
+      "titulo": "MODULOS DEL SISTEMA NOMINAL DEL PAI (PAIWEBV2",
+      "objetivo": "Fortalecer las competencias del talento humano responsable del programa ampliado de inmunizaciones (PAI) en el manejo adecuado de los módulos del sistema PAIWEB, mediante la capacitacion en el registro, validacion, actualizacion y analisis de la informacion nominal de vacunacion.",
+      "metodologia": "VIRTUAL: Se realizará en el primer y tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se llevará a cabo la capacitacion en las IPS durante el segundo y cuarto trimestre.",
+      "dirigidoA": "Vacunadores",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Profesional Lider PAI y Profesional de sistemas de informacion del departamento (invitado)",
+      "trimestres": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Evaluación de satisfacción",
+        "Informe PIC"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 16
+    },
+    {
+      "area": "RUTAS INTEGRALES - PAI",
+      "titulo": "PROCEDIMIENTO DE VACUNACION EXTRAMURAL",
+      "objetivo": "Promover el cumplimiento de la normatividad vigente el programa ampliado de inmunizaciones (PAI).",
+      "metodologia": "PRESENCIAL: Se llevará a cabo la capacitacion en las IPS durante el segundo y cuarto trimestre.",
+      "dirigidoA": "Vacunadores y auxiliares de enfermeria de APS",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Profesional Lider PAI",
+      "trimestres": [
+        2,
+        4
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "PRESENCIAL"
+      ],
+      "filaExcel": 17
+    },
+    {
+      "area": "RUTAS INTEGRALES - PAI",
+      "titulo": "PROCESO DE SOLICITUD, SELECCIÓN, RECEPCION, TRANSPORTE Y ALMACENAMIENTO DE LOS BIOLOGICOS",
+      "objetivo": "Instruir sobre el procedimiento y actividades interrelacionadas, para garantizar la calidad, seguridad y eficacia de las vacunas.",
+      "metodologia": "VIRTUAL: Se realizará en el primer y cuarto trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Vacunadores",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Profesional Lider PAI",
+      "trimestres": [
+        1,
+        4
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 18
+    },
+    {
+      "area": "ATENCION AL USUARIO",
+      "titulo": "CAPACITACION EN TRATO DIGNO Y CALIDAD DEL SERVICIO",
+      "objetivo": "Desarrollar competencias para una atención centrada en la persona, garantizando el respeto a la dignidad, mejorando la comunicación, gestionando conflictos, y promoviendo una atencion mas humana para aumentar la satisfacción del usuarios.",
+      "metodologia": "Presencial y/o virtual. Se realizará en el segundo trimestre.",
+      "dirigidoA": "Talento humano de SIAU",
+      "cupoTexto": "Personal de Atencion al Usuario",
+      "cupo": null,
+      "responsable": "Coordinacion SIAU",
+      "trimestres": [
+        2
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Evaluación de satisfacción",
+        "Informe PIC"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 19
+    },
+    {
+      "area": "ATENCION AL USUARIO",
+      "titulo": "CAPACITACION EN PARTICIPACION SOCIAL EN SALUD",
+      "objetivo": "Dar a conocer las formas de participacion social que existen y como funcionan en nuestra instirucion.",
+      "metodologia": "Presencial y/o virtual. Se realizará en el tercer trimestre.",
+      "dirigidoA": "Talento humano de SIAU",
+      "cupoTexto": "Personal de Atencion al Usuario",
+      "cupo": null,
+      "responsable": "Coordinacion SIAU",
+      "trimestres": [
+        3
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 20
+    },
+    {
+      "area": "ATENCION AL USUARIO",
+      "titulo": "CAPACITACION HUMANIZACION EN SALUD",
+      "objetivo": "Trasmitir al personal de herramientas para brindar un trato digno, empático y respetuoso al paciente y su familia, a través de habilidades como la escucha activa y la comunicación asertiva.",
+      "metodologia": "Presencial y/o virtual. Se realizará en el cuarto trimestre.",
+      "dirigidoA": "Talento humano de SIAU",
+      "cupoTexto": "Personal de Atencion al Usuario",
+      "cupo": null,
+      "responsable": "Coordinacion SIAU",
+      "trimestres": [
+        4
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 21
+    },
+    {
+      "area": "RUTAS INTEGRALES - RIAMP",
+      "titulo": "CAPACITACIÓN EN ESTRATEGIA IAMII",
+      "objetivo": "Fortalecer las competencias del talento humano en la implementación integral de la Estrategia IAMII",
+      "metodologia": "VIRTUAL: Se realizará en el primer y tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en segundo y cuarto trimestre",
+      "dirigidoA": "Talento humano asistencial y administrativo de la IPS",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Profesional Lider Ruta Materno Perinatal",
+      "trimestres": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 22
+    },
+    {
+      "area": "RUTAS INTEGRALES - RIAMP",
+      "titulo": "INDUCCIÓN Y REINDUCCION - CAPACITACION EN LA RUTA MATERNO PERINATAL SEGUN RESOLUCIÓN 3280 DEL 2018.",
+      "objetivo": "Desarrollar habilidades prácticas en apoyo a la lactancia materna",
+      "metodologia": "VIRTUAL: Se realizará en el primer a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en Tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico y de enfermería",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Profesional Lider Ruta Materno Perinatal",
+      "trimestres": [
+        1,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Evaluación de satisfacción",
+        "Informe de capacitación"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 23
+    },
+    {
+      "area": "RUTAS INTEGRALES - RIAMP",
+      "titulo": "CAPACITACIÓN EN ESTRATEGIA IAMII CON ENFOQUE EN LACTANCIA MATERNA",
+      "objetivo": "Desarrollar habilidades prácticas en apoyo a la lactancia materna",
+      "metodologia": "PRESENCIAL: Se realizara en segundo y cuarto trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Profesional Lider Ruta Materno Perinatal",
+      "trimestres": [
+        2,
+        4
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "PRESENCIAL"
+      ],
+      "filaExcel": 24
+    },
+    {
+      "area": "RUTAS INTEGRALES - RIAMP",
+      "titulo": "INDUCCIÓN Y REINDUCCION - CAPACITACION EN ESTRATEGIA ETMI PLUS Y FENIX",
+      "objetivo": "Fortalecer los conocimientos y competencias del talento humano en la implementación de las estrategias FÉNIX y ETMI PLUS, con énfasis en la identificación temprana de riesgos mediante la toma oportuna, completa y de calidad de los laboratorios en gestantes, el enfoque diferencial, la gestión del riesgo en salud y el seguimiento integral de la población priorizada.",
+      "metodologia": "VIRTUAL: Se realizará en el primer a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en Tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Profesional Lider Ruta Materno Perinatal",
+      "trimestres": [
+        1,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Evaluación de satisfacción",
+        "Informe de capacitación"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 25
+    },
+    {
+      "area": "RUTAS INTEGRALES - RIAMP",
+      "titulo": "CAPACITACION EN AUDITORIA GAUDI APLICADA A LOS PUNTOS CRITICOS DE LA RUTA MATERNO PERINATAL.",
+      "objetivo": "Fortalecer las competencias del talento humano en la aplicación de la auditoría GAUDI, orientada a la verificación, análisis y mejora del cumplimiento de la Ruta Materno Perinatal, con énfasis en los hallazgos priorizados relacionados con el plan de parto, la toma oportuna y completa de laboratorios según edad gestacional, la vacunación durante la gestación, la atención integral del recién nacido y el seguimiento adecuado del puerperio, contribuyendo a mejorar la calidad, oportunidad y seguridad de la atención.",
+      "metodologia": "VIRTUAL: Se realizará en el primer y tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Profesional Lider Ruta Materno Perinatal",
+      "trimestres": [
+        1,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 26
+    },
+    {
+      "area": "RUTAS INTEGRALES - PMS",
+      "titulo": "Modelo Salud RSC (RES 3280) - Cursos de Vida Primera Infancia-Infancia",
+      "objetivo": "Fortalecer las competencias del talento humano en salud para la correcta implementación del Modelo de Salud RSC, conforme a la Resolución 3280, garantizando una atención integral, continua y de calidad a lo largo del curso de vida y en la gestión oportuna de las enfermedades priorizadas.",
+      "metodologia": "VIRTUAL: Se realizará en el I trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en Segundo y Tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria y demanda inducida",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Líder Ruta PMS",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 27
+    },
+    {
+      "area": "RUTAS INTEGRALES - PMS",
+      "titulo": "Modelo Salud RSC (RES 3280) - Cursos de Vida Adolescencia-Juventud",
+      "objetivo": "Fortalecer las competencias del talento humano en salud para la correcta implementación del Modelo de Salud RSC, conforme a la Resolución 3280, garantizando una atención integral, continua y de calidad a lo largo del curso de vida y en la gestión oportuna de las enfermedades priorizadas.",
+      "metodologia": "VIRTUAL: Se realizará en el I trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en Segundo y Tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria y demanda inducida",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Líder Ruta PMS",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 27
+    },
+    {
+      "area": "RUTAS INTEGRALES - PMS",
+      "titulo": "Modelo Salud RSC (RES 3280)- Cursos de Vida Adultez-Vejez",
+      "objetivo": "Fortalecer las competencias del talento humano en salud para la correcta implementación del Modelo de Salud RSC, conforme a la Resolución 3280, garantizando una atención integral, continua y de calidad a lo largo del curso de vida y en la gestión oportuna de las enfermedades priorizadas.",
+      "metodologia": "VIRTUAL: Se realizará en el I trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en Segundo y Tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria y demanda inducida",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Líder Ruta PMS",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 27
+    },
+    {
+      "area": "RUTAS INTEGRALES - PMS",
+      "titulo": "Modelo Salud RSC (RES 3280)- DT CA priorizados (cérvix-mama)",
+      "objetivo": "Fortalecer las competencias del talento humano en salud para la correcta implementación del Modelo de Salud RSC, conforme a la Resolución 3280, garantizando una atención integral, continua y de calidad a lo largo del curso de vida y en la gestión oportuna de las enfermedades priorizadas.",
+      "metodologia": "VIRTUAL: Se realizará en el I trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en Segundo y Tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria y demanda inducida",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Líder Ruta PMS",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 27
+    },
+    {
+      "area": "RUTAS INTEGRALES - PMS",
+      "titulo": "Modelo Salud RSC (RES 3280)- DT CA priorizados (Próstata - Colón y Recto)",
+      "objetivo": "Fortalecer las competencias del talento humano en salud para la correcta implementación del Modelo de Salud RSC, conforme a la Resolución 3280, garantizando una atención integral, continua y de calidad a lo largo del curso de vida y en la gestión oportuna de las enfermedades priorizadas.",
+      "metodologia": "VIRTUAL: Se realizará en el I trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en Segundo y Tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria y demanda inducida",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Líder Ruta PMS",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 27
+    },
+    {
+      "area": "RUTAS INTEGRALES - PRECURSORAS",
+      "titulo": "Capacitación en Adecuado DX de patologias precursoras e ingreso a programa crónicos",
+      "objetivo": "Fortalecer las competencias del talento humano en la correcta identificación, clasificación, seguimiento y depuración de pacientes con patologías precursoras y crónicas, garantizando una gestión integral del riesgo, la optimización de los programas de crónicos y el logro de resultados en salud.",
+      "metodologia": "VIRTUAL: Se realizará en el I trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en Segundo y Tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria y demanda inducida",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Líder Ruta PMS",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 28
+    },
+    {
+      "area": "RUTAS INTEGRALES - PRECURSORAS",
+      "titulo": "Capacitación en Control Terapéutico y logro de metas en paciente con patologias precursoras",
+      "objetivo": "Fortalecer las competencias del talento humano en la correcta identificación, clasificación, seguimiento y depuración de pacientes con patologías precursoras y crónicas, garantizando una gestión integral del riesgo, la optimización de los programas de crónicos y el logro de resultados en salud.",
+      "metodologia": "VIRTUAL: Se realizará en el I trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en Segundo y Tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria y demanda inducida",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Líder Ruta PMS",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 28
+    },
+    {
+      "area": "RUTAS INTEGRALES - PRECURSORAS",
+      "titulo": "Capacitación en Descarte de Pacientes en programa cronicos sin patologias precursoras",
+      "objetivo": "Fortalecer las competencias del talento humano en la correcta identificación, clasificación, seguimiento y depuración de pacientes con patologías precursoras y crónicas, garantizando una gestión integral del riesgo, la optimización de los programas de crónicos y el logro de resultados en salud.",
+      "metodologia": "VIRTUAL: Se realizará en el I trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en Segundo y Tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria y demanda inducida",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Líder Ruta PMS",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 28
+    },
+    {
+      "area": "RUTAS INTEGRALES - SALUD ORAL",
+      "titulo": "Capacitación en realización y cumplimiento de Metas de actividades de RPYM del programa de Salud oral",
+      "objetivo": "Fortalecer las competencias del talento humano en la correcta identificación, clasificación, seguimiento y depuración de pacientes con patologías precursoras y crónicas, garantizando una gestión integral del riesgo, la optimización de los programas de crónicos y el logro de resultados en salud.",
+      "metodologia": "VIRTUAL: Se realizará en el I trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en Segundo y Tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria y demanda inducida",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Líder Ruta PMS",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 29
+    },
+    {
+      "area": "RUTAS INTEGRALES - SALUD ORAL",
+      "titulo": "Capacitación en el objetivo, fechas y metas de cumplimiento Estrategia Soy Generación Mas Sonriente",
+      "objetivo": "Fortalecer las competencias del talento humano en la correcta identificación, clasificación, seguimiento y depuración de pacientes con patologías precursoras y crónicas, garantizando una gestión integral del riesgo, la optimización de los programas de crónicos y el logro de resultados en salud.",
+      "metodologia": "VIRTUAL: Se realizará en el I trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en Segundo y Tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria y demanda inducida",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Líder Ruta PMS",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 29
+    },
+    {
+      "area": "RUTAS INTEGRALES - SALUD ORAL",
+      "titulo": "Capacitación en adecuado registro clínicos y diligenciamiento de la historia clínica en el sistema de información de la entidad (software cronhis)",
+      "objetivo": "Fortalecer las competencias del talento humano en la correcta identificación, clasificación, seguimiento y depuración de pacientes con patologías precursoras y crónicas, garantizando una gestión integral del riesgo, la optimización de los programas de crónicos y el logro de resultados en salud.",
+      "metodologia": "VIRTUAL: Se realizará en el I trimestre a todas las IPS adscritas a Red Salud Casanare ESE PRESENCIAL: Se realizara en Segundo y Tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y auxiliares de enfermeria y demanda inducida",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "Líder Ruta PMS",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 29
+    },
+    {
+      "area": "SERVICIOS FARMACEUTICOS",
+      "titulo": "Capacitación en el Programa de Farmacovigilancia",
+      "objetivo": "Fortalecer las competencias del personal de salud en la identificación, reporte oportuno y manejo adecuado de eventos adversos, garantizando la seguridad del paciente y el cumplimiento de la normatividad vigente.",
+      "metodologia": "VIRTUAL: Se realizará en el primer y segundo semestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Todos los colaboradores de la IPS(OPS, Planta, Outsoursing)",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "REGENTES ZONALES DE FARMACIA",
+      "trimestres": [
+        1,
+        2
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 30
+    },
+    {
+      "area": "SERVICIOS FARMACEUTICOS",
+      "titulo": "Capacitación en el Programa de Tecnovigilancia",
+      "objetivo": "Garantizar el uso seguro de los dispositivos médicos mediante el fortalecimiento del conocimiento del personal en la identificación y notificación de eventos adversos, contribuyendo a la mejora continua de la atención en salud.",
+      "metodologia": "VIRTUAL: Se realizará en el primer y segundo semestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Todos los colaboradores de la IPS(OPS, Planta, Outsoursing)",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "REGENTES ZONALES DE FARMACIA",
+      "trimestres": [
+        1,
+        2
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 31
+    },
+    {
+      "area": "SERVICIOS FARMACEUTICOS",
+      "titulo": "Capacitación del Manual de Medicamentos de Control Especial (MCE) y Monopolio del Estado (MME)",
+      "objetivo": "Asegurar el cumplimiento de la normatividad legal y administrativa en el manejo de los MCE y MME, minimizando riesgos legales, operativos y sanitarios.",
+      "metodologia": "VIRTUAL: Se realizará en el primer y segundo semestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Todos los colaboradores de la IPS(OPS, Planta, Outsoursing)",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "REGENTES ZONALES DE FARMACIA",
+      "trimestres": [
+        1,
+        2
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 32
+    },
+    {
+      "area": "SERVICIOS FARMACEUTICOS",
+      "titulo": "Capacitación del Manual de Procesos y Procedimientos del Servicio Farmacéutico",
+      "objetivo": "Estandarizar y fortalecer la correcta ejecución de los procesos del Servicio Farmacéutico, garantizando la calidad, seguridad y continuidad en la atención a los usuarios.",
+      "metodologia": "VIRTUAL: Se realizará en el primer y segundo semestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Todos los colaboradores de la IPS(OPS, Planta, Outsoursing)",
+      "cupoTexto": "DATO DE CADA IPS",
+      "cupo": null,
+      "responsable": "REGENTES ZONALES DE FARMACIA",
+      "trimestres": [
+        1,
+        2
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 33
+    },
+    {
+      "area": "MANTENIMIENTO - AMBIENTAL",
+      "titulo": "Capacitación segregación en la fuente de residuos, según Resolución 2184 de 2019 y Resolución 591 de 2024",
+      "objetivo": "Fortalecer la segregación en la fuente de los residuos generados en la atención en salud, con el fin de disminuir la cantidad de kilogramos de residuos peligrosos",
+      "metodologia": "VIRTUAL: Se realizará cada trimestre a todas las IPS",
+      "dirigidoA": "Todos los colaboradores de las IPS",
+      "cupoTexto": "Cantidad de personal en cada IPS",
+      "cupo": null,
+      "responsable": "Profesional Ambiental - Apoyo Gestor Externo Aliado",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico",
+        "Informe de capacitacion"
+      ],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 34
+    },
+    {
+      "area": "MANTENIMIENTO - AMBIENTAL",
+      "titulo": "Socialización gestión integral de residuos generados en la atención en salud según Resolución 591 de 2024",
+      "objetivo": "Garantizar la gestión integral de los residuos generados en la atención en salud en cumplimiento de la normatividad ambiental vigente",
+      "metodologia": "VIRTUAL: Se realizará cada trimestre a todas las IPS",
+      "dirigidoA": "Todos los colaboradores de las IPS",
+      "cupoTexto": "Cantidad de personal en cada IPS",
+      "cupo": null,
+      "responsable": "Profesional Ambiental - Apoyo Gestor Externo Aliado",
+      "trimestres": [
+        1,
+        2,
+        3
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 35
+    },
+    {
+      "area": "SEGURIDAD Y SALUD EN EL TRABAJO",
+      "titulo": "Uso correcto de los elementos de Protección Personal",
+      "objetivo": "Resaltar la responsabilidad en el cumplimiento como medida de bioseguridad en la prevención de los riesgos biológicos",
+      "metodologia": "Presencial y/o virtual. Se realizará en el segundo trimestre del año.",
+      "dirigidoA": "Todos los colaboradores de las IPS",
+      "cupoTexto": "Cantidad de personal en cada IPS",
+      "cupo": null,
+      "responsable": "Profesional SG-SST",
+      "trimestres": [
+        2
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Evaluación de satisfacción",
+        "Informe de capacitación"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 36
+    },
+    {
+      "area": "SEGURIDAD Y SALUD EN EL TRABAJO",
+      "titulo": "Brigadas de emergencia",
+      "objetivo": "Preparar al personal brigadista para actuar ante una posible emergencia.",
+      "metodologia": "Presencial y/o virtual. Se realizará en el segundo trimestre del año.",
+      "dirigidoA": "Brigadistas",
+      "cupoTexto": "Grupo de brigadistas de cada IPS y Sede Administrativa Administrativa",
+      "cupo": null,
+      "responsable": "Profesional SG-SST",
+      "trimestres": [
+        2
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 37
+    },
+    {
+      "area": "SEGURIDAD Y SALUD EN EL TRABAJO",
+      "titulo": "Reinducción en el Sistema de Gestión de Seguridad y Salud en el Trabajo",
+      "objetivo": "Brindar el conocimiento necesario para identificar, evaluar y controlar los riesgos de su entorno laboral, con el fin de prevenir accidentes y enfermedades laborales.",
+      "metodologia": "Presencial y/o virtual. Se realizará en el primer trimestre.",
+      "dirigidoA": "Todos los colaboradores de las IPS",
+      "cupoTexto": "Cantidad de personal en cada IPS",
+      "cupo": null,
+      "responsable": "Profesional SG-SST",
+      "trimestres": [
+        1
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Evaluación de satisfacción",
+        "Informe de capacitación"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 38
+    },
+    {
+      "area": "SALUD PUBLICA",
+      "titulo": "Lineamientos programatico TB de acuerdo a la resolucion 227 de 2020",
+      "objetivo": "Fortalecer el talento humano operativo de las UPGD",
+      "metodologia": "VIRTUAL: Se realizará en el mes de marzo, asi como en el tercer trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Todos los colaboradores de la IPS",
+      "cupoTexto": "Personal de cada IPS de RSC",
+      "cupo": null,
+      "responsable": "Profesional salud publica",
+      "trimestres": [
+        1,
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Evaluación de satisfacción",
+        "Informe de capacitación"
+      ],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 39
+    },
+    {
+      "area": "SALUD PUBLICA",
+      "titulo": "Lineamientos programatico LEPRA de acuerdo a protocolo y guia de atencion",
+      "objetivo": null,
+      "metodologia": "VIRTUAL: Se realizará en el mes de marzo, asi como en el segundo, tercer y cuarto trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Todos los colaboradores de la IPS",
+      "cupoTexto": null,
+      "cupo": null,
+      "responsable": "Profesional salud publica",
+      "trimestres": [
+        1,
+        3
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 40
+    },
+    {
+      "area": "SALUD PUBLICA",
+      "titulo": "algoritmo diagnostico enfermedades transmitidas por vectores (Dengue-Chagas)",
+      "objetivo": null,
+      "metodologia": "VIRTUAL: Se realizará en el segundo y cuarto trimestre a todas las IPS adscritas a Red Salud Casanare ESE",
+      "dirigidoA": "Personal medico, de enfermería y laboratorio",
+      "cupoTexto": "Personal medico, de enfermería y laboratorio de cada IPS de RSC",
+      "cupo": null,
+      "responsable": "Profesional salud publica",
+      "trimestres": [
+        2,
+        4
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL"
+      ],
+      "filaExcel": 41
+    },
+    {
+      "area": "TALENTO HUMANO",
+      "titulo": "Comunicación descendente efectiva en la red de IPS",
+      "objetivo": "Fortalecer las habilidades de los líderes para transmitir lineamientos, cambios y decisiones de manera clara, oportuna y coherente en todas las IPS.",
+      "metodologia": "Modalidad virtual o presencial",
+      "dirigidoA": "Coordinadores de IPS, jefes de área, mandos medios.",
+      "cupoTexto": "Según listado de líderes (aprox. ___ personas).",
+      "cupo": null,
+      "responsable": "Talento Humano - convenios estrategicos",
+      "trimestres": [
+        1
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Registro fotografico"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 42
+    },
+    {
+      "area": "TALENTO HUMANO",
+      "titulo": "Inteligencia emocional aplicada al trabajo en salud",
+      "objetivo": "Desarrollar competencias de autoconocimiento, autorregulación y empatía para mejorar el manejo de situaciones críticas y la relación con usuarios y compañeros.",
+      "metodologia": "Modalidad virtual o presencial",
+      "dirigidoA": "Personal asistencial y administrativo de IPS de mayor carga.",
+      "cupoTexto": "Según listado de líderes (aprox. ___ personas).",
+      "cupo": null,
+      "responsable": "Líder SST / Psicología ARL",
+      "trimestres": [
+        1
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Evaluación de satisfacción",
+        "Informe PIC"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 43
+    },
+    {
+      "area": "TALENTO HUMANO",
+      "titulo": "Liderazgo consciente en entornos de alta demanda asistencial",
+      "objetivo": "Fortalecer capacidades de liderazgo para gestionar equipos bajo presión, priorizar tareas, cuidar el clima laboral y sostener la calidad del servicio",
+      "metodologia": "Modalidad virtual o presencial",
+      "dirigidoA": "Coordinadores de IPS, jefes de servicio, líderes de proceso.",
+      "cupoTexto": "Según listado de líderes (aprox. ___ personas).",
+      "cupo": null,
+      "responsable": "Talento Humano - convenios estrategicos",
+      "trimestres": [
+        2
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 44
+    },
+    {
+      "area": "TALENTO HUMANO",
+      "titulo": "Manejo del estrés y autocuidado",
+      "objetivo": "Brindar herramientas prácticas para gestionar el estrés laboral, prevenir el desgaste emocional y promover el cuidado entre pares.",
+      "metodologia": "Modalidad virtual o presencial",
+      "dirigidoA": "Personal asistencial de IPS con mayor presión de demanda.",
+      "cupoTexto": "Según listado de líderes (aprox. ___ personas).",
+      "cupo": null,
+      "responsable": "Talento Humano - convenios estrategicos",
+      "trimestres": [
+        2
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 45
+    },
+    {
+      "area": "TALENTO HUMANO",
+      "titulo": "Actualizar segun lineamientos de la lay 594 la gestión documental para Red Salud Casanare E.S.E.",
+      "objetivo": "Mejorar el manejo de registros, soportes y archivo clínico y administrativo, garantizando trazabilidad y cumplimiento normativo",
+      "metodologia": "Modalidad virtual o presencial",
+      "dirigidoA": "Personal administrativo, auxiliares de archivo, coordinadores de IPS.",
+      "cupoTexto": "Según listado de líderes (aprox. ___ personas).",
+      "cupo": null,
+      "responsable": "Talento Humano-Oficina de Archivo",
+      "trimestres": [
+        3
+      ],
+      "seguimiento": [
+        "Registro de asistencia",
+        "Evaluación de satisfacción",
+        "Informe PIC"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 46
+    },
+    {
+      "area": "TALENTO HUMANO",
+      "titulo": "Introducción a la inteligencia artificial para apoyo al trabajo en salud",
+      "objetivo": "Sensibilizar a los servidores sobre usos básicos y responsables de la IA como apoyo a tareas administrativas y de gestión de información, sin reemplazar el criterio profesional.",
+      "metodologia": "Modalidad virtual o presencial",
+      "dirigidoA": "Personal administrativo, Talento Humano, Planeación, líderes de IPS interesados.",
+      "cupoTexto": "Según listado de líderes (aprox. ___ personas).",
+      "cupo": null,
+      "responsable": "Talento Humano - convenios estrategicos",
+      "trimestres": [
+        3
+      ],
+      "seguimiento": [],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 47
+    },
+    {
+      "area": "Talento Humano -Personal de carrera administrativa",
+      "titulo": "Sensibilización de entrega de evaluaciones del desempeño",
+      "objetivo": "Acompañar a evaluadores y evaluados en el proceso de EDL",
+      "metodologia": "Virtual - presencial",
+      "dirigidoA": "Personal de carrera administrativa",
+      "cupoTexto": "132",
+      "cupo": 132,
+      "responsable": "Talento Humano - evaluadores y evaluados",
+      "trimestres": [
+        1
+      ],
+      "seguimiento": [
+        "Comunicación interna- gestion documental"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 50
+    },
+    {
+      "area": "Talento Humano -Personal de carrera administrativa",
+      "titulo": "Lineamientos para realizar evaluación del desempeño y concertación de compromisos",
+      "objetivo": "Informar y socializar a evaluadores y evaluados los lineamientos para llevar a cabo el proceso de cargue de información y evaluación",
+      "metodologia": "Virtual - presencial",
+      "dirigidoA": "Personal de carrera administrativa",
+      "cupoTexto": "132",
+      "cupo": 132,
+      "responsable": "Talento Humano - evaluadores y evaluados",
+      "trimestres": [
+        1
+      ],
+      "seguimiento": [
+        "Comunicación interna- gestion documental"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 51
+    },
+    {
+      "area": "Talento Humano -Personal de carrera administrativa",
+      "titulo": "Recepción de evaluaciones del desempeño",
+      "objetivo": "Monitorear a traves de la plataforma EDL el proceso de evaluación hasta completar el 100%",
+      "metodologia": "Virtual - presencial",
+      "dirigidoA": "Personal de carrera administrativa",
+      "cupoTexto": "132",
+      "cupo": 132,
+      "responsable": "Talento Humano - evaluadores y evaluados",
+      "trimestres": [
+        1
+      ],
+      "seguimiento": [
+        "Plataforma EDL"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 52
+    },
+    {
+      "area": "Talento Humano -Personal de carrera administrativa",
+      "titulo": "Presentar informe de Evaluación del desempeño",
+      "objetivo": "Generar informe del proceso de evaluación con su respectivo analisis para el peridodo comprendido de 2025-2026",
+      "metodologia": "Virtual - presencial",
+      "dirigidoA": "Personal de carrera administrativa",
+      "cupoTexto": "132",
+      "cupo": 132,
+      "responsable": "Talento Humano - evaluadores y evaluados",
+      "trimestres": [
+        2
+      ],
+      "seguimiento": [
+        "Informe evaluación de desempeño"
+      ],
+      "modalidades": [
+        "VIRTUAL",
+        "PRESENCIAL"
+      ],
+      "filaExcel": 53
+    }
+  ]
+}

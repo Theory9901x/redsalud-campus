@@ -17,6 +17,7 @@ import {
   TRAINING_ACTIVITY_TYPE_ICONS,
   TRAINING_ACTIVITY_STATUS_LABELS,
   TRAINING_ACTIVITY_STATUS_CLASSES,
+  etiquetaProgramacion,
 } from "@/components/training-plans/labels";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", year: "numeric" });
@@ -111,8 +112,7 @@ export default async function MiCapacitacionDetallePage({ params }: { params: Pr
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <span className="text-xs font-medium text-muted-foreground">
-                        {DATE_FORMAT.format(activity.startDate)}
-                        {activity.endDate ? ` — ${DATE_FORMAT.format(activity.endDate)}` : ""}
+                        {etiquetaProgramacion(activity)}
                       </span>
                       <Badge className={TRAINING_ACTIVITY_STATUS_CLASSES[activity.status]}>
                         {TRAINING_ACTIVITY_STATUS_LABELS[activity.status]}

@@ -10,7 +10,12 @@ import {
 } from "@/lib/training-plans";
 import { getSurveysForPlan, buildSurveyResponseRate } from "@/lib/surveys";
 import { renderTrainingPlanReportPdf, type TrainingPlanReportSections } from "@/lib/training-plan-report-pdf";
-import { TRAINING_PLAN_STATUS_LABELS, TRAINING_ACTIVITY_TYPE_LABELS, TRAINING_ACTIVITY_STATUS_LABELS } from "@/components/training-plans/labels";
+import {
+  TRAINING_PLAN_STATUS_LABELS,
+  TRAINING_ACTIVITY_TYPE_LABELS,
+  TRAINING_ACTIVITY_STATUS_LABELS,
+  etiquetaProgramacion,
+} from "@/components/training-plans/labels";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", year: "numeric" });
@@ -53,7 +58,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       title: activity.title,
       type: TRAINING_ACTIVITY_TYPE_LABELS[activity.type],
       course: activity.course?.title ?? null,
-      dateLabel: `${DATE_FORMAT.format(activity.startDate)}${activity.endDate ? ` — ${DATE_FORMAT.format(activity.endDate)}` : ""}`,
+      dateLabel: etiquetaProgramacion(activity),
       audience: COURSE_AUDIENCE_LABELS[activity.targetAudience],
       percentage: percentageByActivity.get(activity.id) ?? null,
       status: TRAINING_ACTIVITY_STATUS_LABELS[activity.status],

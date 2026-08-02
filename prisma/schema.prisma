@@ -88,7 +88,8 @@ model Municipio {
   departamento String  @default("Casanare")
   isActive     Boolean @default(true)
 
-  usuarios User[]
+  usuarios         User[]
+  trainingSessions TrainingSession[]
 }
 
 // Cargo / tipo de profesional. Tabla y no enum: serán muchísimos y de esto
@@ -154,6 +155,7 @@ model User {
   mediaUploads   Media[]
   auditLogs      AuditLog[]
   trainingPlansAsTutor TrainingPlan[] @relation("TrainingPlanTutor")
+  trainingActivitiesResponsible TrainingActivity[] @relation("TrainingActivityResponsible")
   trainingAttendances TrainingAttendance[] @relation("TrainingAttendanceUser")
   trainingAttendancesRegistered TrainingAttendance[] @relation("TrainingAttendanceRegisteredBy")
   surveysCreated  Survey[]         @relation("SurveyCreatedBy")
@@ -656,30 +658,137 @@ enum TrainingActivityStatus {
   CLOSED
 }
 
+/**
+ * Área o proceso responsable dentro del PIC (Calidad, PAI, SST, Talento
+ * Humano…). Tabla y no enum: las áreas del plan cambian de un año a otro y
+ * Talento Humano tiene que poder agregar una sin migración.
+ *
+ * Es además el eje de agregación que pedían los indicadores ("adherencia por
+ * área"): antes solo existía User.department, texto libre y vacío en todo el
+ * personal importado.
+ */
+model TrainingArea {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  sortOrder Int
+  isActive  Boolean @default(true)
+
+  activities TrainingActivity[]
+
+  @@index([isActive])
+}
+
+/** Cómo se dicta. MIXTA = el PIC la programa virtual en unos trimestres y presencial en otros. */
+enum TrainingModality {
+  VIRTUAL
+  PRESENCIAL
+  MIXTA
+}
+
+/** Franja de la jornada, tal como la nombra la institución. */
+enum SessionShift {
+  MANANA
+  TARDE
+}
+
 model TrainingActivity {
   id             String                 @id @default(cuid())
   planId         String
   plan           TrainingPlan           @relation(fields: [planId], references: [id], onDelete: Cascade)
+  areaId         String?
+  area           TrainingArea?          @relation(fields: [areaId], references: [id])
   title          String
   type           TrainingActivityType
   courseId       String? // opcional siempre: "No aplica" = gestión directa, sin curso vinculado
   course         Course?                @relation(fields: [courseId], references: [id])
-  startDate      DateTime
+  // El PIC programa por TRIMESTRE, no por fecha: la mayoría de actividades
+  // nace sin día definido y solo lo adquiere cuando se agenda una jornada
+  // concreta (TrainingSession). Por eso startDate es opcional.
+  startDate      DateTime?
   endDate        DateTime?
+  /** Trimestres marcados en el PIC. Una misma actividad puede repetirse en varios. */
+  quarters       Int[]                  @default([])
   targetAudience CourseAudience         @default(AMBOS) // reutiliza el enum de Course, misma semántica
   isRequired     Boolean                @default(true)
   status         TrainingActivityStatus @default(DRAFT)
   enabledAt      DateTime? // Etapa 6: cuándo pasó a ABIERTA
   closedAt       DateTime? // Etapa 6: cuándo se cerró (participación congelada desde ese momento)
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
+
+  // ---- Columnas del PIC que antes no tenían dónde vivir ----
+  objective  String? // "Objetivo" del Excel
+  methodology String? // "Metodología": texto completo, incluida la distribución por trimestre
+  modality   TrainingModality?
+  /**
+   * "Dirigido A" en las palabras del PIC ("Vacunadores y auxiliares de
+   * enfermería de APS"). Se conserva literal porque es mucho más específico
+   * que targetAudience, que solo distingue asistencial/administrativo.
+   */
+  targetAudienceNote    String?
+  /**
+   * "N° de personas a capacitar". Casi siempre dice "DATO DE CADA IPS", o
+   * sea que la cifra no existe todavía; por eso se guarda el texto tal cual
+   * y el número solo cuando de verdad lo hay.
+   */
+  expectedAttendeesNote String?
+  expectedAttendees     Int?
+  /** "Responsable" del PIC: es un ROL ("Profesional Lider PAI"), no un usuario. */
+  responsibleLabel  String?
+  /** El usuario concreto, cuando se sepa quién es. Nunca se adivina desde el texto. */
+  responsibleUserId String?
+  responsibleUser   User?   @relation("TrainingActivityResponsible", fields: [responsibleUserId], references: [id])
+  /** "Seguimiento": evidencias que el PIC exige para dar la actividad por cumplida. */
+  followUpEvidence  String[] @default([])
+  /** Fila del Excel de origen. Permite rastrear cada actividad hasta el PIC firmado. */
+  sourceRow         Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   documents   Media[]
   attendances TrainingAttendance[]
   surveys     Survey[]
+  sessions    TrainingSession[]
 
   @@index([planId])
   @@index([courseId])
+  @@index([areaId])
+}
+
+/**
+ * Jornada concreta: el día, la hora y el lugar en que una actividad del PIC
+ * se dicta de verdad.
+ *
+ * Existe separada de TrainingActivity porque son dos cosas distintas y el
+ * Excel lo deja claro: la actividad es la LÍNEA DEL PLAN (un tema, un
+ * objetivo, unos trimestres), y una misma línea se ejecuta varias veces —en
+ * varias IPS y varios trimestres— cada una con su fecha, su franja y su
+ * asistencia. Meter la fecha en la actividad obligaría a duplicar la línea
+ * del plan una vez por ejecución y a perder el vínculo con el PIC.
+ */
+model TrainingSession {
+  id         String           @id @default(cuid())
+  activityId String
+  activity   TrainingActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  startsAt DateTime
+  endsAt   DateTime?
+  shift    SessionShift?
+  modality TrainingModality @default(VIRTUAL)
+  /** Lugar físico o sala. Texto libre mientras no exista un catálogo de IPS/sedes. */
+  location   String?
+  meetingUrl String?
+  capacity   Int?
+
+  municipioId String?
+  municipio   Municipio? @relation(fields: [municipioId], references: [id])
+
+  status TrainingActivityStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([activityId])
+  @@index([startsAt])
 }
 
 /**
