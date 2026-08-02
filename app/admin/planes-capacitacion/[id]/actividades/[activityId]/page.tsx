@@ -10,7 +10,7 @@ import {
   getAutomaticAttendanceRoster,
 } from "@/lib/training-plans";
 import { getSurveysForActivity } from "@/lib/surveys";
-import { getLinkableCoursesForUser, getMunicipioOptions } from "@/lib/training-plans";
+import { getLinkableCoursesForUser, getMunicipioOptions, getPresaberPostsaberSummary } from "@/lib/training-plans";
 import {
   uploadTrainingActivityDocumentAction,
   enableActivityAction,
@@ -21,6 +21,10 @@ import {
   enableTrainingSessionAction,
   closeTrainingSessionAction,
   deleteTrainingSessionAction,
+  openPresaberAction,
+  closePresaberAction,
+  openPostsaberAction,
+  closePostsaberAction,
 } from "@/app/admin/planes-capacitacion/actions";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -38,6 +42,7 @@ import { ActivityPlanCard } from "@/components/training-plans/activity-plan-card
 import { LinkCourseForm } from "@/components/training-plans/link-course-form";
 import { TrainingSessionForm } from "@/components/training-plans/training-session-form";
 import { TrainingSessionList } from "@/components/training-plans/training-session-list";
+import { PresaberPostsaberPanel } from "@/components/training-plans/presaber-postsaber-panel";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
 import {
   TRAINING_ACTIVITY_TYPE_LABELS,
@@ -90,6 +95,18 @@ export default async function AdminActividadDetallePage({
   const unlinkCourseAction = unlinkCourseFromActivityAction.bind(null, BASE_PATH, id, activityId);
   const linkableCourses = activity.course ? [] : await getLinkableCoursesForUser(session.user.role, session.user.id);
   const municipios = await getMunicipioOptions();
+  const resumenCiclo = activity.courseId ? await getPresaberPostsaberSummary(activityId) : null;
+  const etiquetasCiclo = {
+    presaberOpened: activity.presaberOpenedAt ? DATETIME_FORMAT.format(activity.presaberOpenedAt) : null,
+    presaberClosed: activity.presaberClosedAt ? DATETIME_FORMAT.format(activity.presaberClosedAt) : null,
+    postsaberOpened: activity.postsaberOpenedAt ? DATETIME_FORMAT.format(activity.postsaberOpenedAt) : null,
+    postsaberClosed: activity.postsaberClosedAt ? DATETIME_FORMAT.format(activity.postsaberClosedAt) : null,
+  };
+
+  const openPresaber = openPresaberAction.bind(null, BASE_PATH, id, activityId);
+  const closePresaber = closePresaberAction.bind(null, BASE_PATH, id, activityId);
+  const openPostsaber = openPostsaberAction.bind(null, BASE_PATH, id, activityId);
+  const closePostsaber = closePostsaberAction.bind(null, BASE_PATH, id, activityId);
 
   const createSessionAction = createTrainingSessionAction.bind(null, BASE_PATH, id, activityId);
   const enableSessionAction = enableTrainingSessionAction.bind(null, BASE_PATH, id, activityId);
@@ -151,6 +168,18 @@ export default async function AdminActividadDetallePage({
       </div>
 
       <ActivityPlanCard activity={activity} responsibleUserName={activity.responsibleUser?.fullName ?? null} />
+
+      {activity.courseId && resumenCiclo && (
+        <PresaberPostsaberPanel
+          ventanas={activity}
+          resumen={resumenCiclo}
+          onOpenPresaber={openPresaber}
+          onClosePresaber={closePresaber}
+          etiquetas={etiquetasCiclo}
+          onOpenPostsaber={openPostsaber}
+          onClosePostsaber={closePostsaber}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-3 lg:col-span-2">

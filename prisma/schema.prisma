@@ -434,9 +434,28 @@ model QuizAttempt {
   startedAt     DateTime   @default(now())
   finishedAt    DateTime?
 
+  /**
+   * Cuándo se presentó este intento, para las evaluaciones que son "la
+   * misma evaluación, dos veces": antes de la capacitación (PRESABER) y
+   * después (POSTSABER). Se fija al crear el intento, según qué ventana
+   * esté abierta en ese momento en la actividad del plan -no se deriva
+   * después por fecha, para que un cambio posterior en las ventanas no
+   * reclasifique intentos ya presentados-.
+   *
+   * Null en el resto de evaluaciones de la plataforma: la enorme mayoría de
+   * quizzes no son un ciclo presaber/postsaber, son la evaluación normal de
+   * un curso, y ahí este campo no aplica ni se toca.
+   */
+  moment EvaluationMoment?
+
   answers QuizAnswer[]
 
   @@unique([userId, quizId, attemptNumber])
+}
+
+enum EvaluationMoment {
+  PRESABER
+  POSTSABER
 }
 
 model QuizAnswer {
@@ -726,6 +745,23 @@ model TrainingActivity {
   status         TrainingActivityStatus @default(DRAFT)
   enabledAt      DateTime? // Etapa 6: cuándo pasó a ABIERTA
   closedAt       DateTime? // Etapa 6: cuándo se cerró (participación congelada desde ese momento)
+
+  /**
+   * Las dos ventanas del ciclo presaber/postsaber, solo para capacitaciones
+   * CON curso vinculado: es sobre la evaluación final de ESE curso que se
+   * abren y se cierran. Cuatro marcas de tiempo en vez de un enum de estado
+   * porque presaber y postsaber son independientes -"cerrado" no dice CUÁL
+   * de los dos-, y porque conservar cuándo pasó cada cosa es justo lo que
+   * "abierto/cerrado" por sí solo no guarda.
+   *
+   * Regla institucional: el postsaber no se habilita hasta que el presaber
+   * esté cerrado -se presenta antes de la capacitación, no en paralelo-,
+   * reforzada en el servidor, no solo aquí.
+   */
+  presaberOpenedAt   DateTime?
+  presaberClosedAt   DateTime?
+  postsaberOpenedAt  DateTime?
+  postsaberClosedAt  DateTime?
 
   // ---- Columnas del PIC que antes no tenían dónde vivir ----
   /**

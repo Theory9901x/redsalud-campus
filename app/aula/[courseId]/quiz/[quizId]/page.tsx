@@ -2,7 +2,8 @@ import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getAulaQuiz, getBorradorIntento, getNotaRepaso } from "@/lib/aula";
-import { registrarAsistenciaAutomatica } from "@/lib/training-plans";
+import { registrarAsistenciaAutomatica, getEvaluationGate } from "@/lib/training-plans";
+import { estadoPresaber, estadoPostsaber, momentoActivo } from "@/lib/presaber-postsaber";
 import { seededShuffle } from "@/lib/quiz";
 import { QuizTakingForm } from "@/components/aula/quiz-taking-form";
 import { EvaluacionNoDisponible } from "@/components/aula/evaluacion-no-disponible";
@@ -42,6 +43,28 @@ export default async function AulaQuizPage({
         ? ("vencida" as const)
         : null;
   if (motivo) return <EvaluacionNoDisponible motivo={motivo} courseId={courseId} />;
+
+  // Ciclo presaber/postsaber: la misma evaluación, presentada antes y
+  // después de la capacitación. Null para la enorme mayoría de quizzes de la
+  // plataforma -no son parte de ningún plan-, que siguen sin gate alguno.
+  const gate = await getEvaluationGate(quizId);
+  let momento: "PRESABER" | "POSTSABER" | null = null;
+  if (gate) {
+    momento = momentoActivo(gate);
+    if (!momento) {
+      if (estadoPresaber(gate) === "NO_CONFIGURADO") {
+        // Nunca se ha abierto nada todavía.
+        return <EvaluacionNoDisponible motivo="sin-habilitar" courseId={courseId} />;
+      }
+      if (estadoPostsaber(gate) === "NO_CONFIGURADO") {
+        // Presaber ya presentado y cerrado; postsaber aún no se habilita.
+        return <EvaluacionNoDisponible motivo="postsaber-bloqueado" courseId={courseId} />;
+      }
+      // Postsaber también cerrado: el ciclo completo ya se presentó. No se
+      // bloquea la página -se puede seguir viendo el resultado, como
+      // cualquier evaluación ya hecha-; solo no se abrirá un intento nuevo.
+    }
+  }
 
   // Asistencia automática: la persona llegó hasta aquí de verdad, con la
   // evaluación desbloqueada y activa. Es un efecto secundario del render, no
@@ -120,6 +143,7 @@ export default async function AulaQuizPage({
         area={data.course.category?.name ?? null}
         tutor={data.course.tutor.fullName}
         fechaLimite={data.enrollment.deadlineAt}
+        momento={momento}
       />
     </div>
   );

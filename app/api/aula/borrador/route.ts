@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getEvaluationGate } from "@/lib/training-plans";
+import { momentoActivo } from "@/lib/presaber-postsaber";
 
 /**
  * Guardado del borrador de una evaluación.
@@ -72,10 +74,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "El plazo de esta formación venció." }, { status: 403 });
   }
 
-  const abierto = await prisma.quizAttempt.findFirst({
+  let abierto = await prisma.quizAttempt.findFirst({
     where: { userId, quizId, finishedAt: null },
-    select: { id: true },
+    select: { id: true, moment: true },
   });
+
+  // Un intento abierto no sobrevive a su ventana. Si se abrió durante el
+  // presaber y la ventana activa ya es otra (o ninguna), ese intento se
+  // cierra sin puntaje y NO se reutiliza: reutilizarlo haría que respuestas
+  // del postsaber quedaran registradas como presaber, mezclando los dos
+  // momentos en un solo intento -que es exactamente lo que el ciclo existe
+  // para separar-.
+  const gateVentana = await getEvaluationGate(quizId);
+  if (abierto && gateVentana) {
+    const momentoAhora = momentoActivo(gateVentana);
+    if (abierto.moment !== momentoAhora) {
+      await prisma.quizAttempt.update({ where: { id: abierto.id }, data: { finishedAt: new Date() } });
+      abierto = null;
+    }
+  }
 
   let attemptId = abierto?.id;
   if (!attemptId) {
@@ -92,9 +109,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "No te quedan intentos disponibles." }, { status: 409 });
     }
 
+    // Ciclo presaber/postsaber: si esta evaluación es una de las dos ventanas,
+    // no se abre un intento nuevo fuera de ellas -alguien no debería poder
+    // arrancar un intento, dejarlo a medias, y terminarlo después de que la
+    // ventana cerró-. Null para el resto de evaluaciones de la plataforma.
+    const momento = gateVentana ? momentoActivo(gateVentana) : null;
+    if (gateVentana && !momento) {
+      return NextResponse.json({ ok: false, error: "Esta evaluación no está habilitada en este momento." }, { status: 403 });
+    }
+
     try {
       const nuevo = await prisma.quizAttempt.create({
-        data: { userId, quizId, enrollmentId: enrollment.id, attemptNumber: previos.length + 1 },
+        data: { userId, quizId, enrollmentId: enrollment.id, attemptNumber: previos.length + 1, moment: momento },
         select: { id: true },
       });
       attemptId = nuevo.id;

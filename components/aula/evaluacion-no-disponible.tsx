@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { CalendarX, Lock, PowerOff } from "lucide-react";
+import { CalendarX, Lock, PowerOff, Hourglass, CheckCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
-export type MotivoNoDisponible = "bloqueada" | "inactiva" | "vencida";
+export type MotivoNoDisponible = "bloqueada" | "inactiva" | "vencida" | "sin-habilitar" | "postsaber-bloqueado";
 
 /**
  * Por qué el estudiante no puede presentar la evaluación.
@@ -32,6 +32,18 @@ const MOTIVOS: Record<MotivoNoDisponible, { icono: LucideIcon; titulo: string; d
     titulo: "El plazo de esta formación ya venció",
     detalle:
       "No es posible presentar la evaluación fuera de fecha. Comunícate con Talento Humano si necesitas una prórroga.",
+  },
+  "sin-habilitar": {
+    icono: Hourglass,
+    titulo: "Esta evaluación todavía no se habilita",
+    detalle:
+      "Es la misma evaluación que se presenta antes y después de la capacitación. Tu tutor la habilita cuando corresponde; vuelve a intentarlo más tarde.",
+  },
+  "postsaber-bloqueado": {
+    icono: CheckCheck,
+    titulo: "Ya presentaste el presaber",
+    detalle:
+      "El postsaber -la misma evaluación, para medir lo aprendido- se habilita después de la capacitación. Tu tutor lo abrirá cuando corresponda.",
   },
 };
 

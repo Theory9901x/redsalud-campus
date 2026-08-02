@@ -6,8 +6,10 @@ import type { QuestionType } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getAulaQuiz } from "@/lib/aula";
+import { getEvaluationGate } from "@/lib/training-plans";
 import { recalculateEnrollmentProgress } from "@/lib/lesson-progress";
 import { registrarAuditoria } from "@/lib/audit";
+import { momentoActivo } from "@/lib/presaber-postsaber";
 
 export type QuizFeedbackItem = {
   questionId: string;
@@ -38,6 +40,9 @@ export type QuizSubmitState = {
 
 /** El intento ya lo cerró otro envío en paralelo (doble clic, reintento). */
 class EnvioDuplicadoError extends Error {}
+
+/** La ventana presaber/postsaber se cerró entre que se abrió el formulario y se envió. */
+class EvaluacionNoHabilitadaError extends Error {}
 
 /**
  * Mensaje si la inscripción ya venció, o null si sigue vigente.
@@ -115,8 +120,18 @@ export async function submitQuizAttemptAction(
   // una sola evaluación.
   const intentoAbierto = await prisma.quizAttempt.findFirst({
     where: { userId, quizId, finishedAt: null },
-    select: { id: true, attemptNumber: true },
+    select: { id: true, attemptNumber: true, moment: true },
   });
+
+  // Un intento que se abrió en una ventana presaber/postsaber solo puede
+  // calificarse mientras ESA ventana siga abierta: sin esto, un envío tardío
+  // registraría respuestas del postsaber bajo la etiqueta del presaber.
+  if (intentoAbierto) {
+    const gate = await getEvaluationGate(quizId);
+    if (gate && momentoActivo(gate) !== intentoAbierto.moment) {
+      return { error: "La ventana de esta evaluación ya cerró. Recarga la página." };
+    }
+  }
 
   const attemptsSoFar = await prisma.quizAttempt.count({ where: { userId, quizId } });
   const attemptNumber = intentoAbierto?.attemptNumber ?? attemptsSoFar + 1;
@@ -208,6 +223,15 @@ export async function submitQuizAttemptAction(
         // Las del borrador se reemplazan por las calificadas.
         await tx.quizAnswer.deleteMany({ where: { attemptId } });
       } else {
+        // Sin borrador previo (p. ej. una evaluación de una sola pregunta
+        // abierta, que nunca pasa por el guardado automático): el mismo gate
+        // que ya corrió al abrir la página, verificado de nuevo aquí porque
+        // pudo haber cambiado entre que la persona abrió el formulario y
+        // envió la respuesta.
+        const gate = await getEvaluationGate(quizId);
+        const momento = gate ? momentoActivo(gate) : null;
+        if (gate && !momento) throw new EvaluacionNoHabilitadaError();
+
         const attempt = await tx.quizAttempt.create({
           data: {
             userId,
@@ -217,6 +241,7 @@ export async function submitQuizAttemptAction(
             score: scorePercent,
             passed,
             finishedAt: new Date(),
+            moment: momento,
           },
         });
         attemptId = attempt.id;
@@ -236,6 +261,9 @@ export async function submitQuizAttemptAction(
   } catch (error) {
     if (error instanceof EnvioDuplicadoError) {
       return { error: "Esta evaluación ya se envió. Recarga la página para ver tu resultado." };
+    }
+    if (error instanceof EvaluacionNoHabilitadaError) {
+      return { error: "Esta evaluación ya no está habilitada. Recarga la página." };
     }
     // Un doble envío (doble clic, reintento de red) puede pasar el chequeo de
     // intentos restantes de arriba antes de que el otro confirme su insert.

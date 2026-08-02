@@ -121,6 +121,7 @@ export function QuizTakingForm({
   area,
   tutor,
   fechaLimite,
+  momento,
 }: {
   courseId: string;
   quizId: string;
@@ -142,6 +143,8 @@ export function QuizTakingForm({
   area: string | null;
   tutor: string;
   fechaLimite: Date | null;
+  /** Si esta evaluación es un ciclo presaber/postsaber, cuál de los dos se está presentando ahora. */
+  momento?: "PRESABER" | "POSTSABER" | null;
 }) {
   const router = useRouter();
   const action = submitQuizAttemptAction.bind(null, courseId, quizId);
@@ -577,15 +580,22 @@ export function QuizTakingForm({
         <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[var(--accent)]/25 blur-[90px]" />
         <div className="relative">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            {/* Distintivo de intento en curso: el punto late para decir que la
-                evaluación está viva, no que haya cuenta atrás. */}
-            <span className="chip-glass">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-70" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Distintivo de intento en curso: el punto late para decir que la
+                  evaluación está viva, no que haya cuenta atrás. */}
+              <span className="chip-glass">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-70" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+                </span>
+                En progreso
               </span>
-              En progreso
-            </span>
+              {momento && (
+                <span className="chip-glass" title="Es la misma evaluación, presentada antes y después de la capacitación.">
+                  {momento === "PRESABER" ? "Presaber" : "Postsaber"}
+                </span>
+              )}
+            </div>
             {secondsLeft !== null && (
               <span className="chip-glass">
                 <Clock className="h-3.5 w-3.5" />

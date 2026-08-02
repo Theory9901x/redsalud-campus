@@ -194,6 +194,89 @@ export async function getSessionsForPlan(planId: string) {
 }
 
 /**
+ * Si esta evaluación es un ciclo presaber/postsaber, la actividad que lo
+ * gobierna; si no, null y el quiz funciona exactamente como cualquier otro
+ * de la plataforma.
+ *
+ * Solo aplica a la evaluación FINAL del curso (moduleId null): es la que
+ * mide el conocimiento antes y después, no cada quiz de módulo. Y solo si
+ * el curso está vinculado a una línea del plan -sin eso no hay ventanas que
+ * abrir ni cerrar-.
+ */
+export async function getEvaluationGate(quizId: string) {
+  const quiz = await prisma.quiz.findUnique({
+    where: { id: quizId },
+    select: { moduleId: true, courseId: true },
+  });
+  if (!quiz || quiz.moduleId !== null) return null;
+
+  return prisma.trainingActivity.findFirst({
+    where: { courseId: quiz.courseId },
+    select: {
+      id: true,
+      presaberOpenedAt: true,
+      presaberClosedAt: true,
+      postsaberOpenedAt: true,
+      postsaberClosedAt: true,
+    },
+  });
+}
+
+/**
+ * Promedio presaber y promedio postsaber de una capacitación: el número que
+ * el ciclo existe para producir.
+ *
+ * Un intento por persona por momento -el mejor puntaje, no el último ni el
+ * promedio de todos sus intentos-, porque a alguien se le mide por lo mejor
+ * que demostró saber en esa ventana, no por sus tropiezos previos.
+ */
+export async function getPresaberPostsaberSummary(activityId: string) {
+  const actividad = await prisma.trainingActivity.findUnique({
+    where: { id: activityId },
+    select: { courseId: true },
+  });
+  if (!actividad?.courseId) {
+    return { presaberPromedio: null, presaberCantidad: 0, postsaberPromedio: null, postsaberCantidad: 0 };
+  }
+
+  const quiz = await prisma.quiz.findFirst({
+    where: { courseId: actividad.courseId, moduleId: null },
+    select: { id: true },
+  });
+  if (!quiz) {
+    return { presaberPromedio: null, presaberCantidad: 0, postsaberPromedio: null, postsaberCantidad: 0 };
+  }
+
+  const intentos = await prisma.quizAttempt.findMany({
+    where: { quizId: quiz.id, moment: { not: null }, score: { not: null }, finishedAt: { not: null } },
+    select: { userId: true, moment: true, score: true },
+  });
+
+  const mejorPorPersona = (momento: "PRESABER" | "POSTSABER") => {
+    const mejores = new Map<string, number>();
+    for (const i of intentos) {
+      if (i.moment !== momento || i.score === null) continue;
+      const actual = mejores.get(i.userId) ?? -1;
+      if (i.score > actual) mejores.set(i.userId, i.score);
+    }
+    return [...mejores.values()];
+  };
+
+  const promedio = (valores: number[]) =>
+    valores.length > 0 ? Math.round(valores.reduce((s, v) => s + v, 0) / valores.length) : null;
+
+  const presaberValores = mejorPorPersona("PRESABER");
+  const postsaberValores = mejorPorPersona("POSTSABER");
+
+  return {
+    presaberPromedio: promedio(presaberValores),
+    presaberCantidad: presaberValores.length,
+    postsaberPromedio: promedio(postsaberValores),
+    postsaberCantidad: postsaberValores.length,
+  };
+}
+
+/**
  * Registra que alguien asistió, en el instante en que entra a SU evaluación.
  *
  * Es la señal de asistencia más temprana y honesta que existe: no espera a

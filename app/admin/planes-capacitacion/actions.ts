@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTutorOrAdmin, requireTrainingPlanAccess, requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import { saveTrainingPlanDocument, saveTrainingActivityDocument } from "@/lib/storage";
 import { trainingPlanSchema, trainingActivitySchema, trainingSessionSchema } from "@/lib/validations/training-plan";
+import { estadoPresaber, estadoPostsaber, puedeHabilitarPostsaber } from "@/lib/presaber-postsaber";
 import { getLinkableCoursesForUser } from "@/lib/training-plans";
 import { parseTrainingScheduleFile, type ImportRowError } from "@/lib/training-plan-import";
 
@@ -456,6 +457,94 @@ export async function deleteTrainingSessionAction(
   await requireTrainingActivityAccess(activityId);
   await prisma.trainingSession.delete({ where: { id: sessionId } });
   revalidatePath(`${basePath}/${planId}`);
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+  return { error: null };
+}
+
+// ------------------------------------------------------------------
+// Ciclo presaber/postsaber: la misma evaluación, presentada dos veces
+// ------------------------------------------------------------------
+
+export type EvaluationCycleState = { error: string | null };
+
+async function actividadConVentanas(activityId: string) {
+  return prisma.trainingActivity.findUniqueOrThrow({
+    where: { id: activityId },
+    select: {
+      courseId: true,
+      presaberOpenedAt: true,
+      presaberClosedAt: true,
+      postsaberOpenedAt: true,
+      postsaberClosedAt: true,
+    },
+  });
+}
+
+export async function openPresaberAction(
+  basePath: string,
+  planId: string,
+  activityId: string
+): Promise<EvaluationCycleState> {
+  await requireTrainingActivityAccess(activityId);
+  const actividad = await actividadConVentanas(activityId);
+
+  if (!actividad.courseId) return { error: "Esta capacitación no tiene curso vinculado todavía." };
+  if (estadoPresaber(actividad) !== "NO_CONFIGURADO") {
+    return { error: "El presaber ya se habilitó antes." };
+  }
+
+  await prisma.trainingActivity.update({ where: { id: activityId }, data: { presaberOpenedAt: new Date() } });
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+  return { error: null };
+}
+
+export async function closePresaberAction(
+  basePath: string,
+  planId: string,
+  activityId: string
+): Promise<EvaluationCycleState> {
+  await requireTrainingActivityAccess(activityId);
+  const actividad = await actividadConVentanas(activityId);
+
+  if (estadoPresaber(actividad) !== "DISPONIBLE") {
+    return { error: "El presaber no está abierto." };
+  }
+
+  await prisma.trainingActivity.update({ where: { id: activityId }, data: { presaberClosedAt: new Date() } });
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+  return { error: null };
+}
+
+export async function openPostsaberAction(
+  basePath: string,
+  planId: string,
+  activityId: string
+): Promise<EvaluationCycleState> {
+  await requireTrainingActivityAccess(activityId);
+  const actividad = await actividadConVentanas(activityId);
+
+  if (!puedeHabilitarPostsaber(actividad)) {
+    return { error: "El postsaber se habilita después de cerrar el presaber, y solo una vez." };
+  }
+
+  await prisma.trainingActivity.update({ where: { id: activityId }, data: { postsaberOpenedAt: new Date() } });
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+  return { error: null };
+}
+
+export async function closePostsaberAction(
+  basePath: string,
+  planId: string,
+  activityId: string
+): Promise<EvaluationCycleState> {
+  await requireTrainingActivityAccess(activityId);
+  const actividad = await actividadConVentanas(activityId);
+
+  if (estadoPostsaber(actividad) !== "DISPONIBLE") {
+    return { error: "El postsaber no está abierto." };
+  }
+
+  await prisma.trainingActivity.update({ where: { id: activityId }, data: { postsaberClosedAt: new Date() } });
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
   return { error: null };
 }
