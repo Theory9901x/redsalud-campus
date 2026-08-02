@@ -34,7 +34,7 @@ export async function getTrainingPlanDetail(id: string) {
         orderBy: [{ startDate: "asc" }, { quarters: "asc" }, { title: "asc" }],
         include: {
           course: { select: { id: true, title: true, slug: true } },
-          area: { select: { id: true, name: true } },
+          area: { select: { id: true, name: true, sortOrder: true } },
         },
       },
       documents: documentInclude,

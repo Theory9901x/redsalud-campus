@@ -25,54 +25,46 @@ export type TrainingActivityTimelineItem = {
   isRequired: boolean;
   status: TrainingActivityStatus;
   course: { id: string; title: string; slug: string } | null;
+  area: { id: string; name: string; sortOrder: number } | null;
 };
 
-const MONTH_FORMAT = new Intl.DateTimeFormat("es-CO", { month: "long", year: "numeric" });
-const NUMERO_ROMANO = ["I", "II", "III", "IV"] as const;
 
 /**
- * Agrupa el cronograma por el periodo al que pertenece cada actividad.
+ * Agrupa el cronograma por ÁREA responsable.
  *
- * Conviven dos formas de programar y las dos son legítimas: el PIC define el
- * año por TRIMESTRES, y una jornada ya agendada tiene su día exacto. Se
- * ordenan en la misma línea de tiempo llevando el trimestre a su primer mes
- * (I -> enero, II -> abril...), de modo que "Trimestre II" cae donde le
- * corresponde y no al final de la lista.
+ * Es como está organizado el plan institucional del que sale este
+ * cronograma: el área es la unidad que responde por sus capacitaciones y es
+ * el eje por el que se pregunta ("¿qué le falta a Calidad?"). Agrupar por
+ * fecha dejaba 55 actividades en una lista plana donde no se distinguía de
+ * quién era cada una.
+ *
+ * Cuándo ocurre cada actividad no se pierde: va en su propia etiqueta, que
+ * dice el trimestre o la fecha según lo que se sepa.
  */
-function agruparPorPeriodo(activities: TrainingActivityTimelineItem[]) {
+function agruparPorArea(activities: TrainingActivityTimelineItem[]) {
   const groups = new Map<string, { label: string; orden: number; items: TrainingActivityTimelineItem[] }>();
 
   for (const activity of activities) {
-    let key: string;
-    let label: string;
-    let orden: number;
-
-    if (activity.startDate) {
-      key = `f-${activity.startDate.getFullYear()}-${activity.startDate.getMonth()}`;
-      label = MONTH_FORMAT.format(activity.startDate);
-      orden = activity.startDate.getFullYear() * 12 + activity.startDate.getMonth();
-    } else {
-      // Sin fecha manda el primer trimestre programado; el resto se ve en la
-      // etiqueta de la propia actividad ("Trimestres I y III").
-      const primerTrimestre = Math.min(...(activity.quarters.length > 0 ? activity.quarters : [0]));
-      if (primerTrimestre === 0) {
-        key = "sin-programar";
-        label = "Sin programar";
-        orden = Number.MAX_SAFE_INTEGER;
-      } else {
-        key = `t-${primerTrimestre}`;
-        label = `Trimestre ${NUMERO_ROMANO[primerTrimestre - 1]}`;
-        orden = (primerTrimestre - 1) * 3;
-      }
-    }
-
-    const grupo = groups.get(key) ?? { label, orden, items: [] };
+    const key = activity.area?.id ?? "sin-area";
+    const grupo = groups.get(key) ?? {
+      label: activity.area?.name ?? "Sin área asignada",
+      // Las que no tienen área van al final: son las que hay que clasificar.
+      orden: activity.area?.sortOrder ?? Number.MAX_SAFE_INTEGER,
+      items: [],
+    };
     grupo.items.push(activity);
     groups.set(key, grupo);
   }
 
+  const cuando = (a: TrainingActivityTimelineItem) =>
+    a.startDate ? a.startDate.getTime() : Math.min(...(a.quarters.length > 0 ? a.quarters : [99]));
+
   return [...groups.entries()]
-    .map(([key, g]) => ({ key, ...g }))
+    .map(([key, g]) => ({
+      key,
+      ...g,
+      items: [...g.items].sort((a, b) => cuando(a) - cuando(b) || a.title.localeCompare(b.title, "es")),
+    }))
     .sort((a, b) => a.orden - b.orden);
 }
 
@@ -102,15 +94,33 @@ export function TrainingActivityTimeline({
     );
   }
 
-  const periodos = agruparPorPeriodo(activities);
+  const areas = agruparPorArea(activities);
 
   return (
     <div className="space-y-6">
-      {periodos.map((month) => (
-        <div key={month.key} className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{month.label}</p>
+      {areas.map((grupo) => {
+        // Cuántas de sus capacitaciones ya tienen curso montado. Es la
+        // pregunta que se le hace al área: qué falta por subir.
+        const conContenido = grupo.items.filter((a) => a.course).length;
+
+        return (
+        <div key={grupo.key} className="space-y-3">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border/60 pb-2">
+            <p className="font-display text-sm font-bold uppercase tracking-wide text-foreground">{grupo.label}</p>
+            <p className="text-xs text-muted-foreground">
+              {grupo.items.length} {grupo.items.length === 1 ? "capacitación" : "capacitaciones"}
+              {" · "}
+              {conContenido === 0 ? (
+                <span className="text-warning">sin contenido todavía</span>
+              ) : conContenido === grupo.items.length ? (
+                <span className="text-success">todas con contenido</span>
+              ) : (
+                <span>{conContenido} con contenido</span>
+              )}
+            </p>
+          </div>
           <div className="space-y-2.5">
-            {month.items.map((activity) => {
+            {grupo.items.map((activity) => {
               const TypeIcon = TRAINING_ACTIVITY_TYPE_ICONS[activity.type];
               return (
                 <div
@@ -147,7 +157,7 @@ export function TrainingActivityTimeline({
                       ) : activity.type === "EXTERNAL_EVENT" ? (
                         TRAINING_ACTIVITY_TYPE_LABELS.EXTERNAL_EVENT
                       ) : (
-                        "No aplica · gestión directa"
+                        <span className="text-warning">Sin contenido todavía</span>
                       )}
                       {" · "}
                       {COURSE_AUDIENCE_LABELS[activity.targetAudience]}
@@ -179,7 +189,8 @@ export function TrainingActivityTimeline({
             })}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
