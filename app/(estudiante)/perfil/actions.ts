@@ -44,8 +44,11 @@ export async function changePasswordAction(
   // Sin esto, el proxy seguiría mandando al usuario de vuelta a /perfil
   // aunque la contraseña ya haya cambiado. Reautenticar con la nueva
   // contraseña refresca el token con el valor correcto.
+  // El identificador es el correo O el nombre de usuario: quien no tiene
+  // correo propio entra con "nombre.apellido", y con `email: null` este
+  // reingreso fallaba sin decir nada.
   await signIn("credentials", {
-    email: user.email,
+    email: user.email ?? user.username,
     password: parsed.data.newPassword,
     redirect: false,
   });

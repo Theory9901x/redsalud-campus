@@ -4,6 +4,7 @@ import type { AdminSection, Role } from "@prisma/client";
 
 const ADMIN_PREFIX = "/admin";
 const TUTOR_PREFIX = "/tutor";
+const CAMBIO_CLAVE = "/cambiar-contrasena";
 
 // Prefijos de sección del panel admin que un ADMIN puntual puede tener
 // restringidos (niveles de administrador). El primer prefijo que matchea
@@ -45,6 +46,22 @@ export default auth((request) => {
 
   const { role } = session.user;
 
+  /*
+   * Contraseña temporal: nada más hasta que la cambie.
+   *
+   * Provisionar una cuenta con una clave que se entrega por fuera -en un
+   * correo, en un papel, en un chat- solo es aceptable si esa clave deja de
+   * servir en cuanto la persona entra. La marca mustChangePassword existía
+   * desde el principio y nadie la miraba, así que las contraseñas temporales
+   * seguían siendo válidas indefinidamente.
+   *
+   * Se comprueba después de la sesión y antes que los permisos de rol: el
+   * cambio va primero que cualquier destino.
+   */
+  if (session.user.mustChangePassword && pathname !== CAMBIO_CLAVE) {
+    return NextResponse.redirect(new URL(CAMBIO_CLAVE, request.url));
+  }
+
   if (pathname.startsWith(ADMIN_PREFIX)) {
     if (role !== "ADMIN") {
       return NextResponse.redirect(new URL("/no-autorizado", request.url));
@@ -72,6 +89,10 @@ export const config = {
     "/perfil/:path*",
     "/mi-aula/:path*",
     "/aula/:path*",
+    "/mis-capacitaciones/:path*",
+    "/mis-certificados/:path*",
+    "/mis-encuestas/:path*",
+    "/cambiar-contrasena",
     "/login",
     "/registro",
   ],
