@@ -39,6 +39,7 @@ export function CronogramaView({
   planId,
   adherenceByActivity,
   puedeEliminar = false,
+  areasGestionables = null,
 }: {
   activities: Actividad[];
   sessions: SesionCalendario[];
@@ -46,6 +47,8 @@ export function CronogramaView({
   planId: string;
   adherenceByActivity?: Record<string, number>;
   puedeEliminar?: boolean;
+  /** Áreas que quien mira puede gestionar (null = todas). Ver TrainingActivityTimeline. */
+  areasGestionables?: string[] | null;
 }) {
   const [vista, setVista] = useState<"tarjetas" | "ampliada" | "calendario">("tarjetas");
   const [busqueda, setBusqueda] = useState("");
@@ -173,10 +176,17 @@ export function CronogramaView({
           planId={planId}
           adherenceByActivity={adherenceByActivity}
           puedeEliminar={puedeEliminar}
+          areasGestionables={areasGestionables}
         />
       )}
       {vista === "ampliada" && (
-        <TablaAmpliada activities={filtradas} basePath={basePath} planId={planId} adherenceByActivity={adherenceByActivity} />
+        <TablaAmpliada
+          activities={filtradas}
+          basePath={basePath}
+          planId={planId}
+          adherenceByActivity={adherenceByActivity}
+          areasGestionables={areasGestionables}
+        />
       )}
       {vista === "calendario" && <SessionsCalendar sessions={sessions} basePath={basePath} planId={planId} />}
     </div>
@@ -188,11 +198,13 @@ function TablaAmpliada({
   basePath,
   planId,
   adherenceByActivity,
+  areasGestionables,
 }: {
   activities: Actividad[];
   basePath: string;
   planId: string;
   adherenceByActivity?: Record<string, number>;
+  areasGestionables: string[] | null;
 }) {
   if (activities.length === 0) {
     return <p className="surface p-6 text-center text-sm text-muted-foreground">Nada coincide con el filtro.</p>;
@@ -223,12 +235,16 @@ function TablaAmpliada({
                 </div>
               </TableCell>
               <TableCell className="w-[280px] max-w-[280px] whitespace-normal">
-                <Link
-                  href={`${basePath}/${planId}/actividades/${a.id}`}
-                  className="font-medium leading-snug text-foreground hover:text-primary hover:underline"
-                >
-                  {a.title}
-                </Link>
+                {areasGestionables === null || (a.area !== null && areasGestionables.includes(a.area.id)) ? (
+                  <Link
+                    href={`${basePath}/${planId}/actividades/${a.id}`}
+                    className="font-medium leading-snug text-foreground hover:text-primary hover:underline"
+                  >
+                    {a.title}
+                  </Link>
+                ) : (
+                  <span className="font-medium leading-snug text-foreground">{a.title}</span>
+                )}
               </TableCell>
               <TableCell className="text-muted-foreground">{COURSE_AUDIENCE_LABELS[a.targetAudience]}</TableCell>
               <TableCell className="text-muted-foreground">{a.responsibleLabel ?? "—"}</TableCell>

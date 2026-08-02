@@ -48,6 +48,8 @@ export function TrainingDashboardView({
   activeTab,
   selectedPlanId,
   selectedPlanMetrics,
+  esAdmin,
+  currentUserId,
 }: {
   data: TrainingDashboardData;
   areaCoverage: AreaCoverage;
@@ -55,6 +57,9 @@ export function TrainingDashboardView({
   activeTab: string;
   selectedPlanId: string | null;
   selectedPlanMetrics: SelectedPlanMetrics | null;
+  /** El informe PDF de un área solo lo genera el admin o su propia área: a los demás no se les ofrece el enlace. */
+  esAdmin: boolean;
+  currentUserId: string;
 }) {
   const totalConContenido = areaCoverage.reduce((sum, a) => sum + a.conContenido, 0);
   const totalCapacitaciones = areaCoverage.reduce((sum, a) => sum + a.total, 0);
@@ -133,13 +138,17 @@ export function TrainingDashboardView({
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        <a
-                          href={`/api/planes-capacitacion/areas/${area.id}/informe`}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                        >
-                          <Download className="h-3.5 w-3.5" aria-hidden="true" />
-                          PDF
-                        </a>
+                        {esAdmin || area.tutorId === currentUserId ? (
+                          <a
+                            href={`/api/planes-capacitacion/areas/${area.id}/informe`}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                          >
+                            <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                            PDF
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -36,6 +36,8 @@ export default async function TutorPlanesCapacitacionDashboardPage({
         activeTab={tab ?? "total"}
         selectedPlanId={isPlanInScope ? planParam! : null}
         selectedPlanMetrics={selectedPlanMetrics}
+        esAdmin={session.user.role === "ADMIN"}
+        currentUserId={session.user.id}
       />
     </div>
   );

@@ -89,6 +89,7 @@ export function TrainingActivityTimeline({
   planId,
   adherenceByActivity,
   puedeEliminar = false,
+  areasGestionables = null,
 }: {
   activities: TrainingActivityTimelineItem[];
   /** Solo el admin elimina jornadas. */
@@ -98,6 +99,14 @@ export function TrainingActivityTimeline({
   /** % de adherencia por actividad (Etapa 3), ya calculado por la página. */
   adherenceByActivity?: Record<string, number>;
   puedeEliminar?: boolean;
+  /**
+   * Áreas cuya gestión le corresponde a quien mira (null = todas: admin o
+   * responsable del plan). El cronograma se VE completo -cada área necesita
+   * saber dónde está parada la institución-, pero la puerta de gestión de
+   * una capacitación solo se le muestra a su propia área: un enlace que al
+   * hacer clic responde "no autorizado" no es un enlace, es una trampa.
+   */
+  areasGestionables?: string[] | null;
 }) {
   if (activities.length === 0) {
     return (
@@ -137,6 +146,8 @@ export function TrainingActivityTimeline({
           <div className="space-y-2.5">
             {grupo.items.map((activity) => {
               const TypeIcon = TRAINING_ACTIVITY_TYPE_ICONS[activity.type];
+              const gestionable =
+                areasGestionables === null || (activity.area !== null && areasGestionables.includes(activity.area.id));
               return (
                 <div
                   key={activity.id}
@@ -148,12 +159,16 @@ export function TrainingActivityTimeline({
 
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Link
-                        href={`${basePath}/${planId}/actividades/${activity.id}`}
-                        className="font-display text-sm font-bold text-foreground hover:underline"
-                      >
-                        {activity.title}
-                      </Link>
+                      {gestionable ? (
+                        <Link
+                          href={`${basePath}/${planId}/actividades/${activity.id}`}
+                          className="font-display text-sm font-bold text-foreground hover:underline"
+                        >
+                          {activity.title}
+                        </Link>
+                      ) : (
+                        <span className="font-display text-sm font-bold text-foreground">{activity.title}</span>
+                      )}
                       {activity.programa && (
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
                           {activity.programa}

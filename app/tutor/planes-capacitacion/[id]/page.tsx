@@ -12,6 +12,7 @@ import {
   Info,
 } from "lucide-react";
 import { requireTrainingPlanRead } from "@/lib/auth-helpers";
+import { prisma } from "@/lib/prisma";
 import {
   getTrainingPlanDetail,
   getLinkableCourses,
@@ -61,6 +62,18 @@ export default async function TutorPlanCapacitacionDetallePage({
   // -agregar líneas, importar el cronograma- lo maneja quien responde por él.
   // Mostrarle un formulario que el servidor le va a rechazar sería una trampa.
   const puedeEditarPlan = sesion.user.role === "ADMIN" || plan.tutorId === sesion.user.id;
+
+  // Gestión adscrita: cada área gestiona SOLO lo suyo. El cronograma completo
+  // se ve -la institución entera necesita saber dónde está parada-, pero la
+  // puerta de gestión de una capacitación solo se le abre a su propia área.
+  const areasGestionables = puedeEditarPlan
+    ? null
+    : (
+        await prisma.trainingArea.findMany({
+          where: { tutorId: sesion.user.id },
+          select: { id: true },
+        })
+      ).map((a) => a.id);
 
   const adherenceSummary = await getPlanAdherenceSummary({
     targetDepartment: plan.targetDepartment,
@@ -128,6 +141,7 @@ export default async function TutorPlanCapacitacionDetallePage({
                 basePath={BASE_PATH}
                 planId={id}
                 adherenceByActivity={adherenceByActivity}
+                areasGestionables={areasGestionables}
               />
             </div>
 

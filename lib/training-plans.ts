@@ -154,6 +154,7 @@ export async function getAreaCoverageBreakdown() {
     select: {
       id: true,
       name: true,
+      tutorId: true,
       tutor: { select: { fullName: true } },
       activities: { select: { courseId: true } },
     },
@@ -166,6 +167,7 @@ export async function getAreaCoverageBreakdown() {
       id: a.id,
       name: a.name,
       tutorName: a.tutor?.fullName ?? null,
+      tutorId: a.tutorId,
       total,
       conContenido,
       percentage: total > 0 ? Math.round((conContenido / total) * 100) : null,
