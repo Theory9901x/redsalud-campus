@@ -41,13 +41,55 @@ export async function requireTrainingPlanAccess(planId: string) {
   return session;
 }
 
-/** Igual que requireTrainingPlanAccess, resolviendo primero el plan dueño de la actividad. */
+/**
+ * CONSULTA del plan: además del responsable del plan, lo puede ver el tutor
+ * de cualquier área que tenga capacitaciones dentro.
+ *
+ * Es más amplio que requireTrainingPlanAccess a propósito. El plan
+ * institucional lo administra Talento Humano, pero cada área responde por su
+ * parte y necesita abrirlo para saber qué le toca. Ver no es editar: quién
+ * puede modificar el plan sigue decidiéndolo requireTrainingPlanAccess.
+ */
+export async function requireTrainingPlanRead(planId: string) {
+  const session = await requireTutorOrAdmin();
+  if (session.user.role === "ADMIN") return session;
+
+  const plan = await prisma.trainingPlan.findUnique({
+    where: { id: planId },
+    select: {
+      tutorId: true,
+      _count: { select: { activities: { where: { area: { tutorId: session.user.id } } } } },
+    },
+  });
+  if (!plan || (plan.tutorId !== session.user.id && plan._count.activities === 0)) {
+    throw new Error("No autorizado: este plan no te corresponde.");
+  }
+  return session;
+}
+
+/**
+ * Acceso a UNA capacitación: el responsable del plan, o el tutor del área a
+ * la que pertenece.
+ *
+ * Que el área pueda entrar aquí es el punto de darle cuenta propia: es donde
+ * sube su presentación, registra la asistencia y cierra su jornada. El
+ * alcance queda acotado a lo suyo, no al plan entero.
+ */
 export async function requireTrainingActivityAccess(activityId: string) {
-  const activity = await prisma.trainingActivity.findUnique({ where: { id: activityId }, select: { planId: true } });
+  const activity = await prisma.trainingActivity.findUnique({
+    where: { id: activityId },
+    select: { planId: true, area: { select: { tutorId: true } } },
+  });
   if (!activity) {
     throw new Error("Actividad no encontrada.");
   }
-  const session = await requireTrainingPlanAccess(activity.planId);
+
+  const session = await requireTutorOrAdmin();
+  if (session.user.role === "ADMIN" || activity.area?.tutorId === session.user.id) {
+    return { session, planId: activity.planId };
+  }
+
+  await requireTrainingPlanAccess(activity.planId);
   return { session, planId: activity.planId };
 }
 

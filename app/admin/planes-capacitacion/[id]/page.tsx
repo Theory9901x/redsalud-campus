@@ -11,7 +11,7 @@ import {
   Plus,
   Info,
 } from "lucide-react";
-import { requireTrainingPlanAccess } from "@/lib/auth-helpers";
+import { requireTrainingPlanRead } from "@/lib/auth-helpers";
 import {
   getTrainingPlanDetail,
   getLinkableCourses,
@@ -46,7 +46,7 @@ export default async function AdminPlanCapacitacionDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  await requireTrainingPlanAccess(id);
+  await requireTrainingPlanRead(id);
 
   const [plan, courses, surveys] = await Promise.all([
     getTrainingPlanDetail(id),

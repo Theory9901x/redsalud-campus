@@ -117,6 +117,7 @@ async function main() {
         planId: plan.id,
         areaId: areas.get(a.area) ?? null,
         title: a.titulo,
+        programa: a.programa,
         // Del catálogo de la plataforma: hoy sin curso vinculado, se le
         // asocia uno a medida que cada área entregue su presentación y su
         // evaluación.

@@ -11,7 +11,7 @@ import {
   Plus,
   Info,
 } from "lucide-react";
-import { requireTrainingPlanAccess } from "@/lib/auth-helpers";
+import { requireTrainingPlanRead } from "@/lib/auth-helpers";
 import {
   getTrainingPlanDetail,
   getLinkableCourses,
@@ -46,7 +46,7 @@ export default async function TutorPlanCapacitacionDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  await requireTrainingPlanAccess(id);
+  const sesion = await requireTrainingPlanRead(id);
 
   const [plan, courses, surveys] = await Promise.all([
     getTrainingPlanDetail(id),
@@ -54,6 +54,11 @@ export default async function TutorPlanCapacitacionDetallePage({
     getSurveysForPlan(id),
   ]);
   if (!plan) notFound();
+
+  // El área entra a consultar y a gestionar SUS capacitaciones; el plan en sí
+  // -agregar líneas, importar el cronograma- lo maneja quien responde por él.
+  // Mostrarle un formulario que el servidor le va a rechazar sería una trampa.
+  const puedeEditarPlan = sesion.user.role === "ADMIN" || plan.tutorId === sesion.user.id;
 
   const adherenceSummary = await getPlanAdherenceSummary({
     targetDepartment: plan.targetDepartment,
@@ -114,7 +119,7 @@ export default async function TutorPlanCapacitacionDetallePage({
 
         <TabsContent value="cronograma" className="space-y-6 pt-4">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="space-y-3 lg:col-span-2">
+            <div className={puedeEditarPlan ? "space-y-3 lg:col-span-2" : "space-y-3 lg:col-span-3"}>
               <TrainingActivityTimeline
                 activities={plan.activities}
                 basePath={BASE_PATH}
@@ -123,15 +128,17 @@ export default async function TutorPlanCapacitacionDetallePage({
               />
             </div>
 
-            <div className="surface h-fit space-y-4 p-5 lg:sticky lg:top-6">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
-                  Agregar actividad
-                </h2>
-                <ImportScheduleDialog action={importScheduleAction} />
+            {puedeEditarPlan && (
+              <div className="surface h-fit space-y-4 p-5 lg:sticky lg:top-6">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
+                    Agregar actividad
+                  </h2>
+                  <ImportScheduleDialog action={importScheduleAction} />
+                </div>
+                <TrainingActivityForm action={addActivityAction} courses={courses} />
               </div>
-              <TrainingActivityForm action={addActivityAction} courses={courses} />
-            </div>
+            )}
           </div>
         </TabsContent>
 

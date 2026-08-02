@@ -18,8 +18,63 @@ import * as XLSX from "xlsx";
 const COL = { area: 0, actividad: 1, objetivo: 2, metodologia: 3, dirigidoA: 4, cupo: 5, responsable: 6, t1: 7, seguimiento: 11 };
 const PRIMERA_FILA = 4; // 0-3 son título y encabezados de dos niveles
 
+/**
+ * Separa el área real del programa dentro de ella.
+ *
+ * El plan escribe las dos cosas juntas en la misma celda: "CALIDAD -
+ * SEGURIDAD DEL PACIENTE", "RUTAS INTEGRALES - PAI". Tratar cada celda como
+ * un área distinta daría dos "Calidades" y cinco "Rutas Integrales", y con
+ * ellas dos responsables de Calidad, que es justo lo que no existe: Calidad
+ * es una sola área con varios programas a cargo.
+ *
+ * Solo se parte por el primer guion, y solo cuando lo que queda a la
+ * izquierda es un área conocida: hay nombres con guion que no son áreas.
+ */
+const AREAS_CON_PROGRAMA = ["CALIDAD", "RUTAS INTEGRALES", "MANTENIMIENTO", "TALENTO HUMANO"];
+
+/**
+ * Nombre con el que se muestra cada área.
+ *
+ * La hoja escribe la misma área de formas distintas -"TALENTO HUMANO" en un
+ * bloque y "Talento Humano" en el siguiente- y sin tildes. Sin una forma
+ * canónica saldrían dos áreas donde hay una, con dos responsables distintos.
+ * Lo único que cambia es cómo se escribe: no se junta ni se separa nada que
+ * el plan no junte o separe.
+ */
+const NOMBRE_CANONICO: Record<string, string> = {
+  CALIDAD: "Calidad",
+  "RUTAS INTEGRALES": "Rutas Integrales",
+  "ATENCION AL USUARIO": "Atención al Usuario",
+  "SERVICIOS FARMACEUTICOS": "Servicios Farmacéuticos",
+  MANTENIMIENTO: "Mantenimiento",
+  "SEGURIDAD Y SALUD EN EL TRABAJO": "Seguridad y Salud en el Trabajo",
+  "SALUD PUBLICA": "Salud Pública",
+  "TALENTO HUMANO": "Talento Humano",
+};
+
+function separarAreaYPrograma(celda: string): { area: string; programa: string | null } {
+  const texto = celda.trim();
+  const guion = texto.indexOf("-");
+
+  const canonizar = (nombre: string) => NOMBRE_CANONICO[nombre.toUpperCase()] ?? nombre;
+
+  if (guion < 0) return { area: canonizar(texto), programa: null };
+
+  const izquierda = texto.slice(0, guion).trim();
+  const derecha = texto
+    .slice(guion + 1)
+    .trim()
+    .replace(/^-+\s*/, "");
+  const esArea = AREAS_CON_PROGRAMA.includes(izquierda.toUpperCase());
+
+  if (!esArea || !derecha) return { area: canonizar(texto), programa: null };
+  return { area: canonizar(izquierda), programa: derecha };
+}
+
 export type ActividadPIC = {
   area: string;
+  /** Programa dentro del área, si el plan lo especifica. */
+  programa: string | null;
   titulo: string;
   objetivo: string | null;
   metodologia: string | null;
@@ -103,9 +158,12 @@ function main() {
     if (metodologiaMayus.includes("VIRTUAL")) modalidades.push("VIRTUAL");
     if (metodologiaMayus.includes("PRESENCIAL")) modalidades.push("PRESENCIAL");
 
+    const { area: areaReal, programa } = separarAreaYPrograma(area);
+
     for (const titulo of separarTemas(celdaActividad)) {
       actividades.push({
-        area,
+        area: areaReal,
+        programa,
         titulo,
         objetivo,
         metodologia,
@@ -122,20 +180,24 @@ function main() {
   }
 
   const areas = [...new Set(actividades.map((a) => a.area))];
+  const programas = [...new Set(actividades.map((a) => a.programa).filter(Boolean))];
   const salida = {
     origen: path.basename(rutaExcel),
     extraidoEl: new Date().toISOString().slice(0, 10),
     anio: 2026,
     areas,
+    programas,
     actividades,
   };
 
   const destino = path.join(process.cwd(), "prisma", "data", "pic-2026.json");
   writeFileSync(destino, JSON.stringify(salida, null, 2), "utf8");
 
-  console.log(`Áreas: ${areas.length} · Actividades: ${actividades.length}`);
+  console.log(`Áreas: ${areas.length} · Programas: ${programas.length} · Actividades: ${actividades.length}`);
   for (const a of areas) {
-    console.log(`  ${String(actividades.filter((x) => x.area === a).length).padStart(2)} · ${a}`);
+    const suyas = actividades.filter((x) => x.area === a);
+    const sus = [...new Set(suyas.map((x) => x.programa).filter(Boolean))];
+    console.log(`  ${String(suyas.length).padStart(2)} · ${a}${sus.length > 0 ? `  (${sus.join(" · ")})` : ""}`);
   }
   console.log(`\nEscrito en ${destino}`);
 }

@@ -26,6 +26,7 @@ export type TrainingActivityTimelineItem = {
   status: TrainingActivityStatus;
   course: { id: string; title: string; slug: string } | null;
   area: { id: string; name: string; sortOrder: number } | null;
+  programa: string | null;
 };
 
 
@@ -56,6 +57,11 @@ function agruparPorArea(activities: TrainingActivityTimelineItem[]) {
     groups.set(key, grupo);
   }
 
+  // Dentro del área, primero se agrupa por programa: en «Rutas Integrales»
+  // hay 24 capacitaciones de cinco programas distintos y mezclarlas no deja
+  // ver de qué responde cada uno.
+  const porPrograma = (a: TrainingActivityTimelineItem) => a.programa ?? "";
+
   const cuando = (a: TrainingActivityTimelineItem) =>
     a.startDate ? a.startDate.getTime() : Math.min(...(a.quarters.length > 0 ? a.quarters : [99]));
 
@@ -63,7 +69,12 @@ function agruparPorArea(activities: TrainingActivityTimelineItem[]) {
     .map(([key, g]) => ({
       key,
       ...g,
-      items: [...g.items].sort((a, b) => cuando(a) - cuando(b) || a.title.localeCompare(b.title, "es")),
+      items: [...g.items].sort(
+        (a, b) =>
+          porPrograma(a).localeCompare(porPrograma(b), "es") ||
+          cuando(a) - cuando(b) ||
+          a.title.localeCompare(b.title, "es")
+      ),
     }))
     .sort((a, b) => a.orden - b.orden);
 }
@@ -139,6 +150,11 @@ export function TrainingActivityTimeline({
                       >
                         {activity.title}
                       </Link>
+                      {activity.programa && (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                          {activity.programa}
+                        </span>
+                      )}
                       {activity.isRequired && (
                         <span className="flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
                           <Lock className="h-3 w-3" />

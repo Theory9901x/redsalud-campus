@@ -1,9 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import type { Role, CourseAudience, TrainingActivityStatus } from "@prisma/client";
 
-/** ADMIN ve todos los planes; TUTOR solo los suyos. Una sola vista, alcance por rol. */
+/**
+ * ADMIN ve todos los planes. Un TUTOR ve los que responde y, además, aquellos
+ * donde su área tiene capacitaciones: el plan institucional es de Talento
+ * Humano, pero cada área responde por su parte y necesita llegar a ella.
+ */
 export function trainingPlanScopeWhere(role: Role, userId: string) {
-  return role === "ADMIN" ? {} : { tutorId: userId };
+  if (role === "ADMIN") return {};
+  return {
+    OR: [{ tutorId: userId }, { activities: { some: { area: { tutorId: userId } } } }],
+  };
 }
 
 export async function getTrainingPlans(role: Role, userId: string) {

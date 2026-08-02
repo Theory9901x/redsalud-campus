@@ -728,6 +728,16 @@ model TrainingActivity {
   closedAt       DateTime? // Etapa 6: cuándo se cerró (participación congelada desde ese momento)
 
   // ---- Columnas del PIC que antes no tenían dónde vivir ----
+  /**
+   * Programa dentro del área, cuando el plan lo especifica ("PAI", "Seguridad
+   * del Paciente", "IAAS - PROA - PMMHM").
+   *
+   * El plan escribe "CALIDAD - SEGURIDAD DEL PACIENTE" en una sola celda,
+   * pero eso no son dos áreas: es un área y uno de sus programas. Separarlos
+   * es lo que permite que Calidad tenga UNA responsable y no una por cada
+   * programa que maneja.
+   */
+  programa   String?
   objective  String? // "Objetivo" del Excel
   methodology String? // "Metodología": texto completo, incluida la distribución por trimestre
   modality   TrainingModality?
