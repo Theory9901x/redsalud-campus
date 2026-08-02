@@ -25,3 +25,28 @@ export const trainingActivitySchema = z.object({
   }),
   isRequired: z.coerce.boolean(),
 });
+
+/**
+ * Jornada concreta de una capacitación: el día en que de verdad se dicta.
+ *
+ * Es un dato distinto del trimestre que trae el plan -ahí solo se sabe el
+ * periodo, aquí se sabe la fecha y la hora- y por eso valida aparte: nada
+ * de lo que exige esta jornada (hora fin posterior a la de inicio, cupo
+ * positivo) tiene sentido para la línea del plan en sí.
+ */
+export const trainingSessionSchema = z
+  .object({
+    startsAtDate: z.string().trim().min(1, "La fecha es obligatoria."),
+    startsAtTime: z.string().trim().min(1, "La hora de inicio es obligatoria."),
+    endsAtTime: z.string().trim().optional().or(z.literal("")),
+    shift: z.enum(["MANANA", "TARDE"]).optional().or(z.literal("")),
+    modality: z.enum(["VIRTUAL", "PRESENCIAL", "MIXTA"]),
+    location: z.string().trim().optional().or(z.literal("")),
+    meetingUrl: z.string().trim().optional().or(z.literal("")),
+    capacity: z.coerce.number().int().positive().optional().or(z.literal("")),
+    municipioId: z.string().trim().optional().or(z.literal("")),
+  })
+  .refine((data) => !data.endsAtTime || data.endsAtTime > data.startsAtTime, {
+    message: "La hora de fin debe ser posterior a la de inicio.",
+    path: ["endsAtTime"],
+  });

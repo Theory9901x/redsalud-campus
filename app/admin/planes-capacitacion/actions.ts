@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireTutorOrAdmin, requireTrainingPlanAccess, requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import { saveTrainingPlanDocument, saveTrainingActivityDocument } from "@/lib/storage";
-import { trainingPlanSchema, trainingActivitySchema } from "@/lib/validations/training-plan";
+import { trainingPlanSchema, trainingActivitySchema, trainingSessionSchema } from "@/lib/validations/training-plan";
 import { getLinkableCoursesForUser } from "@/lib/training-plans";
 import { parseTrainingScheduleFile, type ImportRowError } from "@/lib/training-plan-import";
 
@@ -368,5 +368,94 @@ export async function deleteTrainingActivityAction(
 
   await prisma.trainingActivity.delete({ where: { id: activityId } });
   revalidatePath(`${basePath}/${planId}`);
+  return { error: null };
+}
+
+// ------------------------------------------------------------------
+// Jornadas: el día concreto en que se dicta una capacitación
+// ------------------------------------------------------------------
+
+export type TrainingSessionFormState = { error: string | null };
+
+/**
+ * Programa una jornada real para una capacitación del plan.
+ *
+ * Es lo que convierte "Trimestre II" en "12 de mayo, 8:00 a.m., virtual":
+ * el plan dice CUÁNDO en términos generales, la jornada dice EXACTAMENTE
+ * cuándo. Una misma capacitación puede tener varias -una por cada vez que
+ * se dicta en el trimestre-, así que esto siempre agrega, nunca reemplaza.
+ */
+export async function createTrainingSessionAction(
+  basePath: string,
+  planId: string,
+  activityId: string,
+  _prevState: TrainingSessionFormState,
+  formData: FormData
+): Promise<TrainingSessionFormState> {
+  await requireTrainingActivityAccess(activityId);
+
+  const parsed = trainingSessionSchema.safeParse({
+    startsAtDate: formData.get("startsAtDate"),
+    startsAtTime: formData.get("startsAtTime"),
+    endsAtTime: formData.get("endsAtTime") ?? "",
+    shift: formData.get("shift") ?? "",
+    modality: formData.get("modality"),
+    location: formData.get("location") ?? "",
+    meetingUrl: formData.get("meetingUrl") ?? "",
+    capacity: formData.get("capacity") || "",
+    municipioId: formData.get("municipioId") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+  }
+  const data = parsed.data;
+
+  const startsAt = new Date(`${data.startsAtDate}T${data.startsAtTime}:00`);
+  if (Number.isNaN(startsAt.getTime())) return { error: "Fecha u hora inválida." };
+
+  const endsAt = data.endsAtTime ? new Date(`${data.startsAtDate}T${data.endsAtTime}:00`) : null;
+
+  await prisma.trainingSession.create({
+    data: {
+      activityId,
+      startsAt,
+      endsAt,
+      shift: data.shift || null,
+      modality: data.modality,
+      location: data.location || null,
+      meetingUrl: data.meetingUrl || null,
+      capacity: data.capacity ? Number(data.capacity) : null,
+      municipioId: data.municipioId || null,
+    },
+  });
+
+  revalidatePath(`${basePath}/${planId}`);
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+  return { error: null };
+}
+
+/** Ciclo de vida de la jornada, igual que el de la actividad: borrador -> abierta -> cerrada. */
+export async function enableTrainingSessionAction(basePath: string, planId: string, activityId: string, sessionId: string) {
+  await requireTrainingActivityAccess(activityId);
+  await prisma.trainingSession.update({ where: { id: sessionId }, data: { status: "OPEN" } });
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+}
+
+export async function closeTrainingSessionAction(basePath: string, planId: string, activityId: string, sessionId: string) {
+  await requireTrainingActivityAccess(activityId);
+  await prisma.trainingSession.update({ where: { id: sessionId }, data: { status: "CLOSED" } });
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+}
+
+export async function deleteTrainingSessionAction(
+  basePath: string,
+  planId: string,
+  activityId: string,
+  sessionId: string
+): Promise<DeleteState> {
+  await requireTrainingActivityAccess(activityId);
+  await prisma.trainingSession.delete({ where: { id: sessionId } });
+  revalidatePath(`${basePath}/${planId}`);
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
   return { error: null };
 }

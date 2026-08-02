@@ -9,13 +9,17 @@ import {
   getActivityCompletionRoster,
 } from "@/lib/training-plans";
 import { getSurveysForActivity } from "@/lib/surveys";
-import { getLinkableCoursesForUser } from "@/lib/training-plans";
+import { getLinkableCoursesForUser, getMunicipioOptions } from "@/lib/training-plans";
 import {
   uploadTrainingActivityDocumentAction,
   enableActivityAction,
   closeActivityAction,
   linkCourseToActivityAction,
   unlinkCourseFromActivityAction,
+  createTrainingSessionAction,
+  enableTrainingSessionAction,
+  closeTrainingSessionAction,
+  deleteTrainingSessionAction,
 } from "@/app/admin/planes-capacitacion/actions";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -30,6 +34,8 @@ import { NonAdherentList } from "@/components/training-plans/non-adherent-list";
 import { SurveyList } from "@/components/training-plans/survey-list";
 import { ActivityPlanCard } from "@/components/training-plans/activity-plan-card";
 import { LinkCourseForm } from "@/components/training-plans/link-course-form";
+import { TrainingSessionForm } from "@/components/training-plans/training-session-form";
+import { TrainingSessionList } from "@/components/training-plans/training-session-list";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
 import {
   TRAINING_ACTIVITY_TYPE_LABELS,
@@ -80,6 +86,12 @@ export default async function TutorActividadDetallePage({
   const linkCourseAction = linkCourseToActivityAction.bind(null, BASE_PATH, id, activityId);
   const unlinkCourseAction = unlinkCourseFromActivityAction.bind(null, BASE_PATH, id, activityId);
   const linkableCourses = activity.course ? [] : await getLinkableCoursesForUser(session.user.role, session.user.id);
+  const municipios = await getMunicipioOptions();
+
+  const createSessionAction = createTrainingSessionAction.bind(null, BASE_PATH, id, activityId);
+  const enableSessionAction = enableTrainingSessionAction.bind(null, BASE_PATH, id, activityId);
+  const closeSessionAction = closeTrainingSessionAction.bind(null, BASE_PATH, id, activityId);
+  const deleteSessionAction = deleteTrainingSessionAction.bind(null, BASE_PATH, id, activityId);
 
   return (
     <div className="space-y-6">
@@ -136,6 +148,22 @@ export default async function TutorActividadDetallePage({
       </div>
 
       <ActivityPlanCard activity={activity} responsibleUserName={activity.responsibleUser?.fullName ?? null} />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-3 lg:col-span-2">
+          <h2 className="font-display text-lg font-bold text-foreground">Jornadas agendadas</h2>
+          <TrainingSessionList
+            sessions={activity.sessions}
+            onEnable={enableSessionAction}
+            onClose={closeSessionAction}
+            onDelete={deleteSessionAction}
+          />
+        </div>
+        <div className="surface h-fit space-y-3 p-5">
+          <h3 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">Agendar jornada</h3>
+          <TrainingSessionForm action={createSessionAction} municipios={municipios} />
+        </div>
+      </div>
 
       <div className="space-y-3">
         <h2 className="font-display text-lg font-bold text-foreground">Adherencia y cumplimiento</h2>

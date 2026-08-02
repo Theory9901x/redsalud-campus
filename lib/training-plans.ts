@@ -42,6 +42,10 @@ export async function getTrainingPlanDetail(id: string) {
         include: {
           course: { select: { id: true, title: true, slug: true } },
           area: { select: { id: true, name: true, sortOrder: true } },
+          // Solo la próxima: es lo que el cronograma necesita para preferir
+          // "12 de mayo" sobre "Trimestre II" cuando ya se agendó un día real.
+          sessions: { orderBy: { startsAt: "asc" }, take: 1, select: { startsAt: true, endsAt: true } },
+          _count: { select: { sessions: true } },
         },
       },
       documents: documentInclude,
@@ -98,7 +102,17 @@ export async function getTrainingActivityDetail(activityId: string) {
       area: { select: { id: true, name: true } },
       responsibleUser: { select: { id: true, fullName: true, username: true } },
       documents: documentInclude,
+      sessions: { orderBy: { startsAt: "asc" }, include: { municipio: { select: { nombre: true } } } },
     },
+  });
+}
+
+/** Municipios activos, para el selector de la jornada presencial/mixta. */
+export async function getMunicipioOptions() {
+  return prisma.municipio.findMany({
+    where: { isActive: true },
+    select: { id: true, nombre: true },
+    orderBy: { nombre: "asc" },
   });
 }
 

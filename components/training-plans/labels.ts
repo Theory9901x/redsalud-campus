@@ -4,6 +4,7 @@ import type {
   TrainingActivityType,
   TrainingActivityStatus,
   TrainingModality,
+  SessionShift,
 } from "@prisma/client";
 
 export const TRAINING_PLAN_STATUS_LABELS: Record<TrainingPlanStatus, string> = {
@@ -47,6 +48,26 @@ export const TRAINING_MODALITY_LABELS: Record<TrainingModality, string> = {
   MIXTA: "Mixta",
 };
 
+export const SESSION_SHIFT_LABELS: Record<SessionShift, string> = {
+  MANANA: "Mañana",
+  TARDE: "Tarde",
+};
+
+const FORMATO_FECHA_HORA = new Intl.DateTimeFormat("es-CO", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+const FORMATO_HORA = new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit" });
+
+/** "12 de mayo de 2026, 8:00 a. m. – 10:00 a. m." — la jornada real, no el trimestre del plan. */
+export function etiquetaJornada(sesion: { startsAt: Date; endsAt: Date | null }): string {
+  const inicio = FORMATO_FECHA_HORA.format(sesion.startsAt);
+  return sesion.endsAt ? `${inicio} – ${FORMATO_HORA.format(sesion.endsAt)}` : inicio;
+}
+
 const NUMERO_ROMANO = ["I", "II", "III", "IV"] as const;
 const FORMATO_FECHA = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" });
 
@@ -73,7 +94,16 @@ export function etiquetaProgramacion(activity: {
   startDate: Date | null;
   endDate?: Date | null;
   quarters?: number[];
+  /** La próxima jornada agendada, si ya hay una: manda sobre la fecha/trimestre del plan. */
+  sessions?: { startsAt: Date }[];
+  _count?: { sessions: number };
 }): string {
+  const proxima = activity.sessions?.[0];
+  if (proxima) {
+    const restantes = (activity._count?.sessions ?? 1) - 1;
+    const fecha = etiquetaJornada({ startsAt: proxima.startsAt, endsAt: null });
+    return restantes > 0 ? `${fecha} (+${restantes})` : fecha;
+  }
   if (activity.startDate) {
     const inicio = FORMATO_FECHA.format(activity.startDate);
     return activity.endDate ? `${inicio} — ${FORMATO_FECHA.format(activity.endDate)}` : inicio;

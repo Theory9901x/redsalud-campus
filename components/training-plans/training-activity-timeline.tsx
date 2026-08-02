@@ -28,6 +28,9 @@ export type TrainingActivityTimelineItem = {
   area: { id: string; name: string; sortOrder: number } | null;
   programa: string | null;
   responsibleLabel: string | null;
+  /** La próxima jornada ya agendada, si la hay: le gana al trimestre del plan a la hora de mostrar "cuándo". */
+  sessions?: { startsAt: Date; endsAt: Date | null }[];
+  _count?: { sessions: number };
 };
 
 
