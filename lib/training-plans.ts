@@ -144,6 +144,26 @@ export async function getAreaCoverageBreakdown() {
   });
 }
 
+/**
+ * Todas las jornadas con fecha real de un plan, para el calendario.
+ *
+ * A diferencia de `plan.activities`, que trae el trimestre de cada línea del
+ * PIC, esto trae solo lo que ya tiene día y hora concretos -el dato que un
+ * calendario de verdad necesita, y que la mayoría de líneas del plan
+ * todavía no tiene-.
+ */
+export async function getSessionsForPlan(planId: string) {
+  return prisma.trainingSession.findMany({
+    where: { activity: { planId } },
+    orderBy: { startsAt: "asc" },
+    include: {
+      activity: {
+        select: { id: true, title: true, area: { select: { id: true, name: true } } },
+      },
+    },
+  });
+}
+
 /** Municipios activos, para el selector de la jornada presencial/mixta. */
 export async function getMunicipioOptions() {
   return prisma.municipio.findMany({

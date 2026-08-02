@@ -15,6 +15,7 @@ import { requireTrainingPlanRead } from "@/lib/auth-helpers";
 import {
   getTrainingPlanDetail,
   getLinkableCourses,
+  getSessionsForPlan,
   getPlanAdherenceSummary,
   buildAdherenceBarData,
   buildActivityStatusCounts,
@@ -53,6 +54,7 @@ export default async function TutorPlanCapacitacionDetallePage({
     getLinkableCourses(),
     getSurveysForPlan(id),
   ]);
+  const sessions = await getSessionsForPlan(id);
   if (!plan) notFound();
 
   // El área entra a consultar y a gestionar SUS capacitaciones; el plan en sí
@@ -122,6 +124,7 @@ export default async function TutorPlanCapacitacionDetallePage({
             <div className={puedeEditarPlan ? "space-y-3 lg:col-span-2" : "space-y-3 lg:col-span-3"}>
               <CronogramaView
                 activities={plan.activities}
+                sessions={sessions}
                 basePath={BASE_PATH}
                 planId={id}
                 adherenceByActivity={adherenceByActivity}
