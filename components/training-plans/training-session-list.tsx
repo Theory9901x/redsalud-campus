@@ -11,14 +11,19 @@ import {
   SESSION_SHIFT_LABELS,
   TRAINING_ACTIVITY_STATUS_LABELS,
   TRAINING_ACTIVITY_STATUS_CLASSES,
-  etiquetaJornada,
 } from "@/components/training-plans/labels";
 import type { TrainingActivityStatus, TrainingModality, SessionShift } from "@prisma/client";
 
 type Sesion = {
   id: string;
-  startsAt: Date;
-  endsAt: Date | null;
+  /**
+   * La fecha YA formateada en el servidor. Formatear con Intl aquí -en un
+   * componente de cliente- hidrata distinto de como renderizó el servidor
+   * (el ICU del navegador mete espacios distintos en "a. m.") y React lo
+   * marca como mismatch. Tercera vez que este módulo pisa esta mina; la
+   * regla es una: las fechas se formatean donde se renderiza primero.
+   */
+  etiqueta: string;
   shift: SessionShift | null;
   modality: TrainingModality;
   location: string | null;
@@ -67,7 +72,7 @@ export function TrainingSessionList({
             <div className="flex flex-wrap items-center gap-2">
               <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
                 <CalendarClock className="h-4 w-4 text-primary" aria-hidden="true" />
-                {etiquetaJornada(s)}
+                {s.etiqueta}
               </span>
               {s.shift && (
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">

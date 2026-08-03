@@ -11,6 +11,8 @@ export type SesionCalendario = {
   id: string;
   startsAt: Date;
   endsAt: Date | null;
+  /** Hora ya formateada en el servidor (ver nota en TrainingSessionList: Intl en cliente hidrata distinto). */
+  horaEtiqueta: string;
   status: TrainingActivityStatus;
   modality: TrainingModality;
   shift: SessionShift | null;
@@ -18,8 +20,9 @@ export type SesionCalendario = {
 };
 
 const DIAS_SEMANA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
-const FORMATO_MES = new Intl.DateTimeFormat("es-CO", { month: "long", year: "numeric" });
-const FORMATO_HORA = new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit" });
+// Sin Intl en este archivo: es un componente de cliente y las cadenas deben
+// ser idénticas a las del servidor. Los meses van en tabla fija.
+const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
 /**
  * Punto de estado, no color categórico: mismo criterio que el resto del
@@ -80,7 +83,7 @@ export function SessionsCalendar({ sessions, basePath, planId }: { sessions: Ses
     });
   }, [cursor, porDia, hoy]);
 
-  const etiquetaMes = FORMATO_MES.format(cursor);
+  const etiquetaMes = `${MESES[cursor.getMonth()]} de ${cursor.getFullYear()}`;
 
   return (
     <div className="space-y-3">
@@ -94,7 +97,7 @@ export function SessionsCalendar({ sessions, basePath, planId }: { sessions: Ses
           <ChevronLeft className="h-4 w-4" />
         </button>
         <p className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
-          {etiquetaMes.charAt(0).toUpperCase() + etiquetaMes.slice(1)}
+          {etiquetaMes}
         </p>
         <button
           type="button"
@@ -151,7 +154,7 @@ export function SessionsCalendar({ sessions, basePath, planId }: { sessions: Ses
                   >
                     <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${PUNTO_ESTADO[s.status]}`} aria-hidden="true" />
                     <span className="truncate">
-                      {FORMATO_HORA.format(s.startsAt)} {s.activity.area?.name ?? s.activity.title}
+                      {s.horaEtiqueta} {s.activity.area?.name ?? s.activity.title}
                     </span>
                   </Link>
                 ))}

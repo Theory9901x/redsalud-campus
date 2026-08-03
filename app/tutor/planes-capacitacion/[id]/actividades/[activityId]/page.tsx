@@ -50,6 +50,7 @@ import {
   TRAINING_ACTIVITY_STATUS_LABELS,
   TRAINING_ACTIVITY_STATUS_CLASSES,
   etiquetaProgramacion,
+  etiquetaJornada,
 } from "@/components/training-plans/labels";
 
 const BASE_PATH = "/tutor/planes-capacitacion";
@@ -188,7 +189,7 @@ export default async function TutorActividadDetallePage({
         <div className="space-y-3 lg:col-span-2">
           <h2 className="font-display text-lg font-bold text-foreground">Jornadas agendadas</h2>
           <TrainingSessionList
-            sessions={activity.sessions}
+            sessions={activity.sessions.map((ses) => ({ ...ses, etiqueta: etiquetaJornada(ses) }))}
             onEnable={enableSessionAction}
             onClose={closeSessionAction}
             onDelete={deleteSessionAction}

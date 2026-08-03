@@ -44,6 +44,8 @@ import { SurveyList } from "@/components/training-plans/survey-list";
 import { PlanMetricsView } from "@/components/training-plans/plan-metrics-view";
 import { TRAINING_PLAN_STATUS_LABELS, TRAINING_PLAN_STATUS_CLASSES } from "@/components/training-plans/labels";
 
+const FORMATO_HORA_SESION = new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit" });
+
 const BASE_PATH = "/admin/planes-capacitacion";
 
 export default async function AdminPlanCapacitacionDetallePage({
@@ -155,7 +157,7 @@ export default async function AdminPlanCapacitacionDetallePage({
             <div className="space-y-3 lg:col-span-2">
               <CronogramaView
                 activities={plan.activities}
-                sessions={sessions}
+                sessions={sessions.map((x) => ({ ...x, horaEtiqueta: FORMATO_HORA_SESION.format(x.startsAt) }))}
                 basePath={BASE_PATH}
                 planId={id}
                 adherenceByActivity={adherenceByActivity}

@@ -45,6 +45,8 @@ import { SurveyList } from "@/components/training-plans/survey-list";
 import { PlanMetricsView } from "@/components/training-plans/plan-metrics-view";
 import { TRAINING_PLAN_STATUS_LABELS, TRAINING_PLAN_STATUS_CLASSES } from "@/components/training-plans/labels";
 
+const FORMATO_HORA_SESION = new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit" });
+
 const BASE_PATH = "/tutor/planes-capacitacion";
 
 export default async function TutorPlanCapacitacionDetallePage({
@@ -188,11 +190,10 @@ export default async function TutorPlanCapacitacionDetallePage({
             <div className={puedeEditarPlan ? "space-y-3 lg:col-span-2" : "space-y-3 lg:col-span-3"}>
               <CronogramaView
                 activities={actividadesVisibles}
-                sessions={
-                  areasGestionables
-                    ? sessions.filter((x) => x.activity.area && areasGestionables.includes(x.activity.area.id))
-                    : sessions
-                }
+                sessions={(areasGestionables
+                  ? sessions.filter((x) => x.activity.area && areasGestionables.includes(x.activity.area.id))
+                  : sessions
+                ).map((x) => ({ ...x, horaEtiqueta: FORMATO_HORA_SESION.format(x.startsAt) }))}
                 basePath={BASE_PATH}
                 planId={id}
                 adherenceByActivity={adherenceByActivity}
