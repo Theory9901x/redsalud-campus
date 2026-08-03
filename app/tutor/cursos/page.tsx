@@ -1,9 +1,5 @@
-import Link from "next/link";
-import { Plus } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { CourseListTable } from "@/components/cursos/course-list-table";
 
 export default async function TutorCursosPage() {
@@ -22,17 +18,12 @@ export default async function TutorCursosPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold text-foreground">Mis cursos</h1>
-          <p className="text-sm text-muted-foreground">
-            {courses.length} {courses.length === 1 ? "curso" : "cursos"}. Solo un administrador puede publicarlos.
-          </p>
-        </div>
-        <Link href="/tutor/cursos/nuevo" className={cn(buttonVariants(), "gap-1.5")}>
-          <Plus className="h-4 w-4" />
-          Nuevo curso
-        </Link>
+      <div>
+        <h1 className="font-display text-2xl font-extrabold text-foreground">Mis cursos</h1>
+        <p className="text-sm text-muted-foreground">
+          {courses.length} {courses.length === 1 ? "curso" : "cursos"} a tu cargo. Los cursos los crea y asigna el
+          administrador; aquí gestionas su contenido.
+        </p>
       </div>
 
       <CourseListTable courses={courses} basePath="/tutor/cursos" showTutorColumn={false} />

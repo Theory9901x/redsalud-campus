@@ -1,63 +1,185 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CalendarRange, Building2, User, ClipboardList, CheckCircle2, FileClock, Hourglass } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarRange,
+  Building2,
+  User,
+  ClipboardList,
+  CheckCircle2,
+  CalendarClock,
+  FileQuestion,
+  ClipboardCheck,
+  TrendingUp,
+} from "lucide-react";
 import { auth } from "@/auth";
-import { getTrainingPlanDetailForStudent, getStudentCourseProgress } from "@/lib/training-plans";
+import {
+  getTrainingPlanDetailForStudent,
+  getStudentCourseProgress,
+  getStudentCycleInfo,
+  getSessionsForPlan,
+} from "@/lib/training-plans";
 import { getSurveysForUser } from "@/lib/surveys";
+import { estadoPresaber, estadoPostsaber } from "@/lib/presaber-postsaber";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
-import { CourseStateCard, type CursoTarjeta, type EstadoTarjeta } from "@/components/cursos/course-state-card";
+import {
+  CronogramaEstudiante,
+  type FilaCronograma,
+  type AccionProxima,
+  type SesionVirtual,
+} from "@/components/training-plans/cronograma-estudiante";
+import { MetricCard } from "@/components/admin/metric-card";
+import { StaggerGrid } from "@/components/brand/stagger-grid";
 import { EmptyState } from "@/components/brand/empty-state";
 import { StaggerSections } from "@/components/brand/stagger-sections";
+import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import {
   TRAINING_PLAN_STATUS_LABELS,
   TRAINING_PLAN_STATUS_CLASSES,
+  TRAINING_MODALITY_LABELS,
   etiquetaProgramacion,
+  etiquetaJornada,
 } from "@/components/training-plans/labels";
-
-type ActividadPlan = Awaited<ReturnType<typeof getTrainingPlanDetailForStudent>> extends { activities: (infer A)[] } | null
-  ? A
-  : never;
-
-const CTA: Record<EstadoTarjeta, string> = {
-  obligatorio: "Ver curso",
-  "en-curso": "Continuar",
-  completado: "Ver de nuevo",
-  disponible: "Empezar",
-};
-
-/** Agrupa por área, igual que en el resto del módulo: es la unidad con la que se organiza el plan. */
-function agruparPorArea(actividades: ActividadPlan[]) {
-  const grupos = new Map<string, { nombre: string; orden: number; items: ActividadPlan[] }>();
-  for (const a of actividades) {
-    const clave = a.area?.id ?? "sin-area";
-    const g = grupos.get(clave) ?? { nombre: a.area?.name ?? "Sin área asignada", orden: a.area?.sortOrder ?? 99, items: [] };
-    g.items.push(a);
-    grupos.set(clave, g);
-  }
-  return [...grupos.values()].sort((x, y) => x.orden - y.orden);
-}
 
 export default async function MiCapacitacionDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
   const userId = session!.user.id;
+  const personnelType = session!.user.personnelType;
 
   const plan = await getTrainingPlanDetailForStudent(id, userId);
   if (!plan) notFound();
 
-  const [{ pending, answered }, progresoPorCurso] = await Promise.all([
+  // Solo lo que le aplica a ESTA persona: su cronograma, no el del área de
+  // gestión. Lo dirigido exclusivamente al otro grupo poblacional no es una
+  // capacitación suya y mostrarla solo confundiría ("¿debo hacer esto?").
+  const aplicables = plan.activities.filter(
+    (a) => a.targetAudience === "AMBOS" || a.targetAudience === personnelType
+  );
+
+  const courseIds = aplicables.map((a) => a.courseId).filter((x): x is string => !!x);
+  const [{ pending, answered }, progresoPorCurso, ciclo, sesiones] = await Promise.all([
     getSurveysForUser(userId, id),
-    getStudentCourseProgress(
-      plan.activities.map((a) => a.courseId).filter((x): x is string => !!x),
-      userId
-    ),
+    getStudentCourseProgress(courseIds, userId),
+    getStudentCycleInfo(courseIds, userId),
+    getSessionsForPlan(id),
   ]);
-  const areas = agruparPorArea(plan.activities);
+
+  // ---- Cada fila del cronograma, resuelta con datos reales ----------------
+  const filas: FilaCronograma[] = aplicables.map((a) => {
+    const avance = a.courseId ? progresoPorCurso.get(a.courseId) : undefined;
+    const cyc = a.courseId ? ciclo.get(a.courseId) : undefined;
+    const conContenido = !!avance;
+    const inscrito = !!avance?.enrollment;
+    const completada = avance?.enrollment?.status === "COMPLETED";
+    const progreso = inscrito ? avance!.enrollment!.progressPercentage : null;
+
+    const ventanaPre = estadoPresaber(a);
+    const ventanaPost = estadoPostsaber(a);
+
+    const presaber = !conContenido
+      ? null
+      : cyc?.presaberDone
+        ? ("Realizado" as const)
+        : ventanaPre === "DISPONIBLE"
+          ? ("Disponible" as const)
+          : ventanaPre === "CERRADO"
+            ? ("Cerrado" as const)
+            : ("Pendiente" as const);
+
+    const postsaber = !conContenido
+      ? null
+      : cyc?.postsaberDone
+        ? ("Realizado" as const)
+        : ventanaPost === "DISPONIBLE"
+          ? ("Disponible" as const)
+          : ventanaPost === "CERRADO"
+            ? ("Cerrado" as const)
+            : ("Bloqueado" as const);
+
+    const estadoGeneral: FilaCronograma["estadoGeneral"] = !conContenido
+      ? "Sin contenido"
+      : completada
+        ? "Completada"
+        : presaber === "Disponible"
+          ? "Presaber disponible"
+          : postsaber === "Disponible"
+            ? "Postsaber disponible"
+            : progreso !== null && progreso > 0
+              ? "En curso"
+              : "Programada";
+
+    let accion: FilaCronograma["accion"] = null;
+    if (conContenido) {
+      if (inscrito && presaber === "Disponible" && cyc) {
+        accion = { etiqueta: "Presentar presaber", href: `/aula/${a.courseId}/quiz/${cyc.quizId}` };
+      } else if (inscrito && postsaber === "Disponible" && cyc) {
+        accion = { etiqueta: "Presentar postsaber", href: `/aula/${a.courseId}/quiz/${cyc.quizId}` };
+      } else if (inscrito && !completada) {
+        accion = { etiqueta: progreso && progreso > 0 ? "Continuar" : "Empezar", href: `/aula/${a.courseId}` };
+      } else if (inscrito && completada) {
+        accion = { etiqueta: "Ver de nuevo", href: `/aula/${a.courseId}` };
+      } else {
+        accion = { etiqueta: "Ver curso", href: `/cursos/${avance!.course.slug}` };
+      }
+    }
+
+    return {
+      id: a.id,
+      titulo: a.title,
+      programa: a.programa,
+      area: a.area?.name ?? "Sin área",
+      areaOrden: a.area?.sortOrder ?? 99,
+      trimestre: a.quarters.length > 0 ? Math.min(...a.quarters) : 0,
+      programacion: etiquetaProgramacion(a),
+      modalidad: a.modality ? TRAINING_MODALITY_LABELS[a.modality] : null,
+      publico: COURSE_AUDIENCE_LABELS[a.targetAudience],
+      conContenido,
+      inscrito,
+      progreso,
+      estadoGeneral,
+      presaber,
+      postsaber,
+      accion,
+    };
+  });
+
+  // ---- KPI reales ---------------------------------------------------------
+  const ahora = new Date();
+  const en30Dias = new Date(ahora.getTime() + 30 * 86400000);
+  const proximasJornadas = sesiones.filter((s) => s.startsAt >= ahora && s.startsAt <= en30Dias);
+  const presaberesDisponibles = filas.filter((f) => f.presaber === "Disponible").length;
+  const postsaberesDisponibles = filas.filter((f) => f.postsaber === "Disponible").length;
+  const completadas = filas.filter((f) => f.estadoGeneral === "Completada").length;
+  const inscritas = filas.filter((f) => f.progreso !== null);
+  const progresoGeneral =
+    inscritas.length > 0 ? Math.round(inscritas.reduce((s, f) => s + (f.progreso ?? 0), 0) / inscritas.length) : 0;
+
+  // ---- Próximas acciones y sesiones virtuales, reales ---------------------
+  const acciones: AccionProxima[] = [
+    ...filas
+      .filter((f) => f.presaber === "Disponible")
+      .map((f) => ({ tipo: "Presaber disponible", titulo: f.titulo, detalle: f.area, href: f.accion?.href ?? null })),
+    ...filas
+      .filter((f) => f.postsaber === "Disponible")
+      .map((f) => ({ tipo: "Postsaber disponible", titulo: f.titulo, detalle: f.area, href: f.accion?.href ?? null })),
+    ...proximasJornadas.slice(0, 3).map((s) => ({
+      tipo: "Jornada próxima",
+      titulo: s.activity.title,
+      detalle: etiquetaJornada(s),
+      href: null,
+    })),
+  ].slice(0, 5);
+
+  const sesionesVirtuales: SesionVirtual[] = sesiones
+    .filter((s) => s.meetingUrl && s.startsAt >= ahora && s.status !== "CLOSED")
+    .slice(0, 3)
+    .map((s) => ({ titulo: s.activity.title, fecha: etiquetaJornada(s), meetingUrl: s.meetingUrl! }));
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">
+    <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
       <StaggerSections className="space-y-6">
         <Link
           href="/mis-capacitaciones"
@@ -88,12 +210,16 @@ export default async function MiCapacitacionDetallePage({ params }: { params: Pr
               {plan.tutor.fullName}
             </span>
           </div>
-          {plan.description && (
-            <p className="mt-4 whitespace-pre-line text-[15px] leading-relaxed text-foreground/80">
-              {plan.description}
-            </p>
-          )}
         </div>
+
+        <StaggerGrid className="grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
+          <MetricCard label="Capacitaciones asignadas" value={filas.length} icon={ClipboardList} accent="primary" />
+          <MetricCard label="Próximas jornadas" value={proximasJornadas.length} icon={CalendarClock} accent="warning" />
+          <MetricCard label="Presaberes disponibles" value={presaberesDisponibles} icon={FileQuestion} accent="warning" />
+          <MetricCard label="Postsaberes disponibles" value={postsaberesDisponibles} icon={ClipboardCheck} accent="primary" />
+          <MetricCard label="Completadas" value={completadas} icon={CheckCircle2} accent="success" />
+          <MetricCard label="Progreso general" value={progresoGeneral} suffix="%" icon={TrendingUp} accent="success" />
+        </StaggerGrid>
 
         <Tabs defaultValue="cronograma">
           <TabsList>
@@ -102,87 +228,8 @@ export default async function MiCapacitacionDetallePage({ params }: { params: Pr
             <TabsTrigger value="encuestas">Evaluaciones</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="cronograma" className="space-y-8 pt-4">
-            {plan.activities.length === 0 ? (
-              <EmptyState
-                icon={CalendarRange}
-                title="Sin actividades todavía"
-                description="El cronograma se está preparando."
-              />
-            ) : (
-              areas.map((grupo) => (
-                <div key={grupo.nombre} className="space-y-3">
-                  <p className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
-                    {grupo.nombre}
-                  </p>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {grupo.items.map((activity) => {
-                      const avance = activity.courseId ? progresoPorCurso.get(activity.courseId) : null;
-
-                      // Con curso montado y la persona ya inscrita: la tarjeta
-                      // real de "Mi aula", con su avance de verdad.
-                      if (avance) {
-                        const estado: EstadoTarjeta = avance.enrollment
-                          ? avance.enrollment.status === "COMPLETED"
-                            ? "completado"
-                            : avance.enrollment.progressPercentage > 0
-                              ? "en-curso"
-                              : "disponible"
-                          : "disponible";
-                        const tarjeta: CursoTarjeta = {
-                          id: activity.id,
-                          href: `/aula/${activity.courseId}`,
-                          imageUrl: avance.course.imageUrl,
-                          titulo: avance.course.title,
-                          descripcion: avance.course.shortDescription,
-                          horas: avance.course.durationHours,
-                          institucion: grupo.nombre,
-                          estado,
-                          progreso: estado === "en-curso" ? avance.enrollment!.progressPercentage : undefined,
-                          completadoEl: avance.enrollment?.completedAt?.toLocaleDateString("es-CO", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          }),
-                          cta: avance.enrollment ? CTA[estado] : "Ver curso",
-                        };
-                        return <CourseStateCard key={activity.id} curso={tarjeta} />;
-                      }
-
-                      // Tiene curso pero esta persona no está inscrita todavía:
-                      // se ve, no se inventa un botón que no lleva a nada.
-                      if (activity.course) {
-                        return (
-                          <div key={activity.id} className="surface flex flex-col gap-2 p-4">
-                            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                              <Hourglass className="h-4.5 w-4.5" />
-                            </span>
-                            <p className="font-display text-sm font-bold text-foreground">{activity.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Contenido listo: <span className="text-foreground">{activity.course.title}</span>. Se
-                              te asignará cuando corresponda.
-                            </p>
-                            <p className="text-xs font-medium text-muted-foreground">{etiquetaProgramacion(activity)}</p>
-                          </div>
-                        );
-                      }
-
-                      // Sin curso todavía: honesto, sin CTA que no lleva a nada.
-                      return (
-                        <div key={activity.id} className="surface flex flex-col gap-2 p-4 opacity-80">
-                          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                            <FileClock className="h-4.5 w-4.5" />
-                          </span>
-                          <p className="font-display text-sm font-bold text-foreground">{activity.title}</p>
-                          <p className="text-xs text-muted-foreground">El contenido se está preparando.</p>
-                          <p className="text-xs font-medium text-muted-foreground">{etiquetaProgramacion(activity)}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))
-            )}
+          <TabsContent value="cronograma" className="pt-4">
+            <CronogramaEstudiante filas={filas} acciones={acciones} sesionesVirtuales={sesionesVirtuales} />
           </TabsContent>
 
           <TabsContent value="documentos" className="pt-4">

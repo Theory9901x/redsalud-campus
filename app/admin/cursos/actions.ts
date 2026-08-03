@@ -41,16 +41,24 @@ export async function createCourseAction(
 ): Promise<CourseFormState> {
   const session = await requireTutorOrAdmin();
 
+  // Crear cursos es del administrador, no de las áreas: el catálogo
+  // institucional lo cura una sola mano. Las áreas gestionan el CONTENIDO de
+  // los cursos que se les asignan (módulos, lecciones, evaluaciones), pero no
+  // deciden qué cursos existen.
+  if (session.user.role !== "ADMIN") {
+    return { error: "Solo un administrador puede crear cursos. Pide al administrador que cree el curso y te lo asigne como tutor." };
+  }
+
   const parsed = parseCourseForm(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   }
 
   const data = parsed.data;
-  if (session.user.role === "ADMIN" && !data.tutorId) {
+  if (!data.tutorId) {
     return { error: "Selecciona un tutor." };
   }
-  const tutorId = session.user.role === "ADMIN" ? data.tutorId! : session.user.id;
+  const tutorId = data.tutorId!;
 
   let courseId: string;
   try {

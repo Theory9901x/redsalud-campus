@@ -24,10 +24,12 @@ export default async function TutorPlanesCapacitacionPage() {
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
           </Link>
-          <Link href="/tutor/planes-capacitacion/nuevo" className={cn(buttonVariants(), "gap-1.5")}>
-            <Plus className="h-4 w-4" />
-            Nuevo plan
-          </Link>
+          {session.user.role === "ADMIN" && (
+            <Link href="/tutor/planes-capacitacion/nuevo" className={cn(buttonVariants(), "gap-1.5")}>
+              <Plus className="h-4 w-4" />
+              Nuevo plan
+            </Link>
+          )}
         </div>
       </div>
 

@@ -22,6 +22,13 @@ export async function createTrainingPlanAction(
 ): Promise<TrainingPlanFormState> {
   const session = await requireTutorOrAdmin();
 
+  // Un plan de capacitación es un documento institucional: lo crea el
+  // administrador. Las áreas gestionan lo adscrito a ellas dentro del plan,
+  // no inventan planes nuevos.
+  if (session.user.role !== "ADMIN") {
+    return { error: "Solo un administrador puede crear planes de capacitación." };
+  }
+
   const parsed = trainingPlanSchema.safeParse({
     title: formData.get("title"),
     year: formData.get("year"),

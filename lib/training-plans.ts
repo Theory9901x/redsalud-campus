@@ -121,6 +121,54 @@ export async function getStudentCourseProgress(courseIds: string[], userId: stri
   );
 }
 
+/**
+ * Estado del ciclo presaber/postsaber DE ESTA PERSONA en cada curso: qué
+ * evaluación final tiene el curso y cuáles momentos ya presentó.
+ *
+ * Es la mitad que le falta a las ventanas de la actividad para pintar la
+ * fila del estudiante: la ventana dice si el momento está abierto; esto dice
+ * si esta persona ya lo presentó.
+ */
+export async function getStudentCycleInfo(courseIds: string[], userId: string) {
+  const vacio = new Map<string, { quizId: string; presaberDone: boolean; postsaberDone: boolean }>();
+  if (courseIds.length === 0) return vacio;
+
+  const quizzes = await prisma.quiz.findMany({
+    where: { courseId: { in: courseIds }, moduleId: null, isActive: true },
+    select: { id: true, courseId: true },
+  });
+  if (quizzes.length === 0) return vacio;
+
+  const intentos = await prisma.quizAttempt.findMany({
+    where: {
+      quizId: { in: quizzes.map((q) => q.id) },
+      userId,
+      moment: { not: null },
+      finishedAt: { not: null },
+      score: { not: null },
+    },
+    select: { quizId: true, moment: true },
+  });
+
+  const porQuiz = new Map<string, Set<string>>();
+  for (const i of intentos) {
+    const set = porQuiz.get(i.quizId) ?? new Set<string>();
+    set.add(i.moment!);
+    porQuiz.set(i.quizId, set);
+  }
+
+  return new Map(
+    quizzes.map((q) => [
+      q.courseId!,
+      {
+        quizId: q.id,
+        presaberDone: porQuiz.get(q.id)?.has("PRESABER") ?? false,
+        postsaberDone: porQuiz.get(q.id)?.has("POSTSABER") ?? false,
+      },
+    ])
+  );
+}
+
 /** Actividad puntual con su plan (para el encabezado) y sus documentos propios (Etapa 2). */
 export async function getTrainingActivityDetail(activityId: string) {
   return prisma.trainingActivity.findUnique({
