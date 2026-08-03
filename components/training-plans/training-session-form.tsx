@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { CalendarPlus } from "lucide-react";
+import { CalendarPlus, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,8 +106,29 @@ export function TrainingSessionForm({
 
       {mostrarEnlace && (
         <div className="space-y-1.5">
-          <Label htmlFor="meetingUrl">Enlace de la reunión</Label>
-          <Input id="meetingUrl" name="meetingUrl" type="url" placeholder="https://…" />
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="meetingUrl">Enlace de la reunión</Label>
+            {/*
+              Meet no permite crear salas desde otra plataforma sin OAuth de
+              Google: lo más cerca posible de "generar el enlace" sin
+              credenciales es abrir meet.google.com/new -Google crea la sala
+              al instante- y pegar aquí lo que resulte. Un solo viaje.
+            */}
+            <a
+              href="https://meet.google.com/new"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            >
+              <Video className="h-3.5 w-3.5" aria-hidden="true" />
+              Generar en Meet
+            </a>
+          </div>
+          <Input id="meetingUrl" name="meetingUrl" type="url" placeholder="https://meet.google.com/…" />
+          <p className="text-xs text-muted-foreground">
+            «Generar en Meet» abre Google Meet con una sala nueva; copia su enlace y pégalo aquí. Los estudiantes
+            verán el botón «Ingresar a la sesión» en su cronograma.
+          </p>
         </div>
       )}
 
