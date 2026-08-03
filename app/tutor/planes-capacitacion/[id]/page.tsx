@@ -90,6 +90,16 @@ export default async function TutorPlanCapacitacionDetallePage({
     ? plan.activities.filter((act) => act.area && areasGestionables.includes(act.area.id))
     : plan.activities;
 
+  // Mismo criterio para las encuestas: el tutor de área solo ve y gestiona
+  // las de SUS actividades. La encuesta general y las de otras áreas son del
+  // responsable del plan; la puerta de crear la general (botón "Nueva
+  // encuesta" del plan) también se le cierra; la suya la crea desde la ficha
+  // de su capacitación.
+  const idsActividadesVisibles = new Set(actividadesVisibles.map((a) => a.id));
+  const encuestasVisibles = areasGestionables
+    ? surveys.filter((s) => s.trainingActivity && idsActividadesVisibles.has(s.trainingActivity.id))
+    : surveys;
+
   const adherenceSummary = await getPlanAdherenceSummary({
     targetDepartment: plan.targetDepartment,
     activities: actividadesVisibles,
@@ -280,15 +290,17 @@ export default async function TutorPlanCapacitacionDetallePage({
               <ClipboardList className="h-4 w-4 text-primary" />
               <h2 className="font-display text-lg font-bold text-foreground">Encuestas</h2>
             </div>
-            <Link
-              href={`${BASE_PATH}/${id}/encuestas/nueva`}
-              className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
-            >
-              <Plus className="h-4 w-4" />
-              Nueva encuesta
-            </Link>
+            {puedeEditarPlan && (
+              <Link
+                href={`${BASE_PATH}/${id}/encuestas/nueva`}
+                className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
+              >
+                <Plus className="h-4 w-4" />
+                Nueva encuesta
+              </Link>
+            )}
           </div>
-          <SurveyList surveys={surveys} basePath={BASE_PATH} planId={id} showActivityScope />
+          <SurveyList surveys={encuestasVisibles} basePath={BASE_PATH} planId={id} showActivityScope />
         </TabsContent>
 
         <TabsContent value="metricas" className="pt-4">

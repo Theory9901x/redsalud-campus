@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { requireTrainingPlanAccess } from "@/lib/auth-helpers";
+import { requireTrainingPlanAccess, requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { createSurveyAction } from "@/app/admin/planes-capacitacion/survey-actions";
 import { SurveyForm } from "@/components/training-plans/survey-form";
@@ -17,7 +17,15 @@ export default async function TutorNuevaEncuestaPage({
 }) {
   const { id } = await params;
   const { actividad } = await searchParams;
-  await requireTrainingPlanAccess(id);
+  // Con ?actividad basta con gestionar ESA actividad: así el tutor de área
+  // crea la encuesta de su jornada sin ser el responsable del plan entero.
+  // La encuesta general del plan sigue reservada al responsable del plan.
+  if (actividad) {
+    const { planId } = await requireTrainingActivityAccess(actividad);
+    if (planId !== id) notFound();
+  } else {
+    await requireTrainingPlanAccess(id);
+  }
 
   const plan = await prisma.trainingPlan.findUnique({
     where: { id },

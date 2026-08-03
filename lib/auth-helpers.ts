@@ -93,12 +93,29 @@ export async function requireTrainingActivityAccess(activityId: string) {
   return { session, planId: activity.planId };
 }
 
-/** Igual que requireTrainingPlanAccess, resolviendo primero el plan dueño de la encuesta (Etapa 4). */
+/**
+ * Acceso a UNA encuesta: el responsable del plan, o -si la encuesta es de una
+ * actividad puntual- el tutor del área dueña de esa actividad. Mismo criterio
+ * de adscripción que requireTrainingActivityAccess: la encuesta de una
+ * jornada es parte de gestionar la jornada.
+ */
 export async function requireSurveyAccess(surveyId: string) {
-  const survey = await prisma.survey.findUnique({ where: { id: surveyId }, select: { trainingPlanId: true } });
+  const survey = await prisma.survey.findUnique({
+    where: { id: surveyId },
+    select: {
+      trainingPlanId: true,
+      trainingActivity: { select: { area: { select: { tutorId: true } } } },
+    },
+  });
   if (!survey) {
     throw new Error("Encuesta no encontrada.");
   }
-  const session = await requireTrainingPlanAccess(survey.trainingPlanId);
+
+  const session = await requireTutorOrAdmin();
+  if (session.user.role === "ADMIN" || survey.trainingActivity?.area?.tutorId === session.user.id) {
+    return { session, planId: survey.trainingPlanId };
+  }
+
+  await requireTrainingPlanAccess(survey.trainingPlanId);
   return { session, planId: survey.trainingPlanId };
 }

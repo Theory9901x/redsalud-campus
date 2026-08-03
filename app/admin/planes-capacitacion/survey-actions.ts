@@ -17,13 +17,18 @@ export async function createSurveyAction(
   _prevState: SurveyFormState,
   formData: FormData
 ): Promise<SurveyFormState> {
-  const session = await requireTrainingPlanAccess(planId);
-
+  // Encuesta de una actividad: basta con poder gestionar la actividad (el
+  // tutor de área crea la de SU jornada). La general del plan sigue siendo
+  // del responsable del plan o del administrador.
+  let session;
   if (activityId) {
-    const { planId: activityPlanId } = await requireTrainingActivityAccess(activityId);
-    if (activityPlanId !== planId) {
+    const acceso = await requireTrainingActivityAccess(activityId);
+    if (acceso.planId !== planId) {
       return { error: "La actividad no pertenece a este plan." };
     }
+    session = acceso.session;
+  } else {
+    session = await requireTrainingPlanAccess(planId);
   }
 
   const parsed = surveySchema.safeParse({
