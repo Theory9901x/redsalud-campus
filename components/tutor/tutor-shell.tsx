@@ -43,11 +43,11 @@ const NAV_GROUPS: GrupoNav[] = [
     ],
   },
   {
-    // El tutor también es personal de la entidad: sus propios presaber,
-    // postsaber y encuestas de opinión -como área- viven aquí, no en la
-    // gestión de sus cursos ni de sus planes.
-    label: "Mi aprendizaje",
-    items: [{ href: "/mis-encuestas", label: "Mis encuestas", icon: ClipboardList }],
+    // Vista de OBSERVACIÓN, no de acción: el tutor abre las ventanas del
+    // ciclo, no las presenta, así que aquí ve en vivo quién está
+    // presentando y quién terminó -no la pantalla del estudiante-.
+    label: "Seguimiento",
+    items: [{ href: "/tutor/mis-encuestas", label: "Evaluaciones en vivo", icon: ClipboardList }],
   },
   {
     label: "Explorar",
@@ -60,6 +60,7 @@ const BREADCRUMBS: [string, string][] = [
   ["/tutor/planes-capacitacion", "Contenido · Planes de capacitación"],
   ["/tutor/inscritos", "Personas · Inscritos y progreso"],
   ["/tutor/certificados", "Personas · Certificados"],
+  ["/tutor/mis-encuestas", "Seguimiento · Evaluaciones en vivo"],
   ["/cursos", "Explorar · Catálogo institucional"],
   ["/tutor", "Panel"],
 ];

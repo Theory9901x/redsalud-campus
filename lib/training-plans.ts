@@ -491,6 +491,210 @@ export async function getEvaluacionesCicloDisponibles(userId: string, personnelT
 }
 
 /**
+ * Vista del TUTOR sobre el ciclo presaber/postsaber de SUS áreas: quién está
+ * presentando AHORA MISMO (intento abierto sin terminar) y quién ya terminó
+ * en la ventana vigente, con su nota. Es la contraparte de
+ * getEvaluacionesCicloDisponibles -esa es "entra y respóndela", esta es
+ * "mira quién la está respondiendo"-: el tutor es quien ABRE la ventana, no
+ * quien la presenta, así que su vista es de observación, no de acción.
+ */
+export async function getTutorEvaluacionesEnVivo(tutorUserId: string) {
+  const areas = await prisma.trainingArea.findMany({
+    where: { tutorId: tutorUserId },
+    select: { id: true, name: true },
+  });
+  if (areas.length === 0) return [];
+  const areaIds = areas.map((a) => a.id);
+  const nombrePorArea = new Map(areas.map((a) => [a.id, a.name]));
+
+  const actividades = await prisma.trainingActivity.findMany({
+    where: {
+      areaId: { in: areaIds },
+      courseId: { not: null },
+      OR: [
+        { presaberOpenedAt: { not: null }, presaberClosedAt: null },
+        { postsaberOpenedAt: { not: null }, postsaberClosedAt: null },
+      ],
+    },
+    select: {
+      id: true,
+      title: true,
+      areaId: true,
+      planId: true,
+      presaberOpenedAt: true,
+      presaberClosedAt: true,
+      postsaberOpenedAt: true,
+      postsaberClosedAt: true,
+      courseId: true,
+    },
+  });
+  if (actividades.length === 0) return [];
+
+  const courseIds = actividades.map((a) => a.courseId!);
+  const quizzes = await prisma.quiz.findMany({
+    where: { courseId: { in: courseIds }, moduleId: null, isActive: true },
+    select: { id: true, courseId: true, passingScore: true },
+  });
+  const quizPorCurso = new Map(quizzes.map((q) => [q.courseId, q]));
+
+  const resultado = [];
+  for (const actividad of actividades) {
+    const momento = momentoActivo(actividad);
+    const quiz = quizPorCurso.get(actividad.courseId!);
+    if (!momento || !quiz) continue;
+
+    const intentos = await prisma.quizAttempt.findMany({
+      where: { quizId: quiz.id, moment: momento },
+      select: {
+        userId: true,
+        score: true,
+        startedAt: true,
+        finishedAt: true,
+        user: { select: { fullName: true, documentNumber: true } },
+      },
+      orderBy: { startedAt: "desc" },
+    });
+
+    // Mejor intento terminado por persona -mismo criterio que en toda la
+    // plataforma-, y quién sigue con un intento abierto sin haber
+    // presentado ninguno terminado todavía: eso es "presentando ahora".
+    const mejorTerminado = new Map<string, (typeof intentos)[number]>();
+    for (const i of intentos) {
+      if (i.finishedAt && i.score !== null) {
+        const actual = mejorTerminado.get(i.userId);
+        if (!actual || i.score > actual.score!) mejorTerminado.set(i.userId, i);
+      }
+    }
+    const enProgresoPorPersona = new Map<string, (typeof intentos)[number]>();
+    for (const i of intentos) {
+      if (!i.finishedAt && !mejorTerminado.has(i.userId) && !enProgresoPorPersona.has(i.userId)) {
+        enProgresoPorPersona.set(i.userId, i);
+      }
+    }
+    const enProgreso = [...enProgresoPorPersona.values()];
+
+    const completados = [...mejorTerminado.values()].sort(
+      (a, b) => (b.finishedAt?.getTime() ?? 0) - (a.finishedAt?.getTime() ?? 0)
+    );
+    const promedio =
+      completados.length > 0 ? Math.round(completados.reduce((s, c) => s + c.score!, 0) / completados.length) : null;
+
+    resultado.push({
+      activityId: actividad.id,
+      planId: actividad.planId,
+      titulo: actividad.title,
+      area: nombrePorArea.get(actividad.areaId!) ?? "Sin área",
+      momento,
+      passingScore: quiz.passingScore,
+      enProgreso: enProgreso.map((i) => ({ fullName: i.user.fullName, startedAt: i.startedAt })),
+      completados: completados.map((c) => ({
+        fullName: c.user.fullName,
+        documentNumber: c.user.documentNumber,
+        score: c.score!,
+        finishedAt: c.finishedAt!,
+      })),
+      promedio,
+    });
+  }
+
+  return resultado.sort((a, b) => a.area.localeCompare(b.area, "es") || a.titulo.localeCompare(b.titulo, "es"));
+}
+
+/**
+ * Actividad EN VIVO de las evaluaciones de los CURSOS que este tutor dicta
+ * (los normales de la plataforma, no solo los del plan): intentos abiertos
+ * ahora mismo y los últimos terminados con su nota. Misma lógica de
+ * observación que getTutorEvaluacionesEnVivo, sobre el otro universo.
+ */
+export async function getTutorCursosEnVivo(tutorUserId: string) {
+  const hace2h = new Date(Date.now() - 2 * 3600 * 1000);
+  const [enProgreso, terminados] = await Promise.all([
+    prisma.quizAttempt.findMany({
+      // startedAt reciente: un borrador abandonado hace días no es "presentando ahora".
+      where: { quiz: { course: { tutorId: tutorUserId } }, finishedAt: null, startedAt: { gte: hace2h } },
+      orderBy: { startedAt: "desc" },
+      take: 10,
+      select: {
+        startedAt: true,
+        user: { select: { fullName: true } },
+        quiz: { select: { title: true, course: { select: { id: true, title: true } } } },
+      },
+    }),
+    prisma.quizAttempt.findMany({
+      where: { quiz: { course: { tutorId: tutorUserId } }, finishedAt: { not: null }, score: { not: null } },
+      orderBy: { finishedAt: "desc" },
+      take: 10,
+      select: {
+        finishedAt: true,
+        score: true,
+        passed: true,
+        user: { select: { fullName: true } },
+        quiz: { select: { title: true, course: { select: { id: true, title: true } } } },
+      },
+    }),
+  ]);
+
+  return {
+    enProgreso: enProgreso.map((i) => ({
+      fullName: i.user.fullName,
+      curso: i.quiz.course.title,
+      courseId: i.quiz.course.id,
+      evaluacion: i.quiz.title,
+      startedAt: i.startedAt,
+    })),
+    terminados: terminados.map((i) => ({
+      fullName: i.user.fullName,
+      curso: i.quiz.course.title,
+      courseId: i.quiz.course.id,
+      evaluacion: i.quiz.title,
+      score: i.score!,
+      passed: i.passed ?? false,
+      finishedAt: i.finishedAt!,
+    })),
+  };
+}
+
+/**
+ * Encuestas de opinión de las áreas del tutor con al menos una respuesta o
+ * pregunta activa: mismo espíritu de observación -cuántos han respondido,
+ * quiénes, no un enlace para responderla él mismo-.
+ */
+export async function getTutorEncuestasEnVivo(tutorUserId: string) {
+  const areas = await prisma.trainingArea.findMany({ where: { tutorId: tutorUserId }, select: { id: true } });
+  if (areas.length === 0) return [];
+  const areaIds = areas.map((a) => a.id);
+
+  const encuestas = await prisma.survey.findMany({
+    where: { trainingActivity: { areaId: { in: areaIds } } },
+    select: {
+      id: true,
+      title: true,
+      trainingPlanId: true,
+      trainingActivity: { select: { title: true } },
+      _count: { select: { questions: true, responses: true } },
+      responses: {
+        orderBy: { submittedAt: "desc" },
+        take: 5,
+        select: { submittedAt: true, user: { select: { fullName: true } } },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return encuestas
+    .filter((e) => e._count.questions > 0)
+    .map((e) => ({
+      id: e.id,
+      planId: e.trainingPlanId,
+      titulo: e.title,
+      actividad: e.trainingActivity?.title ?? null,
+      totalPreguntas: e._count.questions,
+      totalRespuestas: e._count.responses,
+      ultimasRespuestas: e.responses.map((r) => ({ fullName: r.user.fullName, fecha: r.submittedAt })),
+    }));
+}
+
+/**
  * Historial reciente para "Mis encuestas": intentos del ciclo (presaber y
  * postsaber, con nota) y encuestas de opinión respondidas (sin nota, son de
  * opinión), unificados por fecha. Nada inventado: sin nota donde no la hay,
