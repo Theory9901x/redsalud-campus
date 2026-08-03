@@ -3,15 +3,21 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  ShieldQuestion,
-  ClipboardCheck,
   ClipboardList,
   Clock,
   Target,
-  User,
   CheckCircle2,
   ArrowRight,
   SlidersHorizontal,
+  Headphones,
+  ShieldCheck,
+  Award,
+  HeartPulse,
+  Users,
+  Wrench,
+  Pill,
+  Stethoscope,
+  Activity,
 } from "lucide-react";
 import { EmptyState } from "@/components/brand/empty-state";
 import { cn } from "@/lib/utils";
@@ -64,6 +70,45 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
+/**
+ * Ícono y color por ÁREA, no por tipo de evaluación: es lo que da variedad
+ * visual a la grilla, igual que el diseño de referencia. El ícono se elige
+ * por palabras clave del nombre real del área (dato honesto, no inventado);
+ * el color rota sobre los tokens semánticos ya existentes en el sistema
+ * -nunca un hex nuevo-, así que la paleta se mantiene consistente en claro y
+ * oscuro sin tocar globals.css.
+ */
+const PALETA_AREA = [
+  { bg: "bg-primary/10", text: "text-primary", label: "text-primary" },
+  { bg: "bg-success/15", text: "text-success", label: "text-success" },
+  { bg: "bg-warning/15", text: "text-warning-foreground", label: "text-warning-foreground" },
+] as const;
+
+function iconoArea(area: string) {
+  const a = area.toLowerCase();
+  if (a.includes("atención") || a.includes("atencion") || a.includes("usuario")) return Headphones;
+  if (a.includes("seguridad")) return ShieldCheck;
+  if (a.includes("calidad")) return Award;
+  if (a.includes("humaniza")) return HeartPulse;
+  if (a.includes("talento humano")) return Users;
+  if (a.includes("mantenimiento")) return Wrench;
+  if (a.includes("farmac")) return Pill;
+  if (a.includes("salud pública") || a.includes("salud publica")) return Stethoscope;
+  if (a.includes("ruta")) return Activity;
+  return ClipboardList;
+}
+
+function estiloArea(area: string) {
+  let hash = 0;
+  for (let i = 0; i < area.length; i++) hash = (hash * 31 + area.charCodeAt(i)) >>> 0;
+  return PALETA_AREA[hash % PALETA_AREA.length];
+}
+
+function iniciales(nombre: string) {
+  const partes = nombre.trim().split(/\s+/);
+  return ((partes[0]?.[0] ?? "") + (partes[1]?.[0] ?? "")).toUpperCase();
+}
+
 function armarTarjetas(evaluaciones: EvaluacionCiclo[], encuestas: EncuestaPendiente[]): Tarjeta[] {
   const deCiclo: Tarjeta[] = evaluaciones.map((ev) => ({
     key: `${ev.activityId}-${ev.momento}`,
@@ -105,10 +150,15 @@ function armarTarjetas(evaluaciones: EvaluacionCiclo[], encuestas: EncuestaPendi
   return [...deCiclo, ...deEncuestas].sort((a, b) => a.area.localeCompare(b.area, "es") || a.titulo.localeCompare(b.titulo, "es"));
 }
 
-const TAB_STYLES: Record<Tarjeta["tab"], { badge: string; icon: string; Icon: typeof ShieldQuestion }> = {
-  PRESABER: { badge: "bg-warning/15 text-warning-foreground", icon: "bg-warning/15 text-warning-foreground", Icon: ShieldQuestion },
-  POSTSABER: { badge: "bg-primary/10 text-primary", icon: "bg-primary/10 text-primary", Icon: ClipboardCheck },
-  ENCUESTA: { badge: "bg-success/15 text-success", icon: "bg-success/15 text-success", Icon: ClipboardList },
+const TIPO_BADGE: Record<Tarjeta["tab"], string> = {
+  PRESABER: "bg-warning/15 text-warning-foreground",
+  POSTSABER: "bg-primary/10 text-primary",
+  ENCUESTA: "bg-success/15 text-success",
+};
+const TIPO_ETIQUETA: Record<Tarjeta["tab"], string> = {
+  PRESABER: "Presaber",
+  POSTSABER: "Postsaber",
+  ENCUESTA: "Encuesta",
 };
 
 /**
@@ -116,7 +166,7 @@ const TAB_STYLES: Record<Tarjeta["tab"], { badge: string; icon: string; Icon: ty
  * ahora mismo para presentar -presaber, postsaber y encuestas de opinión-,
  * en tarjetas iguales sin importar de dónde vengan, con pestañas para
  * separarlas por tipo. Cada tarjeta lleva directo a presentarla: cero pasos
- * intermedios, que era justo la queja ("sigue siendo engorroso").
+ * intermedios, que era justo la queja original ("sigue siendo engorroso").
  */
 export function MisEncuestasBoard({
   evaluaciones,
@@ -132,23 +182,18 @@ export function MisEncuestasBoard({
   const tarjetas = useMemo(() => armarTarjetas(evaluaciones, encuestas), [evaluaciones, encuestas]);
 
   const filtradas = useMemo(() => {
-    return tarjetas
-      .filter((t) => tab === "TODAS" || t.tab === tab)
-      .filter((t) => !ocultarPresentadas || !t.yaPresentado);
+    return tarjetas.filter((t) => tab === "TODAS" || t.tab === tab).filter((t) => !ocultarPresentadas || !t.yaPresentado);
   }, [tarjetas, tab, ocultarPresentadas]);
-
-  const conteos = useMemo(() => {
-    const c: Record<TabId, number> = { TODAS: tarjetas.length, PRESABER: 0, POSTSABER: 0, ENCUESTA: 0 };
-    for (const t of tarjetas) c[t.tab]++;
-    return c;
-  }, [tarjetas]);
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="font-display text-xl font-extrabold text-foreground">Evaluaciones disponibles</h2>
-          <p className="text-xs text-muted-foreground">Presaber, postsaber y encuestas abiertas para ti.</p>
+        <div className="flex items-center gap-2.5">
+          <span className="h-8 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-primary to-success" />
+          <div>
+            <h2 className="font-display text-xl font-extrabold text-foreground">Evaluaciones disponibles</h2>
+            <p className="text-xs text-muted-foreground">Presaber, postsaber y encuestas abiertas para ti.</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 rounded-full bg-muted p-1">
@@ -159,17 +204,10 @@ export function MisEncuestasBoard({
                 onClick={() => setTab(t.id)}
                 className={cn(
                   "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors",
-                  tab === t.id
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                  tab === t.id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {t.etiqueta}
-                {conteos[t.id] > 0 && (
-                  <span className={cn("text-[10px]", tab === t.id ? "text-primary-foreground/80" : "text-muted-foreground/70")}>
-                    {conteos[t.id]}
-                  </span>
-                )}
               </button>
             ))}
           </div>
@@ -177,7 +215,7 @@ export function MisEncuestasBoard({
             <button
               type="button"
               onClick={() => setMenuAbierto((v) => !v)}
-              className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent"
+              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent"
             >
               <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
               Filtros
@@ -208,7 +246,8 @@ export function MisEncuestasBoard({
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {filtradas.map((t) => {
-            const estilo = TAB_STYLES[t.tab];
+            const Icono = iconoArea(t.area);
+            const color = estiloArea(t.area);
             return (
               <Link
                 key={t.key}
@@ -216,16 +255,16 @@ export function MisEncuestasBoard({
                 className="surface-clay group flex flex-col gap-3 p-5 transition-all duration-200 hover:-translate-y-0.5"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl", estilo.icon)}>
-                    <estilo.Icon className="h-5 w-5" aria-hidden="true" />
+                  <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl", color.bg)}>
+                    <Icono className={cn("h-5 w-5", color.text)} aria-hidden="true" />
                   </span>
-                  <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide", estilo.badge)}>
-                    {t.tab === "ENCUESTA" ? "Encuesta" : t.tab === "PRESABER" ? "Presaber" : "Postsaber"}
+                  <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide", TIPO_BADGE[t.tab])}>
+                    {TIPO_ETIQUETA[t.tab]}
                   </span>
                 </div>
 
                 <div className="min-w-0">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{t.area}</p>
+                  <p className={cn("text-[11px] font-bold uppercase tracking-wide", color.label)}>{t.area}</p>
                   <p className="mt-0.5 font-display text-sm font-bold leading-snug text-foreground">{t.titulo}</p>
                   <p className="mt-1 text-xs leading-snug text-muted-foreground">{t.descripcion}</p>
                 </div>
@@ -240,9 +279,16 @@ export function MisEncuestasBoard({
                 </div>
 
                 <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-3">
-                  <span className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <User className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    <span className="truncate">{t.tutorName ?? t.planTitle}</span>
+                  <span className="flex min-w-0 items-center gap-2 text-[11px] text-muted-foreground">
+                    {t.tutorName ? (
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
+                        {iniciales(t.tutorName)}
+                      </span>
+                    ) : null}
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-foreground">{t.planTitle}</span>
+                      {t.tutorName && <span className="block truncate">Tutor: {t.tutorName}</span>}
+                    </span>
                   </span>
                   <span className="flex shrink-0 items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold text-primary-foreground transition-transform group-hover:translate-x-0.5">
                     {t.ctaLabel}
