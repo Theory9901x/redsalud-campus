@@ -186,24 +186,24 @@ export function MisEncuestasBoard({
   }, [tarjetas, tab, ocultarPresentadas]);
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <span className="h-8 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-primary to-success" />
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span className="h-9 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-primary to-success" />
           <div>
-            <h2 className="font-display text-xl font-extrabold text-foreground">Evaluaciones disponibles</h2>
-            <p className="text-xs text-muted-foreground">Presaber, postsaber y encuestas abiertas para ti.</p>
+            <h2 className="font-display text-2xl font-extrabold text-foreground">Evaluaciones disponibles</h2>
+            <p className="text-sm text-muted-foreground">Presaber, postsaber y encuestas abiertas para ti.</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded-full bg-muted p-1">
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1 rounded-full border border-border/60 bg-card/80 p-1 shadow-sm backdrop-blur-sm">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors",
+                  "flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors",
                   tab === t.id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -215,19 +215,19 @@ export function MisEncuestasBoard({
             <button
               type="button"
               onClick={() => setMenuAbierto((v) => !v)}
-              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent"
+              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm hover:bg-accent"
             >
-              <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
               Filtros
             </button>
             {menuAbierto && (
-              <div className="absolute right-0 top-full z-10 mt-1.5 w-56 rounded-lg border border-border bg-card p-3 shadow-lg">
-                <label className="flex items-center gap-2 text-xs text-foreground">
+              <div className="absolute right-0 top-full z-10 mt-2 w-60 rounded-xl border border-border bg-card p-3.5 shadow-xl">
+                <label className="flex items-center gap-2.5 text-sm text-foreground">
                   <input
                     type="checkbox"
                     checked={ocultarPresentadas}
                     onChange={(e) => setOcultarPresentadas(e.target.checked)}
-                    className="h-3.5 w-3.5 rounded border-input"
+                    className="h-4 w-4 rounded border-input"
                   />
                   Ocultar ya presentadas
                 </label>
@@ -244,7 +244,7 @@ export function MisEncuestasBoard({
           description="Cuando se habilite una evaluación o encuesta, aparecerá aquí."
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {filtradas.map((t) => {
             const Icono = iconoArea(t.area);
             const color = estiloArea(t.area);
@@ -252,53 +252,53 @@ export function MisEncuestasBoard({
               <Link
                 key={t.key}
                 href={t.href}
-                className="surface-clay group flex flex-col gap-3 p-5 transition-all duration-200 hover:-translate-y-0.5"
+                className="surface-clay group flex flex-col gap-4 rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl", color.bg)}>
+                  <span className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl", color.bg)}>
                     <Icono className={cn("h-5 w-5", color.text)} aria-hidden="true" />
                   </span>
-                  <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide", TIPO_BADGE[t.tab])}>
+                  <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide", TIPO_BADGE[t.tab])}>
                     {TIPO_ETIQUETA[t.tab]}
                   </span>
                 </div>
 
                 <div className="min-w-0">
                   <p className={cn("text-[11px] font-bold uppercase tracking-wide", color.label)}>{t.area}</p>
-                  <p className="mt-0.5 font-display text-sm font-bold leading-snug text-foreground">{t.titulo}</p>
-                  <p className="mt-1 text-xs leading-snug text-muted-foreground">{t.descripcion}</p>
+                  <p className="mt-1 font-display text-base font-bold leading-snug text-foreground">{t.titulo}</p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{t.descripcion}</p>
                 </div>
 
-                <div className="flex items-center gap-4 border-t border-border/60 pt-3">
+                <div className="flex items-center gap-5 border-t border-border/60 pt-4">
                   {t.meta.map((m) => (
-                    <span key={m.sub} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                      <m.icon className="h-3.5 w-3.5 text-muted-foreground/70" aria-hidden="true" />
+                    <span key={m.sub} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <m.icon className="h-4 w-4 text-muted-foreground/70" aria-hidden="true" />
                       <span className="font-semibold text-foreground">{m.label}</span>
                     </span>
                   ))}
                 </div>
 
-                <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-3">
-                  <span className="flex min-w-0 items-center gap-2 text-[11px] text-muted-foreground">
+                <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-4">
+                  <span className="flex min-w-0 items-center gap-2.5 text-xs text-muted-foreground">
                     {t.tutorName ? (
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-bold text-primary">
                         {iniciales(t.tutorName)}
                       </span>
                     ) : null}
                     <span className="min-w-0">
-                      <span className="block truncate font-medium text-foreground">{t.planTitle}</span>
+                      <span className="block truncate font-semibold text-foreground">{t.planTitle}</span>
                       {t.tutorName && <span className="block truncate">Tutor: {t.tutorName}</span>}
                     </span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold text-primary-foreground transition-transform group-hover:translate-x-0.5">
+                  <span className="flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-transform group-hover:translate-x-0.5">
                     {t.ctaLabel}
-                    <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                    <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                 </div>
 
                 {t.yaPresentado && (
-                  <span className="flex items-center gap-1 text-[11px] font-medium text-success">
-                    <CheckCircle2 className="h-3 w-3" aria-hidden="true" /> Ya presentado antes
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-success">
+                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Ya presentado antes
                   </span>
                 )}
               </Link>
