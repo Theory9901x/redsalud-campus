@@ -146,20 +146,20 @@ export function CronogramaEstudiante({
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
       <div className="min-w-0 space-y-4">
         {/* Búsqueda y filtros */}
-        <div className="surface flex flex-wrap items-center gap-3 p-3">
+        <div className="surface-glass flex flex-wrap items-center gap-3 p-4">
           <div className="relative min-w-[200px] flex-1">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar en el cronograma…"
-              className="pl-8"
+              className="rounded-full border-border/60 bg-card/70 pl-9"
             />
           </div>
           <select
             value={area}
             onChange={(e) => setArea(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className="h-9 rounded-full border border-border/60 bg-card/70 px-3.5 text-sm outline-none focus:ring-2 focus:ring-ring"
             aria-label="Filtrar por área"
           >
             <option value="TODAS">Todas las áreas</option>
@@ -178,10 +178,10 @@ export function CronogramaEstudiante({
               type="button"
               onClick={() => setChip(c)}
               className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                "rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors",
                 chip === c
                   ? "bg-primary text-primary-foreground shadow-sm"
-                  : "border border-border bg-card text-muted-foreground hover:text-foreground"
+                  : "border border-border/60 bg-card/70 text-muted-foreground backdrop-blur-sm hover:text-foreground"
               )}
             >
               {c}
@@ -214,28 +214,30 @@ export function CronogramaEstudiante({
           const abierto = abiertos.has(t);
           const acento = `var(${TRIMESTRE_VAR[t]})`;
           return (
-            <section key={t} className="surface overflow-hidden p-0">
+            <section key={t} className="surface-glass overflow-hidden p-0">
               <button
                 type="button"
                 onClick={() => alternar(t)}
                 aria-expanded={abierto}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left"
-                style={{ backgroundImage: `linear-gradient(90deg, color-mix(in oklch, ${acento} 12%, transparent), transparent 70%)` }}
+                className="flex w-full items-center gap-3.5 px-5 py-4 text-left"
+                style={{ backgroundImage: `linear-gradient(90deg, color-mix(in oklch, ${acento} 14%, transparent), transparent 70%)` }}
               >
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: acento }} aria-hidden="true" />
+                <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: acento }} aria-hidden="true" />
                 <span className="min-w-0 flex-1">
-                  <span className="block font-display text-sm font-bold text-foreground">Trimestre {ROMANO[t - 1]}</span>
+                  <span className="block font-display text-[15px] font-bold text-foreground">Trimestre {ROMANO[t - 1]}</span>
                   <span className="block text-xs text-muted-foreground">
                     Capacitaciones programadas para el {["primer", "segundo", "tercer", "cuarto"][t - 1]} trimestre
                   </span>
                 </span>
                 <span
-                  className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                  className="rounded-full px-3 py-1 text-[11px] font-bold"
                   style={{ backgroundColor: `color-mix(in oklch, ${acento} 15%, transparent)`, color: acento }}
                 >
                   {items.length} {items.length === 1 ? "plan" : "planes"}
                 </span>
-                <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", abierto && "rotate-180")} />
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/60 bg-card/70">
+                  <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", abierto && "rotate-180")} />
+                </span>
               </button>
 
               {abierto && items.length > 0 && (
@@ -302,39 +304,39 @@ export function CronogramaEstudiante({
       </div>
 
       {/* Panel derecho */}
-      <aside className="space-y-4">
-        <section className="surface space-y-2 p-4">
+      <aside className="space-y-5">
+        <section className="surface-glass space-y-2.5 p-5">
           <h2 className="font-display text-xs font-bold uppercase tracking-wide text-foreground">Accesos rápidos</h2>
           {[
-            { icono: BookOpen, titulo: "Mis cursos", detalle: "Continúa donde ibas", href: "/mi-aula" },
-            { icono: Award, titulo: "Mis certificados", detalle: "Descárgalos en PDF", href: "/mis-certificados" },
-            { icono: ClipboardCheck, titulo: "Mis encuestas", detalle: "Pendientes por responder", href: "/mis-encuestas" },
-            { icono: GraduationCap, titulo: "Catálogo", detalle: "Explora la oferta", href: "/cursos" },
+            { icono: BookOpen, titulo: "Mis cursos", detalle: "Continúa donde ibas", href: "/mi-aula", chip: "bg-primary/15 text-primary" },
+            { icono: Award, titulo: "Mis certificados", detalle: "Descárgalos en PDF", href: "/mis-certificados", chip: "bg-[var(--accent)]/15 text-[var(--accent)]" },
+            { icono: ClipboardCheck, titulo: "Mis encuestas", detalle: "Pendientes por responder", href: "/mis-encuestas", chip: "bg-success/15 text-success" },
+            { icono: GraduationCap, titulo: "Catálogo", detalle: "Explora la oferta", href: "/cursos", chip: "bg-warning/15 text-warning-foreground" },
           ].map((a) => (
-            <Link key={a.href} href={a.href} className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-accent/10">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Link key={a.href} href={a.href} className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-accent/10">
+              <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", a.chip)}>
                 <a.icono className="h-4 w-4" aria-hidden="true" />
               </span>
               <span className="min-w-0">
-                <span className="block text-xs font-semibold text-foreground">{a.titulo}</span>
+                <span className="block text-[13px] font-bold text-foreground">{a.titulo}</span>
                 <span className="block text-[11px] text-muted-foreground">{a.detalle}</span>
               </span>
             </Link>
           ))}
         </section>
 
-        <section className="surface space-y-2.5 p-4">
+        <section className="surface-glass space-y-3 p-5">
           <h2 className="font-display text-xs font-bold uppercase tracking-wide text-foreground">Próximas acciones</h2>
           {acciones.length === 0 ? (
             <p className="text-xs text-muted-foreground">Nada pendiente por ahora. Cuando se habilite una evaluación o se agende una jornada, aparece aquí.</p>
           ) : (
             acciones.map((a, i) => (
-              <div key={i} className="rounded-lg border border-border p-2.5">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">{a.tipo}</p>
-                <p className="text-xs font-medium leading-snug text-foreground">{a.titulo}</p>
+              <div key={i} className="surface-clay p-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-primary">{a.tipo}</p>
+                <p className="mt-0.5 text-[13px] font-semibold leading-snug text-foreground">{a.titulo}</p>
                 <p className="text-[11px] text-muted-foreground">{a.detalle}</p>
                 {a.href && (
-                  <Link href={a.href} className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline">
+                  <Link href={a.href} className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline">
                     Ir ahora <ArrowRight className="h-3 w-3" aria-hidden="true" />
                   </Link>
                 )}
@@ -343,7 +345,7 @@ export function CronogramaEstudiante({
           )}
         </section>
 
-        <section className="surface space-y-2.5 p-4">
+        <section className="surface-glass space-y-3 p-5">
           <h2 className="flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wide text-foreground">
             <Video className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
             Sesiones virtuales
@@ -354,8 +356,8 @@ export function CronogramaEstudiante({
             </p>
           ) : (
             sesionesVirtuales.map((s, i) => (
-              <div key={i} className="rounded-lg border border-border p-2.5">
-                <p className="text-xs font-medium leading-snug text-foreground">{s.titulo}</p>
+              <div key={i} className="surface-clay p-3">
+                <p className="text-[13px] font-semibold leading-snug text-foreground">{s.titulo}</p>
                 <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
                   <CalendarClock className="h-3 w-3" aria-hidden="true" />
                   {s.fecha}
@@ -364,7 +366,7 @@ export function CronogramaEstudiante({
                   href={s.meetingUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1.5 inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-90"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold text-primary-foreground hover:opacity-90"
                 >
                   Ingresar a la sesión
                   <ExternalLink className="h-3 w-3" aria-hidden="true" />

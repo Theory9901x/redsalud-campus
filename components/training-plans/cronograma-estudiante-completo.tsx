@@ -47,14 +47,14 @@ export function CronogramaEstudianteCompleto({
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <div className="flex items-center gap-1 rounded-md bg-muted p-0.5">
+        <div className="flex items-center gap-1 rounded-full border border-border/60 bg-card/80 p-1 shadow-sm backdrop-blur-sm">
           {VISTAS.map(({ id, etiqueta, Icono }) => (
             <button
               key={id}
               type="button"
               onClick={() => setVista(id)}
-              className={`flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                vista === id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
+                vista === id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icono className="h-3.5 w-3.5" aria-hidden="true" />

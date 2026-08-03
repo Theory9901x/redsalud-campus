@@ -30,7 +30,6 @@ import {
   type SesionVirtual,
 } from "@/components/training-plans/cronograma-estudiante";
 import { CronogramaEstudianteCompleto } from "@/components/training-plans/cronograma-estudiante-completo";
-import { MetricCard } from "@/components/admin/metric-card";
 import { StaggerGrid } from "@/components/brand/stagger-grid";
 import { EmptyState } from "@/components/brand/empty-state";
 import { StaggerSections } from "@/components/brand/stagger-sections";
@@ -220,20 +219,21 @@ export default async function MiCapacitacionDetallePage({
         </Link>
 
         {avisoQr && (
-          <div className="surface flex items-start gap-3 border-l-4 border-l-warning p-4" role="status">
+          <div className="surface-glass flex items-start gap-3 border-l-4 border-l-warning p-4" role="status">
             <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
             <p className="text-sm text-foreground">{avisoQr}</p>
           </div>
         )}
 
-        <div className="surface-panel surface-accent-top p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <h1 className="font-display text-2xl font-extrabold text-foreground">{plan.title}</h1>
+        <div className="surface-glass surface-accent-top relative overflow-hidden px-6 py-7 sm:px-8">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/[0.12] blur-[80px]" />
+          <div className="relative flex flex-wrap items-start justify-between gap-3">
+            <h1 className="font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">{plan.title}</h1>
             <Badge className={TRAINING_PLAN_STATUS_CLASSES[plan.status]}>
               {TRAINING_PLAN_STATUS_LABELS[plan.status]}
             </Badge>
           </div>
-          <div className="mt-4 flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
+          <div className="relative mt-4 flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <CalendarRange className="h-4 w-4 text-primary" />
               {plan.year}
@@ -250,12 +250,27 @@ export default async function MiCapacitacionDetallePage({
         </div>
 
         <StaggerGrid className="grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
-          <MetricCard label="Capacitaciones asignadas" value={filas.length} icon={ClipboardList} accent="primary" />
-          <MetricCard label="Próximas jornadas" value={proximasJornadas.length} icon={CalendarClock} accent="warning" />
-          <MetricCard label="Presaberes disponibles" value={presaberesDisponibles} icon={FileQuestion} accent="warning" />
-          <MetricCard label="Postsaberes disponibles" value={postsaberesDisponibles} icon={ClipboardCheck} accent="primary" />
-          <MetricCard label="Completadas" value={completadas} icon={CheckCircle2} accent="success" />
-          <MetricCard label="Progreso general" value={progresoGeneral} suffix="%" icon={TrendingUp} accent="success" />
+          {[
+            { label: "Capacitaciones asignadas", value: `${filas.length}`, icon: ClipboardList, chip: "bg-primary/15 text-primary", glow: "bg-primary/20" },
+            { label: "Próximas jornadas", value: `${proximasJornadas.length}`, icon: CalendarClock, chip: "bg-warning/15 text-warning-foreground", glow: "bg-warning/20" },
+            { label: "Presaberes disponibles", value: `${presaberesDisponibles}`, icon: FileQuestion, chip: "bg-[var(--accent)]/15 text-[var(--accent)]", glow: "bg-[var(--accent)]/20" },
+            { label: "Postsaberes disponibles", value: `${postsaberesDisponibles}`, icon: ClipboardCheck, chip: "bg-primary/15 text-primary", glow: "bg-primary/20" },
+            { label: "Completadas", value: `${completadas}`, icon: CheckCircle2, chip: "bg-success/15 text-success", glow: "bg-success/20" },
+            { label: "Progreso general", value: `${progresoGeneral}%`, icon: TrendingUp, chip: "bg-success/15 text-success", glow: "bg-success/20" },
+          ].map((k) => (
+            <div key={k.label} className="surface-glass surface-accent-top relative overflow-hidden p-5">
+              <div className={`pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full blur-2xl ${k.glow}`} />
+              <div className="relative flex flex-col gap-3">
+                <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${k.chip}`}>
+                  <k.icon className="h-5 w-5" strokeWidth={2.25} aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="font-display text-[28px] font-extrabold leading-none tracking-tight text-foreground">{k.value}</p>
+                  <p className="mt-1.5 text-xs font-semibold leading-tight text-foreground/75">{k.label}</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </StaggerGrid>
 
         <Tabs defaultValue="cronograma">
