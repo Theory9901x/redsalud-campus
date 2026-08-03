@@ -442,8 +442,8 @@ export async function getEvaluacionesCicloDisponibles(userId: string, personnelT
       presaberClosedAt: true,
       postsaberOpenedAt: true,
       postsaberClosedAt: true,
-      area: { select: { name: true, sortOrder: true } },
-      plan: { select: { targetDepartment: true } },
+      area: { select: { name: true, sortOrder: true, tutor: { select: { fullName: true } } } },
+      plan: { select: { title: true, targetDepartment: true } },
     },
   });
 
@@ -455,12 +455,12 @@ export async function getEvaluacionesCicloDisponibles(userId: string, personnelT
   });
   if (aplicables.length === 0) return [];
 
-  const courseIds = aplicables.map((a) => a.courseId!) ;
+  const courseIds = aplicables.map((a) => a.courseId!);
   const quizzes = await prisma.quiz.findMany({
     where: { courseId: { in: courseIds }, moduleId: null, isActive: true },
-    select: { id: true, courseId: true },
+    select: { id: true, courseId: true, timeLimitMinutes: true, passingScore: true },
   });
-  const quizPorCurso = new Map(quizzes.map((q) => [q.courseId, q.id]));
+  const quizPorCurso = new Map(quizzes.map((q) => [q.courseId, q]));
 
   const intentos = await prisma.quizAttempt.findMany({
     where: { userId, quizId: { in: quizzes.map((q) => q.id) }, moment: { not: null }, score: { not: null } },
@@ -471,19 +471,82 @@ export async function getEvaluacionesCicloDisponibles(userId: string, personnelT
   return aplicables
     .map((a) => {
       const momento = momentoActivo(a);
-      const quizId = quizPorCurso.get(a.courseId!);
-      if (!momento || !quizId) return null;
+      const quiz = quizPorCurso.get(a.courseId!);
+      if (!momento || !quiz) return null;
       return {
         activityId: a.id,
         titulo: a.title,
         area: a.area?.name ?? "Sin área",
         areaOrden: a.area?.sortOrder ?? 99,
+        tutorName: a.area?.tutor?.fullName ?? null,
+        planTitle: a.plan.title,
         momento,
-        yaPresentado: presentados.has(`${quizId}:${momento}`),
+        yaPresentado: presentados.has(`${quiz.id}:${momento}`),
+        timeLimitMinutes: quiz.timeLimitMinutes,
+        passingScore: quiz.passingScore,
       };
     })
     .filter((x): x is NonNullable<typeof x> => x !== null)
     .sort((a, b) => a.areaOrden - b.areaOrden || a.titulo.localeCompare(b.titulo, "es"));
+}
+
+/**
+ * Historial reciente para "Mis encuestas": intentos del ciclo (presaber y
+ * postsaber, con nota) y encuestas de opinión respondidas (sin nota, son de
+ * opinión), unificados por fecha. Nada inventado: sin nota donde no la hay,
+ * sin fecha límite donde el modelo no la tiene -las encuestas y las ventanas
+ * del ciclo no cargan un deadline propio en este sistema-.
+ */
+export async function getHistorialEvaluaciones(userId: string, limite = 8) {
+  const [intentos, respuestas] = await Promise.all([
+    prisma.quizAttempt.findMany({
+      where: { userId, moment: { not: null }, score: { not: null }, finishedAt: { not: null } },
+      orderBy: { finishedAt: "desc" },
+      take: limite,
+      select: {
+        finishedAt: true,
+        score: true,
+        passed: true,
+        moment: true,
+        quiz: { select: { title: true, course: { select: { title: true } } } },
+      },
+    }),
+    prisma.surveyResponse.findMany({
+      where: { userId },
+      orderBy: { submittedAt: "desc" },
+      take: limite,
+      select: { submittedAt: true, survey: { select: { title: true } } },
+    }),
+  ]);
+
+  const filas = [
+    ...intentos.map((i) => ({
+      titulo: i.quiz.course.title,
+      tipo: i.moment as "PRESABER" | "POSTSABER",
+      fecha: i.finishedAt!,
+      resultado: i.score,
+      aprobado: i.passed,
+    })),
+    ...respuestas.map((r) => ({
+      titulo: r.survey.title,
+      tipo: "ENCUESTA" as const,
+      fecha: r.submittedAt,
+      resultado: null,
+      aprobado: null,
+    })),
+  ];
+
+  return filas.sort((a, b) => b.fecha.getTime() - a.fecha.getTime()).slice(0, limite);
+}
+
+/** Promedio real de los intentos del ciclo (presaber/postsaber) con nota, de esta persona. Null sin datos: no se inventa un 0. */
+export async function getPromedioEvaluaciones(userId: string) {
+  const intentos = await prisma.quizAttempt.findMany({
+    where: { userId, moment: { not: null }, score: { not: null } },
+    select: { score: true },
+  });
+  if (intentos.length === 0) return null;
+  return Math.round(intentos.reduce((s, i) => s + i.score!, 0) / intentos.length);
 }
 
 /**

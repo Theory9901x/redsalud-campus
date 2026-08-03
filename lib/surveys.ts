@@ -162,7 +162,9 @@ export async function getSurveysForUser(userId: string, planId?: string) {
     orderBy: { createdAt: "desc" },
     include: {
       trainingPlan: { select: { title: true } },
-      trainingActivity: { select: { title: true } },
+      trainingActivity: {
+        select: { title: true, area: { select: { name: true, tutor: { select: { fullName: true } } } } },
+      },
       _count: { select: { questions: true } },
       responses: { where: { userId }, select: { id: true } },
     },
