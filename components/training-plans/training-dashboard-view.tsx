@@ -25,19 +25,10 @@ import {
   nivelSemaforo,
 } from "@/components/training-plans/labels";
 import type { TrainingDashboardData } from "@/lib/training-dashboard";
+import type { PlanMetricsData } from "@/lib/plan-metrics";
 import type { getAreaCoverageBreakdown } from "@/lib/training-plans";
-import type { AdherenceBarDatum } from "@/components/training-plans/adherence-bar-chart";
-import type { ActivityStatusDatum } from "@/components/training-plans/activity-status-pie-chart";
 
-export type SelectedPlanMetrics = {
-  planId: string;
-  overallPercentage: number | null;
-  adherenceBarData: AdherenceBarDatum[];
-  statusPieData: ActivityStatusDatum[];
-  surveyResponseRate: number | null;
-  totalActivities: number;
-  totalSurveys: number;
-};
+export type SelectedPlanMetrics = PlanMetricsData;
 
 type AreaCoverage = Awaited<ReturnType<typeof getAreaCoverageBreakdown>>;
 
@@ -326,15 +317,7 @@ export function TrainingDashboardView({
         </form>
 
         {selectedPlanMetrics ? (
-          <PlanMetricsView
-            planId={selectedPlanMetrics.planId}
-            overallPercentage={selectedPlanMetrics.overallPercentage}
-            adherenceBarData={selectedPlanMetrics.adherenceBarData}
-            statusPieData={selectedPlanMetrics.statusPieData}
-            surveyResponseRate={selectedPlanMetrics.surveyResponseRate}
-            totalActivities={selectedPlanMetrics.totalActivities}
-            totalSurveys={selectedPlanMetrics.totalSurveys}
-          />
+          <PlanMetricsView data={selectedPlanMetrics} />
         ) : (
           <EmptyState
             icon={CalendarRange}

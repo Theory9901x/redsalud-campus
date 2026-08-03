@@ -18,10 +18,9 @@ import {
   getLinkableCourses,
   getSessionsForPlan,
   getPlanAdherenceSummary,
-  buildAdherenceBarData,
-  buildActivityStatusCounts,
 } from "@/lib/training-plans";
-import { getSurveysForPlan, buildSurveyResponseRate } from "@/lib/surveys";
+import { getSurveysForPlan } from "@/lib/surveys";
+import { getPlanMetricsData } from "@/lib/plan-metrics";
 import {
   createTrainingActivityAction,
   uploadTrainingPlanDocumentAction,
@@ -88,6 +87,7 @@ export default async function TutorPlanCapacitacionDetallePage({
   );
 
 
+  const metricas = await getPlanMetricsData(id);
   const bloqueosCierre = plan.status === "ACTIVE" ? await getPlanCloseBlockers(id) : [];
   const acta =
     plan.status === "CLOSED" && plan.closedAt
@@ -271,15 +271,7 @@ export default async function TutorPlanCapacitacionDetallePage({
         </TabsContent>
 
         <TabsContent value="metricas" className="pt-4">
-          <PlanMetricsView
-            planId={id}
-            overallPercentage={adherenceSummary.overallPercentage}
-            adherenceBarData={buildAdherenceBarData(plan.activities, adherenceSummary.perActivity)}
-            statusPieData={buildActivityStatusCounts(plan.activities)}
-            surveyResponseRate={buildSurveyResponseRate(surveys)}
-            totalActivities={plan.activities.length}
-            totalSurveys={surveys.length}
-          />
+          {metricas && <PlanMetricsView data={metricas} />}
         </TabsContent>
       </Tabs>
     </div>

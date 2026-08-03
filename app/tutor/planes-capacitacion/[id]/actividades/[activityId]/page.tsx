@@ -53,7 +53,6 @@ import {
 } from "@/components/training-plans/labels";
 
 const BASE_PATH = "/tutor/planes-capacitacion";
-const DATE_FORMAT = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" });
 const DATETIME_FORMAT = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "numeric", minute: "2-digit" });
 
 export default async function TutorActividadDetallePage({
