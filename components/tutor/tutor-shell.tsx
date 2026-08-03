@@ -8,6 +8,7 @@ import {
   BookOpen,
   CalendarRange,
   Award,
+  ClipboardList,
   Layers,
   LayoutDashboard,
   Users,
@@ -40,6 +41,13 @@ const NAV_GROUPS: GrupoNav[] = [
       { href: "/tutor/inscritos", label: "Inscritos y progreso", icon: Users },
       { href: "/tutor/certificados", label: "Certificados", icon: Award },
     ],
+  },
+  {
+    // El tutor también es personal de la entidad: sus propios presaber,
+    // postsaber y encuestas de opinión -como área- viven aquí, no en la
+    // gestión de sus cursos ni de sus planes.
+    label: "Mi aprendizaje",
+    items: [{ href: "/mis-encuestas", label: "Mis encuestas", icon: ClipboardList }],
   },
   {
     label: "Explorar",

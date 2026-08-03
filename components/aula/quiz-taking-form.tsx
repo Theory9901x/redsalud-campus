@@ -9,7 +9,6 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
-  ClipboardCheck,
   Clock,
   Flag,
   Loader2,
@@ -696,14 +695,6 @@ export function QuizTakingForm({
             <p className="min-w-0 flex-1 break-words text-[15px] font-semibold leading-relaxed text-foreground">
               {question.statement}
             </p>
-            {/* chip-glass NO sirve aquí: está pensado para el navy del hero y
-                su texto es blanco, así que sobre la tarjeta clara quedaba
-                invisible. */}
-            {question.area && (
-              <span className="shrink-0 rounded-md bg-[color-mix(in_oklch,var(--accent)_16%,transparent)] px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-[color-mix(in_oklch,var(--accent)_65%,var(--navy))]">
-                {question.area}
-              </span>
-            )}
             <button
               type="button"
               onClick={() => actualizar(question.id, { marcada: !respuestas[question.id].marcada })}
