@@ -327,6 +327,91 @@ export async function getPresaberPostsaberSummary(activityId: string) {
 }
 
 /**
+ * Resultados del ciclo presaber/postsaber de una capacitación, en las dos
+ * lecturas que el área necesita: por PERSONA (quién mejoró y cuánto) y por
+ * PREGUNTA (dónde está la dificultad).
+ *
+ * Por persona se toma el MEJOR intento de cada momento, el mismo criterio
+ * del resumen agregado: a alguien se le mide por lo mejor que demostró en la
+ * ventana. Por pregunta, el % de acierto se calcula sobre esos mismos
+ * mejores intentos -no sobre todos los intentos fallidos previos-, para que
+ * las dos tablas cuenten la misma historia.
+ */
+export async function getCycleResults(activityId: string) {
+  const actividad = await prisma.trainingActivity.findUnique({
+    where: { id: activityId },
+    select: { courseId: true },
+  });
+  if (!actividad?.courseId) return null;
+
+  const quiz = await prisma.quiz.findFirst({
+    where: { courseId: actividad.courseId, moduleId: null },
+    select: { id: true },
+  });
+  if (!quiz) return null;
+
+  const intentos = await prisma.quizAttempt.findMany({
+    where: { quizId: quiz.id, moment: { not: null }, score: { not: null }, finishedAt: { not: null } },
+    select: {
+      id: true,
+      moment: true,
+      score: true,
+      user: { select: { id: true, fullName: true, documentNumber: true } },
+    },
+  });
+  if (intentos.length === 0) return null;
+
+  // Mejor intento por persona por momento.
+  const mejores = new Map<string, { user: (typeof intentos)[number]["user"]; pre?: { id: string; score: number }; post?: { id: string; score: number } }>();
+  for (const i of intentos) {
+    const registro = mejores.get(i.user.id) ?? { user: i.user };
+    const clave = i.moment === "PRESABER" ? "pre" : "post";
+    if (!registro[clave] || i.score! > registro[clave]!.score) {
+      registro[clave] = { id: i.id, score: i.score! };
+    }
+    mejores.set(i.user.id, registro);
+  }
+
+  const personas = [...mejores.values()]
+    .map((r) => ({
+      fullName: r.user.fullName,
+      documentNumber: r.user.documentNumber,
+      presaber: r.pre?.score ?? null,
+      postsaber: r.post?.score ?? null,
+      diferencia: r.pre && r.post ? r.post.score - r.pre.score : null,
+    }))
+    .sort((a, b) => a.fullName.localeCompare(b.fullName, "es"));
+
+  // Por pregunta: acierto sobre los mejores intentos de cada momento.
+  const idsPre = [...mejores.values()].map((r) => r.pre?.id).filter((x): x is string => !!x);
+  const idsPost = [...mejores.values()].map((r) => r.post?.id).filter((x): x is string => !!x);
+
+  const [preguntas, respuestas] = await Promise.all([
+    prisma.question.findMany({
+      where: { quizId: quiz.id, isActive: true, type: { not: "OPEN_TEXT" } },
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, statement: true },
+    }),
+    prisma.quizAnswer.findMany({
+      where: { attemptId: { in: [...idsPre, ...idsPost] } },
+      select: { attemptId: true, questionId: true, isCorrect: true },
+    }),
+  ]);
+
+  const setPre = new Set(idsPre);
+  const porPregunta = preguntas.map((p) => {
+    const suyas = respuestas.filter((r) => r.questionId === p.id);
+    const pre = suyas.filter((r) => setPre.has(r.attemptId));
+    const post = suyas.filter((r) => !setPre.has(r.attemptId));
+    const pct = (lista: typeof suyas) =>
+      lista.length > 0 ? Math.round((lista.filter((r) => r.isCorrect).length / lista.length) * 100) : null;
+    return { statement: p.statement, presaber: pct(pre), postsaber: pct(post) };
+  });
+
+  return { personas, porPregunta };
+}
+
+/**
  * Registra que alguien asistió, en el instante en que entra a SU evaluación.
  *
  * Es la señal de asistencia más temprana y honesta que existe: no espera a

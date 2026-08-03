@@ -10,7 +10,7 @@ import {
   getAutomaticAttendanceRoster,
 } from "@/lib/training-plans";
 import { getSurveysForActivity } from "@/lib/surveys";
-import { getLinkableCoursesForUser, getMunicipioOptions, getPresaberPostsaberSummary } from "@/lib/training-plans";
+import { getLinkableCoursesForUser, getMunicipioOptions, getPresaberPostsaberSummary, getCycleResults } from "@/lib/training-plans";
 import {
   uploadTrainingActivityDocumentAction,
   enableActivityAction,
@@ -43,6 +43,7 @@ import { LinkCourseForm } from "@/components/training-plans/link-course-form";
 import { TrainingSessionForm } from "@/components/training-plans/training-session-form";
 import { TrainingSessionList } from "@/components/training-plans/training-session-list";
 import { PresaberPostsaberPanel } from "@/components/training-plans/presaber-postsaber-panel";
+import { CycleResults } from "@/components/training-plans/cycle-results";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
 import {
   TRAINING_ACTIVITY_TYPE_LABELS,
@@ -96,6 +97,7 @@ export default async function AdminActividadDetallePage({
   const linkableCourses = activity.course ? [] : await getLinkableCoursesForUser(session.user.role, session.user.id);
   const municipios = await getMunicipioOptions();
   const resumenCiclo = activity.courseId ? await getPresaberPostsaberSummary(activityId) : null;
+  const resultadosCiclo = activity.courseId ? await getCycleResults(activityId) : null;
   const etiquetasCiclo = {
     presaberOpened: activity.presaberOpenedAt ? DATETIME_FORMAT.format(activity.presaberOpenedAt) : null,
     presaberClosed: activity.presaberClosedAt ? DATETIME_FORMAT.format(activity.presaberClosedAt) : null,
@@ -180,6 +182,8 @@ export default async function AdminActividadDetallePage({
           onClosePostsaber={closePostsaber}
         />
       )}
+
+      {resultadosCiclo && <CycleResults resultados={resultadosCiclo} activityId={activityId} />}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-3 lg:col-span-2">
