@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { estadoPresaber, estadoPostsaber } from "@/lib/presaber-postsaber";
 
 /**
  * Enlaces cortos y ESTABLES de cada capacitación del plan, pensados para
@@ -33,6 +34,10 @@ export async function GET(
     select: {
       planId: true,
       courseId: true,
+      presaberOpenedAt: true,
+      presaberClosedAt: true,
+      postsaberOpenedAt: true,
+      postsaberClosedAt: true,
       course: { select: { targetAudience: true } },
       sessions: {
         where: { meetingUrl: { not: null }, status: { not: "CLOSED" } },
@@ -54,7 +59,17 @@ export async function GET(
     return NextResponse.redirect(url ?? `${base}/mis-capacitaciones/${actividad.planId}`);
   }
 
-  // ---- Presaber / postsaber: con identidad --------------------------------
+  // ---- Presaber / postsaber: cada enlace responde por SU momento ----------
+  // Son dos accesos distintos aunque la evaluación sea la misma: el QR de
+  // postsaber jamás debe aterrizar en el presaber (ni al revés). Si la
+  // ventana de ESTE enlace no está abierta, se avisa en el cronograma del
+  // plan en vez de mostrar la evaluación del otro momento.
+  const estadoVentana = destino === "presaber" ? estadoPresaber(actividad) : estadoPostsaber(actividad);
+  if (estadoVentana !== "DISPONIBLE") {
+    const aviso = `${destino}-${estadoVentana === "CERRADO" ? "cerrado" : "sin-habilitar"}`;
+    return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}?aviso=${aviso}`);
+  }
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.redirect(`${base}/login?callbackUrl=${encodeURIComponent(`/c/${activityId}/${destino}`)}`);

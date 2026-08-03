@@ -43,8 +43,28 @@ import {
   etiquetaJornada,
 } from "@/components/training-plans/labels";
 
-export default async function MiCapacitacionDetallePage({ params }: { params: Promise<{ id: string }> }) {
+/**
+ * Avisos con los que aterrizan los enlaces QR (/c/...) cuando el momento que
+ * pedían no está abierto: cada enlace responde por SU momento -escanear el
+ * QR de postsaber nunca abre el presaber, aunque sea la misma evaluación-.
+ */
+const AVISOS_QR: Record<string, string> = {
+  "presaber-sin-habilitar": "El presaber de esta capacitación todavía no está habilitado. El área lo abre al iniciar la jornada; vuelve a escanear el código cuando lo anuncien.",
+  "presaber-cerrado": "El presaber de esta capacitación ya cerró. Si la jornada continúa, el siguiente paso es el postsaber cuando el área lo habilite.",
+  "postsaber-sin-habilitar": "El postsaber todavía no está habilitado. Se abre después de la capacitación; vuelve a escanear el código cuando el área lo anuncie.",
+  "postsaber-cerrado": "El postsaber de esta capacitación ya cerró. Tu resultado quedó registrado con los intentos que presentaste.",
+};
+
+export default async function MiCapacitacionDetallePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ aviso?: string }>;
+}) {
   const { id } = await params;
+  const { aviso } = await searchParams;
+  const avisoQr = aviso ? AVISOS_QR[aviso] ?? null : null;
   const session = await auth();
   const userId = session!.user.id;
   const personnelType = session!.user.personnelType;
@@ -188,6 +208,13 @@ export default async function MiCapacitacionDetallePage({ params }: { params: Pr
           <ArrowLeft className="h-4 w-4" />
           Mis capacitaciones
         </Link>
+
+        {avisoQr && (
+          <div className="surface flex items-start gap-3 border-l-4 border-l-warning p-4" role="status">
+            <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
+            <p className="text-sm text-foreground">{avisoQr}</p>
+          </div>
+        )}
 
         <div className="surface-panel surface-accent-top p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
