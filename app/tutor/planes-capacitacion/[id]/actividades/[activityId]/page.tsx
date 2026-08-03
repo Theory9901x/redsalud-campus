@@ -44,6 +44,8 @@ import { TrainingSessionForm } from "@/components/training-plans/training-sessio
 import { TrainingSessionList } from "@/components/training-plans/training-session-list";
 import { PresaberPostsaberPanel } from "@/components/training-plans/presaber-postsaber-panel";
 import { CycleResults } from "@/components/training-plans/cycle-results";
+import { ActivityQrPanel, type EnlaceQr } from "@/components/training-plans/activity-qr-panel";
+import QRCode from "qrcode";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
 import {
   TRAINING_ACTIVITY_TYPE_LABELS,
@@ -98,6 +100,27 @@ export default async function TutorActividadDetallePage({
   const municipios = await getMunicipioOptions();
   const resumenCiclo = activity.courseId ? await getPresaberPostsaberSummary(activityId) : null;
   const resultadosCiclo = activity.courseId ? await getCycleResults(activityId) : null;
+
+  // Enlaces estables de la jornada, como QR. Se generan aquí -en servidor-
+  // porque el QR es una imagen determinista del enlace; el cliente solo
+  // los muestra e imprime.
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const definicionQr = [
+    { destino: "meet", titulo: "Sesión virtual (Meet)", descripcion: "Abre la sala de Meet vigente de esta capacitación." },
+    { destino: "presaber", titulo: "Presaber", descripcion: "Lleva a la evaluación en su momento presaber. Pide iniciar sesión." },
+    { destino: "postsaber", titulo: "Postsaber", descripcion: "Lleva a la evaluación en su momento postsaber. Pide iniciar sesión." },
+  ];
+  const enlacesQr: EnlaceQr[] = await Promise.all(
+    definicionQr.map(async (d) => {
+      const url = `${baseUrl}/c/${activityId}/${d.destino}`;
+      return {
+        titulo: d.titulo,
+        descripcion: d.descripcion,
+        url,
+        qrDataUrl: await QRCode.toDataURL(url, { width: 320, margin: 1 }),
+      };
+    })
+  );
   const etiquetasCiclo = {
     presaberOpened: activity.presaberOpenedAt ? DATETIME_FORMAT.format(activity.presaberOpenedAt) : null,
     presaberClosed: activity.presaberClosedAt ? DATETIME_FORMAT.format(activity.presaberClosedAt) : null,
@@ -184,6 +207,8 @@ export default async function TutorActividadDetallePage({
       )}
 
       {resultadosCiclo && <CycleResults resultados={resultadosCiclo} activityId={activityId} />}
+
+      {activity.courseId && <ActivityQrPanel enlaces={enlacesQr} />}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-3 lg:col-span-2">

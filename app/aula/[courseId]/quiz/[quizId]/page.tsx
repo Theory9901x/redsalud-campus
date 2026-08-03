@@ -35,7 +35,19 @@ export default async function AulaQuizPage({
   // entre renders del mismo árbol.
   const ahora = new Date();
   const vencida = data.enrollment.deadlineAt !== null && data.enrollment.deadlineAt < ahora;
-  const motivo = !quizSummary.unlocked
+
+  // Ciclo presaber/postsaber: la misma evaluación, presentada antes y
+  // después de la capacitación. Null para la enorme mayoría de quizzes de la
+  // plataforma -no son parte de ningún plan-, que siguen sin gate alguno.
+  const gate = await getEvaluationGate(quizId);
+  const momento: "PRESABER" | "POSTSABER" | null = gate ? momentoActivo(gate) : null;
+
+  // El desbloqueo secuencial NO aplica mientras corre una ventana del ciclo:
+  // el presaber se presenta ANTES de ver el contenido -medir lo que se sabe
+  // llegando es su única razón de ser-, así que exigir las lecciones vistas
+  // lo haría imposible por definición. El resto de reglas (evaluación
+  // inactiva, plazo vencido) siguen intactas.
+  const motivo = !quizSummary.unlocked && momento === null
     ? ("bloqueada" as const)
     : !quiz.isActive
       ? ("inactiva" as const)
@@ -44,13 +56,7 @@ export default async function AulaQuizPage({
         : null;
   if (motivo) return <EvaluacionNoDisponible motivo={motivo} courseId={courseId} />;
 
-  // Ciclo presaber/postsaber: la misma evaluación, presentada antes y
-  // después de la capacitación. Null para la enorme mayoría de quizzes de la
-  // plataforma -no son parte de ningún plan-, que siguen sin gate alguno.
-  const gate = await getEvaluationGate(quizId);
-  let momento: "PRESABER" | "POSTSABER" | null = null;
   if (gate) {
-    momento = momentoActivo(gate);
     if (!momento) {
       if (estadoPresaber(gate) === "NO_CONFIGURADO") {
         // Nunca se ha abierto nada todavía.
