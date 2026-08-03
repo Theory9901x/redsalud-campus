@@ -14,9 +14,13 @@ import { getSurveysForPlan, buildSurveyResponseRate } from "@/lib/surveys";
  * (¿a quién le falta contenido?, ¿quién ya abrió sus jornadas?) y por
  * ciclo (¿cuánto mejoró la gente entre presaber y postsaber?).
  */
-export async function getPlanMetricsData(planId: string) {
-  const plan = await getTrainingPlanDetail(planId);
-  if (!plan) return null;
+export async function getPlanMetricsData(planId: string, areaIds: string[] | null = null) {
+  const planCompleto = await getTrainingPlanDetail(planId);
+  if (!planCompleto) return null;
+  // Un tutor de área solo mide lo suyo: mismas fórmulas, universo acotado.
+  const plan = areaIds
+    ? { ...planCompleto, activities: planCompleto.activities.filter((a) => a.area && areaIds.includes(a.area.id)) }
+    : planCompleto;
 
   const [adherenceSummary, surveys] = await Promise.all([
     getPlanAdherenceSummary({ targetDepartment: plan.targetDepartment, activities: plan.activities }),

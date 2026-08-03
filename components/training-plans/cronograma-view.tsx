@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { LayoutGrid, Table2, CalendarDays, Search, ExternalLink } from "lucide-react";
+import { LayoutGrid, Table2, CalendarDays, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -15,7 +15,6 @@ import { SessionsCalendar, type SesionCalendario } from "@/components/training-p
 import {
   TRAINING_ACTIVITY_STATUS_LABELS,
   TRAINING_ACTIVITY_STATUS_CLASSES,
-  etiquetaProgramacion,
 } from "@/components/training-plans/labels";
 import type { TrainingActivityStatus } from "@prisma/client";
 
@@ -180,13 +179,7 @@ export function CronogramaView({
         />
       )}
       {vista === "ampliada" && (
-        <TablaAmpliada
-          activities={filtradas}
-          basePath={basePath}
-          planId={planId}
-          adherenceByActivity={adherenceByActivity}
-          areasGestionables={areasGestionables}
-        />
+        <TablaAmpliada activities={filtradas} basePath={basePath} planId={planId} areasGestionables={areasGestionables} />
       )}
       {vista === "calendario" && <SessionsCalendar sessions={sessions} basePath={basePath} planId={planId} />}
     </div>
@@ -197,79 +190,102 @@ function TablaAmpliada({
   activities,
   basePath,
   planId,
-  adherenceByActivity,
   areasGestionables,
 }: {
   activities: Actividad[];
   basePath: string;
   planId: string;
-  adherenceByActivity?: Record<string, number>;
   areasGestionables: string[] | null;
 }) {
   if (activities.length === 0) {
     return <p className="surface p-6 text-center text-sm text-muted-foreground">Nada coincide con el filtro.</p>;
   }
 
+  /*
+   * El formato es EL DEL PIC: Área · Actividad · Objetivo · Metodología ·
+   * Dirigido a · N° de personas · Responsable · trimestres con X ·
+   * Seguimiento. Es el documento que la institución firma y conoce; la
+   * vista ampliada lo replica para que quien lo trabaja en Excel encuentre
+   * aquí las mismas columnas, con el estado vivo encima.
+   */
   return (
     <div className="surface p-0">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Área</TableHead>
-            <TableHead>Capacitación</TableHead>
+            <TableHead>Actividad</TableHead>
+            <TableHead>Objetivo</TableHead>
+            <TableHead>Metodología</TableHead>
             <TableHead>Dirigido a</TableHead>
+            <TableHead>N° personas</TableHead>
             <TableHead>Responsable</TableHead>
-            <TableHead>Programación</TableHead>
+            <TableHead className="text-center">T1</TableHead>
+            <TableHead className="text-center">T2</TableHead>
+            <TableHead className="text-center">T3</TableHead>
+            <TableHead className="text-center">T4</TableHead>
+            <TableHead>Seguimiento</TableHead>
             <TableHead>Estado</TableHead>
-            <TableHead>Adherencia</TableHead>
-            <TableHead>Curso</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {activities.map((a) => (
-            <TableRow key={a.id}>
-              <TableCell>
-                <div className="flex flex-col">
+          {activities.map((a) => {
+            const gestionable = areasGestionables === null || (a.area !== null && areasGestionables.includes(a.area.id));
+            return (
+              <TableRow key={a.id} className="align-top">
+                <TableCell className="whitespace-normal align-top">
                   <span className="font-medium text-foreground">{a.area?.name ?? "Sin área"}</span>
-                  {a.programa && <span className="text-xs text-muted-foreground">{a.programa}</span>}
-                </div>
-              </TableCell>
-              <TableCell className="w-[280px] max-w-[280px] whitespace-normal">
-                {areasGestionables === null || (a.area !== null && areasGestionables.includes(a.area.id)) ? (
-                  <Link
-                    href={`${basePath}/${planId}/actividades/${a.id}`}
-                    className="font-medium leading-snug text-foreground hover:text-primary hover:underline"
-                  >
-                    {a.title}
-                  </Link>
-                ) : (
-                  <span className="font-medium leading-snug text-foreground">{a.title}</span>
-                )}
-              </TableCell>
-              <TableCell className="text-muted-foreground">{COURSE_AUDIENCE_LABELS[a.targetAudience]}</TableCell>
-              <TableCell className="text-muted-foreground">{a.responsibleLabel ?? "—"}</TableCell>
-              <TableCell className="whitespace-nowrap text-muted-foreground">{etiquetaProgramacion(a)}</TableCell>
-              <TableCell>
-                <Badge className={TRAINING_ACTIVITY_STATUS_CLASSES[a.status]}>{TRAINING_ACTIVITY_STATUS_LABELS[a.status]}</Badge>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {adherenceByActivity?.[a.id] !== undefined ? `${adherenceByActivity[a.id]}%` : "—"}
-              </TableCell>
-              <TableCell>
-                {a.course ? (
-                  <Link
-                    href={`/cursos/${a.course.slug}`}
-                    target="_blank"
-                    className="flex items-center gap-1 text-primary hover:underline"
-                  >
-                    Ver <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                  </Link>
-                ) : (
-                  <span className="text-warning">Sin contenido</span>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
+                  {a.programa && <span className="block text-[11px] text-muted-foreground">{a.programa}</span>}
+                </TableCell>
+                <TableCell className="w-[200px] max-w-[200px] whitespace-normal align-top">
+                  {gestionable ? (
+                    <Link
+                      href={`${basePath}/${planId}/actividades/${a.id}`}
+                      className="text-[12px] font-semibold leading-snug text-foreground hover:text-primary hover:underline"
+                    >
+                      {a.title}
+                    </Link>
+                  ) : (
+                    <span className="text-[12px] font-semibold leading-snug text-foreground">{a.title}</span>
+                  )}
+                </TableCell>
+                <TableCell className="w-[220px] max-w-[220px] whitespace-normal align-top text-[11px] leading-snug text-muted-foreground">
+                  {a.objective ?? "—"}
+                </TableCell>
+                <TableCell className="w-[220px] max-w-[220px] whitespace-normal align-top text-[11px] leading-snug text-muted-foreground">
+                  {a.methodology ?? "—"}
+                </TableCell>
+                <TableCell className="w-[150px] max-w-[150px] whitespace-normal align-top text-[11px] leading-snug text-muted-foreground">
+                  {a.targetAudienceNote ?? COURSE_AUDIENCE_LABELS[a.targetAudience]}
+                </TableCell>
+                <TableCell className="whitespace-normal align-top text-[11px] text-muted-foreground">
+                  {a.expectedAttendees ?? a.expectedAttendeesNote ?? "—"}
+                </TableCell>
+                <TableCell className="w-[140px] max-w-[140px] whitespace-normal align-top text-[11px] leading-snug text-muted-foreground">
+                  {a.responsibleLabel ?? "—"}
+                </TableCell>
+                {[1, 2, 3, 4].map((t) => (
+                  <TableCell key={t} className="text-center align-top">
+                    {a.quarters.includes(t) ? (
+                      <span className="font-bold text-primary">X</span>
+                    ) : (
+                      <span className="text-muted-foreground/40">·</span>
+                    )}
+                  </TableCell>
+                ))}
+                <TableCell className="w-[170px] max-w-[170px] whitespace-normal align-top text-[11px] leading-snug text-muted-foreground">
+                  {a.followUpEvidence.length > 0
+                    ? a.followUpEvidence.map((e, i) => `${i + 1}. ${e}`).join(" ")
+                    : "—"}
+                </TableCell>
+                <TableCell className="align-top">
+                  <Badge className={TRAINING_ACTIVITY_STATUS_CLASSES[a.status]}>
+                    {TRAINING_ACTIVITY_STATUS_LABELS[a.status]}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

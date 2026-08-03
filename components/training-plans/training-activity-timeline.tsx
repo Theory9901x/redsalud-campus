@@ -28,6 +28,13 @@ export type TrainingActivityTimelineItem = {
   area: { id: string; name: string; sortOrder: number } | null;
   programa: string | null;
   responsibleLabel: string | null;
+  // Columnas del PIC, para la vista ampliada con el formato del documento.
+  objective: string | null;
+  methodology: string | null;
+  targetAudienceNote: string | null;
+  expectedAttendeesNote: string | null;
+  expectedAttendees: number | null;
+  followUpEvidence: string[];
   /** La próxima jornada ya agendada, si la hay: le gana al trimestre del plan a la hora de mostrar "cuándo". */
   sessions?: { startsAt: Date; endsAt: Date | null }[];
   _count?: { sessions: number };

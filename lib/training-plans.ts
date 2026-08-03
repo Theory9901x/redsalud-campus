@@ -42,7 +42,7 @@ export async function getTrainingPlanDetail(id: string) {
         orderBy: [{ startDate: "asc" }, { quarters: "asc" }, { title: "asc" }],
         include: {
           course: { select: { id: true, title: true, slug: true } },
-          area: { select: { id: true, name: true, sortOrder: true } },
+          area: { select: { id: true, name: true, sortOrder: true, tutorId: true } },
           // Solo la próxima: es lo que el cronograma necesita para preferir
           // "12 de mayo" sobre "Trimestre II" cuando ya se agendó un día real.
           sessions: { orderBy: { startsAt: "asc" }, take: 1, select: { startsAt: true, endsAt: true } },
@@ -454,6 +454,113 @@ export async function getAutomaticAttendanceRoster(activityId: string) {
       source: true,
       user: { select: { id: true, fullName: true, documentNumber: true } },
     },
+  });
+}
+
+/**
+ * La matriz de asistencia del plan, capacitación por capacitación: quién
+ * entró, quién presentó presaber, quién postsaber y quién completó el curso.
+ *
+ * Es EL registro que el PIC exige como evidencia ("Registro de
+ * asistencia") y por eso vive en su propia pestaña, nominal: una persona
+ * por fila, con chulo por cada paso del ciclo. `areaIds` acota a las áreas
+ * de quien mira -un tutor de área solo ve la asistencia de lo suyo-.
+ */
+export async function getPlanAttendanceOverview(planId: string, areaIds: string[] | null) {
+  const actividades = await prisma.trainingActivity.findMany({
+    where: {
+      planId,
+      courseId: { not: null },
+      ...(areaIds ? { areaId: { in: areaIds } } : {}),
+    },
+    orderBy: [{ area: { sortOrder: "asc" } }, { title: "asc" }],
+    select: {
+      id: true,
+      title: true,
+      courseId: true,
+      area: { select: { name: true } },
+    },
+  });
+  if (actividades.length === 0) return [];
+
+  const courseIds = actividades.map((a) => a.courseId!);
+  const [asistencias, quizzes, inscripciones] = await Promise.all([
+    prisma.trainingAttendance.findMany({
+      where: { activityId: { in: actividades.map((a) => a.id) }, attended: true },
+      select: {
+        activityId: true,
+        registeredAt: true,
+        source: true,
+        user: { select: { id: true, fullName: true, documentNumber: true } },
+      },
+    }),
+    prisma.quiz.findMany({
+      where: { courseId: { in: courseIds }, moduleId: null },
+      select: { id: true, courseId: true },
+    }),
+    prisma.enrollment.findMany({
+      where: { courseId: { in: courseIds }, status: "COMPLETED" },
+      select: { courseId: true, userId: true },
+    }),
+  ]);
+
+  const quizPorCurso = new Map(quizzes.map((q) => [q.courseId!, q.id]));
+  const intentos = await prisma.quizAttempt.findMany({
+    where: {
+      quizId: { in: quizzes.map((q) => q.id) },
+      moment: { not: null },
+      finishedAt: { not: null },
+      score: { not: null },
+    },
+    select: { quizId: true, moment: true, user: { select: { id: true, fullName: true, documentNumber: true } } },
+  });
+  const completadosPorCurso = new Map<string, Set<string>>();
+  for (const e of inscripciones) {
+    const set = completadosPorCurso.get(e.courseId) ?? new Set<string>();
+    set.add(e.userId);
+    completadosPorCurso.set(e.courseId, set);
+  }
+
+  return actividades.map((act) => {
+    const quizId = quizPorCurso.get(act.courseId!);
+    const suyos = intentos.filter((i) => i.quizId === quizId);
+    const asistenciaSuya = asistencias.filter((x) => x.activityId === act.id);
+    const completados = completadosPorCurso.get(act.courseId!) ?? new Set<string>();
+
+    // Una fila por persona: la unión de quien asistió, quien presentó algo y
+    // quien completó -alguien puede aparecer por cualquiera de las tres vías-.
+    const personas = new Map<
+      string,
+      { fullName: string; documentNumber: string; ingreso: Date | null; presaber: boolean; postsaber: boolean; completado: boolean }
+    >();
+    const asegurar = (u: { id: string; fullName: string; documentNumber: string }) => {
+      const p = personas.get(u.id) ?? {
+        fullName: u.fullName,
+        documentNumber: u.documentNumber,
+        ingreso: null,
+        presaber: false,
+        postsaber: false,
+        completado: false,
+      };
+      personas.set(u.id, p);
+      return p;
+    };
+    for (const a of asistenciaSuya) asegurar(a.user).ingreso = a.registeredAt;
+    for (const i of suyos) {
+      const p = asegurar(i.user);
+      if (i.moment === "PRESABER") p.presaber = true;
+      else p.postsaber = true;
+    }
+    for (const [userId, p] of personas) {
+      if (completados.has(userId)) p.completado = true;
+    }
+
+    return {
+      activityId: act.id,
+      titulo: act.title,
+      area: act.area?.name ?? "Sin área",
+      personas: [...personas.values()].sort((x, y) => x.fullName.localeCompare(y.fullName, "es")),
+    };
   });
 }
 

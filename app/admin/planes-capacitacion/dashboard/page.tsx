@@ -14,13 +14,21 @@ export default async function AdminPlanesCapacitacionDashboardPage({
 }) {
   const session = await requireTutorOrAdmin();
   const { tab, plan: planParam } = await searchParams;
-  const [data, areaCoverage] = await Promise.all([
+  const [data, coberturaCompleta] = await Promise.all([
     getTrainingDashboardData(session.user.role, session.user.id),
     getAreaCoverageBreakdown(),
   ]);
+  // Un tutor de área solo ve LO SUYO, también aquí: ni la cobertura ni las
+  // métricas de las demás áreas le aparecen.
+  const areaCoverage =
+    session.user.role === "ADMIN"
+      ? coberturaCompleta
+      : coberturaCompleta.filter((a) => a.tutorId === session.user.id);
+  const areasPropias =
+    session.user.role === "ADMIN" ? null : areaCoverage.map((a) => a.id);
 
   const isPlanInScope = !!planParam && data.planRows.some((p) => p.id === planParam);
-  const selectedPlanMetrics = isPlanInScope ? await getPlanMetricsData(planParam) : null;
+  const selectedPlanMetrics = isPlanInScope ? await getPlanMetricsData(planParam, areasPropias) : null;
 
   return (
     <div className="space-y-6">

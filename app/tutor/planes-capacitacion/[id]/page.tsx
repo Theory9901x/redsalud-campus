@@ -21,6 +21,7 @@ import {
 } from "@/lib/training-plans";
 import { getSurveysForPlan } from "@/lib/surveys";
 import { getPlanMetricsData } from "@/lib/plan-metrics";
+import { getPlanAttendanceOverview } from "@/lib/training-plans";
 import {
   createTrainingActivityAction,
   uploadTrainingPlanDocumentAction,
@@ -35,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CronogramaView } from "@/components/training-plans/cronograma-view";
 import { ClosePlanPanel } from "@/components/training-plans/close-plan-panel";
+import { PlanAttendanceTab } from "@/components/training-plans/plan-attendance-tab";
 import { TrainingActivityForm } from "@/components/training-plans/training-activity-form";
 import { ImportScheduleDialog } from "@/components/training-plans/import-schedule-dialog";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
@@ -78,16 +80,25 @@ export default async function TutorPlanCapacitacionDetallePage({
         })
       ).map((a) => a.id);
 
+  // Decisión revisada por la administración: un tutor de área NO ve las
+  // capacitaciones de las demás áreas -ni siquiera en lectura-. El plan que
+  // recorre de aquí en adelante es SOLO su parte; el institucional completo
+  // es del administrador y del responsable del plan.
+  const actividadesVisibles = areasGestionables
+    ? plan.activities.filter((act) => act.area && areasGestionables.includes(act.area.id))
+    : plan.activities;
+
   const adherenceSummary = await getPlanAdherenceSummary({
     targetDepartment: plan.targetDepartment,
-    activities: plan.activities,
+    activities: actividadesVisibles,
   });
   const adherenceByActivity = Object.fromEntries(
     adherenceSummary.perActivity.map((a) => [a.activityId, a.percentage])
   );
 
 
-  const metricas = await getPlanMetricsData(id);
+  const metricas = await getPlanMetricsData(id, areasGestionables);
+  const asistenciaPlan = await getPlanAttendanceOverview(id, areasGestionables);
   const bloqueosCierre = plan.status === "ACTIVE" ? await getPlanCloseBlockers(id) : [];
   const acta =
     plan.status === "CLOSED" && plan.closedAt
@@ -167,6 +178,7 @@ export default async function TutorPlanCapacitacionDetallePage({
           <TabsTrigger value="cronograma">Cronograma</TabsTrigger>
           <TabsTrigger value="informacion">Información</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
+          <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
           <TabsTrigger value="encuestas">Encuestas</TabsTrigger>
           <TabsTrigger value="metricas">Métricas</TabsTrigger>
         </TabsList>
@@ -175,8 +187,12 @@ export default async function TutorPlanCapacitacionDetallePage({
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className={puedeEditarPlan ? "space-y-3 lg:col-span-2" : "space-y-3 lg:col-span-3"}>
               <CronogramaView
-                activities={plan.activities}
-                sessions={sessions}
+                activities={actividadesVisibles}
+                sessions={
+                  areasGestionables
+                    ? sessions.filter((x) => x.activity.area && areasGestionables.includes(x.activity.area.id))
+                    : sessions
+                }
                 basePath={BASE_PATH}
                 planId={id}
                 adherenceByActivity={adherenceByActivity}
@@ -251,6 +267,10 @@ export default async function TutorPlanCapacitacionDetallePage({
           <div className="surface p-4">
             <TrainingDocumentUploadForm action={uploadDocumentAction} />
           </div>
+        </TabsContent>
+
+        <TabsContent value="asistencia" className="pt-4">
+          <PlanAttendanceTab datos={asistenciaPlan} />
         </TabsContent>
 
         <TabsContent value="encuestas" className="space-y-3 pt-4">

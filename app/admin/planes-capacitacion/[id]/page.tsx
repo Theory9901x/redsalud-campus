@@ -20,6 +20,7 @@ import {
 } from "@/lib/training-plans";
 import { getSurveysForPlan } from "@/lib/surveys";
 import { getPlanMetricsData } from "@/lib/plan-metrics";
+import { getPlanAttendanceOverview } from "@/lib/training-plans";
 import {
   createTrainingActivityAction,
   uploadTrainingPlanDocumentAction,
@@ -34,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CronogramaView } from "@/components/training-plans/cronograma-view";
 import { ClosePlanPanel } from "@/components/training-plans/close-plan-panel";
+import { PlanAttendanceTab } from "@/components/training-plans/plan-attendance-tab";
 import { TrainingActivityForm } from "@/components/training-plans/training-activity-form";
 import { ImportScheduleDialog } from "@/components/training-plans/import-schedule-dialog";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
@@ -69,7 +71,8 @@ export default async function AdminPlanCapacitacionDetallePage({
   );
 
 
-  const metricas = await getPlanMetricsData(id);
+  const metricas = await getPlanMetricsData(id, null);
+  const asistenciaPlan = await getPlanAttendanceOverview(id, null);
   const bloqueosCierre = plan.status === "ACTIVE" ? await getPlanCloseBlockers(id) : [];
   const acta =
     plan.status === "CLOSED" && plan.closedAt
@@ -142,6 +145,7 @@ export default async function AdminPlanCapacitacionDetallePage({
           <TabsTrigger value="cronograma">Cronograma</TabsTrigger>
           <TabsTrigger value="informacion">Información</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
+          <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
           <TabsTrigger value="encuestas">Encuestas</TabsTrigger>
           <TabsTrigger value="metricas">Métricas</TabsTrigger>
         </TabsList>
@@ -226,6 +230,10 @@ export default async function AdminPlanCapacitacionDetallePage({
           <div className="surface p-4">
             <TrainingDocumentUploadForm action={uploadDocumentAction} />
           </div>
+        </TabsContent>
+
+        <TabsContent value="asistencia" className="pt-4">
+          <PlanAttendanceTab datos={asistenciaPlan} />
         </TabsContent>
 
         <TabsContent value="encuestas" className="space-y-3 pt-4">
