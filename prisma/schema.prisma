@@ -155,6 +155,7 @@ model User {
   mediaUploads   Media[]
   auditLogs      AuditLog[]
   trainingPlansAsTutor TrainingPlan[] @relation("TrainingPlanTutor")
+  trainingPlansClosed  TrainingPlan[] @relation("TrainingPlanClosedBy")
   trainingActivitiesResponsible TrainingActivity[] @relation("TrainingActivityResponsible")
   trainingAreasLed              TrainingArea[]     @relation("TrainingAreaTutor")
   trainingAttendances TrainingAttendance[] @relation("TrainingAttendanceUser")
@@ -633,6 +634,11 @@ model NotificationRead {
 enum TrainingPlanStatus {
   DRAFT
   ACTIVE
+  // Cerrado con validaciones: la vigencia terminó, los indicadores son
+  // definitivos y el plan queda de solo consulta. Distinto de ARCHIVED
+  // (retirado de la vista) porque un plan cerrado sigue siendo el registro
+  // oficial de lo que pasó y se sigue consultando y exportando.
+  CLOSED
   ARCHIVED
 }
 
@@ -650,6 +656,15 @@ model TrainingPlan {
   tutorId          String
   tutor            User               @relation("TrainingPlanTutor", fields: [tutorId], references: [id])
   status           TrainingPlanStatus @default(DRAFT)
+
+  // Acta de cierre: cuándo, quién y con qué observaciones. Las observaciones
+  // son obligatorias al cerrar -el cierre de un plan institucional no es un
+  // clic, es una decisión con constancia-.
+  closedAt          DateTime?
+  closedBy          String?
+  closedByUser      User?    @relation("TrainingPlanClosedBy", fields: [closedBy], references: [id])
+  closeObservations String?
+
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 

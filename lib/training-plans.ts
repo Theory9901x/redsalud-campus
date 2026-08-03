@@ -34,6 +34,7 @@ export async function getTrainingPlanDetail(id: string) {
     where: { id },
     include: {
       tutor: { select: { fullName: true } },
+      closedByUser: { select: { fullName: true } },
       activities: {
         // Primero lo que tiene fecha; lo programado solo por trimestre va
         // después en orden de trimestre, y el título desempata para que el

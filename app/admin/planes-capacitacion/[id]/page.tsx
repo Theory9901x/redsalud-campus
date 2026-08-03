@@ -25,12 +25,16 @@ import {
   createTrainingActivityAction,
   uploadTrainingPlanDocumentAction,
   bulkImportActivitiesAction,
+  closeTrainingPlanAction,
+  reopenTrainingPlanAction,
+  getPlanCloseBlockers,
 } from "@/app/admin/planes-capacitacion/actions";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CronogramaView } from "@/components/training-plans/cronograma-view";
+import { ClosePlanPanel } from "@/components/training-plans/close-plan-panel";
 import { TrainingActivityForm } from "@/components/training-plans/training-activity-form";
 import { ImportScheduleDialog } from "@/components/training-plans/import-schedule-dialog";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
@@ -47,7 +51,7 @@ export default async function AdminPlanCapacitacionDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  await requireTrainingPlanRead(id);
+  const sesion = await requireTrainingPlanRead(id);
 
   const [plan, courses, surveys] = await Promise.all([
     getTrainingPlanDetail(id),
@@ -64,6 +68,19 @@ export default async function AdminPlanCapacitacionDetallePage({
   const adherenceByActivity = Object.fromEntries(
     adherenceSummary.perActivity.map((a) => [a.activityId, a.percentage])
   );
+
+
+  const bloqueosCierre = plan.status === "ACTIVE" ? await getPlanCloseBlockers(id) : [];
+  const acta =
+    plan.status === "CLOSED" && plan.closedAt
+      ? {
+          fecha: new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" }).format(plan.closedAt),
+          por: plan.closedByUser?.fullName ?? "—",
+          observaciones: plan.closeObservations ?? "",
+        }
+      : null;
+  const closePlan = closeTrainingPlanAction.bind(null, BASE_PATH, id);
+  const reopenPlan = reopenTrainingPlanAction.bind(null, BASE_PATH, id);
 
   const addActivityAction = createTrainingActivityAction.bind(null, BASE_PATH, id);
   const uploadDocumentAction = uploadTrainingPlanDocumentAction.bind(null, BASE_PATH, id);
@@ -105,6 +122,21 @@ export default async function AdminPlanCapacitacionDetallePage({
         </div>
       </div>
 
+      <ClosePlanPanel
+        estado={plan.status}
+        resumen={{
+          totalActividades: plan.activities.length,
+          conCurso: plan.activities.filter((a) => a.courseId).length,
+          jornadasCerradas: plan.activities.filter((a) => a.status === "CLOSED").length,
+          cumplimiento: adherenceSummary.overallPercentage,
+        }}
+        bloqueos={bloqueosCierre}
+        acta={acta}
+        puedeReabrir={sesion.user.role === "ADMIN"}
+        onClose={closePlan}
+        onReopen={reopenPlan}
+      />
+
       <Tabs defaultValue="cronograma">
         <TabsList>
           <TabsTrigger value="cronograma">Cronograma</TabsTrigger>
@@ -123,19 +155,21 @@ export default async function AdminPlanCapacitacionDetallePage({
                 basePath={BASE_PATH}
                 planId={id}
                 adherenceByActivity={adherenceByActivity}
-                puedeEliminar
+                puedeEliminar={plan.status !== "CLOSED"}
               />
             </div>
 
-            <div className="surface h-fit space-y-4 p-5 lg:sticky lg:top-6">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
-                  Agregar actividad
-                </h2>
-                <ImportScheduleDialog action={importScheduleAction} />
+            {plan.status !== "CLOSED" && (
+              <div className="surface h-fit space-y-4 p-5 lg:sticky lg:top-6">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
+                    Agregar actividad
+                  </h2>
+                  <ImportScheduleDialog action={importScheduleAction} />
+                </div>
+                <TrainingActivityForm action={addActivityAction} courses={courses} />
               </div>
-              <TrainingActivityForm action={addActivityAction} courses={courses} />
-            </div>
+            )}
           </div>
         </TabsContent>
 

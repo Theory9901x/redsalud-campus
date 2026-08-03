@@ -9,11 +9,25 @@ import { trainingPlanSchema, trainingActivitySchema, trainingSessionSchema } fro
 import { estadoPresaber, estadoPostsaber, puedeHabilitarPostsaber } from "@/lib/presaber-postsaber";
 import { getLinkableCoursesForUser } from "@/lib/training-plans";
 import { parseTrainingScheduleFile, type ImportRowError } from "@/lib/training-plan-import";
+import { registrarAuditoria } from "@/lib/audit";
 
 export type TrainingPlanFormState = { error: string | null };
 export type TrainingActivityFormState = { error: string | null };
 export type TrainingDocumentFormState = { error: string | null };
 export type BulkImportFormState = { error: string | null; createdCount?: number; rowErrors?: ImportRowError[] };
+
+
+/**
+ * Un plan CERRADO es de solo consulta: ninguna acción de mutación pasa de
+ * aquí. Devuelve el mensaje de error o null si el plan sigue abierto. Vive
+ * en un solo lugar para que ninguna acción nueva se le olvide el candado.
+ */
+async function errorSiPlanCerrado(planId: string): Promise<string | null> {
+  const plan = await prisma.trainingPlan.findUnique({ where: { id: planId }, select: { status: true } });
+  return plan?.status === "CLOSED"
+    ? "El plan está cerrado: se puede consultar y exportar, pero no modificar. Un administrador puede reabrirlo."
+    : null;
+}
 
 export async function createTrainingPlanAction(
   basePath: string,
@@ -69,6 +83,9 @@ export async function createTrainingActivityAction(
 ): Promise<TrainingActivityFormState> {
   await requireTrainingPlanAccess(planId);
 
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
+
   const parsed = trainingActivitySchema.safeParse({
     title: formData.get("title"),
     type: formData.get("type"),
@@ -110,6 +127,9 @@ export async function bulkImportActivitiesAction(
 ): Promise<BulkImportFormState> {
   await requireTrainingPlanAccess(planId);
 
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
+
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { error: "Selecciona un archivo .xlsx." };
@@ -150,6 +170,9 @@ export async function uploadTrainingPlanDocumentAction(
 ): Promise<TrainingDocumentFormState> {
   const session = await requireTrainingPlanAccess(planId);
 
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
+
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { error: "Selecciona un archivo." };
@@ -170,6 +193,9 @@ export async function uploadTrainingActivityDocumentAction(
 ): Promise<TrainingDocumentFormState> {
   const { session } = await requireTrainingActivityAccess(activityId);
 
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
+
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { error: "Selecciona un archivo." };
@@ -184,6 +210,9 @@ export async function uploadTrainingActivityDocumentAction(
 /** Etapa 3: registro manual de asistencia, solo aplica a actividades sin curso vinculado. */
 export async function setAttendanceAction(activityId: string, userId: string, attended: boolean) {
   const { session, planId } = await requireTrainingActivityAccess(activityId);
+
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) throw new Error(cerrado);
 
   const activity = await prisma.trainingActivity.findUniqueOrThrow({ where: { id: activityId }, select: { status: true } });
   if (activity.status === "CLOSED") {
@@ -209,6 +238,9 @@ export async function setAttendanceAction(activityId: string, userId: string, at
 export async function enableActivityAction(basePath: string, planId: string, activityId: string) {
   await requireTrainingActivityAccess(activityId);
 
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) throw new Error(cerrado);
+
   const activity = await prisma.trainingActivity.findUniqueOrThrow({ where: { id: activityId }, select: { status: true } });
   if (activity.status !== "DRAFT") {
     throw new Error("Solo se puede habilitar una jornada que está en borrador.");
@@ -222,6 +254,9 @@ export async function enableActivityAction(basePath: string, planId: string, act
 
 export async function closeActivityAction(basePath: string, planId: string, activityId: string) {
   await requireTrainingActivityAccess(activityId);
+
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) throw new Error(cerrado);
 
   const activity = await prisma.trainingActivity.findUniqueOrThrow({ where: { id: activityId }, select: { status: true } });
   if (activity.status !== "OPEN") {
@@ -257,6 +292,9 @@ export async function linkCourseToActivityAction(
 ): Promise<LinkCourseState> {
   const { session } = await requireTrainingActivityAccess(activityId);
 
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
+
   const courseId = String(formData.get("courseId") ?? "").trim();
   if (!courseId) return { error: "Elige un curso." };
 
@@ -279,6 +317,9 @@ export async function unlinkCourseFromActivityAction(
   activityId: string
 ): Promise<{ error: string | null }> {
   await requireTrainingActivityAccess(activityId);
+
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
   await prisma.trainingActivity.update({ where: { id: activityId }, data: { courseId: null } });
   revalidatePath(`${basePath}/${planId}`);
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
@@ -362,6 +403,9 @@ export async function deleteTrainingActivityAction(
 ): Promise<DeleteState> {
   await requireTrainingActivityAccess(activityId);
 
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
+
   const activity = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
     select: { title: true, _count: { select: { attendances: true } } },
@@ -401,6 +445,9 @@ export async function createTrainingSessionAction(
   formData: FormData
 ): Promise<TrainingSessionFormState> {
   await requireTrainingActivityAccess(activityId);
+
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
 
   const parsed = trainingSessionSchema.safeParse({
     startsAtDate: formData.get("startsAtDate"),
@@ -445,12 +492,18 @@ export async function createTrainingSessionAction(
 /** Ciclo de vida de la jornada, igual que el de la actividad: borrador -> abierta -> cerrada. */
 export async function enableTrainingSessionAction(basePath: string, planId: string, activityId: string, sessionId: string) {
   await requireTrainingActivityAccess(activityId);
+
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) throw new Error(cerrado);
   await prisma.trainingSession.update({ where: { id: sessionId }, data: { status: "OPEN" } });
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
 }
 
 export async function closeTrainingSessionAction(basePath: string, planId: string, activityId: string, sessionId: string) {
   await requireTrainingActivityAccess(activityId);
+
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) throw new Error(cerrado);
   await prisma.trainingSession.update({ where: { id: sessionId }, data: { status: "CLOSED" } });
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
 }
@@ -462,6 +515,9 @@ export async function deleteTrainingSessionAction(
   sessionId: string
 ): Promise<DeleteState> {
   await requireTrainingActivityAccess(activityId);
+
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
   await prisma.trainingSession.delete({ where: { id: sessionId } });
   revalidatePath(`${basePath}/${planId}`);
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
@@ -493,6 +549,9 @@ export async function openPresaberAction(
   activityId: string
 ): Promise<EvaluationCycleState> {
   await requireTrainingActivityAccess(activityId);
+
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
   const actividad = await actividadConVentanas(activityId);
 
   if (!actividad.courseId) return { error: "Esta capacitación no tiene curso vinculado todavía." };
@@ -511,6 +570,9 @@ export async function closePresaberAction(
   activityId: string
 ): Promise<EvaluationCycleState> {
   await requireTrainingActivityAccess(activityId);
+
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
   const actividad = await actividadConVentanas(activityId);
 
   if (estadoPresaber(actividad) !== "DISPONIBLE") {
@@ -528,6 +590,9 @@ export async function openPostsaberAction(
   activityId: string
 ): Promise<EvaluationCycleState> {
   await requireTrainingActivityAccess(activityId);
+
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
   const actividad = await actividadConVentanas(activityId);
 
   if (!puedeHabilitarPostsaber(actividad)) {
@@ -545,6 +610,9 @@ export async function closePostsaberAction(
   activityId: string
 ): Promise<EvaluationCycleState> {
   await requireTrainingActivityAccess(activityId);
+
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
   const actividad = await actividadConVentanas(activityId);
 
   if (estadoPostsaber(actividad) !== "DISPONIBLE") {
@@ -553,5 +621,123 @@ export async function closePostsaberAction(
 
   await prisma.trainingActivity.update({ where: { id: activityId }, data: { postsaberClosedAt: new Date() } });
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+  return { error: null };
+}
+
+// ------------------------------------------------------------------
+// Cierre del plan: la vigencia termina y el plan queda de solo consulta
+// ------------------------------------------------------------------
+
+export type ClosePlanState = { error: string | null };
+
+/**
+ * Qué impide cerrar el plan AHORA. Se calcula aparte de la acción para que
+ * la página pueda mostrar los bloqueos antes de que alguien intente cerrar,
+ * en vez de descubrirlos a punta de errores.
+ */
+export async function getPlanCloseBlockers(planId: string): Promise<string[]> {
+  const actividades = await prisma.trainingActivity.findMany({
+    where: { planId },
+    select: {
+      title: true,
+      status: true,
+      presaberOpenedAt: true,
+      presaberClosedAt: true,
+      postsaberOpenedAt: true,
+      postsaberClosedAt: true,
+      sessions: { where: { status: "OPEN" }, select: { id: true } },
+    },
+  });
+
+  const bloqueos: string[] = [];
+  const abiertas = actividades.filter((a) => a.status === "OPEN");
+  if (abiertas.length > 0) {
+    bloqueos.push(`${abiertas.length} ${abiertas.length === 1 ? "jornada abierta" : "jornadas abiertas"} sin cerrar.`);
+  }
+  const sesionesAbiertas = actividades.reduce((s, a) => s + a.sessions.length, 0);
+  if (sesionesAbiertas > 0) {
+    bloqueos.push(`${sesionesAbiertas} ${sesionesAbiertas === 1 ? "sesión agendada abierta" : "sesiones agendadas abiertas"}.`);
+  }
+  const ventanas = actividades.filter(
+    (a) =>
+      (a.presaberOpenedAt && !a.presaberClosedAt) || (a.postsaberOpenedAt && !a.postsaberClosedAt)
+  );
+  if (ventanas.length > 0) {
+    bloqueos.push(
+      `${ventanas.length} ${ventanas.length === 1 ? "evaluación con ventana abierta" : "evaluaciones con ventana abierta"} (presaber o postsaber sin cerrar).`
+    );
+  }
+  return bloqueos;
+}
+
+/**
+ * Cierra el plan. Solo el administrador o el responsable del plan -no las
+ * áreas-, con observaciones obligatorias: el cierre de un plan institucional
+ * es una decisión con constancia, no un clic.
+ */
+export async function closeTrainingPlanAction(
+  basePath: string,
+  planId: string,
+  _prevState: ClosePlanState,
+  formData: FormData
+): Promise<ClosePlanState> {
+  const session = await requireTrainingPlanAccess(planId);
+
+  const plan = await prisma.trainingPlan.findUniqueOrThrow({ where: { id: planId }, select: { status: true, title: true } });
+  if (plan.status === "CLOSED") return { error: "El plan ya está cerrado." };
+
+  const bloqueos = await getPlanCloseBlockers(planId);
+  if (bloqueos.length > 0) {
+    return { error: `No se puede cerrar todavía: ${bloqueos.join(" ")}` };
+  }
+
+  const observaciones = String(formData.get("observaciones") ?? "").trim();
+  if (observaciones.length < 10) {
+    return { error: "Escribe las observaciones de cierre (mínimo 10 caracteres): son la constancia del acta." };
+  }
+
+  await prisma.trainingPlan.update({
+    where: { id: planId },
+    data: { status: "CLOSED", closedAt: new Date(), closedBy: session.user.id, closeObservations: observaciones },
+  });
+
+  await registrarAuditoria({
+    userId: session.user.id,
+    action: "UPDATE",
+    entity: "TrainingPlan",
+    entityId: planId,
+    description: `Cerró el plan «${plan.title}». Observaciones: ${observaciones.slice(0, 180)}`,
+  });
+
+  revalidatePath(`${basePath}/${planId}`);
+  revalidatePath(basePath);
+  return { error: null };
+}
+
+/** Reabrir es permiso especial: SOLO administrador, y queda en la bitácora. */
+export async function reopenTrainingPlanAction(basePath: string, planId: string): Promise<ClosePlanState> {
+  const session = await requireTutorOrAdmin();
+  if (session.user.role !== "ADMIN") {
+    return { error: "Reabrir un plan cerrado requiere permiso de administrador." };
+  }
+
+  const plan = await prisma.trainingPlan.findUniqueOrThrow({ where: { id: planId }, select: { status: true, title: true } });
+  if (plan.status !== "CLOSED") return { error: "El plan no está cerrado." };
+
+  await prisma.trainingPlan.update({
+    where: { id: planId },
+    data: { status: "ACTIVE", closedAt: null, closedBy: null, closeObservations: null },
+  });
+
+  await registrarAuditoria({
+    userId: session.user.id,
+    action: "UPDATE",
+    entity: "TrainingPlan",
+    entityId: planId,
+    description: `Reabrió el plan «${plan.title}» (permiso especial de administrador).`,
+  });
+
+  revalidatePath(`${basePath}/${planId}`);
+  revalidatePath(basePath);
   return { error: null };
 }

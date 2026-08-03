@@ -10,12 +10,14 @@ import type {
 export const TRAINING_PLAN_STATUS_LABELS: Record<TrainingPlanStatus, string> = {
   DRAFT: "Borrador",
   ACTIVE: "Activo",
+  CLOSED: "Cerrado",
   ARCHIVED: "Archivado",
 };
 
 export const TRAINING_PLAN_STATUS_CLASSES: Record<TrainingPlanStatus, string> = {
   DRAFT: "bg-muted text-muted-foreground",
   ACTIVE: "bg-success/10 text-success",
+  CLOSED: "bg-navy/10 text-navy",
   ARCHIVED: "bg-destructive/10 text-destructive",
 };
 
