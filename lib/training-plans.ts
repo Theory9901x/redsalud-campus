@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { compararAdherencia } from "@/lib/presaber-postsaber";
 import type { Role, CourseAudience, TrainingActivityStatus } from "@prisma/client";
 
 /**
@@ -411,6 +412,102 @@ export async function getCycleResults(activityId: string) {
 
   return { personas, porPregunta };
 }
+
+/**
+ * Todo lo que necesita el INFORME DE LA JORNADA: los indicadores completos de
+ * adherencia que se habilitan al cerrar la capacitación.
+ *
+ * La adherencia se mide sobre el total de encuestados (quienes presentaron la
+ * evaluación), no sobre el universo teórico: promedio presaber, promedio
+ * postsaber, la diferencia entre ambos, y cuántos alcanzaron el mínimo del
+ * curso en cada momento. Reutiliza getCycleResults como única fuente del
+ * mejor-intento-por-persona: el informe y la pantalla nunca pueden decir
+ * cifras distintas.
+ */
+export async function getActivityReportData(activityId: string) {
+  const actividad = await prisma.trainingActivity.findUnique({
+    where: { id: activityId },
+    select: {
+      title: true,
+      status: true,
+      closedAt: true,
+      courseId: true,
+      programa: true,
+      quarters: true,
+      targetAudienceNote: true,
+      area: { select: { name: true, tutor: { select: { fullName: true } } } },
+      plan: { select: { title: true } },
+    },
+  });
+  if (!actividad?.courseId) return null;
+
+  const [resultados, quiz, asistencia, encuestas] = await Promise.all([
+    getCycleResults(activityId),
+    prisma.quiz.findFirst({
+      where: { courseId: actividad.courseId, moduleId: null },
+      select: { passingScore: true },
+    }),
+    prisma.trainingAttendance.findMany({
+      where: { activityId, attended: true },
+      select: { userId: true, user: { select: { fullName: true, documentNumber: true } }, registeredAt: true, source: true },
+      orderBy: { user: { fullName: "asc" } },
+    }),
+    prisma.survey.findMany({
+      where: { trainingActivityId: activityId },
+      select: { title: true, _count: { select: { responses: true } } },
+    }),
+  ]);
+
+  const passingScore = quiz?.passingScore ?? 60;
+  const personas = resultados?.personas ?? [];
+  const conPre = personas.filter((p) => p.presaber !== null);
+  const conPost = personas.filter((p) => p.postsaber !== null);
+  const promedio = (lista: (number | null)[]) => {
+    const valores = lista.filter((v): v is number => v !== null);
+    return valores.length > 0 ? Math.round(valores.reduce((s, v) => s + v, 0) / valores.length) : null;
+  };
+  const promedioPre = promedio(conPre.map((p) => p.presaber));
+  const promedioPost = promedio(conPost.map((p) => p.postsaber));
+
+  return {
+    plan: actividad.plan.title,
+    area: actividad.area?.name ?? null,
+    responsable: actividad.area?.tutor?.fullName ?? null,
+    titulo: actividad.title,
+    programa: actividad.programa,
+    dirigidoA: actividad.targetAudienceNote,
+    status: actividad.status,
+    cerradaEl: actividad.closedAt,
+    passingScore,
+    indicadores: {
+      asistentes: asistencia.length,
+      evaluadosPre: conPre.length,
+      evaluadosPost: conPost.length,
+      completaronCiclo: personas.filter((p) => p.presaber !== null && p.postsaber !== null).length,
+      promedioPre,
+      promedioPost,
+      ...(promedioPre !== null && promedioPost !== null
+        ? compararAdherencia(promedioPre, promedioPost)
+        : { diferencia: null, variacion: null }),
+      // Adherencia sobre el total de encuestados de cada momento: cuántos
+      // alcanzaron el mínimo del curso llegando (pre) y saliendo (post).
+      adherentesPre: conPre.filter((p) => p.presaber! >= passingScore).length,
+      adherentesPost: conPost.filter((p) => p.postsaber! >= passingScore).length,
+      mejoraron: personas.filter((p) => p.diferencia !== null && p.diferencia > 0).length,
+    },
+    personas,
+    porPregunta: resultados?.porPregunta ?? [],
+    asistencia: asistencia.map((a) => ({
+      fullName: a.user.fullName,
+      documentNumber: a.user.documentNumber,
+      fecha: a.registeredAt,
+      source: a.source,
+    })),
+    encuestas: encuestas.map((e) => ({ titulo: e.title, respuestas: e._count.responses })),
+  };
+}
+
+export type ActivityReportData = NonNullable<Awaited<ReturnType<typeof getActivityReportData>>>;
 
 /**
  * Registra que alguien asistió, en el instante en que entra a SU evaluación.

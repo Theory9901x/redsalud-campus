@@ -48,7 +48,18 @@ function claveDia(fecha: Date) {
  * agenda sus jornadas desde la ficha de su capacitación. No se inventa
  * ningún día para rellenarlo.
  */
-export function SessionsCalendar({ sessions, basePath, planId }: { sessions: SesionCalendario[]; basePath: string; planId: string }) {
+export function SessionsCalendar({
+  sessions,
+  basePath,
+  planId,
+  linkable = true,
+}: {
+  sessions: SesionCalendario[];
+  basePath: string;
+  planId: string;
+  /** false = solo consulta (vista de estudiante): sin enlaces a la ficha de gestión. */
+  linkable?: boolean;
+}) {
   const hoy = useMemo(() => new Date(), []);
   const primerMesConSesion = sessions.find((s) => s.startsAt >= hoy)?.startsAt ?? sessions[0]?.startsAt ?? hoy;
   const [cursor, setCursor] = useState(() => new Date(primerMesConSesion.getFullYear(), primerMesConSesion.getMonth(), 1));
@@ -145,19 +156,31 @@ export function SessionsCalendar({ sessions, basePath, planId }: { sessions: Ses
                 {fecha.getDate()}
               </span>
               <div className="mt-1 space-y-1">
-                {sesiones.slice(0, 3).map((s) => (
-                  <Link
-                    key={s.id}
-                    href={`${basePath}/${planId}/actividades/${s.activity.id}`}
-                    title={`${s.activity.title} · ${TRAINING_ACTIVITY_STATUS_LABELS[s.status]}${s.shift ? ` · ${SESSION_SHIFT_LABELS[s.shift]}` : ""}`}
-                    className="flex items-center gap-1 rounded px-1 py-0.5 text-[11px] leading-tight text-foreground hover:bg-accent"
-                  >
-                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${PUNTO_ESTADO[s.status]}`} aria-hidden="true" />
-                    <span className="truncate">
-                      {s.horaEtiqueta} {s.activity.area?.name ?? s.activity.title}
-                    </span>
-                  </Link>
-                ))}
+                {sesiones.slice(0, 3).map((s) => {
+                  const titulo = `${s.activity.title} · ${TRAINING_ACTIVITY_STATUS_LABELS[s.status]}${s.shift ? ` · ${SESSION_SHIFT_LABELS[s.shift]}` : ""}`;
+                  const contenido = (
+                    <>
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${PUNTO_ESTADO[s.status]}`} aria-hidden="true" />
+                      <span className="truncate">
+                        {s.horaEtiqueta} {s.activity.area?.name ?? s.activity.title}
+                      </span>
+                    </>
+                  );
+                  return linkable ? (
+                    <Link
+                      key={s.id}
+                      href={`${basePath}/${planId}/actividades/${s.activity.id}`}
+                      title={titulo}
+                      className="flex items-center gap-1 rounded px-1 py-0.5 text-[11px] leading-tight text-foreground hover:bg-accent"
+                    >
+                      {contenido}
+                    </Link>
+                  ) : (
+                    <div key={s.id} title={titulo} className="flex items-center gap-1 rounded px-1 py-0.5 text-[11px] leading-tight text-foreground">
+                      {contenido}
+                    </div>
+                  );
+                })}
                 {sesiones.length > 3 && (
                   <p className="px-1 text-[10px] text-muted-foreground">+{sesiones.length - 3} más</p>
                 )}

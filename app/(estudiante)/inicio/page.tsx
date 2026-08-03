@@ -45,6 +45,9 @@ export default async function InicioPage() {
         courseType: "OBLIGATORIO",
         targetAudience: { in: [personnelType, "AMBOS"] },
         enrollments: { none: { userId, status: { not: "CANCELLED" } } },
+        // Los contenidos del plan de capacitaciones no cuentan aquí: su
+        // seguimiento vive en "Mis capacitaciones", no en el catálogo.
+        trainingActivities: { none: {} },
       },
     }),
     getUserAvatarUrl(userId),

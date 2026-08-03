@@ -25,11 +25,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
 import {
-  CronogramaEstudiante,
   type FilaCronograma,
   type AccionProxima,
   type SesionVirtual,
 } from "@/components/training-plans/cronograma-estudiante";
+import { CronogramaEstudianteCompleto } from "@/components/training-plans/cronograma-estudiante-completo";
 import { MetricCard } from "@/components/admin/metric-card";
 import { StaggerGrid } from "@/components/brand/stagger-grid";
 import { EmptyState } from "@/components/brand/empty-state";
@@ -48,6 +48,8 @@ import {
  * pedían no está abierto: cada enlace responde por SU momento -escanear el
  * QR de postsaber nunca abre el presaber, aunque sea la misma evaluación-.
  */
+const FORMATO_HORA_SESION = new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit" });
+
 const AVISOS_QR: Record<string, string> = {
   "presaber-sin-habilitar": "El presaber de esta capacitación todavía no está habilitado. El área lo abre al iniciar la jornada; vuelve a escanear el código cuando lo anuncien.",
   "presaber-cerrado": "El presaber de esta capacitación ya cerró. Si la jornada continúa, el siguiente paso es el postsaber cuando el área lo habilite.",
@@ -198,6 +200,14 @@ export default async function MiCapacitacionDetallePage({
     .slice(0, 3)
     .map((s) => ({ titulo: s.activity.title, fecha: etiquetaJornada(s), meetingUrl: s.meetingUrl! }));
 
+  // Para el calendario del cronograma: solo jornadas de capacitaciones que le
+  // aplican a ESTA persona, con la hora formateada aquí (regla del módulo:
+  // nunca Intl en componentes de cliente; hidrata distinto).
+  const idsAplicables = new Set(aplicables.map((a) => a.id));
+  const sesionesCalendario = sesiones
+    .filter((s) => idsAplicables.has(s.activity.id))
+    .map((s) => ({ ...s, horaEtiqueta: FORMATO_HORA_SESION.format(s.startsAt) }));
+
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
       <StaggerSections className="space-y-6">
@@ -256,7 +266,14 @@ export default async function MiCapacitacionDetallePage({
           </TabsList>
 
           <TabsContent value="cronograma" className="pt-4">
-            <CronogramaEstudiante filas={filas} acciones={acciones} sesionesVirtuales={sesionesVirtuales} />
+            <CronogramaEstudianteCompleto
+              filas={filas}
+              acciones={acciones}
+              sesionesVirtuales={sesionesVirtuales}
+              activities={aplicables}
+              sessions={sesionesCalendario}
+              planId={id}
+            />
           </TabsContent>
 
           <TabsContent value="documentos" className="pt-4">

@@ -45,6 +45,7 @@ import { TrainingSessionList } from "@/components/training-plans/training-sessio
 import { PresaberPostsaberPanel } from "@/components/training-plans/presaber-postsaber-panel";
 import { CycleResults } from "@/components/training-plans/cycle-results";
 import { ActivityQrPanel, type EnlaceQr } from "@/components/training-plans/activity-qr-panel";
+import { ActivityReportPanel } from "@/components/training-plans/activity-report-panel";
 import QRCode from "qrcode";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
 import {
@@ -207,6 +208,8 @@ export default async function AdminActividadDetallePage({
       )}
 
       {resultadosCiclo && <CycleResults resultados={resultadosCiclo} activityId={activityId} />}
+
+      {activity.courseId && <ActivityReportPanel activityId={activityId} cerrada={isClosed} />}
 
       {activity.courseId && <ActivityQrPanel enlaces={enlacesQr} />}
 

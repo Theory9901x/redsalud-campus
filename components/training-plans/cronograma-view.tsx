@@ -186,7 +186,8 @@ export function CronogramaView({
   );
 }
 
-function TablaAmpliada({
+/** Exportada aparte: el estudiante también la ve (solo consulta, sin enlaces de gestión). */
+export function TablaAmpliada({
   activities,
   basePath,
   planId,

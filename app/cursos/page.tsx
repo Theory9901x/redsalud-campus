@@ -32,7 +32,10 @@ export default async function CatalogoCursosPage({
 
   // Visitante anónimo: ve todo el catálogo público. Usuario con sesión: solo
   // los cursos de su tipo de personal (o "Ambos"), igual que en su dashboard.
-  const where: Prisma.CourseWhereInput = { status: "PUBLISHED" };
+  // Los contenidos del plan de capacitaciones NO son catálogo: se llega a
+  // ellos por el cronograma del plan o por el QR de la jornada, no navegando
+  // cursos. Mezclarlos aquí los haría parecer cursos de libre inscripción.
+  const where: Prisma.CourseWhereInput = { status: "PUBLISHED", trainingActivities: { none: {} } };
   if (session?.user) {
     where.targetAudience = { in: [session.user.personnelType, "AMBOS"] };
   }
