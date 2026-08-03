@@ -20,7 +20,9 @@ export async function GET(
   { params }: { params: Promise<{ activityId: string; destino: string }> }
 ) {
   const { activityId, destino } = await params;
-  const base = new URL(request.url).origin;
+  // Detrás del proxy (nginx) el origin de la petición es localhost:3200;
+  // los redirects deben salir con el dominio público, no con el interno.
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
 
   if (!["meet", "presaber", "postsaber"].includes(destino)) {
     return NextResponse.redirect(`${base}/mis-capacitaciones`);
