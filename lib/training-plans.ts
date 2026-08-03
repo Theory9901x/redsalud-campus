@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { compararAdherencia } from "@/lib/presaber-postsaber";
+import { compararAdherencia, momentoActivo } from "@/lib/presaber-postsaber";
 import type { Role, CourseAudience, TrainingActivityStatus } from "@prisma/client";
 
 /**
@@ -411,6 +411,79 @@ export async function getCycleResults(activityId: string) {
   });
 
   return { personas, porPregunta };
+}
+
+/**
+ * Las evaluaciones del ciclo con ventana ABIERTA que le aplican a esta
+ * persona, para listarlas en "Mis encuestas" e ir directo a presentarlas.
+ *
+ * "Disponible" aquí es literal: la ventana está abierta AHORA. El enlace de
+ * cada fila es el mismo /c/... del QR, que ya resuelve inscripción y momento;
+ * así esta lista y el cartel del salón llevan exactamente al mismo lugar.
+ */
+export async function getEvaluacionesCicloDisponibles(userId: string, personnelType: CourseAudience | null) {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { department: true } });
+
+  const actividades = await prisma.trainingActivity.findMany({
+    where: {
+      courseId: { not: null },
+      plan: { status: "ACTIVE" },
+      OR: [
+        { presaberOpenedAt: { not: null }, presaberClosedAt: null },
+        { postsaberOpenedAt: { not: null }, postsaberClosedAt: null },
+      ],
+      ...(personnelType ? { targetAudience: { in: [personnelType, "AMBOS"] } } : {}),
+    },
+    select: {
+      id: true,
+      title: true,
+      courseId: true,
+      presaberOpenedAt: true,
+      presaberClosedAt: true,
+      postsaberOpenedAt: true,
+      postsaberClosedAt: true,
+      area: { select: { name: true, sortOrder: true } },
+      plan: { select: { targetDepartment: true } },
+    },
+  });
+
+  // Mismo criterio de pertenencia que getTrainingPlanDetailForStudent: el
+  // plan dirigido a una dependencia solo le aplica a quien es de ella.
+  const aplicables = actividades.filter((a) => {
+    if (!a.plan.targetDepartment) return true;
+    return !!user.department && user.department.trim().toLowerCase() === a.plan.targetDepartment.trim().toLowerCase();
+  });
+  if (aplicables.length === 0) return [];
+
+  const courseIds = aplicables.map((a) => a.courseId!) ;
+  const quizzes = await prisma.quiz.findMany({
+    where: { courseId: { in: courseIds }, moduleId: null, isActive: true },
+    select: { id: true, courseId: true },
+  });
+  const quizPorCurso = new Map(quizzes.map((q) => [q.courseId, q.id]));
+
+  const intentos = await prisma.quizAttempt.findMany({
+    where: { userId, quizId: { in: quizzes.map((q) => q.id) }, moment: { not: null }, score: { not: null } },
+    select: { quizId: true, moment: true },
+  });
+  const presentados = new Set(intentos.map((i) => `${i.quizId}:${i.moment}`));
+
+  return aplicables
+    .map((a) => {
+      const momento = momentoActivo(a);
+      const quizId = quizPorCurso.get(a.courseId!);
+      if (!momento || !quizId) return null;
+      return {
+        activityId: a.id,
+        titulo: a.title,
+        area: a.area?.name ?? "Sin área",
+        areaOrden: a.area?.sortOrder ?? 99,
+        momento,
+        yaPresentado: presentados.has(`${quizId}:${momento}`),
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .sort((a, b) => a.areaOrden - b.areaOrden || a.titulo.localeCompare(b.titulo, "es"));
 }
 
 /**
