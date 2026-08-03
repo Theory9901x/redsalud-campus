@@ -30,7 +30,6 @@ import {
   type SesionVirtual,
 } from "@/components/training-plans/cronograma-estudiante";
 import { CronogramaEstudianteCompleto } from "@/components/training-plans/cronograma-estudiante-completo";
-import { StaggerGrid } from "@/components/brand/stagger-grid";
 import { EmptyState } from "@/components/brand/empty-state";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
@@ -249,29 +248,33 @@ export default async function MiCapacitacionDetallePage({
           </div>
         </div>
 
-        <StaggerGrid className="grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
+        {/* KPIs compactos: una franja de vidrio, no seis tarjetas grandes.
+            Ícono y número en horizontal; separadores verticales entre celdas.
+            El indicador que pide acción (presaber/postsaber disponible > 0)
+            se enciende con su color; el resto queda tranquilo. */}
+        <div className="surface-glass grid grid-cols-2 divide-border/50 sm:grid-cols-3 sm:divide-x xl:grid-cols-6">
           {[
-            { label: "Capacitaciones asignadas", value: `${filas.length}`, icon: ClipboardList, chip: "bg-primary/15 text-primary", glow: "bg-primary/20" },
-            { label: "Próximas jornadas", value: `${proximasJornadas.length}`, icon: CalendarClock, chip: "bg-warning/15 text-warning-foreground", glow: "bg-warning/20" },
-            { label: "Presaberes disponibles", value: `${presaberesDisponibles}`, icon: FileQuestion, chip: "bg-[var(--accent)]/15 text-[var(--accent)]", glow: "bg-[var(--accent)]/20" },
-            { label: "Postsaberes disponibles", value: `${postsaberesDisponibles}`, icon: ClipboardCheck, chip: "bg-primary/15 text-primary", glow: "bg-primary/20" },
-            { label: "Completadas", value: `${completadas}`, icon: CheckCircle2, chip: "bg-success/15 text-success", glow: "bg-success/20" },
-            { label: "Progreso general", value: `${progresoGeneral}%`, icon: TrendingUp, chip: "bg-success/15 text-success", glow: "bg-success/20" },
+            { label: "Asignadas", value: `${filas.length}`, icon: ClipboardList, chip: "bg-primary/15 text-primary", destacar: false },
+            { label: "Próximas jornadas", value: `${proximasJornadas.length}`, icon: CalendarClock, chip: "bg-warning/15 text-warning-foreground", destacar: false },
+            { label: "Presaberes", value: `${presaberesDisponibles}`, icon: FileQuestion, chip: "bg-warning/15 text-warning-foreground", destacar: presaberesDisponibles > 0 },
+            { label: "Postsaberes", value: `${postsaberesDisponibles}`, icon: ClipboardCheck, chip: "bg-primary/15 text-primary", destacar: postsaberesDisponibles > 0 },
+            { label: "Completadas", value: `${completadas}`, icon: CheckCircle2, chip: "bg-success/15 text-success", destacar: false },
+            { label: "Progreso", value: `${progresoGeneral}%`, icon: TrendingUp, chip: "bg-success/15 text-success", destacar: false },
           ].map((k) => (
-            <div key={k.label} className="surface-glass surface-accent-top relative overflow-hidden p-5">
-              <div className={`pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full blur-2xl ${k.glow}`} />
-              <div className="relative flex flex-col gap-3">
-                <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${k.chip}`}>
-                  <k.icon className="h-5 w-5" strokeWidth={2.25} aria-hidden="true" />
-                </span>
-                <div>
-                  <p className="font-display text-[28px] font-extrabold leading-none tracking-tight text-foreground">{k.value}</p>
-                  <p className="mt-1.5 text-xs font-semibold leading-tight text-foreground/75">{k.label}</p>
-                </div>
+            <div key={k.label} className="flex items-center gap-3 px-4 py-3.5">
+              <span className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${k.chip}`}>
+                <k.icon className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
+                {k.destacar && (
+                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-warning" aria-hidden="true" />
+                )}
+              </span>
+              <div className="min-w-0 leading-tight">
+                <p className="font-display text-xl font-extrabold tracking-tight text-foreground">{k.value}</p>
+                <p className="truncate text-[11px] font-medium text-muted-foreground">{k.label}</p>
               </div>
             </div>
           ))}
-        </StaggerGrid>
+        </div>
 
         <Tabs defaultValue="cronograma">
           <TabsList>
