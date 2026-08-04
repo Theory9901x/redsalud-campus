@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { momentoActivo, MOMENTO_LABEL } from "@/lib/presaber-postsaber";
+import { momentoParaPersona, cicloEsAutomatico, MOMENTO_LABEL } from "@/lib/presaber-postsaber";
 import { EvaluacionExternaForm, type PreguntaExterna } from "@/components/invitado/evaluacion-externa-form";
 import { getParticipanteDeCookie, presentarEvaluacionExternaAction } from "@/app/invitado/[activityId]/actions";
 
@@ -22,6 +22,7 @@ export default async function EvaluacionInvitadoPage({ params }: { params: Promi
     where: { id: activityId },
     select: {
       title: true,
+      status: true,
       courseId: true,
       presaberOpenedAt: true,
       presaberClosedAt: true,
@@ -31,7 +32,9 @@ export default async function EvaluacionInvitadoPage({ params }: { params: Promi
   });
   if (!actividad?.courseId) notFound();
 
-  const momento = momentoActivo(actividad);
+  if (cicloEsAutomatico(actividad) && actividad.status === "CLOSED") redirect(`/invitado/${activityId}`);
+  const prePresentado = participante.attempts.some((a) => a.moment === "PRESABER");
+  const momento = momentoParaPersona(actividad, prePresentado);
   if (!momento) redirect(`/invitado/${activityId}`);
   const yaPresentado = participante.attempts.some((a) => a.moment === momento);
   if (yaPresentado) redirect(`/invitado/${activityId}`);

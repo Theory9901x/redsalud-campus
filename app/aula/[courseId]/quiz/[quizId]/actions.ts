@@ -6,10 +6,10 @@ import type { QuestionType } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getAulaQuiz } from "@/lib/aula";
-import { getEvaluationGate } from "@/lib/training-plans";
+import { getMomentoParaUsuario } from "@/lib/training-plans";
 import { recalculateEnrollmentProgress } from "@/lib/lesson-progress";
 import { registrarAuditoria } from "@/lib/audit";
-import { momentoActivo } from "@/lib/presaber-postsaber";
+
 
 export type QuizFeedbackItem = {
   questionId: string;
@@ -127,8 +127,8 @@ export async function submitQuizAttemptAction(
   // calificarse mientras ESA ventana siga abierta: sin esto, un envío tardío
   // registraría respuestas del postsaber bajo la etiqueta del presaber.
   if (intentoAbierto) {
-    const gate = await getEvaluationGate(quizId);
-    if (gate && momentoActivo(gate) !== intentoAbierto.moment) {
+    const { gate, momento } = await getMomentoParaUsuario(quizId, userId);
+    if (gate && momento !== intentoAbierto.moment) {
       return { error: "La ventana de esta evaluación ya cerró. Recarga la página." };
     }
   }
@@ -228,8 +228,7 @@ export async function submitQuizAttemptAction(
         // que ya corrió al abrir la página, verificado de nuevo aquí porque
         // pudo haber cambiado entre que la persona abrió el formulario y
         // envió la respuesta.
-        const gate = await getEvaluationGate(quizId);
-        const momento = gate ? momentoActivo(gate) : null;
+        const { gate, momento } = await getMomentoParaUsuario(quizId, userId);
         if (gate && !momento) throw new EvaluacionNoHabilitadaError();
 
         const attempt = await tx.quizAttempt.create({

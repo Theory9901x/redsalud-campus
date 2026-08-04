@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { compararAdherencia, momentoActivo } from "@/lib/presaber-postsaber";
+import { compararAdherencia, momentoActivo, momentoParaPersona, cicloEsAutomatico } from "@/lib/presaber-postsaber";
 import type { Role, CourseAudience, TrainingActivityStatus } from "@prisma/client";
 
 /**
@@ -266,12 +266,38 @@ export async function getEvaluationGate(quizId: string) {
     where: { courseId: quiz.courseId },
     select: {
       id: true,
+      status: true,
       presaberOpenedAt: true,
       presaberClosedAt: true,
       postsaberOpenedAt: true,
       postsaberClosedAt: true,
     },
   });
+}
+
+/**
+ * El momento del ciclo que le corresponde a ESTA persona en ESTA evaluación,
+ * resolviendo el modo automático (por defecto: presaber siempre disponible,
+ * postsaber al presentar el presaber) o el manual (ventanas del área), en un
+ * solo lugar para que la página, el borrador y el envío nunca discrepen.
+ *
+ * En modo automático una jornada CERRADA congela el ciclo: ya no hay momento.
+ */
+export async function getMomentoParaUsuario(quizId: string, userId: string) {
+  const gate = await getEvaluationGate(quizId);
+  if (!gate) return { gate: null, momento: null, automatico: false } as const;
+
+  const automatico = cicloEsAutomatico(gate);
+  if (automatico && gate.status === "CLOSED") {
+    return { gate, momento: null, automatico } as const;
+  }
+
+  const prePresentado =
+    (await prisma.quizAttempt.count({
+      where: { quizId, userId, moment: "PRESABER", score: { not: null } },
+    })) > 0;
+
+  return { gate, momento: momentoParaPersona(gate, prePresentado), automatico } as const;
 }
 
 /**
@@ -428,9 +454,13 @@ export async function getEvaluacionesCicloDisponibles(userId: string, personnelT
     where: {
       courseId: { not: null },
       plan: { status: "ACTIVE" },
+      status: { not: "CLOSED" },
+      // Ventana manual abierta, o ciclo AUTOMÁTICO (ninguna ventana tocada:
+      // presaber siempre disponible, postsaber al presentar el presaber).
       OR: [
         { presaberOpenedAt: { not: null }, presaberClosedAt: null },
         { postsaberOpenedAt: { not: null }, postsaberClosedAt: null },
+        { presaberOpenedAt: null, presaberClosedAt: null, postsaberOpenedAt: null, postsaberClosedAt: null },
       ],
       ...(personnelType ? { targetAudience: { in: [personnelType, "AMBOS"] } } : {}),
     },
@@ -470,9 +500,10 @@ export async function getEvaluacionesCicloDisponibles(userId: string, personnelT
 
   return aplicables
     .map((a) => {
-      const momento = momentoActivo(a);
       const quiz = quizPorCurso.get(a.courseId!);
-      if (!momento || !quiz) return null;
+      if (!quiz) return null;
+      const momento = momentoParaPersona(a, presentados.has(`${quiz.id}:PRESABER`));
+      if (!momento) return null;
       return {
         activityId: a.id,
         titulo: a.title,
@@ -511,9 +542,12 @@ export async function getTutorEvaluacionesEnVivo(tutorUserId: string) {
     where: {
       areaId: { in: areaIds },
       courseId: { not: null },
+      status: { not: "CLOSED" },
+      // Ventana manual abierta, o ciclo automático (sin ventanas tocadas).
       OR: [
         { presaberOpenedAt: { not: null }, presaberClosedAt: null },
         { postsaberOpenedAt: { not: null }, postsaberClosedAt: null },
+        { presaberOpenedAt: null, presaberClosedAt: null, postsaberOpenedAt: null, postsaberClosedAt: null },
       ],
     },
     select: {
@@ -539,9 +573,16 @@ export async function getTutorEvaluacionesEnVivo(tutorUserId: string) {
 
   const resultado = [];
   for (const actividad of actividades) {
-    const momento = momentoActivo(actividad);
     const quiz = quizPorCurso.get(actividad.courseId!);
-    if (!momento || !quiz) continue;
+    if (!quiz) continue;
+    // En modo manual solo el momento activo; en automático ambos momentos
+    // conviven (cada persona va en el suyo), así que se listan los dos.
+    const momentos = cicloEsAutomatico(actividad)
+      ? (["PRESABER", "POSTSABER"] as const)
+      : ([momentoActivo(actividad)] as const);
+
+    for (const momento of momentos) {
+    if (!momento) continue;
 
     const intentos = await prisma.quizAttempt.findMany({
       where: { quizId: quiz.id, moment: momento },
@@ -595,6 +636,7 @@ export async function getTutorEvaluacionesEnVivo(tutorUserId: string) {
       })),
       promedio,
     });
+    }
   }
 
   return resultado.sort((a, b) => a.area.localeCompare(b.area, "es") || a.titulo.localeCompare(b.titulo, "es"));

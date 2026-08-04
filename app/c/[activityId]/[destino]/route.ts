@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { estadoPresaber, estadoPostsaber } from "@/lib/presaber-postsaber";
+import { estadoPresaber, estadoPostsaber, cicloEsAutomatico } from "@/lib/presaber-postsaber";
 
 /**
  * Enlaces cortos y ESTABLES de cada capacitación del plan, pensados para
@@ -34,6 +34,7 @@ export async function GET(
     select: {
       planId: true,
       courseId: true,
+      status: true,
       presaberOpenedAt: true,
       presaberClosedAt: true,
       postsaberOpenedAt: true,
@@ -61,18 +62,49 @@ export async function GET(
 
   // ---- Presaber / postsaber: cada enlace responde por SU momento ----------
   // Son dos accesos distintos aunque la evaluación sea la misma: el QR de
-  // postsaber jamás debe aterrizar en el presaber (ni al revés). Si la
-  // ventana de ESTE enlace no está abierta, se avisa en el cronograma del
-  // plan en vez de mostrar la evaluación del otro momento.
-  const estadoVentana = destino === "presaber" ? estadoPresaber(actividad) : estadoPostsaber(actividad);
-  if (estadoVentana !== "DISPONIBLE") {
-    const aviso = `${destino}-${estadoVentana === "CERRADO" ? "cerrado" : "sin-habilitar"}`;
+  // postsaber jamás debe aterrizar en el presaber (ni al revés).
+  const automatico = cicloEsAutomatico(actividad);
+
+  // Modo MANUAL: las ventanas del área mandan y se validan aquí, antes del
+  // login, con el aviso correspondiente en el cronograma del plan.
+  if (!automatico) {
+    const estadoVentana = destino === "presaber" ? estadoPresaber(actividad) : estadoPostsaber(actividad);
+    if (estadoVentana !== "DISPONIBLE") {
+      const aviso = `${destino}-${estadoVentana === "CERRADO" ? "cerrado" : "sin-habilitar"}`;
+      return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}?aviso=${aviso}`);
+    }
+  } else if (actividad.status === "CLOSED") {
+    // Modo automático con la jornada cerrada: el ciclo quedó congelado.
+    const aviso = `${destino}-cerrado`;
     return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}?aviso=${aviso}`);
   }
 
   const session = await auth();
   if (!session?.user) {
     return NextResponse.redirect(`${base}/login?callbackUrl=${encodeURIComponent(`/c/${activityId}/${destino}`)}`);
+  }
+
+  // Modo AUTOMÁTICO: el momento depende del recorrido de ESTA persona, así
+  // que solo puede validarse después de saber quién es. El QR de postsaber
+  // exige haber presentado el presaber; el de presaber avisa si ya se
+  // presentó (su momento vigente ya es el postsaber).
+  if (automatico && actividad.courseId) {
+    const quizAuto = await prisma.quiz.findFirst({
+      where: { courseId: actividad.courseId, moduleId: null, isActive: true },
+      select: { id: true },
+    });
+    if (quizAuto) {
+      const prePresentado =
+        (await prisma.quizAttempt.count({
+          where: { quizId: quizAuto.id, userId: session.user.id, moment: "PRESABER", score: { not: null } },
+        })) > 0;
+      if (destino === "postsaber" && !prePresentado) {
+        return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}?aviso=postsaber-requiere-presaber`);
+      }
+      if (destino === "presaber" && prePresentado) {
+        return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}?aviso=presaber-ya-presentado`);
+      }
+    }
   }
 
   if (!actividad.courseId) {

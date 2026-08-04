@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import {
   Building2,
   User,
@@ -11,13 +10,13 @@ import {
   FileQuestion,
   ClipboardCheck,
   CheckCircle2,
-  ArrowRight,
   Lock,
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { estadoPresaber, estadoPostsaber, momentoActivo } from "@/lib/presaber-postsaber";
+import { estadoPresaber, estadoPostsaber, momentoParaPersona, cicloEsAutomatico } from "@/lib/presaber-postsaber";
 import { SalaVirtual } from "@/components/training-plans/sala-virtual";
 import { RegistroInvitado } from "@/components/invitado/registro-invitado";
+import { AbrirEvaluacionPopup } from "@/components/training-plans/abrir-evaluacion-popup";
 import { registrarInvitadoAction, getParticipanteDeCookie } from "@/app/invitado/[activityId]/actions";
 import { etiquetaJornada } from "@/components/training-plans/labels";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
@@ -73,9 +72,11 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
     );
   }
 
-  const momento = momentoActivo(actividad);
   const intentoPre = participante.attempts.find((a) => a.moment === "PRESABER") ?? null;
   const intentoPost = participante.attempts.find((a) => a.moment === "POSTSABER") ?? null;
+  const automatico = cicloEsAutomatico(actividad);
+  const cicloCongelado = automatico && actividad.status === "CLOSED";
+  const momento = cicloCongelado ? null : momentoParaPersona(actividad, !!intentoPre);
 
   const profesional =
     actividad.area?.tutor?.fullName ?? actividad.responsibleUser?.fullName ?? actividad.responsibleLabel ?? "—";
@@ -87,14 +88,14 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
       icon: FileQuestion,
       chip: "bg-warning/15 text-warning-foreground",
       intento: intentoPre,
-      abierta: estadoPresaber(actividad) === "DISPONIBLE",
+      abierta: automatico ? !cicloCongelado : estadoPresaber(actividad) === "DISPONIBLE",
     },
     {
       etiqueta: "Postsaber",
       icon: ClipboardCheck,
       chip: "bg-primary/10 text-primary",
       intento: intentoPost,
-      abierta: estadoPostsaber(actividad) === "DISPONIBLE",
+      abierta: automatico ? !cicloCongelado && !!intentoPre : estadoPostsaber(actividad) === "DISPONIBLE",
     },
   ];
 
@@ -128,6 +129,7 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
               </h1>
             </div>
             <SalaVirtual
+              domain={process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si"}
               roomName={`RedSaludTeForma-${actividad.id}`}
               displayName={`${participante.fullName} (${participante.company})`}
               subject={actividad.title}
@@ -158,12 +160,7 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
                     )}
                   </div>
                   {!m.intento && m.abierta && momento && (
-                    <Link
-                      href={`/invitado/${actividad.id}/evaluacion`}
-                      className="flex shrink-0 items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
-                    >
-                      Presentar <ArrowRight className="h-3 w-3" aria-hidden="true" />
-                    </Link>
+                    <AbrirEvaluacionPopup href={`/invitado/${actividad.id}/evaluacion`} etiqueta="Presentar" />
                   )}
                 </div>
               ))}

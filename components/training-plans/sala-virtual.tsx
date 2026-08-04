@@ -1,41 +1,71 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
+
+type JitsiApi = {
+  dispose: () => void;
+  getParticipantsInfo: () => { participantId: string; displayName?: string; formattedDisplayName?: string }[];
+  addListener: (evento: string, oyente: (...args: unknown[]) => void) => void;
+};
 
 declare global {
   interface Window {
-    JitsiMeetExternalAPI?: new (
-      domain: string,
-      options: Record<string, unknown>
-    ) => { dispose: () => void };
+    JitsiMeetExternalAPI?: new (domain: string, options: Record<string, unknown>) => JitsiApi;
   }
 }
 
 /**
- * La videollamada EMBEBIDA dentro de la plataforma, sobre Jitsi Meet
- * (código abierto). A diferencia de Google Meet -que prohíbe embeberse-,
- * Jitsi expone una API oficial de iframe: la sala vive aquí adentro, con el
- * informe de la capacitación al lado, y la persona nunca sale del campus.
+ * La videollamada EMBEBIDA dentro de la plataforma, sobre el servidor Jitsi
+ * PROPIO de la entidad (el público meet.jit.si corta los embebidos a los 5
+ * minutos; el propio no tiene límite: una jornada puede durar la hora
+ * completa o más).
  *
- * La sala se crea sola al entrar el primero: no hay que "generarla" en
- * ningún proveedor ni tener cuenta. El nombre de sala usa el id de la
- * capacitación (un cuid impredecible), así el enlace no es adivinable.
- * La grabación se inicia desde el menú de la propia sala (grabación local:
- * el archivo queda en el equipo de quien graba).
+ * Debajo de la sala se muestra EN VIVO cuántas personas hay y quiénes son,
+ * leyendo los eventos oficiales del iframe (entradas y salidas). La sala se
+ * crea sola al entrar el primero; el nombre usa el id de la capacitación
+ * (un cuid impredecible), así el enlace no es adivinable.
  */
-export function SalaVirtual({ roomName, displayName, subject }: { roomName: string; displayName: string; subject: string }) {
+export function SalaVirtual({
+  domain,
+  roomName,
+  displayName,
+  subject,
+}: {
+  /** Dominio del servidor Jitsi (p. ej. campusvirtual.redsaludteforma.com:8443). */
+  domain: string;
+  roomName: string;
+  displayName: string;
+  subject: string;
+}) {
   const contenedor = useRef<HTMLDivElement>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
+  const [participantes, setParticipantes] = useState<string[]>([]);
+  const [dentro, setDentro] = useState(false);
 
   useEffect(() => {
-    let api: { dispose: () => void } | null = null;
+    let api: JitsiApi | null = null;
     let cancelado = false;
+
+    function refrescarParticipantes() {
+      if (!api) return;
+      const vistos = new Set<string>();
+      const lista = api
+        .getParticipantsInfo()
+        .filter((p) => {
+          if (vistos.has(p.participantId)) return false;
+          vistos.add(p.participantId);
+          return true;
+        })
+        .map((p) => p.formattedDisplayName ?? p.displayName ?? "Participante")
+        .map((n) => n.replace(/ \(me\)$/, " (tú)"));
+      setParticipantes(lista);
+    }
 
     function crear() {
       if (cancelado || !contenedor.current || !window.JitsiMeetExternalAPI) return;
-      api = new window.JitsiMeetExternalAPI("meet.jit.si", {
+      api = new window.JitsiMeetExternalAPI(domain, {
         roomName,
         parentNode: contenedor.current,
         width: "100%",
@@ -52,6 +82,18 @@ export function SalaVirtual({ roomName, displayName, subject }: { roomName: stri
           MOBILE_APP_PROMO: false,
         },
       });
+      // Quién está: se refresca con cada entrada/salida real de la sala.
+      api.addListener("videoConferenceJoined", () => {
+        setDentro(true);
+        refrescarParticipantes();
+      });
+      api.addListener("videoConferenceLeft", () => {
+        setDentro(false);
+        setParticipantes([]);
+      });
+      api.addListener("participantJoined", refrescarParticipantes);
+      api.addListener("participantLeft", refrescarParticipantes);
+      api.addListener("displayNameChange", refrescarParticipantes);
       setCargando(false);
     }
 
@@ -59,7 +101,7 @@ export function SalaVirtual({ roomName, displayName, subject }: { roomName: stri
       crear();
     } else {
       const script = document.createElement("script");
-      script.src = "https://meet.jit.si/external_api.js";
+      script.src = `https://${domain}/external_api.js`;
       script.async = true;
       script.onload = crear;
       script.onerror = () => {
@@ -73,22 +115,43 @@ export function SalaVirtual({ roomName, displayName, subject }: { roomName: stri
       cancelado = true;
       api?.dispose();
     };
-  }, [roomName, displayName, subject]);
+  }, [domain, roomName, displayName, subject]);
 
   return (
-    <div className="relative h-[68vh] min-h-[480px] overflow-hidden rounded-2xl border border-border bg-navy">
-      {cargando && (
-        <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-white/70">
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-          Preparando la sala…
-        </div>
-      )}
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-white/80">
-          No se pudo cargar el módulo de videollamada. Verifica tu conexión e intenta de nuevo.
-        </div>
-      )}
-      <div ref={contenedor} className="h-full w-full" />
+    <div className="space-y-3">
+      <div className="relative h-[62vh] min-h-[440px] overflow-hidden rounded-2xl border border-border bg-navy">
+        {cargando && (
+          <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-white/70">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            Preparando la sala…
+          </div>
+        )}
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-white/80">
+            No se pudo cargar el módulo de videollamada. Verifica tu conexión e intenta de nuevo.
+          </div>
+        )}
+        <div ref={contenedor} className="h-full w-full" />
+      </div>
+
+      {/* Quiénes están, en vivo */}
+      <div className="surface-glass flex flex-wrap items-center gap-2 px-4 py-3">
+        <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-foreground">
+          <Users className="h-4 w-4 text-primary" aria-hidden="true" />
+          En la llamada ({dentro ? participantes.length : 0})
+        </span>
+        {!dentro ? (
+          <span className="text-xs text-muted-foreground">Únete a la sala para ver quiénes están conectados.</span>
+        ) : participantes.length === 0 ? (
+          <span className="text-xs text-muted-foreground">Solo estás tú por ahora.</span>
+        ) : (
+          participantes.map((n, i) => (
+            <span key={i} className="rounded-full border border-border/60 bg-card/70 px-2.5 py-1 text-xs font-medium text-foreground">
+              {n}
+            </span>
+          ))
+        )}
+      </div>
     </div>
   );
 }

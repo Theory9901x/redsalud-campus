@@ -20,7 +20,7 @@ import {
   getSessionsForPlan,
 } from "@/lib/training-plans";
 import { getSurveysForUser } from "@/lib/surveys";
-import { estadoPresaber, estadoPostsaber } from "@/lib/presaber-postsaber";
+import { estadoPresaber, estadoPostsaber, cicloEsAutomatico } from "@/lib/presaber-postsaber";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
@@ -53,6 +53,8 @@ const AVISOS_QR: Record<string, string> = {
   "presaber-cerrado": "El presaber de esta capacitación ya cerró. Si la jornada continúa, el siguiente paso es el postsaber cuando el área lo habilite.",
   "postsaber-sin-habilitar": "El postsaber todavía no está habilitado. Se abre después de la capacitación; vuelve a escanear el código cuando el área lo anuncie.",
   "postsaber-cerrado": "El postsaber de esta capacitación ya cerró. Tu resultado quedó registrado con los intentos que presentaste.",
+  "postsaber-requiere-presaber": "El postsaber se habilita al presentar primero el presaber: escanea o abre el enlace del presaber y preséntalo; el postsaber se abre solo inmediatamente después.",
+  "presaber-ya-presentado": "Ya presentaste el presaber de esta capacitación: tu siguiente paso es el postsaber, con su propio enlace o código QR.",
 };
 
 export default async function MiCapacitacionDetallePage({
@@ -96,6 +98,12 @@ export default async function MiCapacitacionDetallePage({
     const completada = avance?.enrollment?.status === "COMPLETED";
     const progreso = inscrito ? avance!.enrollment!.progressPercentage : null;
 
+    // Modo AUTOMÁTICO (por defecto): presaber siempre disponible hasta
+    // presentarlo; el postsaber se habilita solo al presentar el presaber.
+    // Modo MANUAL: las ventanas del área mandan, como siempre. Una jornada
+    // CERRADA congela el ciclo en ambos modos.
+    const automatico = cicloEsAutomatico(a);
+    const jornadaCerrada = a.status === "CLOSED";
     const ventanaPre = estadoPresaber(a);
     const ventanaPost = estadoPostsaber(a);
 
@@ -103,21 +111,31 @@ export default async function MiCapacitacionDetallePage({
       ? null
       : cyc?.presaberDone
         ? ("Realizado" as const)
-        : ventanaPre === "DISPONIBLE"
-          ? ("Disponible" as const)
-          : ventanaPre === "CERRADO"
+        : automatico
+          ? jornadaCerrada
             ? ("Cerrado" as const)
-            : ("Pendiente" as const);
+            : ("Disponible" as const)
+          : ventanaPre === "DISPONIBLE"
+            ? ("Disponible" as const)
+            : ventanaPre === "CERRADO"
+              ? ("Cerrado" as const)
+              : ("Pendiente" as const);
 
     const postsaber = !conContenido
       ? null
       : cyc?.postsaberDone
         ? ("Realizado" as const)
-        : ventanaPost === "DISPONIBLE"
-          ? ("Disponible" as const)
-          : ventanaPost === "CERRADO"
+        : automatico
+          ? jornadaCerrada
             ? ("Cerrado" as const)
-            : ("Bloqueado" as const);
+            : cyc?.presaberDone
+              ? ("Disponible" as const)
+              : ("Bloqueado" as const)
+          : ventanaPost === "DISPONIBLE"
+            ? ("Disponible" as const)
+            : ventanaPost === "CERRADO"
+              ? ("Cerrado" as const)
+              : ("Bloqueado" as const);
 
     const estadoGeneral: FilaCronograma["estadoGeneral"] = !conContenido
       ? "Sin contenido"

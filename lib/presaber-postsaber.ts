@@ -60,6 +60,30 @@ export function momentoActivo(v: VentanasEvaluacion): MomentoEvaluacion | null {
   return null;
 }
 
+/**
+ * ¿El ciclo de esta actividad corre en modo AUTOMÁTICO?
+ *
+ * Automático = el área nunca tocó las ventanas (los cuatro sellos en null).
+ * En ese modo -el modo por defecto, pedido expresamente por la entidad
+ * porque habilitar a mano "es cansón"- el presaber está SIEMPRE disponible
+ * y el postsaber se habilita solo, por persona, en cuanto esa persona
+ * presenta su presaber. Si el área abre o cierra cualquier ventana a mano,
+ * toma el control y rigen las ventanas como siempre.
+ */
+export function cicloEsAutomatico(v: VentanasEvaluacion): boolean {
+  return !v.presaberOpenedAt && !v.presaberClosedAt && !v.postsaberOpenedAt && !v.postsaberClosedAt;
+}
+
+/**
+ * Qué momento presenta ESTA persona ahora: en modo automático lo decide su
+ * propio recorrido (¿ya presentó el presaber?); en modo manual, las
+ * ventanas del área, igual que siempre. Null = nada disponible.
+ */
+export function momentoParaPersona(v: VentanasEvaluacion, presaberPresentado: boolean): MomentoEvaluacion | null {
+  if (cicloEsAutomatico(v)) return presaberPresentado ? "POSTSABER" : "PRESABER";
+  return momentoActivo(v);
+}
+
 export const MOMENTO_LABEL: Record<MomentoEvaluacion, string> = {
   PRESABER: "Presaber",
   POSTSABER: "Postsaber",

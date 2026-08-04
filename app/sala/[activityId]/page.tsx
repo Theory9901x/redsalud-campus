@@ -14,6 +14,9 @@ import {
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { SalaVirtual } from "@/components/training-plans/sala-virtual";
+import { GrabacionJornada } from "@/components/training-plans/grabacion-jornada";
+import { AbrirEvaluacionPopup } from "@/components/training-plans/abrir-evaluacion-popup";
+import { getMomentoParaUsuario } from "@/lib/training-plans";
 import { etiquetaJornada } from "@/components/training-plans/labels";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 
@@ -37,6 +40,7 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
       id: true,
       title: true,
       status: true,
+      courseId: true,
       objective: true,
       methodology: true,
       targetAudience: true,
@@ -71,6 +75,32 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
 
   const profesional =
     actividad.area?.tutor?.fullName ?? actividad.responsibleUser?.fullName ?? actividad.responsibleLabel ?? "—";
+
+  // Evaluación del ciclo de ESTA persona, para presentarla en ventana
+  // emergente SIN salirse de la llamada. Solo estudiantes con curso montado.
+  const esEstudiante = session.user.role === "STUDENT";
+  let evaluacion: { quizId: string; momento: "PRESABER" | "POSTSABER" | null; preHecho: boolean; postHecho: boolean } | null = null;
+  if (esEstudiante && actividad.courseId) {
+    const quizFinal = await prisma.quiz.findFirst({
+      where: { courseId: actividad.courseId, moduleId: null, isActive: true },
+      select: { id: true },
+    });
+    if (quizFinal) {
+      const { momento } = await getMomentoParaUsuario(quizFinal.id, session.user.id);
+      const hechos = await prisma.quizAttempt.findMany({
+        where: { quizId: quizFinal.id, userId: session.user.id, moment: { not: null }, score: { not: null } },
+        select: { moment: true },
+      });
+      evaluacion = {
+        quizId: quizFinal.id,
+        momento,
+        preHecho: hechos.some((h) => h.moment === "PRESABER"),
+        postHecho: hechos.some((h) => h.moment === "POSTSABER"),
+      };
+    }
+  }
+  const puedeGrabar = session.user.role === "ADMIN" || session.user.role === "TUTOR";
+  const jitsiDomain = process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si";
   const proximaJornada = actividad.sessions[0] ? etiquetaJornada(actividad.sessions[0]) : null;
 
   const FICHA = [
@@ -106,18 +136,48 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
               </h1>
             </div>
             <SalaVirtual
+              domain={jitsiDomain}
               roomName={`RedSaludTeForma-${actividad.id}`}
               displayName={session.user.name ?? "Participante"}
               subject={actividad.title}
             />
+            {puedeGrabar && <GrabacionJornada activityId={actividad.id} />}
             <p className="text-xs text-muted-foreground">
-              Tu ingreso quedó registrado en la lista de asistencia de la jornada. Para grabar la sesión, usa el menú
-              de la sala (⋮ → «Iniciar grabación»): el archivo queda en el equipo de quien graba.
+              Tu ingreso quedó registrado en la lista de asistencia de la jornada.
             </p>
           </div>
 
           {/* Informe de la capacitación */}
           <aside className="space-y-4">
+            {evaluacion && (
+              <section className="surface-glass space-y-3 p-5">
+                <h2 className="font-display text-xs font-bold uppercase tracking-wide text-foreground">Tu evaluación</h2>
+                {[
+                  { etiqueta: "Presaber", hecho: evaluacion.preHecho, activo: evaluacion.momento === "PRESABER" },
+                  { etiqueta: "Postsaber", hecho: evaluacion.postHecho, activo: evaluacion.momento === "POSTSABER" },
+                ].map((m) => (
+                  <div key={m.etiqueta} className="flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-semibold text-foreground">{m.etiqueta}</span>
+                    {m.hecho ? (
+                      <span className="text-xs font-semibold text-success">Presentado</span>
+                    ) : m.activo ? (
+                      <AbrirEvaluacionPopup
+                        // Por el enlace /c: auto-inscribe y valida audiencia,
+                        // igual que el QR del cartel. Directo al aula fallaría
+                        // para quien nunca ha abierto el curso.
+                        href={`/c/${actividad.id}/${m.etiqueta === "Presaber" ? "presaber" : "postsaber"}`}
+                        etiqueta={`Presentar ${m.etiqueta.toLowerCase()}`}
+                      />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Aún no disponible</span>
+                    )}
+                  </div>
+                ))}
+                <p className="text-[11px] leading-snug text-muted-foreground">
+                  Se abre en una ventana aparte: no te saca de la llamada.
+                </p>
+              </section>
+            )}
             <section className="surface-glass space-y-3 p-5">
               <h2 className="font-display text-xs font-bold uppercase tracking-wide text-foreground">
                 Informe de la capacitación

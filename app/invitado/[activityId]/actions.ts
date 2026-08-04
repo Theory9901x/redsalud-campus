@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { momentoActivo } from "@/lib/presaber-postsaber";
+import { momentoParaPersona, cicloEsAutomatico } from "@/lib/presaber-postsaber";
 
 /**
  * Acciones del ACCESO EXTERNO (/invitado): gente de fuera de la entidad que
@@ -82,6 +82,7 @@ export async function presentarEvaluacionExternaAction(
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
     select: {
+      status: true,
       courseId: true,
       presaberOpenedAt: true,
       presaberClosedAt: true,
@@ -91,9 +92,14 @@ export async function presentarEvaluacionExternaAction(
   });
   if (!actividad?.courseId) return { error: "Esta capacitación no tiene evaluación disponible." };
 
-  // El momento lo dictan las MISMAS ventanas que rigen para el personal
-  // interno: el enlace externo no abre nada que el área no haya abierto.
-  const momento = momentoActivo(actividad);
+  // Mismas reglas que el personal interno: ciclo automático por persona
+  // (presaber primero; postsaber al presentarlo) o ventanas manuales del
+  // área. Jornada cerrada = ciclo congelado también para externos.
+  if (cicloEsAutomatico(actividad) && actividad.status === "CLOSED") {
+    return { error: "Esta jornada ya fue cerrada por el área." };
+  }
+  const prePresentado = participante.attempts.some((a) => a.moment === "PRESABER");
+  const momento = momentoParaPersona(actividad, prePresentado);
   if (!momento) return { error: "La evaluación no está habilitada en este momento." };
 
   const yaPresentado = await prisma.externalAttempt.findUnique({

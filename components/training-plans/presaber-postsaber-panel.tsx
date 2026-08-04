@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { PlayCircle, Lock, ArrowRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { PlayCircle, Lock, ArrowRight, TrendingUp, TrendingDown, Minus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { estadoPresaber, estadoPostsaber, puedeHabilitarPostsaber, compararAdherencia } from "@/lib/presaber-postsaber";
+import { estadoPresaber, estadoPostsaber, puedeHabilitarPostsaber, compararAdherencia, cicloEsAutomatico } from "@/lib/presaber-postsaber";
 import type { EvaluationCycleState } from "@/app/admin/planes-capacitacion/actions";
 
 type Ventanas = {
@@ -126,6 +126,7 @@ export function PresaberPostsaberPanel({
   const presaber = estadoPresaber(ventanas);
   const postsaber = estadoPostsaber(ventanas);
   const puedeAbrirPostsaber = puedeHabilitarPostsaber(ventanas);
+  const automatico = cicloEsAutomatico(ventanas);
 
   const hayComparacion = resumen.presaberPromedio !== null && resumen.postsaberPromedio !== null;
   const comparacion = hayComparacion
@@ -141,6 +142,18 @@ export function PresaberPostsaberPanel({
         Es la misma evaluación, presentada antes de la capacitación y otra vez después, para medir lo que se
         aprendió.
       </p>
+
+      {automatico && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-success/25 bg-success/10 p-3.5">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden="true" />
+          <p className="text-xs leading-relaxed text-foreground">
+            <span className="font-bold">Ciclo automático activo:</span> el presaber está siempre disponible y el
+            postsaber se habilita solo, persona por persona, en cuanto cada quien presenta su presaber. No tienes
+            que habilitar nada. Los botones de abajo son el control manual: si abres una ventana a mano, tomas el
+            mando del ciclo para toda la jornada.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="surface space-y-2 p-4">

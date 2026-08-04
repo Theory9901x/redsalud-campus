@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getEvaluationGate } from "@/lib/training-plans";
-import { momentoActivo } from "@/lib/presaber-postsaber";
+
+import { getMomentoParaUsuario } from "@/lib/training-plans";
 
 /**
  * Guardado del borrador de una evaluación.
@@ -85,9 +85,8 @@ export async function POST(request: Request) {
   // del postsaber quedaran registradas como presaber, mezclando los dos
   // momentos en un solo intento -que es exactamente lo que el ciclo existe
   // para separar-.
-  const gateVentana = await getEvaluationGate(quizId);
+  const { gate: gateVentana, momento: momentoAhora } = await getMomentoParaUsuario(quizId, userId);
   if (abierto && gateVentana) {
-    const momentoAhora = momentoActivo(gateVentana);
     if (abierto.moment !== momentoAhora) {
       await prisma.quizAttempt.update({ where: { id: abierto.id }, data: { finishedAt: new Date() } });
       abierto = null;
@@ -113,7 +112,7 @@ export async function POST(request: Request) {
     // no se abre un intento nuevo fuera de ellas -alguien no debería poder
     // arrancar un intento, dejarlo a medias, y terminarlo después de que la
     // ventana cerró-. Null para el resto de evaluaciones de la plataforma.
-    const momento = gateVentana ? momentoActivo(gateVentana) : null;
+    const momento = gateVentana ? momentoAhora : null;
     if (gateVentana && !momento) {
       return NextResponse.json({ ok: false, error: "Esta evaluación no está habilitada en este momento." }, { status: 403 });
     }

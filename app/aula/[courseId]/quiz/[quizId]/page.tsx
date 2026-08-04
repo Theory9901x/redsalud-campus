@@ -2,8 +2,8 @@ import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getAulaQuiz, getBorradorIntento, getNotaRepaso } from "@/lib/aula";
-import { registrarAsistenciaAutomatica, getEvaluationGate } from "@/lib/training-plans";
-import { estadoPresaber, estadoPostsaber, momentoActivo } from "@/lib/presaber-postsaber";
+import { registrarAsistenciaAutomatica, getMomentoParaUsuario } from "@/lib/training-plans";
+import { estadoPresaber, estadoPostsaber } from "@/lib/presaber-postsaber";
 import { seededShuffle } from "@/lib/quiz";
 import { QuizTakingForm } from "@/components/aula/quiz-taking-form";
 import { EvaluacionNoDisponible } from "@/components/aula/evaluacion-no-disponible";
@@ -39,8 +39,9 @@ export default async function AulaQuizPage({
   // Ciclo presaber/postsaber: la misma evaluación, presentada antes y
   // después de la capacitación. Null para la enorme mayoría de quizzes de la
   // plataforma -no son parte de ningún plan-, que siguen sin gate alguno.
-  const gate = await getEvaluationGate(quizId);
-  const momento: "PRESABER" | "POSTSABER" | null = gate ? momentoActivo(gate) : null;
+  // El momento lo resuelve el modo del ciclo: automático (por persona) o
+  // manual (ventanas del área).
+  const { gate, momento, automatico } = await getMomentoParaUsuario(quizId, session.user.id);
 
   // El desbloqueo secuencial NO aplica mientras corre una ventana del ciclo:
   // el presaber se presenta ANTES de ver el contenido -medir lo que se sabe
@@ -56,7 +57,11 @@ export default async function AulaQuizPage({
         : null;
   if (motivo) return <EvaluacionNoDisponible motivo={motivo} courseId={courseId} />;
 
-  if (gate) {
+  // Los avisos de "sin habilitar / bloqueado" solo existen en modo MANUAL:
+  // en automático siempre hay un momento (o la jornada está cerrada, donde
+  // se deja ver el resultado sin abrir intentos nuevos, igual que un ciclo
+  // manual completamente cerrado).
+  if (gate && !automatico) {
     if (!momento) {
       if (estadoPresaber(gate) === "NO_CONFIGURADO") {
         // Nunca se ha abierto nada todavía.
