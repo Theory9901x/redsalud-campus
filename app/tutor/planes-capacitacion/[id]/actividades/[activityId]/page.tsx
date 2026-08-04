@@ -220,6 +220,12 @@ export default async function TutorActividadDetallePage({
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* El formulario va PRIMERO (izquierda) y en vidrio: es la acción de
+            esta sección; la lista de jornadas la acompaña al lado. */}
+        <div className="surface-glass surface-accent-top h-fit space-y-3 p-6">
+          <h3 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">Agendar jornada</h3>
+          <TrainingSessionForm action={createSessionAction} municipios={municipios} salaIntegradaUrl={`${baseUrl}/sala/${activityId}`} />
+        </div>
         <div className="space-y-3 lg:col-span-2">
           <h2 className="font-display text-lg font-bold text-foreground">Jornadas agendadas</h2>
           <TrainingSessionList
@@ -228,10 +234,6 @@ export default async function TutorActividadDetallePage({
             onClose={closeSessionAction}
             onDelete={deleteSessionAction}
           />
-        </div>
-        <div className="surface h-fit space-y-3 p-5">
-          <h3 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">Agendar jornada</h3>
-          <TrainingSessionForm action={createSessionAction} municipios={municipios} salaIntegradaUrl={`${baseUrl}/sala/${activityId}`} />
         </div>
       </div>
 
