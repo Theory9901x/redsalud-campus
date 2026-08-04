@@ -754,6 +754,32 @@ export async function getPromedioEvaluaciones(userId: string) {
 }
 
 /**
+ * Participantes EXTERNOS de una jornada (registrados por el enlace público
+ * /invitado, sin cuenta) con sus resultados del ciclo. Población separada a
+ * propósito de las métricas internas: son universos distintos y mezclarlos
+ * distorsionaría la adherencia del personal propio.
+ */
+export async function getExternosDeActividad(activityId: string) {
+  const externos = await prisma.externalParticipant.findMany({
+    where: { activityId },
+    orderBy: { createdAt: "asc" },
+    select: {
+      fullName: true,
+      company: true,
+      createdAt: true,
+      attempts: { select: { moment: true, score: true, passed: true } },
+    },
+  });
+  return externos.map((e) => ({
+    fullName: e.fullName,
+    company: e.company,
+    registradoEl: e.createdAt,
+    presaber: e.attempts.find((a) => a.moment === "PRESABER")?.score ?? null,
+    postsaber: e.attempts.find((a) => a.moment === "POSTSABER")?.score ?? null,
+  }));
+}
+
+/**
  * Todo lo que necesita el INFORME DE LA JORNADA: los indicadores completos de
  * adherencia que se habilitan al cerrar la capacitación.
  *
@@ -781,7 +807,7 @@ export async function getActivityReportData(activityId: string) {
   });
   if (!actividad?.courseId) return null;
 
-  const [resultados, quiz, asistencia, encuestas] = await Promise.all([
+  const [resultados, quiz, asistencia, encuestas, externos] = await Promise.all([
     getCycleResults(activityId),
     prisma.quiz.findFirst({
       where: { courseId: actividad.courseId, moduleId: null },
@@ -796,6 +822,7 @@ export async function getActivityReportData(activityId: string) {
       where: { trainingActivityId: activityId },
       select: { title: true, _count: { select: { responses: true } } },
     }),
+    getExternosDeActividad(activityId),
   ]);
 
   const passingScore = quiz?.passingScore ?? 60;
@@ -844,6 +871,7 @@ export async function getActivityReportData(activityId: string) {
       source: a.source,
     })),
     encuestas: encuestas.map((e) => ({ titulo: e.title, respuestas: e._count.responses })),
+    externos,
   };
 }
 

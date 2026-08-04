@@ -255,6 +255,35 @@ function Asistencia({ data }: { data: ActivityReportData }) {
   );
 }
 
+function Externos({ data }: { data: ActivityReportData }) {
+  if (data.externos.length === 0) return null;
+  return (
+    <View>
+      <Text style={styles.sectionTitle}>Participantes externos (invitados sin cuenta)</Text>
+      <View style={styles.table}>
+        <View style={styles.tr}>
+          <Text style={[styles.th, { flex: 2 }]}>Nombre</Text>
+          <Text style={[styles.th, { flex: 1.6 }]}>Empresa / entidad</Text>
+          <Text style={[styles.th, { flex: 0.8 }]}>Presaber</Text>
+          <Text style={[styles.th, { flex: 0.8 }]}>Postsaber</Text>
+        </View>
+        {data.externos.map((e, i) => (
+          <View key={i} style={i === data.externos.length - 1 ? styles.trLast : styles.tr}>
+            <Text style={[styles.td, { flex: 2 }]}>{e.fullName}</Text>
+            <Text style={[styles.td, { flex: 1.6 }]}>{e.company}</Text>
+            <Text style={[styles.td, { flex: 0.8 }]}>{e.presaber !== null ? `${e.presaber}%` : "—"}</Text>
+            <Text style={[styles.td, { flex: 0.8 }]}>{e.postsaber !== null ? `${e.postsaber}%` : "—"}</Text>
+          </View>
+        ))}
+      </View>
+      <Text style={{ fontSize: 8, color: COLORS.muted, marginTop: 6 }}>
+        Registrados mediante el enlace publico de invitados de la jornada. Poblacion externa: no se mezcla con los
+        indicadores de adherencia del personal propio.
+      </Text>
+    </View>
+  );
+}
+
 function Encuestas({ data }: { data: ActivityReportData }) {
   if (data.encuestas.length === 0) return null;
   return (
@@ -280,6 +309,7 @@ function ActivityReportDocument({ data, generatedBy }: { data: ActivityReportDat
         <Personas data={data} />
         <PorPregunta data={data} />
         <Asistencia data={data} />
+        <Externos data={data} />
         <Encuestas data={data} />
       </Page>
     </Document>

@@ -54,7 +54,7 @@ export function ActivityQrPanel({ enlaces }: { enlaces: EnlaceQr[] }) {
         sirve toda la vigencia. Presaber y postsaber piden iniciar sesión e inscriben a la persona automáticamente.
       </p>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {enlaces.map((e) => (
           <div key={e.url} className="flex flex-col items-center gap-2 rounded-xl border border-border p-4 text-center">
             <p className="font-display text-sm font-bold text-foreground">{e.titulo}</p>

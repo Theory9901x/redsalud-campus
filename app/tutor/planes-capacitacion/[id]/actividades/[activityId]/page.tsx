@@ -10,7 +10,7 @@ import {
   getAutomaticAttendanceRoster,
 } from "@/lib/training-plans";
 import { getSurveysForActivity } from "@/lib/surveys";
-import { getLinkableCoursesForUser, getMunicipioOptions, getPresaberPostsaberSummary, getCycleResults } from "@/lib/training-plans";
+import { getLinkableCoursesForUser, getMunicipioOptions, getPresaberPostsaberSummary, getCycleResults, getExternosDeActividad } from "@/lib/training-plans";
 import {
   uploadTrainingActivityDocumentAction,
   enableActivityAction,
@@ -46,6 +46,7 @@ import { PresaberPostsaberPanel } from "@/components/training-plans/presaber-pos
 import { CycleResults } from "@/components/training-plans/cycle-results";
 import { ActivityQrPanel, type EnlaceQr } from "@/components/training-plans/activity-qr-panel";
 import { ActivityReportPanel } from "@/components/training-plans/activity-report-panel";
+import { ExternalParticipantsPanel } from "@/components/training-plans/external-participants-panel";
 import QRCode from "qrcode";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
 import {
@@ -107,21 +108,20 @@ export default async function TutorActividadDetallePage({
   // los muestra e imprime.
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const definicionQr = [
-    { destino: "meet", titulo: "Sesión virtual (Meet)", descripcion: "Abre la sala de Meet vigente de esta capacitación." },
-    { destino: "presaber", titulo: "Presaber", descripcion: "Lleva a la evaluación en su momento presaber. Pide iniciar sesión." },
-    { destino: "postsaber", titulo: "Postsaber", descripcion: "Lleva a la evaluación en su momento postsaber. Pide iniciar sesión." },
+    { url: `${baseUrl}/c/${activityId}/meet`, titulo: "Sesión virtual (Meet)", descripcion: "Abre la sala vigente de esta capacitación." },
+    { url: `${baseUrl}/c/${activityId}/presaber`, titulo: "Presaber", descripcion: "Lleva a la evaluación en su momento presaber. Pide iniciar sesión." },
+    { url: `${baseUrl}/c/${activityId}/postsaber`, titulo: "Postsaber", descripcion: "Lleva a la evaluación en su momento postsaber. Pide iniciar sesión." },
+    { url: `${baseUrl}/invitado/${activityId}`, titulo: "Acceso externo (invitados)", descripcion: "Para gente de otras entidades: registro breve de nombre y empresa, sin cuenta. Solo ven la sala y el presaber/postsaber." },
   ];
   const enlacesQr: EnlaceQr[] = await Promise.all(
-    definicionQr.map(async (d) => {
-      const url = `${baseUrl}/c/${activityId}/${d.destino}`;
-      return {
-        titulo: d.titulo,
-        descripcion: d.descripcion,
-        url,
-        qrDataUrl: await QRCode.toDataURL(url, { width: 320, margin: 1 }),
-      };
-    })
+    definicionQr.map(async (d) => ({
+      titulo: d.titulo,
+      descripcion: d.descripcion,
+      url: d.url,
+      qrDataUrl: await QRCode.toDataURL(d.url, { width: 320, margin: 1 }),
+    }))
   );
+  const externos = await getExternosDeActividad(activityId);
   const etiquetasCiclo = {
     presaberOpened: activity.presaberOpenedAt ? DATETIME_FORMAT.format(activity.presaberOpenedAt) : null,
     presaberClosed: activity.presaberClosedAt ? DATETIME_FORMAT.format(activity.presaberClosedAt) : null,
@@ -212,6 +212,12 @@ export default async function TutorActividadDetallePage({
       {activity.courseId && <ActivityReportPanel activityId={activityId} cerrada={isClosed} />}
 
       {activity.courseId && <ActivityQrPanel enlaces={enlacesQr} />}
+
+      {externos.length > 0 && (
+        <ExternalParticipantsPanel
+          externos={externos.map((e) => ({ ...e, registradoEtiqueta: DATETIME_FORMAT.format(e.registradoEl) }))}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-3 lg:col-span-2">

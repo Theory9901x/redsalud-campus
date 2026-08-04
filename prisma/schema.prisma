@@ -822,6 +822,7 @@ model TrainingActivity {
   attendances TrainingAttendance[]
   surveys     Survey[]
   sessions    TrainingSession[]
+  externalParticipants ExternalParticipant[]
 
   @@index([planId])
   @@index([courseId])
@@ -863,6 +864,47 @@ model TrainingSession {
 
   @@index([activityId])
   @@index([startsAt])
+}
+
+/**
+ * PARTICIPANTE EXTERNO de una jornada: gente que no pertenece a la entidad
+ * (otras IPS, contratistas de terceros) y que por decisión institucional NO
+ * recibe cuenta en la plataforma. Se registra con lo mínimo -nombre y
+ * empresa- desde el enlace público /invitado/{actividad}, y solo puede ver
+ * la sala de la jornada y presentar el presaber/postsaber. El registro
+ * mismo ES su constancia de asistencia externa.
+ */
+model ExternalParticipant {
+  id         String           @id @default(cuid())
+  activityId String
+  activity   TrainingActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  fullName   String
+  company    String
+  createdAt  DateTime         @default(now())
+
+  attempts ExternalAttempt[]
+
+  @@index([activityId])
+}
+
+/**
+ * Intento de un externo sobre la evaluación del ciclo. UNO por momento y
+ * por participante: sin cuenta no hay historial que administrar, y un solo
+ * intento mantiene el dato limpio para el informe. Se guarda la selección
+ * (answers) como evidencia auditable de la calificación automática.
+ */
+model ExternalAttempt {
+  id            String              @id @default(cuid())
+  participantId String
+  participant   ExternalParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  moment        EvaluationMoment
+  score         Int
+  passed        Boolean
+  answers       Json?
+  createdAt     DateTime            @default(now())
+
+  @@unique([participantId, moment])
+  @@index([participantId])
 }
 
 /**
