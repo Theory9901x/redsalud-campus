@@ -225,7 +225,7 @@ export default async function TutorActividadDetallePage({
         </div>
         <div className="surface h-fit space-y-3 p-5">
           <h3 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">Agendar jornada</h3>
-          <TrainingSessionForm action={createSessionAction} municipios={municipios} />
+          <TrainingSessionForm action={createSessionAction} municipios={municipios} salaIntegradaUrl={`${baseUrl}/sala/${activityId}`} />
         </div>
       </div>
 

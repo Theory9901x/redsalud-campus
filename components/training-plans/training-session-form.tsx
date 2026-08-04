@@ -20,12 +20,16 @@ const INICIAL: TrainingSessionFormState = { error: null };
 export function TrainingSessionForm({
   action,
   municipios,
+  salaIntegradaUrl,
 }: {
   action: (state: TrainingSessionFormState, formData: FormData) => Promise<TrainingSessionFormState>;
   municipios: { id: string; nombre: string }[];
+  /** URL de la sala virtual embebida de ESTA capacitación (/sala/{actividad}); un clic la usa como enlace de la jornada. */
+  salaIntegradaUrl?: string;
 }) {
   const [state, formAction, pendiente] = useActionState(action, INICIAL);
   const [modalidad, setModalidad] = useState<TrainingModality>("VIRTUAL");
+  const [enlace, setEnlace] = useState("");
   const mostrarLugar = modalidad === "PRESENCIAL" || modalidad === "MIXTA";
   const mostrarEnlace = modalidad === "VIRTUAL" || modalidad === "MIXTA";
 
@@ -106,28 +110,50 @@ export function TrainingSessionForm({
 
       {mostrarEnlace && (
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <Label htmlFor="meetingUrl">Enlace de la reunión</Label>
-            {/*
-              Meet no permite crear salas desde otra plataforma sin OAuth de
-              Google: lo más cerca posible de "generar el enlace" sin
-              credenciales es abrir meet.google.com/new -Google crea la sala
-              al instante- y pegar aquí lo que resulte. Un solo viaje.
-            */}
-            <a
-              href="https://meet.google.com/new"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-            >
-              <Video className="h-3.5 w-3.5" aria-hidden="true" />
-              Generar en Meet
-            </a>
+            <div className="flex items-center gap-3">
+              {/* La sala integrada vive DENTRO de la plataforma (Jitsi embebido):
+                  se crea sola, registra asistencia al entrar y permite grabar
+                  desde su propio menú. Un clic llena el campo. */}
+              {salaIntegradaUrl && (
+                <button
+                  type="button"
+                  onClick={() => setEnlace(salaIntegradaUrl)}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-success hover:underline"
+                >
+                  <Video className="h-3.5 w-3.5" aria-hidden="true" />
+                  Usar sala integrada
+                </button>
+              )}
+              {/*
+                Meet no permite crear salas desde otra plataforma sin OAuth de
+                Google: lo más cerca posible es abrir meet.google.com/new y
+                pegar aquí lo que resulte.
+              */}
+              <a
+                href="https://meet.google.com/new"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+              >
+                <Video className="h-3.5 w-3.5" aria-hidden="true" />
+                Generar en Meet
+              </a>
+            </div>
           </div>
-          <Input id="meetingUrl" name="meetingUrl" type="url" placeholder="https://meet.google.com/…" />
+          <Input
+            id="meetingUrl"
+            name="meetingUrl"
+            type="url"
+            placeholder="https://…"
+            value={enlace}
+            onChange={(e) => setEnlace(e.target.value)}
+          />
           <p className="text-xs text-muted-foreground">
-            «Generar en Meet» abre Google Meet con una sala nueva; copia su enlace y pégalo aquí. Los estudiantes
-            verán el botón «Ingresar a la sesión» en su cronograma.
+            «Usar sala integrada» crea la videollamada DENTRO de la plataforma: registra la asistencia de quien
+            entra y permite grabar desde el menú de la sala. «Generar en Meet» abre una sala externa de Google;
+            copia su enlace y pégalo aquí.
           </p>
         </div>
       )}
