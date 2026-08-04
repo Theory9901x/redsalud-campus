@@ -31,12 +31,15 @@ export function SalaVirtual({
   roomName,
   displayName,
   subject,
+  jwt,
 }: {
   /** Dominio del servidor Jitsi (p. ej. campusvirtual.redsaludteforma.com:8443). */
   domain: string;
   roomName: string;
   displayName: string;
   subject: string;
+  /** Token del personal (moderación). Los invitados externos entran sin token: sin controles de moderación. */
+  jwt?: string | null;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
   const [cargando, setCargando] = useState(true);
@@ -60,13 +63,17 @@ export function SalaVirtual({
         })
         .map((p) => p.formattedDisplayName ?? p.displayName ?? "Participante")
         .map((n) => n.replace(/ \(me\)$/, " (tú)"));
-      setParticipantes(lista);
+      // Jitsi a veces reporta al participante local dos veces con ids
+      // distintos (pantalla compartida, reconexiones): la etiqueta visible
+      // no debe repetirse.
+      setParticipantes([...new Set(lista)]);
     }
 
     function crear() {
       if (cancelado || !contenedor.current || !window.JitsiMeetExternalAPI) return;
       api = new window.JitsiMeetExternalAPI(domain, {
         roomName,
+        ...(jwt ? { jwt } : {}),
         parentNode: contenedor.current,
         width: "100%",
         height: "100%",
@@ -115,7 +122,7 @@ export function SalaVirtual({
       cancelado = true;
       api?.dispose();
     };
-  }, [domain, roomName, displayName, subject]);
+  }, [domain, roomName, displayName, subject, jwt]);
 
   return (
     <div className="space-y-3">

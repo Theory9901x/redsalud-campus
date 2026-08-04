@@ -17,6 +17,7 @@ import { SalaVirtual } from "@/components/training-plans/sala-virtual";
 import { GrabacionJornada } from "@/components/training-plans/grabacion-jornada";
 import { AbrirEvaluacionPopup } from "@/components/training-plans/abrir-evaluacion-popup";
 import { getMomentoParaUsuario } from "@/lib/training-plans";
+import { firmarTokenJitsi } from "@/lib/jitsi";
 import { etiquetaJornada } from "@/components/training-plans/labels";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 
@@ -101,6 +102,9 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
   }
   const puedeGrabar = session.user.role === "ADMIN" || session.user.role === "TUTOR";
   const jitsiDomain = process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si";
+  // Todo el personal entra AUTENTICADO a la sala (token de la plataforma);
+  // los externos del enlace /invitado entran sin token, como invitados.
+  const tokenSala = await firmarTokenJitsi(session.user.name ?? "Participante");
   const proximaJornada = actividad.sessions[0] ? etiquetaJornada(actividad.sessions[0]) : null;
 
   const FICHA = [
@@ -140,6 +144,7 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
               roomName={`RedSaludTeForma-${actividad.id}`}
               displayName={session.user.name ?? "Participante"}
               subject={actividad.title}
+              jwt={tokenSala}
             />
             {puedeGrabar && <GrabacionJornada activityId={actividad.id} />}
             <p className="text-xs text-muted-foreground">

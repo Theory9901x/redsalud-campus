@@ -13,10 +13,13 @@ import {
   Lock,
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { estadoPresaber, estadoPostsaber, momentoParaPersona, cicloEsAutomatico } from "@/lib/presaber-postsaber";
 import { SalaVirtual } from "@/components/training-plans/sala-virtual";
 import { RegistroInvitado } from "@/components/invitado/registro-invitado";
 import { AbrirEvaluacionPopup } from "@/components/training-plans/abrir-evaluacion-popup";
+import { GrabacionJornada } from "@/components/training-plans/grabacion-jornada";
+import { firmarTokenJitsi } from "@/lib/jitsi";
 import { registrarInvitadoAction, getParticipanteDeCookie } from "@/app/invitado/[activityId]/actions";
 import { etiquetaJornada } from "@/components/training-plans/labels";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
@@ -63,6 +66,13 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
 
   const participante = await getParticipanteDeCookie(activityId);
   const registrar = registrarInvitadoAction.bind(null, activityId);
+
+  // Si quien abre el enlace externo ADEMÁS tiene sesión de personal (un
+  // tutor o admin revisando su propia jornada), se le habilita la grabación
+  // aquí mismo: es la misma sala. Los invitados reales nunca la ven.
+  const sesionStaff = await auth();
+  const puedeGrabar = sesionStaff?.user?.role === "ADMIN" || sesionStaff?.user?.role === "TUTOR";
+  const tokenStaff = puedeGrabar ? await firmarTokenJitsi(sesionStaff!.user!.name ?? "Personal") : null;
 
   if (!participante) {
     return (
@@ -133,7 +143,9 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
               roomName={`RedSaludTeForma-${actividad.id}`}
               displayName={`${participante.fullName} (${participante.company})`}
               subject={actividad.title}
+              jwt={tokenStaff}
             />
+            {puedeGrabar && <GrabacionJornada activityId={actividad.id} />}
           </div>
 
           <aside className="space-y-4">

@@ -56,8 +56,10 @@ export async function GET(
   // reunión que empieza ya. La asistencia con identidad la registra la
   // evaluación, no la sala.
   if (destino === "meet") {
+    // Sin jornada agendada con enlace propio, el destino natural es la sala
+    // integrada de la capacitación: existe siempre y se crea sola al entrar.
     const url = actividad.sessions[0]?.meetingUrl;
-    return NextResponse.redirect(url ?? `${base}/mis-capacitaciones/${actividad.planId}`);
+    return NextResponse.redirect(url ?? `${base}/sala/${activityId}`);
   }
 
   // ---- Presaber / postsaber: cada enlace responde por SU momento ----------

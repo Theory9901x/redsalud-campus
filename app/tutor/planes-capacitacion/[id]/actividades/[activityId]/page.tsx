@@ -108,7 +108,7 @@ export default async function TutorActividadDetallePage({
   // los muestra e imprime.
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const definicionQr = [
-    { url: `${baseUrl}/c/${activityId}/meet`, titulo: "Sesión virtual (Meet)", descripcion: "Abre la sala vigente de esta capacitación." },
+    { url: `${baseUrl}/c/${activityId}/meet`, titulo: "Sesión virtual", descripcion: "Abre la sala vigente de esta capacitación." },
     { url: `${baseUrl}/c/${activityId}/presaber`, titulo: "Presaber", descripcion: "Lleva a la evaluación en su momento presaber. Pide iniciar sesión." },
     { url: `${baseUrl}/c/${activityId}/postsaber`, titulo: "Postsaber", descripcion: "Lleva a la evaluación en su momento postsaber. Pide iniciar sesión." },
     { url: `${baseUrl}/invitado/${activityId}`, titulo: "Acceso externo (invitados)", descripcion: "Para gente de otras entidades: registro breve de nombre y empresa, sin cuenta. Solo ven la sala y el presaber/postsaber." },
