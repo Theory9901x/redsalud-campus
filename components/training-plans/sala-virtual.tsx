@@ -82,7 +82,20 @@ export function SalaVirtual({
           subject,
           prejoinConfig: { enabled: true },
           disableDeepLinking: true,
+          // ---- Rendimiento (VPS de 2 CPU y redes institucionales) ----
+          // La capacitación es un expositor hablando: los asistentes entran
+          // con cámara y micrófono apagados (los prenden si van a
+          // intervenir). Video tope 480p -de sobra para una diapositiva o un
+          // rostro- y solo se reenvían los últimos 12 videos activos.
           startWithAudioMuted: true,
+          startWithVideoMuted: true,
+          resolution: 480,
+          constraints: { video: { height: { ideal: 480, max: 540, min: 180 } } },
+          channelLastN: 12,
+          disableAudioLevels: true,
+          // VP8 exige menos CPU en los equipos institucionales que VP9/AV1.
+          videoQuality: { codecPreferenceOrder: ["VP8", "VP9", "AV1"] },
+          p2p: { enabled: true },
         },
         interfaceConfigOverwrite: {
           SHOW_JITSI_WATERMARK: false,
