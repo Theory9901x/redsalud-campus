@@ -331,7 +331,7 @@ export default async function MiCapacitacionDetallePage({
                   {pending.map((survey) => (
                     <Link
                       key={survey.id}
-                      href={`/mis-encuestas/${survey.id}`}
+                      href={`/evaluaciones/${survey.id}`}
                       className="surface surface-hover flex items-center gap-3 p-4"
                     >
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">

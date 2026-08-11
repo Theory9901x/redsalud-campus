@@ -4,7 +4,7 @@ import { ArrowLeft, CheckCircle2, Lock } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getSurveyForStudent } from "@/lib/surveys";
-import { submitSurveyResponseAction } from "@/app/(estudiante)/mis-encuestas/actions";
+import { submitSurveyResponseAction } from "@/app/(estudiante)/evaluaciones/actions";
 import { SurveyAnswerForm } from "@/components/student/survey-answer-form";
 
 export default async function MisEncuestasDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,11 +23,11 @@ export default async function MisEncuestasDetallePage({ params }: { params: Prom
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-6">
       <Link
-        href="/mis-encuestas"
+        href="/evaluaciones"
         className="mb-6 flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Mis encuestas
+        Evaluaciones
       </Link>
 
       {alreadyAnswered ? (

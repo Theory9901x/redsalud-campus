@@ -142,7 +142,7 @@ function armarTarjetas(evaluaciones: EvaluacionCiclo[], encuestas: EncuestaPendi
         sub: "Extensión",
       },
     ],
-    href: `/mis-encuestas/${e.id}`,
+    href: `/evaluaciones/${e.id}`,
     ctaLabel: "Responder",
     yaPresentado: false,
   }));
@@ -162,13 +162,13 @@ const TIPO_ETIQUETA: Record<Tarjeta["tab"], string> = {
 };
 
 /**
- * El tablero de "Mis encuestas y evaluaciones": todo lo que está ABIERTO
+ * El tablero de "Evaluaciones de capacitación": todo lo que está ABIERTO
  * ahora mismo para presentar -presaber, postsaber y encuestas de opinión-,
  * en tarjetas iguales sin importar de dónde vengan, con pestañas para
  * separarlas por tipo. Cada tarjeta lleva directo a presentarla: cero pasos
  * intermedios, que era justo la queja original ("sigue siendo engorroso").
  */
-export function MisEncuestasBoard({
+export function EvaluacionesBoard({
   evaluaciones,
   encuestas,
 }: {
@@ -188,12 +188,13 @@ export function MisEncuestasBoard({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="h-9 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-primary to-success" />
-          <div>
-            <h2 className="font-display text-2xl font-extrabold text-foreground">Evaluaciones disponibles</h2>
-            <p className="text-sm text-muted-foreground">Presaber, postsaber y encuestas abiertas para ti.</p>
-          </div>
+        <div>
+          <h2 className="font-display text-xl font-bold tracking-tight text-foreground sm:text-[21px]">
+            Disponibles ahora
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Presaber, postsaber y encuestas abiertas para ti en este momento.
+          </p>
         </div>
         <div className="flex items-center gap-2.5">
           <div className="flex items-center gap-1 rounded-full border border-border/60 bg-card/80 p-1 shadow-sm backdrop-blur-sm">
@@ -252,7 +253,7 @@ export function MisEncuestasBoard({
               <Link
                 key={t.key}
                 href={t.href}
-                className="surface-clay group flex flex-col gap-4 rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                className="surface-lumen lumen-edge lumen-hover group flex flex-col gap-4 p-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl", color.bg)}>

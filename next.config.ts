@@ -9,6 +9,24 @@ const nextConfig: NextConfig = {
     // resolución original.
     unoptimized: true,
   },
+  async redirects() {
+    return [
+      {
+        // "Mis encuestas" pasó a llamarse "Evaluaciones de capacitación":
+        // el nombre no reflejaba lo que hay dentro (presaber y postsaber,
+        // no solo encuestas). Se conserva la ruta vieja para que ningún
+        // enlace guardado quede roto.
+        source: "/mis-encuestas",
+        destination: "/evaluaciones",
+        permanent: true,
+      },
+      {
+        source: "/mis-encuestas/:id",
+        destination: "/evaluaciones/:id",
+        permanent: true,
+      },
+    ];
+  },
   experimental: {
     serverActions: {
       // Imágenes de curso y PDFs de lecciones pueden pesar varios MB.

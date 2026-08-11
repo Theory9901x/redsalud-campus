@@ -49,7 +49,7 @@ const SECCIONES: Record<string, { titulo: string; detalle: string; href: string 
     { titulo: "Catálogo", detalle: "Cursos disponibles", href: "/cursos" },
     { titulo: "Mis certificados", detalle: "Los que ya obtuviste", href: "/mi-aula#mis-certificados" },
     { titulo: "Mis capacitaciones", detalle: "Sesiones programadas", href: "/mis-capacitaciones" },
-    { titulo: "Mis encuestas", detalle: "Pendientes de responder", href: "/mis-encuestas" },
+    { titulo: "Evaluaciones de capacitación", detalle: "Presaber, postsaber y encuestas", href: "/evaluaciones" },
     { titulo: "Perfil", detalle: "Tus datos y contraseña", href: "/perfil" },
   ],
 };

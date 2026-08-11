@@ -94,6 +94,6 @@ export async function submitSurveyResponseAction(
     },
   });
 
-  revalidatePath("/mis-encuestas");
-  redirect("/mis-encuestas");
+  revalidatePath("/evaluaciones");
+  redirect("/evaluaciones");
 }

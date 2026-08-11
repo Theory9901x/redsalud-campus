@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { SURVEY_QUESTION_TYPE_LABELS } from "@/components/training-plans/survey-labels";
-import type { SurveyResponseFormState } from "@/app/(estudiante)/mis-encuestas/actions";
+import type { SurveyResponseFormState } from "@/app/(estudiante)/evaluaciones/actions";
 import type { SurveyQuestionType } from "@prisma/client";
 
 const initialState: SurveyResponseFormState = { error: null };
