@@ -91,7 +91,7 @@ export const config = {
     "/aula/:path*",
     "/mis-capacitaciones/:path*",
     "/mis-certificados/:path*",
-    "/mis-encuestas/:path*",
+    "/evaluaciones/:path*",
     "/cambiar-contrasena",
     "/login",
     "/registro",
