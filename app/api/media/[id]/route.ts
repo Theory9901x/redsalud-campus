@@ -60,6 +60,39 @@ async function isTargetedStudentForTraining(folder: string, userId: string) {
   return !!user.department && user.department.trim().toLowerCase() === plan.targetDepartment.trim().toLowerCase();
 }
 
+/**
+ * Memoria corta de autorizaciones (usuario, medio) -> permitido.
+ *
+ * Un <video> reproduce a punta de peticiones Range: decenas por sesión de
+ * reproducción, y cada una repetía la cadena completa de consultas
+ * (media -> lesson -> enrollment) antes de servir el primer byte. Ese viaje a
+ * la base en cada chunk es lo que se sentía como lag al adelantar el video.
+ * La inscripción a un curso no cambia en mitad de una reproducción; 60
+ * segundos de memoria por proceso bastan. Solo se memorizan los PERMITIDOS:
+ * un rechazo debe poder corregirse (p. ej. recién inscrito) sin esperar TTL.
+ */
+const AUTH_TTL_MS = 60_000;
+const authCache = new Map<string, number>();
+
+function autorizado(key: string): boolean {
+  const exp = authCache.get(key);
+  if (exp === undefined) return false;
+  if (Date.now() > exp) {
+    authCache.delete(key);
+    return false;
+  }
+  return true;
+}
+
+function memorizar(key: string) {
+  // Tope de tamaño: descarta lo más viejo (orden de inserción del Map).
+  if (authCache.size >= 2000) {
+    const primera = authCache.keys().next().value;
+    if (primera !== undefined) authCache.delete(primera);
+  }
+  authCache.set(key, Date.now() + AUTH_TTL_MS);
+}
+
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
@@ -73,15 +106,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Archivo no encontrado." }, { status: 404 });
   }
 
-  const isOwner = media.uploadedBy === session.user.id;
-  const isAdmin = session.user.role === "ADMIN";
-  const isEnrolled = !isAdmin && !isOwner && (await isEnrolledInLessonCourse(media.folder ?? "", session.user.id));
-  const isPlanTutor = !isAdmin && !isOwner && !isEnrolled && (await isTrainingPlanTutor(media.folder ?? "", session.user.id));
-  const isTargetedStudent =
-    !isAdmin && !isOwner && !isEnrolled && !isPlanTutor && (await isTargetedStudentForTraining(media.folder ?? "", session.user.id));
+  const cacheKey = `${session.user.id}:${media.id}`;
+  if (!autorizado(cacheKey)) {
+    const isOwner = media.uploadedBy === session.user.id;
+    const isAdmin = session.user.role === "ADMIN";
+    const isEnrolled = !isAdmin && !isOwner && (await isEnrolledInLessonCourse(media.folder ?? "", session.user.id));
+    const isPlanTutor = !isAdmin && !isOwner && !isEnrolled && (await isTrainingPlanTutor(media.folder ?? "", session.user.id));
+    const isTargetedStudent =
+      !isAdmin && !isOwner && !isEnrolled && !isPlanTutor && (await isTargetedStudentForTraining(media.folder ?? "", session.user.id));
 
-  if (!isAdmin && !isOwner && !isEnrolled && !isPlanTutor && !isTargetedStudent) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+    if (!isAdmin && !isOwner && !isEnrolled && !isPlanTutor && !isTargetedStudent) {
+      return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+    }
+    memorizar(cacheKey);
   }
 
   const filePath = privateMediaDiskPath(media.folder ?? "", media.fileName);
@@ -117,7 +154,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       headers: {
         "Content-Type": media.fileType,
         "Content-Disposition": `inline; filename="${encodeURIComponent(media.fileName)}"`,
-        "Cache-Control": "private, max-age=0, no-cache",
+        // Los medios son inmutables: reemplazar un archivo crea SIEMPRE un id
+        // nuevo, así que esta URL nunca cambia de contenido. Cachear evita
+        // re-descargar PDFs de varios MB en cada visita a la lección.
+        "Cache-Control": "private, max-age=31536000, immutable",
         "Accept-Ranges": "bytes",
         "Content-Range": `bytes ${start}-${end}/${fileSize}`,
         "Content-Length": String(end - start + 1),
@@ -130,7 +170,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     headers: {
       "Content-Type": media.fileType,
       "Content-Disposition": `inline; filename="${encodeURIComponent(media.fileName)}"`,
-      "Cache-Control": "private, max-age=0, no-cache",
+      // Los medios son inmutables: reemplazar un archivo crea SIEMPRE un id
+      // nuevo, así que esta URL nunca cambia de contenido. Cachear evita
+      // re-descargar PDFs de varios MB en cada visita a la lección.
+      "Cache-Control": "private, max-age=31536000, immutable",
       "Accept-Ranges": "bytes",
       "Content-Length": String(fileSize),
     },
