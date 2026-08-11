@@ -91,7 +91,9 @@ export async function buscarGlobal(consulta: string): Promise<ResultadoBusqueda[
         ? {}
         : esTutor
           ? { OR: [{ status: "PUBLISHED" }, { tutorId: session.user.id }] }
-          : { status: "PUBLISHED" }),
+          : // El estudiante no busca contenido del PLAN aquí: ese vive en
+            // "Mis capacitaciones" y se abre desde su cronograma.
+            { status: "PUBLISHED", trainingActivities: { none: {} } }),
     },
     select: { id: true, title: true, slug: true, courseType: true, status: true },
     take: LIMITE_POR_GRUPO,

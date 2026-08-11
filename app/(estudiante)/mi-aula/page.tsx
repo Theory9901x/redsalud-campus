@@ -45,7 +45,10 @@ export default async function MiAulaPage({
 
   const [enrollments, certificadosCount, settings] = await Promise.all([
     prisma.enrollment.findMany({
-      where: { userId, status: { not: "CANCELLED" } },
+      // Contenido del PLAN de capacitaciones: su seguimiento vive en
+      // "Mis capacitaciones", no aquí. Sin esto el estudiante veía el mismo
+      // curso en dos lugares y con dos avances distintos.
+      where: { userId, status: { not: "CANCELLED" }, course: { trainingActivities: { none: {} } } },
       orderBy: { enrolledAt: "desc" },
       include: { course: { include: { tutor: { select: { fullName: true } } } } },
     }),
