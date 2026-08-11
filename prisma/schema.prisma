@@ -235,7 +235,7 @@ model Course {
   passingScore     Int            @default(80) // % mínimo global del curso
   enrollmentMode   EnrollmentMode @default(ASSIGNED)
   targetAudience   CourseAudience @default(AMBOS)
-  isSequential     Boolean        @default(true) // módulos se desbloquean en orden
+  isSequential     Boolean        @default(false) // si se activa, el contenido se desbloquea en orden
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   publishedAt      DateTime?
