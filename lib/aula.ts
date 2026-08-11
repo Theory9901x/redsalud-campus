@@ -29,14 +29,29 @@ export type AulaQuiz = {
   attemptsUsed: number;
   attemptsRemaining: number;
   bestScore: number | null;
+  /** Posición dentro del módulo, en la misma escala que Lesson.sortOrder. */
+  sortOrder: number;
 };
+
+/**
+ * El recorrido REAL del módulo: lecciones y evaluaciones intercaladas en el
+ * orden en que se presentan. Un módulo puede traer varias parejas
+ * "presentación → evaluación" (un área con varios temas), así que la vista
+ * recorre esto, no dos listas por separado.
+ */
+export type AulaItem =
+  | { tipo: "leccion"; sortOrder: number; leccion: AulaLesson }
+  | { tipo: "quiz"; sortOrder: number; quiz: AulaQuiz };
 
 export type AulaModule = {
   id: string;
   title: string;
   isRequired: boolean;
   lessons: AulaLesson[];
-  quiz: AulaQuiz | null;
+  /** Todas las evaluaciones del módulo, en orden. */
+  quizzes: AulaQuiz[];
+  /** Lecciones y evaluaciones intercaladas, listo para pintar. */
+  items: AulaItem[];
   /** Contadores propios del módulo, para la cabecera del acordeón. */
   completadas: number;
   total: number;
@@ -64,7 +79,7 @@ export type AulaProgreso = {
 };
 
 function buildQuizSummary(
-  quiz: { id: string; title: string; passingScore: number; maxAttempts: number; timeLimitMinutes: number | null },
+  quiz: { id: string; title: string; passingScore: number; maxAttempts: number; timeLimitMinutes: number | null; sortOrder?: number },
   attempts: { score: number | null; passed: boolean | null }[],
   unlocked: boolean
 ): AulaQuiz {
@@ -81,6 +96,7 @@ function buildQuizSummary(
     attemptsUsed: attempts.length,
     attemptsRemaining: Math.max(0, quiz.maxAttempts - attempts.length),
     bestScore,
+    sortOrder: quiz.sortOrder ?? 0,
   };
 }
 
@@ -99,7 +115,7 @@ export const getAulaData = cache(async (courseId: string, userId: string) => {
           orderBy: { sortOrder: "asc" },
           include: { lessons: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } },
         },
-        quizzes: { where: { isActive: true }, orderBy: { title: "asc" } },
+        quizzes: { where: { isActive: true }, orderBy: [{ sortOrder: "asc" }, { title: "asc" }] },
         // Para el panel lateral de la evaluación: área y responsable salen de
         // la ficha del curso, no se escriben a mano en la vista.
         category: { select: { name: true } },
@@ -145,40 +161,65 @@ export const getAulaData = cache(async (courseId: string, userId: string) => {
   let bloqueadorActual: string | null = null;
 
   const modules: AulaModule[] = course.modules.map((module_) => {
+    // El módulo se recorre como UNA secuencia intercalada de lecciones y
+    // evaluaciones ordenadas por sortOrder: un área puede entregar varios
+    // temas y cada tema lleva su evaluación justo después de su
+    // presentación. El desbloqueo secuencial avanza por esa secuencia, no
+    // "todas las lecciones y luego el quiz".
+    const crudos = [
+      ...module_.lessons.map((l) => ({ tipo: "leccion" as const, sortOrder: l.sortOrder, lesson: l })),
+      ...(quizzesByModuleId.get(module_.id) ?? []).map((q) => ({ tipo: "quiz" as const, sortOrder: q.sortOrder, quizRaw: q })),
+    ].sort((a, b) => a.sortOrder - b.sortOrder || (a.tipo === "leccion" ? -1 : 1));
+
+    const lessons: AulaLesson[] = [];
+    const quizzes: AulaQuiz[] = [];
+    const items: AulaItem[] = [];
+    // Puerta interna del módulo: lo que va abriendo paso ítem a ítem.
+    let gateInterno = priorGateComplete;
     let moduleLessonsAllRequiredDone = true;
-    const lessons = module_.lessons.map((lesson) => {
-      const completed = completedLessonIds.has(lesson.id);
-      const unlocked = !course.isSequential || priorGateComplete;
-      if (lesson.isRequired && !completed) moduleLessonsAllRequiredDone = false;
-      return {
-        id: lesson.id,
-        title: lesson.title,
-        contentType: lesson.contentType,
-        isRequired: lesson.isRequired,
-        estimatedMinutes: lesson.estimatedMinutes,
-        completed,
-        unlocked,
-        motivoBloqueo: unlocked
-          ? null
-          : bloqueadorActual
-            ? `Primero tienes que terminar ${bloqueadorActual}.`
-            : "Tienes que avanzar en orden por el contenido anterior.",
-      };
-    });
+    let todasEvaluacionesAprobadas = true;
 
-    const moduleQuizRaw = quizzesByModuleId.get(module_.id)?.[0] ?? null;
-    let quiz: AulaQuiz | null = null;
-    if (moduleQuizRaw) {
-      const unlocked = !course.isSequential || (priorGateComplete && moduleLessonsAllRequiredDone);
-      quiz = buildQuizSummary(moduleQuizRaw, attemptsByQuiz.get(moduleQuizRaw.id) ?? [], unlocked);
+    for (const crudo of crudos) {
+      const unlocked = !course.isSequential || gateInterno;
+      if (crudo.tipo === "leccion") {
+        const lesson = crudo.lesson;
+        const completed = completedLessonIds.has(lesson.id);
+        if (lesson.isRequired && !completed) moduleLessonsAllRequiredDone = false;
+        const item: AulaLesson = {
+          id: lesson.id,
+          title: lesson.title,
+          contentType: lesson.contentType,
+          isRequired: lesson.isRequired,
+          estimatedMinutes: lesson.estimatedMinutes,
+          completed,
+          unlocked,
+          motivoBloqueo: unlocked
+            ? null
+            : bloqueadorActual
+              ? `Primero tienes que terminar ${bloqueadorActual}.`
+              : "Tienes que avanzar en orden por el contenido anterior.",
+        };
+        lessons.push(item);
+        items.push({ tipo: "leccion", sortOrder: crudo.sortOrder, leccion: item });
+        // Una lección obligatoria sin completar cierra el paso a lo que sigue.
+        if (lesson.isRequired && !completed) {
+          gateInterno = false;
+          if (bloqueadorActual === null) bloqueadorActual = `«${lesson.title}»`;
+        }
+      } else {
+        const quiz = buildQuizSummary(crudo.quizRaw, attemptsByQuiz.get(crudo.quizRaw.id) ?? [], unlocked);
+        if (!quiz.passed) todasEvaluacionesAprobadas = false;
+        quizzes.push(quiz);
+        items.push({ tipo: "quiz", sortOrder: crudo.sortOrder, quiz });
+        // Una evaluación sin aprobar también cierra el paso.
+        if (!quiz.passed) {
+          gateInterno = false;
+          if (bloqueadorActual === null) bloqueadorActual = `la evaluación «${quiz.title}»`;
+        }
+      }
     }
 
-    const moduleGateComplete = moduleLessonsAllRequiredDone && (!quiz || quiz.passed);
-    // El primer módulo que no cierra su puerta es el que hay que nombrar en
-    // los bloqueos de todo lo que viene después.
-    if (priorGateComplete && !moduleGateComplete && bloqueadorActual === null) {
-      bloqueadorActual = `el módulo «${module_.title}»`;
-    }
+    const moduleGateComplete = moduleLessonsAllRequiredDone && todasEvaluacionesAprobadas;
     priorGateComplete = priorGateComplete && moduleGateComplete;
 
     return {
@@ -186,7 +227,8 @@ export const getAulaData = cache(async (courseId: string, userId: string) => {
       title: module_.title,
       isRequired: module_.isRequired,
       lessons,
-      quiz,
+      quizzes,
+      items,
       completadas: lessons.filter((l) => l.completed).length,
       total: lessons.length,
     };
@@ -207,9 +249,7 @@ export const getAulaData = cache(async (courseId: string, userId: string) => {
       requeridas.length === 0
         ? 100
         : Math.round((requeridas.filter((l) => l.completed).length / requeridas.length) * 100),
-    cuestionariosPendientes: [...modules.flatMap((m) => (m.quiz ? [m.quiz] : [])), ...finalQuizzes].filter(
-      (q) => !q.passed
-    ).length,
+    cuestionariosPendientes: [...modules.flatMap((m) => m.quizzes), ...finalQuizzes].filter((q) => !q.passed).length,
   };
 
   /**
@@ -228,7 +268,7 @@ export const getAulaData = cache(async (courseId: string, userId: string) => {
   // fallback antiguo mandaba a la última lección del curso, aún bloqueada.
   const siguienteLeccion = flattenedLessons.find((l) => l.unlocked && !l.completed);
   const quizPendiente =
-    modules.map((m) => m.quiz).find((q) => q && q.unlocked && !q.passed && q.attemptsRemaining > 0) ??
+    modules.flatMap((m) => m.quizzes).find((q) => q.unlocked && !q.passed && q.attemptsRemaining > 0) ??
     finalQuizzes.find((q) => q.unlocked && !q.passed && q.attemptsRemaining > 0) ??
     null;
   const ultimaCompletada = [...flattenedLessons].reverse().find((l) => l.completed);
@@ -253,7 +293,7 @@ export async function getAulaQuiz(courseId: string, quizId: string, userId: stri
   const data = await getAulaData(courseId, userId);
   if (!data) return null;
 
-  const moduleQuiz = data.modules.flatMap((m) => (m.quiz ? [m.quiz] : [])).find((q) => q.id === quizId);
+  const moduleQuiz = data.modules.flatMap((m) => m.quizzes).find((q) => q.id === quizId);
   const finalQuiz = data.finalQuizzes.find((q) => q.id === quizId);
   const quizSummary = moduleQuiz ?? finalQuiz;
   if (!quizSummary) return null;

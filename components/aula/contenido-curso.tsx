@@ -165,20 +165,24 @@ export function ContenidoCurso({
 
                 {abierto && (
                   <ul className="carril-lecciones mt-3 mb-1">
-                    {modulo.lessons.map((leccion) => (
-                      <li key={leccion.id}>
-                        <FilaLeccion
-                          courseId={courseId}
-                          leccion={leccion}
-                          esActual={leccion.id === leccionActualId}
-                          termino={termino}
-                        />
-                      </li>
-                    ))}
-                    {modulo.quiz && (
-                      <li>
-                        <FilaCuestionario courseId={courseId} quiz={modulo.quiz} />
-                      </li>
+                    {/* Lecciones y evaluaciones intercaladas: cada tema del
+                        módulo muestra su presentación y, justo debajo, su
+                        propia evaluación. */}
+                    {modulo.items.map((item) =>
+                      item.tipo === "leccion" ? (
+                        <li key={item.leccion.id}>
+                          <FilaLeccion
+                            courseId={courseId}
+                            leccion={item.leccion}
+                            esActual={item.leccion.id === leccionActualId}
+                            termino={termino}
+                          />
+                        </li>
+                      ) : (
+                        <li key={item.quiz.id}>
+                          <FilaCuestionario courseId={courseId} quiz={item.quiz} />
+                        </li>
+                      )
                     )}
                   </ul>
                 )}

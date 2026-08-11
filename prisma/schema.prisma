@@ -325,6 +325,14 @@ model Quiz {
   randomizeAnswers   Boolean       @default(false)
   showResultsNow     Boolean       @default(true)
   isActive           Boolean       @default(true)
+  /**
+   * Posición de la evaluación DENTRO de su módulo, en la misma escala que
+   * Lesson.sortOrder: así un módulo puede llevar varias parejas
+   * "presentación → evaluación" intercaladas (un área entrega varios temas
+   * y cada tema tiene su propia evaluación seguida). Sin esto un módulo
+   * solo podía mostrar una evaluación, siempre al final.
+   */
+  sortOrder          Int           @default(0)
 
   questions Question[]
   attempts  QuizAttempt[]
