@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, type LucideIcon } from "lucide-react";
+import { CalendarRange } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { COURSE_TYPE_ICONS, COURSE_TYPE_COLORS } from "@/components/cursos/labels";
 import { DotPattern } from "@/components/brand/dot-pattern";
@@ -17,6 +18,7 @@ export function CoursePosterCard({
   eyebrow,
   audienceLabel,
   statusBadge,
+  planBadge,
   meta,
   progress,
   progressLabel,
@@ -30,6 +32,13 @@ export function CoursePosterCard({
   /** Chip discreto (p. ej. "Asistencial"); solo pásalo cuando el curso no sea para todo el personal. */
   audienceLabel?: string | null;
   statusBadge?: { label: string; dotClassName: string };
+  /**
+   * Marca de que el curso es CONTENIDO DEL PLAN DE CAPACITACIONES, no un
+   * curso del catálogo: se gestiona desde el plan y su ciclo
+   * presaber/postsaber, no como oferta de libre inscripción. Se distingue a
+   * simple vista para no confundirlo con los demás.
+   */
+  planBadge?: { label: string } | null;
   meta: CoursePosterMeta[];
   progress?: number;
   progressLabel?: string;
@@ -85,6 +94,13 @@ export function CoursePosterCard({
         <span className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-navy shadow-sm backdrop-blur">
           <span className={cn("h-1.5 w-1.5 rounded-full", statusBadge.dotClassName)} />
           {statusBadge.label}
+        </span>
+      )}
+
+      {planBadge && (
+        <span className="absolute left-3 top-[3.25rem] flex max-w-[calc(100%-1.5rem)] items-center gap-1.5 rounded-lg border border-warning/40 bg-warning/95 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-warning-foreground shadow-sm">
+          <CalendarRange className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="truncate">{planBadge.label}</span>
         </span>
       )}
 

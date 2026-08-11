@@ -757,13 +757,27 @@
    */
 
   /* Hero tipo HUD: navy con mesh de acento, malla técnica y grano. */
+  /*
+   * Hero del panel: AZUL institucional en degradado, no el navy plano de
+   * antes. El azul claro ("bebé") se concentra en el borde inferior y la
+   * esquina inferior derecha -zona sin texto-, mientras la banda superior,
+   * donde viven el titular y los indicadores en blanco, se mantiene
+   * profunda: así el hero se lee azul claro sin que el texto blanco se
+   * pierda contra el fondo.
+   */
   .hud-hero {
     @apply relative isolate overflow-hidden;
     border-radius: var(--radius-surface);
     background-color: var(--navy);
     background-image:
-      radial-gradient(circle 520px at 8% -20%, color-mix(in oklch, var(--accent) 34%, transparent), transparent 60%),
-      radial-gradient(circle 420px at 100% 120%, color-mix(in oklch, var(--primary) 22%, transparent), transparent 55%);
+      radial-gradient(circle 520px at 8% -20%, color-mix(in oklch, var(--accent) 30%, transparent), transparent 60%),
+      radial-gradient(ellipse 900px 380px at 108% 125%, color-mix(in oklch, var(--primary) 74%, white) 0%, transparent 62%),
+      linear-gradient(
+        168deg in oklch,
+        var(--navy) 0%,
+        color-mix(in oklch, var(--primary) 22%, var(--navy)) 58%,
+        color-mix(in oklch, var(--primary) 46%, var(--navy)) 100%
+      );
   }
   /* Malla de líneas al 4%: sensación tech sin ruido visual. */
   .hud-grid::before {

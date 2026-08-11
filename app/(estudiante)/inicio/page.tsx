@@ -133,9 +133,9 @@ export default async function InicioPage() {
               <AvatarProgressRing name={session!.user.name ?? ""} avatarUrl={avatarUrl} progress={avanceGlobal} size={84} />
               <div className="border-l border-white/15 pl-5">
                 <p className="font-display text-3xl font-extrabold leading-none text-white">{avanceGlobal}%</p>
-                <p className="mt-1 text-xs text-white/60">Avance global</p>
+                <p className="mt-1 text-xs text-white/75">Avance global</p>
                 <p className="mt-3 font-display text-lg font-bold leading-none text-white">{enrollments.length}</p>
-                <p className="mt-1 text-xs text-white/60">Cursos en total</p>
+                <p className="mt-1 text-xs text-white/75">Cursos en total</p>
               </div>
             </div>
           </div>

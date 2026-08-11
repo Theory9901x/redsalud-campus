@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { BookOpen, Pencil, ExternalLink } from "lucide-react";
+import { CalendarRange, BookOpen, Pencil, ExternalLink } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -27,6 +27,8 @@ export type CourseAdminListItem = {
   category: { name: string } | null;
   tutor: { fullName: string };
   _count: { modules: number; enrollments: number };
+  /** Actividades del plan que usan este curso: si hay alguna, es contenido del PIC. */
+  trainingActivities?: { plan: { title: string } }[];
 };
 
 export function CourseAdminTable({
@@ -73,7 +75,17 @@ export function CourseAdminTable({
                       <BookOpen className="h-4 w-4 text-muted-foreground" />
                     )}
                   </span>
-                  <span className="font-medium text-foreground">{course.title}</span>
+                  <span className="min-w-0">
+                    <span className="block font-medium text-foreground">{course.title}</span>
+                    {/* Contenido del PIC: se gestiona desde el plan (ciclo
+                        presaber/postsaber), no como curso de catálogo. */}
+                    {course.trainingActivities && course.trainingActivities.length > 0 && (
+                      <span className="mt-0.5 inline-flex items-center gap-1 rounded-md border border-warning/40 bg-warning/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-warning-foreground">
+                        <CalendarRange className="h-3 w-3 shrink-0" aria-hidden="true" />
+                        Plan de capacitaciones
+                      </span>
+                    )}
+                  </span>
                 </Link>
               </TableCell>
               <TableCell className="text-muted-foreground">{course.category?.name ?? "—"}</TableCell>

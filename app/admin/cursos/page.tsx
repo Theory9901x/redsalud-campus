@@ -35,6 +35,8 @@ export default async function AdminCursosPage({
         category: { select: { name: true } },
         tutor: { select: { fullName: true } },
         _count: { select: { modules: true, enrollments: true } },
+        // Para distinguir en la lista el contenido del PIC de los cursos de catálogo.
+        trainingActivities: { select: { plan: { select: { title: true } } }, take: 1 },
       },
       skip: (page - 1) * pageSize,
       take: pageSize,

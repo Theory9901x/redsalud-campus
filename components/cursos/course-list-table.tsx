@@ -15,6 +15,8 @@ export type CourseListItem = {
   category: { name: string } | null;
   tutor: { fullName: string };
   _count: { modules: number; enrollments: number };
+  /** Actividades del plan que usan este curso: si hay alguna, es contenido del PIC. */
+  trainingActivities?: { plan: { title: string } }[];
 };
 
 export function CourseListTable({
@@ -43,6 +45,7 @@ export function CourseListTable({
           courseType={course.courseType}
           eyebrow={course.category?.name}
           statusBadge={{ label: COURSE_STATUS_LABELS[course.status], dotClassName: COURSE_STATUS_DOT[course.status] }}
+          planBadge={course.trainingActivities && course.trainingActivities.length > 0 ? { label: "Plan de capacitaciones" } : null}
           meta={[
             { icon: Layers, label: `${course._count.modules} ${course._count.modules === 1 ? "módulo" : "módulos"}` },
             { icon: Clock, label: `${course.durationHours}h` },
