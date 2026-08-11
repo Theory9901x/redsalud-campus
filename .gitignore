@@ -50,3 +50,5 @@ next-env.d.ts
 # Presentaciones que entregan las áreas: fuente para montar los cursos,
 # no forma parte del código.
 /contenidos-areas
+
+scratch-*
