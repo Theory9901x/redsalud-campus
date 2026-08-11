@@ -1,69 +1,104 @@
 import Link from "next/link";
-import { CalendarRange, Building2, User } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { auth } from "@/auth";
-import { getTrainingPlansForStudent } from "@/lib/training-plans";
-import { EmptyState } from "@/components/brand/empty-state";
+import { getStudentPlansOverview } from "@/lib/training-plans";
 import { StaggerSections } from "@/components/brand/stagger-sections";
+import {
+  MisCapacitacionesView,
+  type PlanTarjeta,
+  type ResumenCapacitaciones,
+} from "@/components/training-plans/mis-capacitaciones-view";
+import { TRAINING_PLAN_STATUS_LABELS, etiquetaJornada } from "@/components/training-plans/labels";
 
+/**
+ * "Mis capacitaciones": el centro personal de formación del estudiante.
+ *
+ * Toda cifra sale de datos reales y con los mismos criterios que la ficha del
+ * plan (getStudentPlansOverview). Lo que no existe no se estima: el progreso
+ * llega null mientras la persona no esté inscrita en nada, y la vista muestra
+ * en su lugar cuántas capacitaciones tiene programadas.
+ */
 export default async function MisCapacitacionesPage() {
   const session = await auth();
   const userId = session!.user.id;
+  const primerNombre = session!.user.name?.split(" ")[0];
 
-  const plans = await getTrainingPlansForStudent(userId);
+  const planes = await getStudentPlansOverview(userId);
+
+  const tarjetas: PlanTarjeta[] = planes.map((p) => ({
+    id: p.id,
+    title: p.title,
+    year: p.year,
+    estadoLabel: TRAINING_PLAN_STATUS_LABELS[p.status],
+    estadoTono: p.status === "ACTIVE" ? "activo" : p.status === "CLOSED" ? "cerrado" : "borrador",
+    targetDepartment: p.targetDepartment,
+    tutorName: p.tutorName,
+    totalActividades: p.totalActividades,
+    completadas: p.completadas,
+    evaluacionesDisponibles: p.evaluacionesDisponibles,
+    progreso: p.progreso,
+    // La fecha se formatea AQUÍ, en el servidor: hacerlo en el cliente hidrata
+    // distinto (el ICU del navegador y el de Node difieren en "a. m.").
+    proximaJornada: p.proximaJornada
+      ? { titulo: p.proximaJornada.titulo, etiqueta: etiquetaJornada(p.proximaJornada) }
+      : null,
+  }));
+
+  // Agregados del encabezado: suma de lo que de verdad le aplica a la persona.
+  const conProgreso = planes.filter((p) => p.progreso !== null);
+  const resumen: ResumenCapacitaciones = {
+    actividades: planes.reduce((s, p) => s + p.totalActividades, 0),
+    completadas: planes.reduce((s, p) => s + p.completadas, 0),
+    evaluacionesDisponibles: planes.reduce((s, p) => s + p.evaluacionesDisponibles, 0),
+    proximasJornadas: planes.reduce((s, p) => s + p.proximasJornadas, 0),
+    progreso:
+      conProgreso.length > 0
+        ? Math.round(conProgreso.reduce((s, p) => s + (p.progreso ?? 0), 0) / conProgreso.length)
+        : null,
+  };
+
+  const anios = [...new Set(planes.map((p) => p.year))].sort((a, b) => b - a);
+  const planVigente = planes.find((p) => p.status === "ACTIVE");
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
-      <StaggerSections className="space-y-6">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold text-foreground">Mis capacitaciones</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Planes de capacitación institucional dirigidos a ti: cronograma, documentos y evaluaciones.
-          </p>
-        </div>
+    <main className="canvas-formacion min-h-full flex-1">
+      <div className="mx-auto w-full max-w-[1480px] px-4 py-8 sm:px-6 lg:px-8">
+        <StaggerSections className="space-y-8">
+        {/* Encabezado del módulo */}
+        <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Formación institucional</p>
+            <h1 className="mt-2 font-display text-[clamp(1.9rem,4vw,2.35rem)] font-extrabold leading-[1.1] tracking-tight text-foreground">
+              Mis capacitaciones
+            </h1>
+            <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
+              {primerNombre ? `${primerNombre}, gestiona` : "Gestiona"} tu ruta de aprendizaje, consulta próximas
+              actividades y haz seguimiento a tu formación institucional.
+            </p>
+          </div>
 
-        {plans.length === 0 ? (
-          <div className="surface-panel p-6 sm:p-8">
-            <EmptyState
-              icon={CalendarRange}
-              title="Sin planes asignados"
-              description="Cuando tengas un plan de capacitación asignado, aparecerá aquí."
-            />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {plans.map((plan) => (
+          <div className="flex flex-wrap items-center gap-3">
+            {planVigente && (
+              <span className="inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-4 py-2 text-sm font-semibold text-success">
+                <span className="h-2 w-2 rounded-full bg-success" aria-hidden="true" />
+                Plan activo · {planVigente.year}
+              </span>
+            )}
+            {planVigente && (
               <Link
-                key={plan.id}
-                href={`/mis-capacitaciones/${plan.id}`}
-                className="surface-clay surface-accent-top flex flex-col gap-3 overflow-hidden p-5 transition-all duration-200 hover:-translate-y-0.5"
+                href={`/mis-capacitaciones/${planVigente.id}`}
+                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/80 px-4 py-2 text-sm font-semibold text-foreground backdrop-blur-sm transition-transform duration-150 hover:-translate-y-0.5 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <CalendarRange className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate font-display text-sm font-bold text-foreground">{plan.title}</p>
-                    <p className="text-xs text-muted-foreground">{plan.year}</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Building2 className="h-3.5 w-3.5 text-primary" />
-                    {plan.targetDepartment ?? "Todo el personal"}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <User className="h-3.5 w-3.5 text-primary" />
-                    {plan.tutor.fullName}
-                  </span>
-                  <span>
-                    {plan._count.activities} {plan._count.activities === 1 ? "actividad" : "actividades"}
-                  </span>
-                </div>
+                <CalendarDays className="h-4 w-4 text-primary" strokeWidth={1.7} aria-hidden="true" />
+                Ver calendario
               </Link>
-            ))}
+            )}
           </div>
-        )}
-      </StaggerSections>
+        </header>
+
+        <MisCapacitacionesView planes={tarjetas} resumen={resumen} anios={anios} />
+        </StaggerSections>
+      </div>
     </main>
   );
 }

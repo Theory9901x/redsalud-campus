@@ -181,7 +181,11 @@
   --success: oklch(68.27% 0.1823 145.18);
   --success-foreground: oklch(100% 0 0);
   --warning: oklch(84.62% 0.1716 85.29);
-  --warning-foreground: oklch(25.39% 0.0467 249.10);
+  /* Tinta ámbar: en oscuro el navy del tema claro es ilegible sobre el
+     fondo de las tarjetas. Se usa siempre sobre fondos translúcidos
+     (bg-warning/15…), nunca sobre ámbar sólido -ahí solo hay puntos
+     decorativos sin texto-, así que aclararlo es seguro. */
+  --warning-foreground: oklch(86% 0.1289 85.29);
   --navy: oklch(25.39% 0.0467 249.10);
   --border: oklch(100% 0 0 / 0.1);
   --input: oklch(100% 0 0 / 0.15);
@@ -684,6 +688,86 @@
     border-color: var(--clay-border);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow-clay);
+  }
+
+  /*
+   * Vidrio LUMINOSO (nivel "panel de producto"): más blanco y menos gris que
+   * .surface-glass, para superficies grandes sobre el lienzo claro del
+   * estudiante. Se apoya en los mismos tokens --glass-*, así que sigue al
+   * tema; el borde casi blanco es lo que le da el canto de cristal.
+   */
+  .surface-lumen {
+    @apply relative border;
+    border-radius: 26px;
+    border-color: color-mix(in oklch, white 72%, transparent);
+    background-image: linear-gradient(
+      135deg in oklch,
+      color-mix(in oklch, var(--card) 96%, transparent),
+      color-mix(in oklch, var(--card) 78%, transparent)
+    );
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    backdrop-filter: blur(24px) saturate(150%);
+    box-shadow:
+      inset 0 1px 0 0 color-mix(in oklch, white 92%, transparent),
+      0 24px 60px -20px color-mix(in oklch, var(--shade) 16%, transparent);
+  }
+  .dark .surface-lumen {
+    border-color: var(--glass-border);
+    box-shadow:
+      inset 0 1px 0 0 var(--glass-inset),
+      0 24px 60px -20px color-mix(in oklch, black 40%, transparent);
+  }
+
+  /*
+   * Lienzo claro y atmosférico para el espacio de formación del estudiante:
+   * manchas lumínicas muy tenues en azul, cian y verde institucional. Va
+   * ANCLADO al viewport para que no se recomponga en cada scroll, y es una
+   * clase propia -no toca .page-canvas, que comparten admin y tutor-.
+   */
+  .canvas-formacion {
+    background-color: color-mix(in oklch, var(--background) 60%, white);
+    background-image:
+      radial-gradient(circle 720px at 22% 4%, color-mix(in oklch, var(--primary) 12%, transparent), transparent 60%),
+      radial-gradient(circle 600px at 86% 10%, color-mix(in oklch, var(--success) 9%, transparent), transparent 58%),
+      radial-gradient(circle 700px at 60% 100%, color-mix(in oklch, var(--primary) 8%, transparent), transparent 62%);
+    background-attachment: fixed;
+  }
+  .dark .canvas-formacion {
+    background-color: var(--background);
+    background-image:
+      radial-gradient(circle 720px at 22% 4%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 60%),
+      radial-gradient(circle 600px at 86% 10%, color-mix(in oklch, var(--success) 10%, transparent), transparent 58%);
+  }
+
+  /* Filo superior de marca: cian -> aqua -> verde, 2px, nada de arcoíris. */
+  .lumen-edge::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 2px;
+    border-start-start-radius: 26px;
+    border-start-end-radius: 26px;
+    background: linear-gradient(
+      to right in oklch,
+      var(--primary),
+      color-mix(in oklch, var(--primary) 55%, var(--success)),
+      var(--success)
+    );
+  }
+
+  /* Elevación al pasar el cursor, respetando quien pide menos movimiento. */
+  .lumen-hover {
+    transition: transform 200ms var(--ease-signature), box-shadow 200ms var(--ease-signature);
+  }
+  .lumen-hover:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      inset 0 1px 0 0 color-mix(in oklch, white 92%, transparent),
+      0 30px 70px -22px color-mix(in oklch, var(--shade) 22%, transparent);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lumen-hover:hover { transform: none; }
   }
 
   .surface-clay-pressed {

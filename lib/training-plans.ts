@@ -1,5 +1,12 @@
 import { prisma } from "@/lib/prisma";
-import { compararAdherencia, momentoActivo, momentoParaPersona, cicloEsAutomatico } from "@/lib/presaber-postsaber";
+import {
+  compararAdherencia,
+  momentoActivo,
+  momentoParaPersona,
+  cicloEsAutomatico,
+  estadoPresaber,
+  estadoPostsaber,
+} from "@/lib/presaber-postsaber";
 import type { Role, CourseAudience, TrainingActivityStatus } from "@prisma/client";
 
 /**
@@ -78,6 +85,118 @@ export async function getTrainingPlansForStudent(userId: string) {
     },
   });
 }
+
+/**
+ * Panorama de los planes del estudiante CON sus cifras reales, para la vista
+ * "Mis capacitaciones".
+ *
+ * Todo sale de lo que ya existe -actividades aplicables por audiencia,
+ * inscripciones, intentos del ciclo y jornadas agendadas-, con los mismos
+ * criterios que usa la ficha del plan: la lista y el detalle nunca pueden
+ * decir cifras distintas. Nada estimado: si un dato no existe, se devuelve
+ * null y la vista lo omite.
+ */
+export async function getStudentPlansOverview(userId: string) {
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { department: true, personnelType: true },
+  });
+
+  const planes = await prisma.trainingPlan.findMany({
+    where: {
+      OR: [
+        { targetDepartment: null },
+        ...(user.department ? [{ targetDepartment: { equals: user.department, mode: "insensitive" as const } }] : []),
+      ],
+    },
+    orderBy: [{ year: "desc" }, { createdAt: "desc" }],
+    include: {
+      tutor: { select: { fullName: true } },
+      activities: {
+        select: {
+          id: true,
+          title: true,
+          courseId: true,
+          targetAudience: true,
+          status: true,
+          presaberOpenedAt: true,
+          presaberClosedAt: true,
+          postsaberOpenedAt: true,
+          postsaberClosedAt: true,
+          sessions: { orderBy: { startsAt: "asc" }, select: { startsAt: true, endsAt: true, meetingUrl: true, status: true } },
+        },
+      },
+    },
+  });
+  if (planes.length === 0) return [];
+
+  // Una sola pasada por curso e intentos para todos los planes.
+  const courseIds = [
+    ...new Set(planes.flatMap((p) => p.activities.map((a) => a.courseId).filter((x): x is string => !!x))),
+  ];
+  const [progresoPorCurso, ciclo] = await Promise.all([
+    getStudentCourseProgress(courseIds, userId),
+    getStudentCycleInfo(courseIds, userId),
+  ]);
+
+  const ahora = new Date();
+
+  return planes.map((plan) => {
+    // Solo lo que le aplica a ESTA persona, igual que en la ficha del plan.
+    const aplicables = plan.activities.filter(
+      (a) => a.targetAudience === "AMBOS" || a.targetAudience === user.personnelType
+    );
+
+    let completadas = 0;
+    let conContenido = 0;
+    let evaluacionesDisponibles = 0;
+    const avances: number[] = [];
+
+    for (const a of aplicables) {
+      const avance = a.courseId ? progresoPorCurso.get(a.courseId) : undefined;
+      if (!avance) continue;
+      conContenido += 1;
+      if (avance.enrollment) avances.push(avance.enrollment.progressPercentage);
+      if (avance.enrollment?.status === "COMPLETED") completadas += 1;
+
+      const cyc = a.courseId ? ciclo.get(a.courseId) : undefined;
+      const automatico = cicloEsAutomatico(a);
+      const congelado = a.status === "CLOSED";
+      if (!congelado && cyc) {
+        const preAbierto = automatico ? !cyc.presaberDone : estadoPresaber(a) === "DISPONIBLE" && !cyc.presaberDone;
+        const postAbierto = automatico
+          ? cyc.presaberDone && !cyc.postsaberDone
+          : estadoPostsaber(a) === "DISPONIBLE" && !cyc.postsaberDone;
+        if (preAbierto || postAbierto) evaluacionesDisponibles += 1;
+      }
+    }
+
+    // Próxima jornada agendada de todo el plan (la más cercana en el futuro).
+    const proximas = aplicables
+      .flatMap((a) => a.sessions.map((s) => ({ ...s, titulo: a.title, activityId: a.id })))
+      .filter((s) => s.startsAt >= ahora && s.status !== "CLOSED")
+      .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+
+    return {
+      id: plan.id,
+      title: plan.title,
+      year: plan.year,
+      status: plan.status,
+      targetDepartment: plan.targetDepartment,
+      tutorName: plan.tutor.fullName,
+      totalActividades: aplicables.length,
+      conContenido,
+      completadas,
+      evaluacionesDisponibles,
+      proximasJornadas: proximas.length,
+      proximaJornada: proximas[0] ?? null,
+      /** Null cuando la persona todavía no está inscrita en nada: no se inventa un 0 %. */
+      progreso: avances.length > 0 ? Math.round(avances.reduce((s, v) => s + v, 0) / avances.length) : null,
+    };
+  });
+}
+
+export type StudentPlanOverview = Awaited<ReturnType<typeof getStudentPlansOverview>>[number];
 
 /** Detalle de un plan para el estudiante: null si el plan no existe o no le aplica (dependencia distinta). */
 export async function getTrainingPlanDetailForStudent(id: string, userId: string) {
