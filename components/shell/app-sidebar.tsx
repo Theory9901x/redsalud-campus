@@ -80,14 +80,14 @@ export function AppSidebar({
       <aside
         className={cn(
           claseAcento,
-          "fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col overflow-hidden border-r border-white/10 bg-gradient-to-b from-sidebar to-[#0A1622] text-sidebar-foreground transition-transform duration-200 lg:sticky lg:top-0 lg:translate-x-0",
+          "sidebar-brand fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col overflow-hidden border-r border-white/10 text-sidebar-foreground transition-transform duration-200 lg:sticky lg:top-0 lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Resplandor del acento del rol detrás del logo: es lo que le da
             volumen al panel y lo que distingue un área de otra de un vistazo. */}
-        <div className="pointer-events-none absolute -left-12 -top-20 h-64 w-64 rounded-full bg-[var(--accent)] opacity-25 blur-[80px]" />
-        <div className="pointer-events-none absolute -bottom-16 -right-12 h-52 w-52 rounded-full bg-[var(--accent)] opacity-10 blur-[80px]" />
+        <div className="pointer-events-none absolute -left-12 -top-20 z-[1] h-64 w-64 rounded-full bg-[var(--accent)] opacity-25 blur-[80px]" />
+        <div className="pointer-events-none absolute -bottom-16 -right-12 z-[1] h-52 w-52 rounded-full bg-[var(--accent)] opacity-10 blur-[80px]" />
 
         <div className="relative flex items-center gap-2.5 px-5 py-6">
           {logoUrl ? (
@@ -145,7 +145,7 @@ export function AppSidebar({
                           ? // Activo: no un rectángulo sólido, sino un bloque
                             // con halo del acento que se lee elevado.
                             "border-[color-mix(in_oklch,var(--accent)_35%,transparent)] bg-gradient-to-r from-[color-mix(in_oklch,var(--accent)_22%,transparent)] to-transparent text-white shadow-[0_0_20px_-4px_color-mix(in_oklch,var(--accent)_45%,transparent)]"
-                          : "border-transparent text-sidebar-foreground/70 hover:translate-x-1 hover:bg-white/5 hover:text-white"
+                          : "border-transparent text-sidebar-foreground/85 hover:translate-x-1 hover:bg-white/5 hover:text-white"
                       )}
                     >
                       <span

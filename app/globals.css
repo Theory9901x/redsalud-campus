@@ -864,7 +864,34 @@
  */
 /* Estudiante: acento teal (mockup del catálogo aprobado). Un solo token
    tiñe el área completa —barra activa, números KPI, foco, chips, avatar—. */
-.accent-student { --accent: oklch(78% 0.126 183); }
+/* Estudiante: el AZUL institucional (--primary), el mismo del login. Antes
+   era un teal verdoso que no pertenecía a la paleta de la entidad. */
+.accent-student { --accent: var(--primary); }
+
+/*
+ * Barra lateral con el MISMO gradiente azul del login (auth-shell): navy
+ * arriba -para que el logo y el encabezado tengan contraste- abriéndose al
+ * azul institucional hacia abajo, con una capa de vidrio encima. Se detiene
+ * en un azul medio (no llega al azul claro del login) porque aquí el texto
+ * de navegación es blanco y debe seguir legible de arriba a abajo.
+ */
+.sidebar-brand {
+  background-image: linear-gradient(
+    170deg in oklch,
+    var(--navy) 0%,
+    color-mix(in oklch, var(--primary) 26%, var(--navy)) 45%,
+    color-mix(in oklch, var(--primary) 44%, var(--navy)) 100%
+  );
+}
+.sidebar-brand::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle 240px at 15% 8%, color-mix(in oklch, white 12%, transparent), transparent 70%),
+    radial-gradient(circle 300px at 90% 100%, color-mix(in oklch, var(--primary) 30%, transparent), transparent 70%);
+}
 .accent-tutor { --accent: var(--success); }
 .accent-admin { --accent: oklch(62% 0.19 295); } /* violeta institucional */
 
