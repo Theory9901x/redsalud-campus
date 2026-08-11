@@ -11,12 +11,14 @@ export default async function AulaIndexPage({ params }: { params: Promise<{ cour
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  // Reanudar: cae en la primera lección abierta sin completar, no en la
-  // primera del curso. Quien va por la lección 9 de 12 no quiere volver a
-  // empezar cada vez que entra.
+  // Reanudar: cae en lo PENDIENTE según el avance real -la siguiente lección
+  // sin completar, o el quiz que toca presentar-, y en modo repaso (última
+  // lección completada) si ya terminó todo. Quien va por la lección 9 de 12
+  // no quiere volver a empezar cada vez que entra.
   const data = await getAulaData(courseId, session.user.id);
-  if (data?.leccionParaReanudar) {
-    redirect(`/aula/${courseId}/${data.leccionParaReanudar}`);
+  if (data?.destinoParaReanudar) {
+    const d = data.destinoParaReanudar;
+    redirect(d.tipo === "quiz" ? `/aula/${courseId}/quiz/${d.id}` : `/aula/${courseId}/${d.id}`);
   }
 
   return (

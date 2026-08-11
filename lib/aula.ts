@@ -220,10 +220,32 @@ export const getAulaData = cache(async (courseId: string, userId: string) => {
    * un campo más habría que mantenerlo sincronizado y puede mentir; esto
    * siempre concuerda con lo que la persona tiene hecho.
    */
-  const siguiente = flattenedLessons.find((l) => l.unlocked && !l.completed);
-  const leccionParaReanudar = siguiente?.id ?? flattenedLessons[flattenedLessons.length - 1]?.id ?? null;
+  // El destino NUNCA puede ser algo bloqueado: la página de lección devuelve
+  // a la raíz cuando el contenido está bloqueado, y la raíz redirige aquí,
+  // así que un destino bloqueado era un bucle infinito de redirecciones
+  // (pantalla blanca parpadeando). Ocurría justo cuando lo pendiente no era
+  // una lección sino un QUIZ: sin "siguiente lección desbloqueada", el
+  // fallback antiguo mandaba a la última lección del curso, aún bloqueada.
+  const siguienteLeccion = flattenedLessons.find((l) => l.unlocked && !l.completed);
+  const quizPendiente =
+    modules.map((m) => m.quiz).find((q) => q && q.unlocked && !q.passed && q.attemptsRemaining > 0) ??
+    finalQuizzes.find((q) => q.unlocked && !q.passed && q.attemptsRemaining > 0) ??
+    null;
+  const ultimaCompletada = [...flattenedLessons].reverse().find((l) => l.completed);
+  const primeraDesbloqueada = flattenedLessons.find((l) => l.unlocked);
 
-  return { course, enrollment, modules, finalQuizzes, flattenedLessons, progreso, leccionParaReanudar };
+  /** A dónde cae quien entra al curso: lo pendiente según su avance real, o repaso si ya terminó. */
+  const destinoParaReanudar: { tipo: "leccion" | "quiz"; id: string } | null = siguienteLeccion
+    ? { tipo: "leccion", id: siguienteLeccion.id }
+    : quizPendiente
+      ? { tipo: "quiz", id: quizPendiente.id }
+      : ultimaCompletada
+        ? { tipo: "leccion", id: ultimaCompletada.id }
+        : primeraDesbloqueada
+          ? { tipo: "leccion", id: primeraDesbloqueada.id }
+          : null;
+
+  return { course, enrollment, modules, finalQuizzes, flattenedLessons, progreso, destinoParaReanudar };
 });
 
 /** Datos de un quiz puntual dentro del aula, con acceso ya verificado. */
