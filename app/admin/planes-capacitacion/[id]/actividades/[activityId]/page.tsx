@@ -10,10 +10,11 @@ import {
   getAutomaticAttendanceRoster,
 } from "@/lib/training-plans";
 import { getSurveysForActivity } from "@/lib/surveys";
-import { getLinkableCoursesForUser, getMunicipioOptions, getPresaberPostsaberSummary, getCycleResults, getExternosDeActividad } from "@/lib/training-plans";
+import { getLinkableCoursesForUser, getMunicipioOptions, getPresaberPostsaberSummary, getCycleResults, getExternosDeActividad, fichaCompletaParaPublicar } from "@/lib/training-plans";
 import {
   uploadTrainingActivityDocumentAction,
-  enableActivityAction,
+  hideActivityAction,
+  showActivityAction,
   closeActivityAction,
   reopenActivityAction,
   linkCourseToActivityAction,
@@ -95,7 +96,8 @@ export default async function AdminActividadDetallePage({
     : (roster ?? []).filter((u) => !u.attended);
 
   const uploadDocumentAction = uploadTrainingActivityDocumentAction.bind(null, BASE_PATH, id, activityId);
-  const enableAction = enableActivityAction.bind(null, BASE_PATH, id, activityId);
+  const hideAction = hideActivityAction.bind(null, BASE_PATH, id, activityId);
+  const showAction = showActivityAction.bind(null, BASE_PATH, id, activityId);
   const closeAction = closeActivityAction.bind(null, BASE_PATH, id, activityId);
   const reopenAction = reopenActivityAction.bind(null, BASE_PATH, id, activityId);
   const linkCourseAction = linkCourseToActivityAction.bind(null, BASE_PATH, id, activityId);
@@ -178,9 +180,11 @@ export default async function AdminActividadDetallePage({
               status={activity.status}
               closedAtLabel={activity.closedAt ? DATETIME_FORMAT.format(activity.closedAt) : null}
               puedeReabrir={session.user.role === "ADMIN"}
-              onEnable={enableAction}
+              fichaCompleta={fichaCompletaParaPublicar(activity)}
               onClose={closeAction}
               onReopen={reopenAction}
+              onHide={hideAction}
+              onShow={showAction}
             />
           </div>
         </div>

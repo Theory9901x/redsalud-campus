@@ -1137,6 +1137,48 @@ async function computeActivityReportData(activityId: string): Promise<ActivityRe
 }
 
 /**
+ * Lo mínimo que debe tener una línea del PIC para publicarse sola: un título
+ * de verdad y un lugar en el tiempo (el trimestre del PIC, o una fecha si se
+ * creó a mano desde el panel).
+ *
+ * Es deliberadamente lo que el formulario de creación ya garantiza, ni un
+ * campo más. Exigir área, objetivo o modalidad sonaba razonable, pero esos
+ * cuatro campos solo los llena la importación del cronograma: pedirlos aquí
+ * dejaría toda actividad creada desde el panel invisible para siempre, ahora
+ * que no existe el botón de abrir. El curso tampoco entra: hay actividades de
+ * gestión directa que nunca tendrán uno, y el cronograma ya las muestra como
+ * "Sin contenido" mientras el área lo prepara.
+ */
+export function fichaCompletaParaPublicar(a: {
+  title: string;
+  quarters: number[];
+  startDate: Date | null;
+}): boolean {
+  return a.title.trim().length >= 3 && (a.quarters.length > 0 || a.startDate !== null);
+}
+
+/**
+ * Publica las capacitaciones del plan cuya ficha ya está completa. Se llama
+ * al crear una actividad y al importar el cronograma.
+ *
+ * Solo promueve BORRADOR -> ABIERTA, y nunca toca las que un administrador
+ * escondió a propósito. Jamás degrada: cerrar es una decisión deliberada, y
+ * volver a abrir o esconder tiene su propia acción, con su rastro.
+ */
+export async function sincronizarVisibilidadDelPlan(planId: string) {
+  const { count } = await prisma.trainingActivity.updateMany({
+    where: {
+      planId,
+      status: "DRAFT",
+      manuallyHidden: false,
+      OR: [{ quarters: { isEmpty: false } }, { startDate: { not: null } }],
+    },
+    data: { status: "OPEN", enabledAt: new Date() },
+  });
+  return count;
+}
+
+/**
  * Por qué una persona NO puede entrar a una capacitación del plan. Se
  * devuelve como valor, no como excepción: quien llama decide si redirige con
  * un aviso (cronograma) o manda al plan (QR), y ninguna de las dos cosas es

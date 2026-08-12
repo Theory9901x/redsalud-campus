@@ -7,7 +7,13 @@ import { requireTutorOrAdmin, requireTrainingPlanAccess, requireTrainingActivity
 import { saveTrainingPlanDocument, saveTrainingActivityDocument } from "@/lib/storage";
 import { trainingPlanSchema, trainingActivitySchema, trainingSessionSchema } from "@/lib/validations/training-plan";
 import { estadoPresaber, estadoPostsaber, puedeHabilitarPostsaber } from "@/lib/presaber-postsaber";
-import { getLinkableCoursesForUser, freezeActivityReport, getFrozenActivityReport } from "@/lib/training-plans";
+import {
+  getLinkableCoursesForUser,
+  freezeActivityReport,
+  getFrozenActivityReport,
+  sincronizarVisibilidadDelPlan,
+  fichaCompletaParaPublicar,
+} from "@/lib/training-plans";
 import { Prisma } from "@prisma/client";
 import { parseTrainingScheduleFile, type ImportRowError } from "@/lib/training-plan-import";
 import { registrarAuditoria } from "@/lib/audit";
@@ -115,6 +121,10 @@ export async function createTrainingActivityAction(
     },
   });
 
+  // Se publica sola: el formulario ya exigió lo que hace falta para que la
+  // capacitación se liste bien, así que no hay nada que "abrir" después.
+  await sincronizarVisibilidadDelPlan(planId);
+
   revalidatePath(`${basePath}/${planId}`);
   return { error: null };
 }
@@ -158,6 +168,8 @@ export async function bulkImportActivitiesAction(
       })),
     });
   }
+
+  await sincronizarVisibilidadDelPlan(planId);
 
   revalidatePath(`${basePath}/${planId}`);
   return { error: null, createdCount: parsed.valid.length, rowErrors: parsed.errors };
@@ -231,26 +243,85 @@ export async function setAttendanceAction(activityId: string, userId: string, at
 }
 
 /**
- * Etapa 6: ciclo de vida de la jornada. Habilitar = pasar de BORRADOR a
- * ABIERTA (visible a los estudiantes del área, admite respuestas). Cerrar es
- * manual y explícito: desde ese momento la participación queda congelada y
- * los indicadores son definitivos. No hay reapertura: cerrado es terminal.
+ * Ciclo de vida de la jornada. La APERTURA ya no se pide: una ficha completa
+ * se publica sola (sincronizarVisibilidadDelPlan). Lo que queda manual es el
+ * cierre -congela la participación y habilita el informe definitivo- y este
+ * override de excepción, para retirar de la vista una capacitación que por lo
+ * que sea todavía no debe verse.
  */
-export async function enableActivityAction(basePath: string, planId: string, activityId: string) {
-  await requireTrainingActivityAccess(activityId);
+export type ActivityVisibilityState = { error: string | null };
+
+export async function hideActivityAction(
+  basePath: string,
+  planId: string,
+  activityId: string
+): Promise<ActivityVisibilityState> {
+  const { session } = await requireTrainingActivityAccess(activityId);
 
   const cerrado = await errorSiPlanCerrado(planId);
-  if (cerrado) throw new Error(cerrado);
+  if (cerrado) return { error: cerrado };
 
-  const activity = await prisma.trainingActivity.findUniqueOrThrow({ where: { id: activityId }, select: { status: true } });
-  if (activity.status !== "DRAFT") {
-    throw new Error("Solo se puede habilitar una jornada que está en borrador.");
+  const activity = await prisma.trainingActivity.findUniqueOrThrow({
+    where: { id: activityId },
+    select: { status: true, title: true },
+  });
+  if (activity.status === "CLOSED") {
+    return { error: "Esta jornada ya está cerrada: no hay nada que ocultar." };
   }
 
-  await prisma.trainingActivity.update({ where: { id: activityId }, data: { status: "OPEN", enabledAt: new Date() } });
+  await prisma.trainingActivity.update({
+    where: { id: activityId },
+    data: { status: "DRAFT", manuallyHidden: true, enabledAt: null },
+  });
+
+  await registrarAuditoria({
+    userId: session.user.id,
+    action: "UPDATE",
+    entity: "TrainingActivity",
+    entityId: activityId,
+    description: `Retiró de la vista la capacitación «${activity.title}». Deja de aparecer en el cronograma del personal hasta que se vuelva a mostrar.`,
+  });
 
   revalidatePath(`${basePath}/${planId}`);
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+  return { error: null };
+}
+
+export async function showActivityAction(
+  basePath: string,
+  planId: string,
+  activityId: string
+): Promise<ActivityVisibilityState> {
+  const { session } = await requireTrainingActivityAccess(activityId);
+
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
+
+  const activity = await prisma.trainingActivity.findUniqueOrThrow({
+    where: { id: activityId },
+    select: { status: true, title: true, quarters: true, startDate: true },
+  });
+  if (activity.status !== "DRAFT") return { error: "Esta capacitación ya está visible." };
+  if (!fichaCompletaParaPublicar(activity)) {
+    return { error: "Para mostrarla hace falta completar la ficha: un título y el trimestre o la fecha en que se dicta." };
+  }
+
+  await prisma.trainingActivity.update({
+    where: { id: activityId },
+    data: { status: "OPEN", manuallyHidden: false, enabledAt: new Date() },
+  });
+
+  await registrarAuditoria({
+    userId: session.user.id,
+    action: "UPDATE",
+    entity: "TrainingActivity",
+    entityId: activityId,
+    description: `Volvió a mostrar la capacitación «${activity.title}» en el cronograma del personal.`,
+  });
+
+  revalidatePath(`${basePath}/${planId}`);
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+  return { error: null };
 }
 
 export async function closeActivityAction(basePath: string, planId: string, activityId: string) {

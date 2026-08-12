@@ -768,6 +768,16 @@ model TrainingActivity {
   status         TrainingActivityStatus @default(DRAFT)
   enabledAt      DateTime? // Etapa 6: cuándo pasó a ABIERTA
   closedAt       DateTime? // Etapa 6: cuándo se cerró (participación congelada desde ese momento)
+  /**
+   * Override de excepción: el administrador retiró esta capacitación de la
+   * vista aunque su ficha esté completa.
+   *
+   * La apertura dejó de ser un paso manual -una ficha completa se publica
+   * sola-, así que hacía falta una forma explícita de decir "esta todavía
+   * no". Es una marca aparte y no un estado, precisamente para que volver a
+   * editar la ficha no deshaga la decisión sin que nadie se entere.
+   */
+  manuallyHidden Boolean   @default(false)
 
   /**
    * Las dos ventanas del ciclo presaber/postsaber, solo para capacitaciones
