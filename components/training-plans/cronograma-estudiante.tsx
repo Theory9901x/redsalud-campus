@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -14,6 +14,7 @@ import {
   Award,
   ArrowRight,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -41,10 +42,17 @@ export type FilaCronograma = {
   estadoGeneral: "Completada" | "En curso" | "Presaber disponible" | "Postsaber disponible" | "Programada" | "Sin contenido";
   presaber: "Realizado" | "Disponible" | "Pendiente" | "Cerrado" | null;
   postsaber: "Realizado" | "Disponible" | "Bloqueado" | "Cerrado" | null;
-  accion: { etiqueta: string; href: string } | null;
+  /**
+   * "entrar" inscribe bajo demanda y resuelve el destino en el servidor
+   * (mismo camino que el QR); "enlace" es pura consulta y no crea nada.
+   */
+  accion:
+    | { tipo: "entrar"; etiqueta: string; activityId: string }
+    | { tipo: "enlace"; etiqueta: string; href: string }
+    | null;
 };
 
-export type AccionProxima = { tipo: string; titulo: string; detalle: string; href: string | null };
+export type AccionProxima = { tipo: string; titulo: string; detalle: string; activityId: string | null };
 export type SesionVirtual = { titulo: string; fecha: string; meetingUrl: string };
 
 const CHIPS = [
@@ -84,14 +92,51 @@ function Badge({ texto }: { texto: string | null }) {
   );
 }
 
+/**
+ * Botón de entrada a una capacitación. Es un formulario y no un enlace
+ * porque la entrada CREA la inscripción: un <Link> lo prefetchea el navegador
+ * con solo pasar el cursor, e inscribiría a quien nunca hizo clic.
+ */
+function BotonEntrar({
+  etiqueta,
+  activityId,
+  onEntrar,
+  className,
+}: {
+  etiqueta: string;
+  activityId: string;
+  onEntrar: (activityId: string) => Promise<void>;
+  className?: string;
+}) {
+  const [entrando, iniciar] = useTransition();
+  return (
+    <button
+      type="button"
+      disabled={entrando}
+      onClick={() => iniciar(async () => { await onEntrar(activityId); })}
+      className={cn("inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60", className)}
+    >
+      {etiqueta}
+      {entrando ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+      ) : (
+        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+      )}
+    </button>
+  );
+}
+
 export function CronogramaEstudiante({
   filas,
   acciones,
   sesionesVirtuales,
+  onEntrar,
 }: {
   filas: FilaCronograma[];
   acciones: AccionProxima[];
   sesionesVirtuales: SesionVirtual[];
+  /** Server action ya ligada al plan: inscribe bajo demanda y redirige. */
+  onEntrar: (activityId: string) => Promise<void>;
 }) {
   const [busqueda, setBusqueda] = useState("");
   const [chip, setChip] = useState<Chip>("Todos");
@@ -274,7 +319,13 @@ export function CronogramaEstudiante({
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        {f.accion ? (
+                        {f.accion?.tipo === "entrar" ? (
+                          <BotonEntrar
+                            etiqueta={f.accion.etiqueta}
+                            activityId={f.accion.activityId}
+                            onEntrar={onEntrar}
+                          />
+                        ) : f.accion ? (
                           <Link
                             href={f.accion.href}
                             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
@@ -335,10 +386,8 @@ export function CronogramaEstudiante({
                 <p className="text-[11px] font-bold uppercase tracking-wide text-primary">{a.tipo}</p>
                 <p className="mt-0.5 text-[13px] font-semibold leading-snug text-foreground">{a.titulo}</p>
                 <p className="text-[11px] text-muted-foreground">{a.detalle}</p>
-                {a.href && (
-                  <Link href={a.href} className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline">
-                    Ir ahora <ArrowRight className="h-3 w-3" aria-hidden="true" />
-                  </Link>
+                {a.activityId && (
+                  <BotonEntrar etiqueta="Ir ahora" activityId={a.activityId} onEntrar={onEntrar} className="mt-1.5" />
                 )}
               </div>
             ))

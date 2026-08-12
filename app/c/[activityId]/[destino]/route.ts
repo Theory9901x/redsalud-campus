@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { estadoPresaber, estadoPostsaber, cicloEsAutomatico } from "@/lib/presaber-postsaber";
+import { ensureEnrollment, AVISO_POR_BLOQUEO } from "@/lib/training-plans";
 
 /**
  * Enlaces cortos y ESTABLES de cada capacitación del plan, pensados para
@@ -39,7 +40,6 @@ export async function GET(
       presaberClosedAt: true,
       postsaberOpenedAt: true,
       postsaberClosedAt: true,
-      course: { select: { targetAudience: true } },
       sessions: {
         where: { meetingUrl: { not: null }, status: { not: "CLOSED" } },
         orderBy: { startsAt: "asc" },
@@ -109,41 +109,20 @@ export async function GET(
     }
   }
 
-  if (!actividad.courseId) {
-    // Sin contenido montado todavía: al cronograma del plan, que lo explica.
+  // Validación de entrada e inscripción: la misma función que usa el botón
+  // del cronograma. Quien escanea en el salón tal vez nunca abrió el curso;
+  // se le inscribe aquí, que es el equivalente electrónico de firmar la
+  // planilla al entrar.
+  const entrada = await ensureEnrollment(session.user.id, activityId);
+  if (!entrada.ok) {
+    return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}?aviso=${AVISO_POR_BLOQUEO[entrada.motivo]}`);
+  }
+  if (!entrada.quizId) {
     return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}`);
   }
-
-  // La audiencia se respeta también por QR: una capacitación asistencial no
-  // se le abre a personal administrativo solo porque escaneó el cartel.
-  if (
-    session.user.role === "STUDENT" &&
-    actividad.course &&
-    actividad.course.targetAudience !== "AMBOS" &&
-    actividad.course.targetAudience !== session.user.personnelType
-  ) {
-    return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}`);
-  }
-
-  const quiz = await prisma.quiz.findFirst({
-    where: { courseId: actividad.courseId, moduleId: null, isActive: true },
-    select: { id: true },
-  });
-  if (!quiz) {
-    return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}`);
-  }
-
-  // Quien escanea en el salón tal vez nunca ha abierto el curso: se le
-  // inscribe aquí mismo. Es el equivalente electrónico de firmar la planilla
-  // al entrar; sin esto el QR aterrizaría en un "no estás inscrito".
-  await prisma.enrollment.upsert({
-    where: { userId_courseId: { userId: session.user.id, courseId: actividad.courseId } },
-    update: {},
-    create: { userId: session.user.id, courseId: actividad.courseId, status: "ACTIVE", startedAt: new Date() },
-  });
 
   // El destino final es la evaluación; qué momento corre (presaber,
   // postsaber, ninguno) lo decide la propia página con sus ventanas, con
   // los avisos que ya explican cada caso.
-  return NextResponse.redirect(`${base}/aula/${actividad.courseId}/quiz/${quiz.id}`);
+  return NextResponse.redirect(`${base}/aula/${entrada.courseId}/quiz/${entrada.quizId}`);
 }

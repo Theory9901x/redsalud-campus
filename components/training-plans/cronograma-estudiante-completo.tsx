@@ -34,10 +34,12 @@ export function CronogramaEstudianteCompleto({
   activities,
   sessions,
   planId,
+  onEntrar,
 }: {
   filas: FilaCronograma[];
   acciones: AccionProxima[];
   sesionesVirtuales: SesionVirtual[];
+  onEntrar: (activityId: string) => Promise<void>;
   activities: TrainingActivityTimelineItem[];
   sessions: SesionCalendario[];
   planId: string;
@@ -65,7 +67,7 @@ export function CronogramaEstudianteCompleto({
       </div>
 
       {vista === "mio" && (
-        <CronogramaEstudiante filas={filas} acciones={acciones} sesionesVirtuales={sesionesVirtuales} />
+        <CronogramaEstudiante filas={filas} acciones={acciones} sesionesVirtuales={sesionesVirtuales} onEntrar={onEntrar} />
       )}
       {vista === "ampliada" && (
         <TablaAmpliada activities={activities} basePath="" planId={planId} areasGestionables={[]} />

@@ -30,6 +30,7 @@ import {
   type SesionVirtual,
 } from "@/components/training-plans/cronograma-estudiante";
 import { CronogramaEstudianteCompleto } from "@/components/training-plans/cronograma-estudiante-completo";
+import { entrarACapacitacionAction } from "@/app/(estudiante)/mis-capacitaciones/actions";
 import { EmptyState } from "@/components/brand/empty-state";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
@@ -55,6 +56,11 @@ const AVISOS_QR: Record<string, string> = {
   "postsaber-cerrado": "El postsaber de esta capacitación ya cerró. Tu resultado quedó registrado con los intentos que presentaste.",
   "postsaber-requiere-presaber": "El postsaber se habilita al presentar primero el presaber: escanea o abre el enlace del presaber y preséntalo; el postsaber se abre solo inmediatamente después.",
   "presaber-ya-presentado": "Ya presentaste el presaber de esta capacitación: tu siguiente paso es el postsaber, con su propio enlace o código QR.",
+  // Bloqueos de entrada (mismos para el QR y para el botón del cronograma).
+  "sin-contenido": "Esta capacitación todavía no tiene contenido publicado. El área lo está preparando; aparecerá aquí en cuanto lo suba.",
+  "no-habilitada": "Esta capacitación todavía no está disponible. Aparecerá en cuanto el área termine de programarla.",
+  "jornada-cerrada": "Esta jornada ya se cerró: quedó como consulta y no admite nuevas presentaciones ni registros de asistencia.",
+  "fuera-de-audiencia": "Esta capacitación está dirigida a otro grupo de personal, así que no queda registrada en tu plan.",
 };
 
 export default async function MiCapacitacionDetallePage({
@@ -149,18 +155,23 @@ export default async function MiCapacitacionDetallePage({
               ? "En curso"
               : "Programada";
 
+    // La acción entra POR LA MISMA PUERTA que el QR: inscribe bajo demanda y
+    // aterriza donde toca. Ya no hay parada intermedia en la ficha del curso
+    // para dar un segundo clic en «Inscribirse». Solo las acciones de pura
+    // consulta -contenido ya visto, jornada cerrada- siguen siendo enlaces,
+    // porque no crean nada y el navegador puede prefetchearlas sin daño.
     let accion: FilaCronograma["accion"] = null;
     if (conContenido) {
-      if (inscrito && presaber === "Disponible" && cyc) {
-        accion = { etiqueta: "Presentar presaber", href: `/aula/${a.courseId}/quiz/${cyc.quizId}` };
-      } else if (inscrito && postsaber === "Disponible" && cyc) {
-        accion = { etiqueta: "Presentar postsaber", href: `/aula/${a.courseId}/quiz/${cyc.quizId}` };
-      } else if (inscrito && !completada) {
-        accion = { etiqueta: progreso && progreso > 0 ? "Continuar" : "Empezar", href: `/aula/${a.courseId}` };
-      } else if (inscrito && completada) {
-        accion = { etiqueta: "Ver de nuevo", href: `/aula/${a.courseId}` };
+      if (jornadaCerrada) {
+        accion = inscrito ? { tipo: "enlace", etiqueta: "Ver contenido", href: `/aula/${a.courseId}` } : null;
+      } else if (presaber === "Disponible") {
+        accion = { tipo: "entrar", etiqueta: "Presentar presaber", activityId: a.id };
+      } else if (postsaber === "Disponible") {
+        accion = { tipo: "entrar", etiqueta: "Presentar postsaber", activityId: a.id };
+      } else if (completada) {
+        accion = { tipo: "enlace", etiqueta: "Ver de nuevo", href: `/aula/${a.courseId}` };
       } else {
-        accion = { etiqueta: "Ver curso", href: `/cursos/${avance!.course.slug}` };
+        accion = { tipo: "entrar", etiqueta: progreso && progreso > 0 ? "Continuar" : "Empezar", activityId: a.id };
       }
     }
 
@@ -199,15 +210,15 @@ export default async function MiCapacitacionDetallePage({
   const acciones: AccionProxima[] = [
     ...filas
       .filter((f) => f.presaber === "Disponible")
-      .map((f) => ({ tipo: "Presaber disponible", titulo: f.titulo, detalle: f.area, href: f.accion?.href ?? null })),
+      .map((f) => ({ tipo: "Presaber disponible", titulo: f.titulo, detalle: f.area, activityId: f.accion?.tipo === "entrar" ? f.accion.activityId : null })),
     ...filas
       .filter((f) => f.postsaber === "Disponible")
-      .map((f) => ({ tipo: "Postsaber disponible", titulo: f.titulo, detalle: f.area, href: f.accion?.href ?? null })),
+      .map((f) => ({ tipo: "Postsaber disponible", titulo: f.titulo, detalle: f.area, activityId: f.accion?.tipo === "entrar" ? f.accion.activityId : null })),
     ...proximasJornadas.slice(0, 3).map((s) => ({
       tipo: "Jornada próxima",
       titulo: s.activity.title,
       detalle: etiquetaJornada(s),
-      href: null,
+      activityId: null,
     })),
   ].slice(0, 5);
 
@@ -303,6 +314,7 @@ export default async function MiCapacitacionDetallePage({
 
           <TabsContent value="cronograma" className="pt-4">
             <CronogramaEstudianteCompleto
+              onEntrar={entrarACapacitacionAction.bind(null, id)}
               filas={filas}
               acciones={acciones}
               sesionesVirtuales={sesionesVirtuales}

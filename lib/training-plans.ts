@@ -1137,6 +1137,96 @@ async function computeActivityReportData(activityId: string): Promise<ActivityRe
 }
 
 /**
+ * Por qué una persona NO puede entrar a una capacitación del plan. Se
+ * devuelve como valor, no como excepción: quien llama decide si redirige con
+ * un aviso (cronograma) o manda al plan (QR), y ninguna de las dos cosas es
+ * un error del sistema.
+ */
+export type MotivoBloqueoEntrada =
+  | "SIN_CONTENIDO"
+  | "NO_HABILITADA"
+  | "CERRADA"
+  | "FUERA_DE_AUDIENCIA"
+  | "SIN_EVALUACION";
+
+export type ResultadoEntrada =
+  | { ok: true; courseId: string; quizId: string | null }
+  | { ok: false; motivo: MotivoBloqueoEntrada; planId: string };
+
+/** El aviso del cronograma que le corresponde a cada bloqueo (AVISOS_QR). */
+export const AVISO_POR_BLOQUEO: Record<MotivoBloqueoEntrada, string> = {
+  SIN_CONTENIDO: "sin-contenido",
+  NO_HABILITADA: "no-habilitada",
+  CERRADA: "jornada-cerrada",
+  FUERA_DE_AUDIENCIA: "fuera-de-audiencia",
+  SIN_EVALUACION: "sin-contenido",
+};
+
+/**
+ * Inscripción BAJO DEMANDA a la capacitación del plan: la dispara la persona
+ * en el momento exacto en que intenta entrar, no un tutor por adelantado.
+ *
+ * Es la única puerta de entrada, y por eso vive aquí y no dentro de una ruta:
+ * el QR pegado en la pared, el enlace reenviado por WhatsApp y el botón del
+ * cronograma llegan al mismo sitio y dejan el mismo rastro. Antes la misma
+ * regla estaba resuelta dos veces -el QR inscribía solo, el cronograma
+ * mandaba a la ficha del curso a dar otro clic-, y la única diferencia real
+ * entre ambos caminos era la fricción.
+ *
+ * Idempotente a propósito: alguien que da tres veces al botón, o que escanea
+ * el cartel después de haber entrado por el cronograma, no genera nada nuevo.
+ */
+export async function ensureEnrollment(userId: string, activityId: string): Promise<ResultadoEntrada> {
+  const actividad = await prisma.trainingActivity.findUnique({
+    where: { id: activityId },
+    select: {
+      planId: true,
+      courseId: true,
+      status: true,
+      targetAudience: true,
+      plan: { select: { targetDepartment: true } },
+    },
+  });
+  if (!actividad) return { ok: false, motivo: "SIN_CONTENIDO", planId: "" };
+
+  const planId = actividad.planId;
+  if (!actividad.courseId) return { ok: false, motivo: "SIN_CONTENIDO", planId };
+  if (actividad.status === "CLOSED") return { ok: false, motivo: "CERRADA", planId };
+  if (actividad.status !== "OPEN") return { ok: false, motivo: "NO_HABILITADA", planId };
+
+  // La audiencia se comprueba contra el MISMO criterio con el que se cuenta
+  // el personal objetivo (dependencia + tipo de personal): si a alguien no se
+  // le cuenta en el denominador de adherencia, tampoco se le abre la puerta.
+  // Solo aplica a estudiantes: un tutor o un administrador entra siempre,
+  // porque necesita poder revisar lo que publica.
+  const usuario = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+  if (usuario?.role === "STUDENT") {
+    const encaja = await prisma.user.count({
+      where: { id: userId, ...targetAudienceUserWhere(actividad.plan.targetDepartment, actividad.targetAudience) },
+    });
+    if (encaja === 0) return { ok: false, motivo: "FUERA_DE_AUDIENCIA", planId };
+  }
+
+  await prisma.enrollment.upsert({
+    where: { userId_courseId: { userId, courseId: actividad.courseId } },
+    update: {},
+    create: { userId, courseId: actividad.courseId, status: "ACTIVE", startedAt: new Date() },
+  });
+
+  // Mismo rastro de asistencia por cualquiera de los tres canales. Va después
+  // de la inscripción y es idempotente, así que repetir la entrada no duplica
+  // ni adelanta nada.
+  await registrarAsistenciaAutomatica(actividad.courseId, userId);
+
+  const quiz = await prisma.quiz.findFirst({
+    where: { courseId: actividad.courseId, moduleId: null, isActive: true },
+    select: { id: true },
+  });
+
+  return { ok: true, courseId: actividad.courseId, quizId: quiz?.id ?? null };
+}
+
+/**
  * Registra que alguien asistió, en el instante en que entra a SU evaluación.
  *
  * Es la señal de asistencia más temprana y honesta que existe: no espera a
