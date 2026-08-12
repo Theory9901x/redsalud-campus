@@ -7,7 +7,8 @@ import { requireTutorOrAdmin, requireTrainingPlanAccess, requireTrainingActivity
 import { saveTrainingPlanDocument, saveTrainingActivityDocument } from "@/lib/storage";
 import { trainingPlanSchema, trainingActivitySchema, trainingSessionSchema } from "@/lib/validations/training-plan";
 import { estadoPresaber, estadoPostsaber, puedeHabilitarPostsaber } from "@/lib/presaber-postsaber";
-import { getLinkableCoursesForUser, freezeActivityReport } from "@/lib/training-plans";
+import { getLinkableCoursesForUser, freezeActivityReport, getFrozenActivityReport } from "@/lib/training-plans";
+import { Prisma } from "@prisma/client";
 import { parseTrainingScheduleFile, type ImportRowError } from "@/lib/training-plan-import";
 import { registrarAuditoria } from "@/lib/audit";
 
@@ -277,6 +278,66 @@ export async function closeActivityAction(basePath: string, planId: string, acti
 
   revalidatePath(`${basePath}/${planId}`);
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+}
+
+export type ReopenActivityState = { error: string | null };
+
+/**
+ * Reabrir una jornada cerrada. SOLO administrador, y queda en la bitácora.
+ *
+ * Cerrar es una acción de una sola dirección por diseño, pero cerrar por
+ * equivocación es un error humano perfectamente normal y dejar la jornada
+ * muerta obligaría a rehacer la línea del plan entera. La salida es esta:
+ * existe, pero es de administrador y deja rastro.
+ *
+ * El informe congelado se DESCARTA al reabrir. Conservarlo sería peor que no
+ * tenerlo: la jornada vuelve a recibir participación y la pantalla mostraría
+ * cifras viejas mientras la gente sigue presentando. Antes de descartarlo se
+ * anota en la bitácora qué decía, para que el acta que llegó a existir no
+ * desaparezca sin dejar huella.
+ */
+export async function reopenActivityAction(
+  basePath: string,
+  planId: string,
+  activityId: string
+): Promise<ReopenActivityState> {
+  const session = await requireTutorOrAdmin();
+  if (session.user.role !== "ADMIN") {
+    return { error: "Reabrir una jornada cerrada requiere permiso de administrador." };
+  }
+
+  const cerrado = await errorSiPlanCerrado(planId);
+  if (cerrado) return { error: cerrado };
+
+  const activity = await prisma.trainingActivity.findUniqueOrThrow({
+    where: { id: activityId },
+    select: { status: true, title: true, closedAt: true, reportSnapshotAt: true },
+  });
+  if (activity.status !== "CLOSED") return { error: "Esta jornada no está cerrada." };
+
+  const congelado = await getFrozenActivityReport(activityId);
+
+  await prisma.trainingActivity.update({
+    where: { id: activityId },
+    data: { status: "OPEN", closedAt: null, reportSnapshot: Prisma.DbNull, reportSnapshotAt: null },
+  });
+
+  const queDecia = congelado
+    ? ` Se descartó el informe congelado del ${congelado.cerradaEl?.toISOString().slice(0, 10) ?? "—"}` +
+      ` (presaber ${congelado.indicadores.promedioPre ?? "—"}%, postsaber ${congelado.indicadores.promedioPost ?? "—"}%,` +
+      ` ${congelado.personas.length} evaluados, ${congelado.indicadores.asistentes} asistentes).`
+    : "";
+  await registrarAuditoria({
+    userId: session.user.id,
+    action: "UPDATE",
+    entity: "TrainingActivity",
+    entityId: activityId,
+    description: `Reabrió la jornada «${activity.title}», cerrada el ${activity.closedAt?.toISOString().slice(0, 10) ?? "—"}.${queDecia}`,
+  });
+
+  revalidatePath(`${basePath}/${planId}`);
+  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
+  return { error: null };
 }
 
 export type LinkCourseState = { error: string | null };

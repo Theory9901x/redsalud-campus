@@ -34,6 +34,7 @@ export type AuditEntity =
   | "Enrollment"
   | "Certificate"
   | "TrainingPlan"
+  | "TrainingActivity"
   | "Notification"
   | "Settings"
   | "Report"

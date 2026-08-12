@@ -42,6 +42,7 @@ const ENTIDAD_LABELS: Record<string, string> = {
   Enrollment: "Inscripción",
   Certificate: "Certificado",
   TrainingPlan: "Plan de capacitación",
+  TrainingActivity: "Jornada de capacitación",
   Notification: "Notificación",
   Settings: "Configuración",
 };

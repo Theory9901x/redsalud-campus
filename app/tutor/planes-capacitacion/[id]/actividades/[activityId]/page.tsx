@@ -15,6 +15,7 @@ import {
   uploadTrainingActivityDocumentAction,
   enableActivityAction,
   closeActivityAction,
+  reopenActivityAction,
   linkCourseToActivityAction,
   unlinkCourseFromActivityAction,
   createTrainingSessionAction,
@@ -96,6 +97,7 @@ export default async function TutorActividadDetallePage({
   const uploadDocumentAction = uploadTrainingActivityDocumentAction.bind(null, BASE_PATH, id, activityId);
   const enableAction = enableActivityAction.bind(null, BASE_PATH, id, activityId);
   const closeAction = closeActivityAction.bind(null, BASE_PATH, id, activityId);
+  const reopenAction = reopenActivityAction.bind(null, BASE_PATH, id, activityId);
   const linkCourseAction = linkCourseToActivityAction.bind(null, BASE_PATH, id, activityId);
   const unlinkCourseAction = unlinkCourseFromActivityAction.bind(null, BASE_PATH, id, activityId);
   const linkableCourses = activity.course ? [] : await getLinkableCoursesForUser(session.user.role, session.user.id);
@@ -175,8 +177,10 @@ export default async function TutorActividadDetallePage({
             <ActivityLifecycleActions
               status={activity.status}
               closedAtLabel={activity.closedAt ? DATETIME_FORMAT.format(activity.closedAt) : null}
+              puedeReabrir={session.user.role === "ADMIN"}
               onEnable={enableAction}
               onClose={closeAction}
+              onReopen={reopenAction}
             />
           </div>
         </div>
