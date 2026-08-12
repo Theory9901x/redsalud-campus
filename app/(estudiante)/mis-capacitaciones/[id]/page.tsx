@@ -40,6 +40,7 @@ import {
   TRAINING_MODALITY_LABELS,
   etiquetaProgramacion,
   etiquetaJornada,
+  trimestreParaListar,
 } from "@/components/training-plans/labels";
 
 /**
@@ -181,7 +182,7 @@ export default async function MiCapacitacionDetallePage({
       programa: a.programa,
       area: a.area?.name ?? "Sin área",
       areaOrden: a.area?.sortOrder ?? 99,
-      trimestre: a.quarters.length > 0 ? Math.min(...a.quarters) : 0,
+      trimestre: trimestreParaListar(a.quarters),
       programacion: etiquetaProgramacion(a),
       modalidad: a.modality ? TRAINING_MODALITY_LABELS[a.modality] : null,
       publico: COURSE_AUDIENCE_LABELS[a.targetAudience],

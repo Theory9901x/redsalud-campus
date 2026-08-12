@@ -31,7 +31,7 @@ export type FilaCronograma = {
   programa: string | null;
   area: string;
   areaOrden: number;
-  /** Primer trimestre programado (1-4); 0 = sin programar. */
+  /** Trimestre bajo el que se lista hoy (1-4); 0 = sin programar. Ver trimestreParaListar. */
   trimestre: number;
   programacion: string;
   modalidad: string | null;

@@ -136,3 +136,24 @@ export function etiquetaProgramacion(activity: {
   }
   return etiquetaTrimestres(activity.quarters ?? []) ?? "Sin programar";
 }
+
+/**
+ * Bajo qué trimestre conviene LISTAR una capacitación hoy.
+ *
+ * El cronograma la archivaba bajo su primer trimestre, y eso hacía que una
+ * línea marcada "T1,2,3" -que sigue vigente y abierta- apareciera dentro del
+ * primer trimestre, ya vencido. Quien abría el cronograma en agosto veía el
+ * apartado del I trimestre lleno de capacitaciones abiertas y concluía, con
+ * razón, que había contenido viejo mezclado.
+ *
+ * Se archiva bajo el primer trimestre suyo que no haya pasado; si todos
+ * pasaron, bajo el último, que es donde de verdad terminó. La programación
+ * completa se sigue viendo en la fila ("Trimestres I, II y III"), así que no
+ * se pierde el dato de que también cubría los anteriores.
+ */
+export function trimestreParaListar(quarters: number[], hoy: Date = new Date()): number {
+  if (quarters.length === 0) return 0;
+  const enCurso = Math.floor(hoy.getMonth() / 3) + 1;
+  const vigentes = quarters.filter((q) => q >= enCurso).sort((a, b) => a - b);
+  return vigentes[0] ?? Math.max(...quarters);
+}
