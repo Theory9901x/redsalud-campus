@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Lock } from "lucide-react";
-import { auth } from "@/auth";
+import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { getSurveyForStudent } from "@/lib/surveys";
 import { submitSurveyResponseAction } from "@/app/(estudiante)/evaluaciones/actions";
@@ -9,8 +9,8 @@ import { SurveyAnswerForm } from "@/components/student/survey-answer-form";
 
 export default async function MisEncuestasDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await auth();
-  const userId = session!.user.id;
+  const session = await requireSession();
+  const userId = session.user.id;
 
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },

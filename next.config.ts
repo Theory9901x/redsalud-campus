@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /*
+   * Dónde vive el build. En desarrollo es .next y no cambia nada.
+   *
+   * En producción se alterna entre dos directorios (.next-a / .next-b) porque
+   * compilar sobre el que está sirviendo rompe la aplicación mientras dura la
+   * compilación: `next start` carga sus trozos de código a medida que los
+   * necesita, y `next build` los borra y regenera bajo sus pies. El resultado
+   * eran ChunkLoadError y errores 500 para quien estuviera navegando durante
+   * el despliegue -62 de las 64 líneas del log de errores eran eso-.
+   *
+   * Compilando en el directorio inactivo, la versión vieja sigue completa y
+   * sirviendo hasta el reinicio, que es instantáneo.
+   */
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   images: {
     // Todas las imágenes reales de la plataforma son archivos subidos en
     // runtime (/uploads, servido directo por nginx en producción). El

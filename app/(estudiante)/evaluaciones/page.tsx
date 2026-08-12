@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireSession } from "@/lib/auth-helpers";
 import {
   ClipboardCheck,
   CircleCheck,
@@ -8,7 +9,6 @@ import {
   ClipboardList,
   History,
 } from "lucide-react";
-import { auth } from "@/auth";
 import { getSurveysForUser } from "@/lib/surveys";
 import {
   getEvaluacionesCicloDisponibles,
@@ -45,13 +45,13 @@ const TIPO_CLASSES: Record<"PRESABER" | "POSTSABER" | "ENCUESTA", string> = {
  * mientras no haya evaluaciones con nota y entonces se omite.
  */
 export default async function EvaluacionesPage() {
-  const session = await auth();
-  const userId = session!.user.id;
-  const primerNombre = session!.user.name?.split(" ")[0];
+  const session = await requireSession("/evaluaciones");
+  const userId = session.user.id;
+  const primerNombre = session.user.name?.split(" ")[0];
 
   const [{ pending, answered }, evaluaciones, historial, promedio] = await Promise.all([
     getSurveysForUser(userId),
-    getEvaluacionesCicloDisponibles(userId, session!.user.personnelType ?? null),
+    getEvaluacionesCicloDisponibles(userId, session.user.personnelType ?? null),
     getHistorialEvaluaciones(userId),
     getPromedioEvaluaciones(userId),
   ]);

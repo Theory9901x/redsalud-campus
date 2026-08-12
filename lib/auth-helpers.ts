@@ -1,5 +1,25 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+
+/**
+ * La sesión de una página que exige estar identificado, o un redirect a
+ * login. Sustituye al patrón `const userId = session!.user.id`.
+ *
+ * Esa afirmación de no-nulidad daba por hecho que el proxy había filtrado
+ * antes, y el día en que una ruta se renombró sin actualizar su `matcher`
+ * -pasó con /evaluaciones- la página dejó de redirigir y empezó a reventar
+ * con un 500 en la cara del usuario. La garantía no puede vivir en una lista
+ * que hay que acordarse de mantener: se comprueba aquí, en la propia página,
+ * y el proxy queda como lo que es, una optimización que evita el viaje.
+ */
+export async function requireSession(callbackUrl?: string) {
+  const session = await auth();
+  if (!session?.user) {
+    redirect(callbackUrl ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/login");
+  }
+  return session;
+}
 
 export async function requireAdmin() {
   const session = await auth();

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
-import { auth } from "@/auth";
+import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,7 +17,7 @@ export default async function TutorCursoDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const session = await auth();
+  const session = await requireSession();
 
   const [course, categories] = await Promise.all([
     prisma.course.findUnique({
@@ -37,7 +37,7 @@ export default async function TutorCursoDetallePage({
   ]);
 
   if (!course) notFound();
-  if (session!.user.role !== "ADMIN" && course.tutorId !== session!.user.id) {
+  if (session.user.role !== "ADMIN" && course.tutorId !== session.user.id) {
     redirect("/no-autorizado");
   }
 

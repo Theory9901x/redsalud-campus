@@ -12,7 +12,7 @@ import {
   Sparkles,
   TrendingUp,
 } from "lucide-react";
-import { auth } from "@/auth";
+import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AvatarProgressRing } from "@/components/student/avatar-progress-ring";
@@ -26,10 +26,10 @@ import { cn } from "@/lib/utils";
  * cada uno en su módulo—; aquí solo el panorama en números.
  */
 export default async function InicioPage() {
-  const session = await auth();
-  const userId = session!.user.id;
-  const personnelType = session!.user.personnelType;
-  const firstName = session!.user.name?.split(" ")[0];
+  const session = await requireSession("/inicio");
+  const userId = session.user.id;
+  const personnelType = session.user.personnelType;
+  const firstName = session.user.name?.split(" ")[0];
 
   const [enrollments, certificateCount, obligatoriosDisponibles, avatarUrl] = await Promise.all([
     prisma.enrollment.findMany({
@@ -133,7 +133,7 @@ export default async function InicioPage() {
 
             {/* Anillo de avance global. */}
             <div className="flex items-center gap-5 lg:col-span-4 lg:justify-end">
-              <AvatarProgressRing name={session!.user.name ?? ""} avatarUrl={avatarUrl} progress={avanceGlobal} size={84} />
+              <AvatarProgressRing name={session.user.name ?? ""} avatarUrl={avatarUrl} progress={avanceGlobal} size={84} />
               <div className="border-l border-white/15 pl-5">
                 <p className="font-display text-3xl font-extrabold leading-none text-white">{avanceGlobal}%</p>
                 <p className="mt-1 text-xs text-white/75">Avance global</p>

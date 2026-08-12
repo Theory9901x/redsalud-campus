@@ -1,5 +1,5 @@
 import { User, Mail, IdCard, Briefcase, Phone, GraduationCap, Building2, MapPin, BadgeCheck } from "lucide-react";
-import { auth } from "@/auth";
+import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { getUserAvatarUrl } from "@/lib/avatar";
 import { AvatarUploader } from "@/components/student/avatar-uploader";
@@ -8,10 +8,10 @@ import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
 import { MarcaPlanta, VINCULACION_LABELS, esPlanta } from "@/components/admin/marca-planta";
 
 export default async function PerfilPage() {
-  const session = await auth();
+  const session = await requireSession("/perfil");
   const [user, avatarUrl] = await Promise.all([
-    prisma.user.findUniqueOrThrow({ where: { id: session!.user.id }, include: { municipio: true } }),
-    getUserAvatarUrl(session!.user.id),
+    prisma.user.findUniqueOrThrow({ where: { id: session.user.id }, include: { municipio: true } }),
+    getUserAvatarUrl(session.user.id),
   ]);
 
   const infoRows = [

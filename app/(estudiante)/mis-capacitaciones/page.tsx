@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { requireSession } from "@/lib/auth-helpers";
 import { CalendarDays } from "lucide-react";
-import { auth } from "@/auth";
 import { getStudentPlansOverview } from "@/lib/training-plans";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import {
@@ -19,9 +19,9 @@ import { TRAINING_PLAN_STATUS_LABELS, etiquetaJornada } from "@/components/train
  * en su lugar cuántas capacitaciones tiene programadas.
  */
 export default async function MisCapacitacionesPage() {
-  const session = await auth();
-  const userId = session!.user.id;
-  const primerNombre = session!.user.name?.split(" ")[0];
+  const session = await requireSession("/mis-capacitaciones");
+  const userId = session.user.id;
+  const primerNombre = session.user.name?.split(" ")[0];
 
   const planes = await getStudentPlansOverview(userId);
 

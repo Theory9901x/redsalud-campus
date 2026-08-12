@@ -1,10 +1,10 @@
-import { auth } from "@/auth";
+import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { CourseListTable } from "@/components/cursos/course-list-table";
 
 export default async function TutorCursosPage() {
-  const session = await auth();
-  const tutorId = session!.user.id;
+  const session = await requireSession("/tutor/cursos");
+  const tutorId = session.user.id;
 
   const courses = await prisma.course.findMany({
     where: { tutorId },

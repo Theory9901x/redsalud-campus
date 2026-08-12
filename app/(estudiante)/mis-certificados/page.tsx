@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Award, Download, QrCode, ShieldCheck } from "lucide-react";
-import { auth } from "@/auth";
+import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { EmptyState } from "@/components/brand/empty-state";
@@ -12,8 +12,8 @@ import { EmptyState } from "@/components/brand/empty-state";
  * validarlo con QR.
  */
 export default async function MisCertificadosPage() {
-  const session = await auth();
-  const userId = session!.user.id;
+  const session = await requireSession("/mis-certificados");
+  const userId = session.user.id;
 
   const certificados = await prisma.certificate.findMany({
     where: { userId, status: "VALID" },

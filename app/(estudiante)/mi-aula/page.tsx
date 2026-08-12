@@ -11,7 +11,7 @@ import {
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
-import { auth } from "@/auth";
+import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { CourseStateCard, type CursoTarjeta, type EstadoTarjeta } from "@/components/cursos/course-state-card";
 import { OrdenSelect } from "@/components/cursos/orden-select";
@@ -39,8 +39,8 @@ export default async function MiAulaPage({
 }: {
   searchParams: Promise<{ tab?: string; orden?: string }>;
 }) {
-  const session = await auth();
-  const userId = session!.user.id;
+  const session = await requireSession("/mi-aula");
+  const userId = session.user.id;
   const sp = await searchParams;
 
   const [enrollments, certificadosCount, settings] = await Promise.all([

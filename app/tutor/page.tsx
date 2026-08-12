@@ -12,7 +12,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { auth } from "@/auth";
+import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { EmptyState } from "@/components/brand/empty-state";
 import { ChartPanel } from "@/components/dashboard/chart-panel";
@@ -35,8 +35,8 @@ function isoDay(date: Date) {
 
 /** Dashboard del tutor (6.2): todo con datos reales de sus cursos. */
 export default async function TutorDashboardPage() {
-  const session = await auth();
-  const tutorId = session!.user.id;
+  const session = await requireSession("/tutor");
+  const tutorId = session.user.id;
   const now = new Date();
   const start90 = new Date(now.getTime() - 89 * DAY_MS);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -168,7 +168,7 @@ export default async function TutorDashboardPage() {
     .sort((a, b) => b.at.getTime() - a.at.getTime())
     .slice(0, 8);
 
-  const firstName = session!.user.name?.split(" ")[0] ?? "Tutor";
+  const firstName = session.user.name?.split(" ")[0] ?? "Tutor";
 
   const kpis: { label: string; value: string | number; icon: typeof BookOpen; href?: string }[] = [
     { label: "Cursos activos", value: publishedCount, icon: BookOpen, href: "/tutor/cursos" },

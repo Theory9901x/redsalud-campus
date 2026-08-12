@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { requireSession } from "@/lib/auth-helpers";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -12,7 +13,6 @@ import {
   ClipboardCheck,
   TrendingUp,
 } from "lucide-react";
-import { auth } from "@/auth";
 import {
   getTrainingPlanDetailForStudent,
   getStudentCourseProgress,
@@ -73,9 +73,9 @@ export default async function MiCapacitacionDetallePage({
   const { id } = await params;
   const { aviso } = await searchParams;
   const avisoQr = aviso ? AVISOS_QR[aviso] ?? null : null;
-  const session = await auth();
-  const userId = session!.user.id;
-  const personnelType = session!.user.personnelType;
+  const session = await requireSession();
+  const userId = session.user.id;
+  const personnelType = session.user.personnelType;
 
   const plan = await getTrainingPlanDetailForStudent(id, userId);
   if (!plan) notFound();
