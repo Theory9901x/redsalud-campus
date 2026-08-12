@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { trainingPlanScopeWhere, getPlanAdherenceSummary, getActivityAdherence } from "@/lib/training-plans";
-import { getTargetAudienceUsers } from "@/lib/training-plans";
+import { getTargetAudienceCount } from "@/lib/training-plans";
 import type { Role, CourseAudience } from "@prisma/client";
 
 const PERSONNEL_TYPES = ["ADMINISTRATIVO", "ASISTENCIAL"] as const;
@@ -148,8 +148,7 @@ export async function getTrainingDashboardData(role: Role, userId: string) {
 
   const surveyRows = await Promise.all(
     surveys.map(async (survey) => {
-      const targetUsers = await getTargetAudienceUsers(survey.targetDepartment, survey.targetAudience);
-      const targetCount = targetUsers.length;
+      const targetCount = await getTargetAudienceCount(survey.targetDepartment, survey.targetAudience);
       const respondedCount = survey._count.responses;
       return {
         id: survey.id,

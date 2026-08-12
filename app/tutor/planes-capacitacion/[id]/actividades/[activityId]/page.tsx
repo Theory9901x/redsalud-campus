@@ -5,7 +5,8 @@ import { requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import {
   getTrainingActivityDetail,
   getActivityAdherence,
-  getActivityAttendanceRoster,
+  getActivityAttendanceCounts,
+  getActivityAttendancePage,
   getActivityCompletionRoster,
   getAutomaticAttendanceRoster,
 } from "@/lib/training-plans";
@@ -64,10 +65,13 @@ const DATETIME_FORMAT = new Intl.DateTimeFormat("es-CO", { day: "numeric", month
 
 export default async function TutorActividadDetallePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; activityId: string }>;
+  searchParams: Promise<{ asistencia?: string; pagina?: string }>;
 }) {
   const { id, activityId } = await params;
+  const { asistencia: buscarAsistencia = "", pagina: paginaParam } = await searchParams;
   const { session } = await requireTrainingActivityAccess(activityId);
 
   const activity = await getTrainingActivityDetail(activityId);
@@ -81,9 +85,12 @@ export default async function TutorActividadDetallePage({
   };
   const isClosed = activity.status === "CLOSED";
 
-  const [adherence, roster, completionRoster, surveys, asistenciasAutomaticas] = await Promise.all([
+  const [adherence, conteosAsistencia, roster, completionRoster, surveys, asistenciasAutomaticas] = await Promise.all([
     getActivityAdherence(activityForAdherence),
-    activity.courseId ? Promise.resolve(null) : getActivityAttendanceRoster(activityForAdherence),
+    getActivityAttendanceCounts(activityForAdherence),
+    activity.courseId
+      ? Promise.resolve(null)
+      : getActivityAttendancePage(activityForAdherence, { buscar: buscarAsistencia, pagina: Number(paginaParam) || 1 }),
     activity.courseId && isClosed
       ? getActivityCompletionRoster({ ...activityForAdherence, courseId: activity.courseId })
       : Promise.resolve(null),
@@ -93,7 +100,7 @@ export default async function TutorActividadDetallePage({
 
   const nonAdherentUsers = activity.courseId
     ? (completionRoster ?? []).filter((u) => !u.completed)
-    : (roster ?? []).filter((u) => !u.attended);
+    : (roster?.filas ?? []).filter((u) => !u.attended);
 
   const uploadDocumentAction = uploadTrainingActivityDocumentAction.bind(null, BASE_PATH, id, activityId);
   const hideAction = hideActivityAction.bind(null, BASE_PATH, id, activityId);
@@ -256,7 +263,14 @@ export default async function TutorActividadDetallePage({
             </div>
           </div>
         ) : (
-          <AttendanceRoster activityId={activity.id} roster={roster!} locked={isClosed} />
+          <AttendanceRoster
+            activityId={activity.id}
+            roster={roster!.filas}
+            conteos={conteosAsistencia}
+            paginacion={{ pagina: roster!.pagina, porPagina: roster!.porPagina, total: roster!.total }}
+            buscar={buscarAsistencia}
+            locked={isClosed}
+          />
         )}
         {isClosed && <NonAdherentList users={nonAdherentUsers} />}
       </div>

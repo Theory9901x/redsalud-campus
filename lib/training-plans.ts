@@ -1457,6 +1457,15 @@ export async function getTargetAudienceUserIds(targetDepartment: string | null, 
   return users.map((u) => u.id);
 }
 
+/**
+ * Cuánta gente compone la audiencia objetivo. Es el denominador de todos los
+ * porcentajes del módulo, y para un denominador basta contar: traer la lista
+ * entera para medir su largo era el patrón que hacía lentas estas vistas.
+ */
+export async function getTargetAudienceCount(targetDepartment: string | null, targetAudience: CourseAudience) {
+  return prisma.user.count({ where: targetAudienceUserWhere(targetDepartment, targetAudience) });
+}
+
 /** Lista nominal (nombre + documento) del personal objetivo, ordenada alfabéticamente. */
 export async function getTargetAudienceUsers(targetDepartment: string | null, targetAudience: CourseAudience) {
   return prisma.user.findMany({
@@ -1486,35 +1495,132 @@ type ActivityForAdherence = {
  * desde el registro manual de asistencia (TrainingAttendance).
  */
 export async function getActivityAdherence(activity: ActivityForAdherence): Promise<ActivityAdherence> {
-  const userIds = await getTargetAudienceUserIds(activity.plan.targetDepartment, activity.targetAudience);
-  const totalExpected = userIds.length;
+  // Dos CONTEOS, no dos listas. Antes se traían los ids de toda la audiencia
+  // -doscientas y pico filas- solo para saber cuántos eran y para armar un
+  // `IN (...)` gigante. El cumplimiento del plan llama a esta función una vez
+  // por cada línea del PIC, así que ese trabajo se multiplicaba por 55 cada
+  // vez que alguien abría el tablero. El criterio de audiencia es el mismo,
+  // ahora expresado como filtro de relación y resuelto dentro de Postgres.
+  const audiencia = targetAudienceUserWhere(activity.plan.targetDepartment, activity.targetAudience);
 
-  if (activity.courseId) {
-    const adherentCount =
-      totalExpected === 0
-        ? 0
-        : await prisma.enrollment.count({
-            where: { courseId: activity.courseId, userId: { in: userIds }, status: "COMPLETED" },
-          });
-    return {
-      source: "AUTOMATIC",
-      totalExpected,
-      adherentCount,
-      percentage: totalExpected > 0 ? Math.round((adherentCount / totalExpected) * 100) : 0,
-    };
-  }
+  const [totalExpected, adherentCount] = await Promise.all([
+    prisma.user.count({ where: audiencia }),
+    activity.courseId
+      ? prisma.enrollment.count({
+          where: { courseId: activity.courseId, status: "COMPLETED", user: audiencia },
+        })
+      : prisma.trainingAttendance.count({
+          where: { activityId: activity.id, attended: true, user: audiencia },
+        }),
+  ]);
 
-  const adherentCount =
-    totalExpected === 0
-      ? 0
-      : await prisma.trainingAttendance.count({
-          where: { activityId: activity.id, userId: { in: userIds }, attended: true },
-        });
   return {
-    source: "MANUAL",
+    source: activity.courseId ? "AUTOMATIC" : "MANUAL",
     totalExpected,
     adherentCount,
     percentage: totalExpected > 0 ? Math.round((adherentCount / totalExpected) * 100) : 0,
+  };
+}
+
+/**
+ * Cuántas personas de la audiencia han dejado algún rastro en la jornada, sin
+ * traer una sola fila: es lo que necesita el encabezado ("X de Y asistieron")
+ * y lo que alimenta las tarjetas del panel en vivo.
+ */
+export async function getActivityAttendanceCounts(activity: {
+  id: string;
+  targetAudience: CourseAudience;
+  plan: { targetDepartment: string | null };
+}) {
+  const audiencia = targetAudienceUserWhere(activity.plan.targetDepartment, activity.targetAudience);
+  const [totalAudiencia, asistieron, registrados] = await Promise.all([
+    prisma.user.count({ where: audiencia }),
+    prisma.trainingAttendance.count({ where: { activityId: activity.id, attended: true } }),
+    prisma.trainingAttendance.count({ where: { activityId: activity.id } }),
+  ]);
+  return {
+    totalAudiencia,
+    asistieron,
+    registrados,
+    porcentaje: totalAudiencia > 0 ? Math.round((asistieron / totalAudiencia) * 100) : 0,
+  };
+}
+
+export type FilaAsistencia = {
+  id: string;
+  fullName: string;
+  documentNumber: string;
+  attended: boolean;
+  registeredAt: Date | null;
+  source: AttendanceSource | null;
+};
+
+/**
+ * La tabla nominal de asistencia, POR PÁGINA y con buscador.
+ *
+ * Por defecto trae solo a quien ya tiene registro -asistió o lo marcaron-,
+ * que es lo que el tutor quiere ver durante y después de la jornada. Antes se
+ * renderizaba la audiencia entera para mostrar sobre todo "No asistió" y
+ * poder calcular el total de arriba; ese total ahora sale de un conteo.
+ *
+ * Cuando el tutor necesita marcar a alguien que no aparece, lo busca por
+ * nombre o documento: `buscar` amplía la consulta a toda la audiencia, que es
+ * el único momento en que hace falta mirar más allá de los registrados.
+ */
+export async function getActivityAttendancePage(
+  activity: { id: string; targetAudience: CourseAudience; plan: { targetDepartment: string | null } },
+  opciones: { buscar?: string; pagina?: number; porPagina?: number } = {}
+): Promise<{ filas: FilaAsistencia[]; total: number; pagina: number; porPagina: number }> {
+  const buscar = opciones.buscar?.trim() ?? "";
+  const porPagina = Math.min(Math.max(opciones.porPagina ?? 25, 5), 100);
+  const pagina = Math.max(opciones.pagina ?? 1, 1);
+  const audiencia = targetAudienceUserWhere(activity.plan.targetDepartment, activity.targetAudience);
+
+  const where = {
+    ...audiencia,
+    ...(buscar
+      ? {
+          OR: [
+            { fullName: { contains: buscar, mode: "insensitive" as const } },
+            { documentNumber: { contains: buscar } },
+          ],
+        }
+      : // Sin búsqueda: solo quien ya tiene registro en esta jornada.
+        { trainingAttendances: { some: { activityId: activity.id } } }),
+  };
+
+  const [total, usuarios] = await Promise.all([
+    prisma.user.count({ where }),
+    prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        fullName: true,
+        documentNumber: true,
+        trainingAttendances: {
+          where: { activityId: activity.id },
+          select: { attended: true, registeredAt: true, source: true },
+          take: 1,
+        },
+      },
+      orderBy: { fullName: "asc" },
+      skip: (pagina - 1) * porPagina,
+      take: porPagina,
+    }),
+  ]);
+
+  return {
+    filas: usuarios.map((u) => ({
+      id: u.id,
+      fullName: u.fullName,
+      documentNumber: u.documentNumber,
+      attended: u.trainingAttendances[0]?.attended ?? false,
+      registeredAt: u.trainingAttendances[0]?.registeredAt ?? null,
+      source: u.trainingAttendances[0]?.source ?? null,
+    })),
+    total,
+    pagina,
+    porPagina,
   };
 }
 

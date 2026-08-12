@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getTargetAudienceUsers } from "@/lib/training-plans";
+import { getTargetAudienceUsers, getTargetAudienceCount } from "@/lib/training-plans";
 import type { CourseAudience, PersonnelType } from "@prisma/client";
 
 const questionInclude = {
@@ -45,8 +45,8 @@ async function withTargetCounts<
 >(surveys: T[]) {
   return Promise.all(
     surveys.map(async (survey) => {
-      const targetUsers = await getTargetAudienceUsers(survey.targetDepartment, survey.targetAudience);
-      return { ...survey, targetCount: targetUsers.length };
+      const targetCount = await getTargetAudienceCount(survey.targetDepartment, survey.targetAudience);
+      return { ...survey, targetCount };
     })
   );
 }
