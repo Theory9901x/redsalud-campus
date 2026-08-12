@@ -25,6 +25,11 @@ if [ "$activo" = ".next-a" ]; then nuevo=".next-b"; else nuevo=".next-a"; fi
 echo "▸ sirviendo desde: $activo   ·   se compilará en: $nuevo"
 
 echo "▸ trayendo cambios"
+# next build reescribe tsconfig.json para registrar los tipos de su distDir.
+# Los dos directorios ya vienen declarados en el repositorio, así que no
+# debería tocarlo; si aun así lo hace, se descarta ese cambio para que el
+# pull no encuentre el árbol sucio y aborte el despliegue.
+git checkout -- tsconfig.json 2>/dev/null || true
 git pull --ff-only
 
 if [ "${1:-}" = "--migrar" ]; then

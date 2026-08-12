@@ -15,6 +15,9 @@
 
 # next.js
 /.next/
+# Salidas alternas del despliegue sin corte (scripts/desplegar.sh).
+/.next-a/
+/.next-b/
 /out/
 
 # production
