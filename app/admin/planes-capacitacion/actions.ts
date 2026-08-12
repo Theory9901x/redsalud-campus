@@ -7,7 +7,7 @@ import { requireTutorOrAdmin, requireTrainingPlanAccess, requireTrainingActivity
 import { saveTrainingPlanDocument, saveTrainingActivityDocument } from "@/lib/storage";
 import { trainingPlanSchema, trainingActivitySchema, trainingSessionSchema } from "@/lib/validations/training-plan";
 import { estadoPresaber, estadoPostsaber, puedeHabilitarPostsaber } from "@/lib/presaber-postsaber";
-import { getLinkableCoursesForUser } from "@/lib/training-plans";
+import { getLinkableCoursesForUser, freezeActivityReport } from "@/lib/training-plans";
 import { parseTrainingScheduleFile, type ImportRowError } from "@/lib/training-plan-import";
 import { registrarAuditoria } from "@/lib/audit";
 
@@ -264,6 +264,16 @@ export async function closeActivityAction(basePath: string, planId: string, acti
   }
 
   await prisma.trainingActivity.update({ where: { id: activityId }, data: { status: "CLOSED", closedAt: new Date() } });
+
+  // El informe se congela AQUÍ, con la jornada ya marcada como cerrada, para
+  // que el acta registre el estado y la fecha definitivos. Si fallara, el
+  // informe se sigue calculando en vivo y el cierre no se pierde: por eso no
+  // va dentro de la misma transacción ni tumba la acción.
+  try {
+    await freezeActivityReport(activityId);
+  } catch (error) {
+    console.error(`No se pudo congelar el informe de la jornada ${activityId}:`, error);
+  }
 
   revalidatePath(`${basePath}/${planId}`);
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);

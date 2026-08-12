@@ -7,7 +7,7 @@ import {
   estadoPresaber,
   estadoPostsaber,
 } from "@/lib/presaber-postsaber";
-import type { Role, CourseAudience, TrainingActivityStatus } from "@prisma/client";
+import type { Prisma, Role, CourseAudience, TrainingActivityStatus, AttendanceSource } from "@prisma/client";
 
 /**
  * ADMIN ve todos los planes. Un TUTOR ve los que responde y, además, aquellos
@@ -428,6 +428,22 @@ export async function getMomentoParaUsuario(quizId: string, userId: string) {
  * que demostró saber en esa ventana, no por sus tropiezos previos.
  */
 export async function getPresaberPostsaberSummary(activityId: string) {
+  // Jornada cerrada: las cifras salen del informe congelado, no de las tablas.
+  // Si no fuera así, la pantalla y el PDF -que sí lee el congelado- podrían
+  // mostrar números distintos de la misma jornada.
+  const congelado = await getFrozenActivityReport(activityId);
+  if (congelado) {
+    return {
+      presaberPromedio: congelado.indicadores.promedioPre,
+      presaberCantidad: congelado.indicadores.evaluadosPre,
+      postsaberPromedio: congelado.indicadores.promedioPost,
+      postsaberCantidad: congelado.indicadores.evaluadosPost,
+    };
+  }
+  return computePresaberPostsaberSummary(activityId);
+}
+
+async function computePresaberPostsaberSummary(activityId: string) {
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
     select: { courseId: true },
@@ -485,6 +501,12 @@ export async function getPresaberPostsaberSummary(activityId: string) {
  * las dos tablas cuenten la misma historia.
  */
 export async function getCycleResults(activityId: string) {
+  const congelado = await getFrozenActivityReport(activityId);
+  if (congelado) return { personas: congelado.personas, porPregunta: congelado.porPregunta };
+  return computeCycleResults(activityId);
+}
+
+async function computeCycleResults(activityId: string) {
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
     select: { courseId: true },
@@ -951,7 +973,85 @@ export async function getExternosDeActividad(activityId: string) {
  * mejor-intento-por-persona: el informe y la pantalla nunca pueden decir
  * cifras distintas.
  */
-export async function getActivityReportData(activityId: string) {
+export type ActivityReportData = {
+  plan: string;
+  area: string | null;
+  responsable: string | null;
+  titulo: string;
+  programa: string | null;
+  dirigidoA: string | null;
+  status: TrainingActivityStatus;
+  cerradaEl: Date | null;
+  passingScore: number;
+  indicadores: {
+    asistentes: number;
+    evaluadosPre: number;
+    evaluadosPost: number;
+    completaronCiclo: number;
+    promedioPre: number | null;
+    promedioPost: number | null;
+    diferencia: number | null;
+    variacion: number | null;
+    adherentesPre: number;
+    adherentesPost: number;
+    mejoraron: number;
+  };
+  personas: { fullName: string; documentNumber: string; presaber: number | null; postsaber: number | null; diferencia: number | null }[];
+  porPregunta: { statement: string; presaber: number | null; postsaber: number | null }[];
+  asistencia: { fullName: string; documentNumber: string; fecha: Date; source: AttendanceSource }[];
+  encuestas: { titulo: string; respuestas: number }[];
+  externos: { fullName: string; company: string; registradoEl: Date; presaber: number | null; postsaber: number | null }[];
+};
+
+/**
+ * El informe tal como quedó congelado al cerrar la jornada, o null si esta
+ * jornada todavía no se ha cerrado (o se cerró antes de que existiera el
+ * congelado y aún no se ha rellenado).
+ *
+ * Al pasar por JSON las fechas viajan como texto ISO; se devuelven como Date
+ * para que quien consume el informe no tenga que saber si vino congelado o
+ * recién calculado.
+ */
+export async function getFrozenActivityReport(activityId: string): Promise<ActivityReportData | null> {
+  const fila = await prisma.trainingActivity.findUnique({
+    where: { id: activityId },
+    select: { reportSnapshot: true },
+  });
+  if (!fila?.reportSnapshot) return null;
+
+  const crudo = fila.reportSnapshot as unknown as ActivityReportData;
+  return {
+    ...crudo,
+    cerradaEl: crudo.cerradaEl ? new Date(crudo.cerradaEl) : null,
+    asistencia: crudo.asistencia.map((a) => ({ ...a, fecha: new Date(a.fecha) })),
+    externos: crudo.externos.map((e) => ({ ...e, registradoEl: new Date(e.registradoEl) })),
+  };
+}
+
+/**
+ * Congela el informe de la jornada. Se llama UNA vez, al cerrarla.
+ *
+ * Se ejecuta después de marcar el cierre para que el propio informe registre
+ * el estado y la fecha definitivos. Si algo fallara aquí, el informe sigue
+ * calculándose en vivo: se pierde la inmutabilidad, no el informe.
+ */
+export async function freezeActivityReport(activityId: string) {
+  const data = await computeActivityReportData(activityId);
+  if (!data) return null; // sin curso vinculado no hay informe que congelar
+  await prisma.trainingActivity.update({
+    where: { id: activityId },
+    data: { reportSnapshot: data as unknown as Prisma.InputJsonValue, reportSnapshotAt: new Date() },
+  });
+  return data;
+}
+
+export async function getActivityReportData(activityId: string): Promise<ActivityReportData | null> {
+  const congelado = await getFrozenActivityReport(activityId);
+  if (congelado) return congelado;
+  return computeActivityReportData(activityId);
+}
+
+async function computeActivityReportData(activityId: string): Promise<ActivityReportData | null> {
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
     select: {
@@ -969,7 +1069,7 @@ export async function getActivityReportData(activityId: string) {
   if (!actividad?.courseId) return null;
 
   const [resultados, quiz, asistencia, encuestas, externos] = await Promise.all([
-    getCycleResults(activityId),
+    computeCycleResults(activityId),
     prisma.quiz.findFirst({
       where: { courseId: actividad.courseId, moduleId: null },
       select: { passingScore: true },
@@ -1035,8 +1135,6 @@ export async function getActivityReportData(activityId: string) {
     externos,
   };
 }
-
-export type ActivityReportData = NonNullable<Awaited<ReturnType<typeof getActivityReportData>>>;
 
 /**
  * Registra que alguien asistió, en el instante en que entra a SU evaluación.

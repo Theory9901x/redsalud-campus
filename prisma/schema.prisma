@@ -823,6 +823,24 @@ model TrainingActivity {
   /** Fila del Excel de origen. Permite rastrear cada actividad hasta el PIC firmado. */
   sourceRow         Int?
 
+  /**
+   * Informe CONGELADO de la jornada, escrito una sola vez al cerrarla.
+   *
+   * Hasta ahora el informe se recalculaba en vivo sobre las tablas cada vez
+   * que alguien lo abría. Eso significa que borrar un usuario, anular un
+   * intento o corregir una clave de respuestas MESES DESPUÉS cambiaba
+   * retroactivamente un informe que ya se había firmado y radicado. Un acta
+   * no puede cambiar sola.
+   *
+   * Al cerrar se materializa aquí el informe completo -indicadores de
+   * adherencia, personas, por pregunta, asistencia, encuestas y externos-, y
+   * desde ese momento el PDF y la pantalla leen de aquí. Antes del cierre no
+   * hay snapshot y todo se calcula en vivo, que es justo lo que se quiere
+   * mientras las cifras aún se mueven.
+   */
+  reportSnapshot    Json?
+  reportSnapshotAt  DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
