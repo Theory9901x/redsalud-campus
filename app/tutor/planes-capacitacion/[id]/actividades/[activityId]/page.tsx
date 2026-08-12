@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CalendarRange, Users2, ClipboardList, Plus } from "lucide-react";
+import { ArrowLeft, CalendarRange, Users2, ClipboardList, Plus, Radio } from "lucide-react";
 import { requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import {
   getTrainingActivityDetail,
@@ -183,6 +183,15 @@ export default async function TutorActividadDetallePage({
             <Badge className={TRAINING_ACTIVITY_STATUS_CLASSES[activity.status]}>
               {TRAINING_ACTIVITY_STATUS_LABELS[activity.status]}
             </Badge>
+            {activity.status !== "DRAFT" && (
+              <Link
+                href={`${BASE_PATH}/${id}/actividades/${activityId}/en-vivo`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-bold text-primary transition-colors hover:bg-primary/15"
+              >
+                <Radio className="h-3.5 w-3.5" aria-hidden="true" />
+                Panel en vivo
+              </Link>
+            )}
             <ActivityLifecycleActions
               status={activity.status}
               closedAtLabel={activity.closedAt ? DATETIME_FORMAT.format(activity.closedAt) : null}

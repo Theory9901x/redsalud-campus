@@ -29,6 +29,6 @@ export async function entrarACapacitacionAction(planId: string, activityId: stri
   // A dónde aterriza lo decide el ciclo de ESTA persona, con la misma función
   // que usa el resto del módulo: si tiene un momento vigente va a presentarlo,
   // y si no, al aula a estudiar el contenido.
-  const momento = entrada.quizId ? await getMomentoParaUsuario(entrada.quizId, session.user.id) : null;
+  const momento = entrada.quizId ? (await getMomentoParaUsuario(entrada.quizId, session.user.id)).momento : null;
   redirect(momento && entrada.quizId ? `/aula/${entrada.courseId}/quiz/${entrada.quizId}` : `/aula/${entrada.courseId}`);
 }

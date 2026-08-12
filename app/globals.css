@@ -770,6 +770,125 @@
     .lumen-hover:hover { transform: none; }
   }
 
+  /*
+   * ---- Panel de jornada en vivo -----------------------------------------
+   *
+   * Es la única pantalla que el tutor mira fijo durante una hora, con la
+   * videollamada al lado, así que el fondo se mueve MUY despacio (ciclos de
+   * 24-30 s) y en CSS puro: nada de canvas ni WebGL compitiendo por GPU con
+   * el iframe de Jitsi. Todo sale de los tokens del tema -primary, accent,
+   * success- con opacidad variable; ningún color nuevo.
+   */
+  .canvas-vivo {
+    position: relative;
+    background-color: var(--background);
+    isolation: isolate;
+  }
+  .canvas-vivo::before {
+    content: "";
+    position: fixed;
+    inset: -20%;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(38% 42% at 18% 22%, color-mix(in oklch, var(--primary) 22%, transparent), transparent 70%),
+      radial-gradient(34% 38% at 82% 18%, color-mix(in oklch, var(--accent) 26%, transparent), transparent 72%),
+      radial-gradient(40% 44% at 70% 84%, color-mix(in oklch, var(--success) 16%, transparent), transparent 74%);
+    animation: vivo-deriva 26s ease-in-out infinite alternate;
+  }
+  .dark .canvas-vivo::before {
+    background-image:
+      radial-gradient(38% 42% at 18% 22%, color-mix(in oklch, var(--primary) 30%, transparent), transparent 70%),
+      radial-gradient(34% 38% at 82% 18%, color-mix(in oklch, var(--accent) 22%, transparent), transparent 72%),
+      radial-gradient(40% 44% at 70% 84%, color-mix(in oklch, var(--success) 20%, transparent), transparent 74%);
+  }
+  @keyframes vivo-deriva {
+    from { transform: translate3d(-2%, -1%, 0) scale(1); }
+    to   { transform: translate3d(3%, 2%, 0) scale(1.08); }
+  }
+
+  /*
+   * Vidrio de tres capas: el degradado de fondo, el vidrio propiamente dicho
+   * (blur + saturación alta, que es lo que lo separa de un desenfoque
+   * genérico) y el brillo superior, como luz rebotando en un canto real. El
+   * borde va en degradado, no en un color plano.
+   */
+  .surface-vivo {
+    position: relative;
+    border-radius: 24px;
+    padding: 1px;
+    background-image: linear-gradient(
+      145deg in oklch,
+      color-mix(in oklch, var(--primary) 42%, transparent),
+      color-mix(in oklch, var(--accent) 18%, transparent) 45%,
+      transparent 78%
+    );
+    box-shadow: 0 26px 64px -28px color-mix(in oklch, var(--shade) 30%, transparent);
+    transition: transform 180ms var(--ease-signature), box-shadow 180ms var(--ease-signature);
+  }
+  .surface-vivo > * {
+    position: relative;
+    border-radius: 23px;
+    background-image: linear-gradient(
+      160deg in oklch,
+      color-mix(in oklch, var(--card) 92%, transparent),
+      color-mix(in oklch, var(--card) 72%, transparent)
+    );
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    overflow: hidden;
+  }
+  /* Capa de brillo: un arco de luz en la esquina superior izquierda. */
+  .surface-vivo > *::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 52%;
+    pointer-events: none;
+    background-image: radial-gradient(
+      120% 100% at 8% 0%,
+      color-mix(in oklch, white 26%, transparent),
+      transparent 62%
+    );
+  }
+  .dark .surface-vivo > *::before {
+    background-image: radial-gradient(
+      120% 100% at 8% 0%,
+      color-mix(in oklch, white 10%, transparent),
+      transparent 62%
+    );
+  }
+  .surface-vivo:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 34px 76px -30px color-mix(in oklch, var(--shade) 38%, transparent);
+  }
+
+  /*
+   * El estado se comunica con un halo difuso detrás de la tarjeta, no
+   * pintándole el fondo de color: el vidrio se mantiene neutro y el color
+   * dice qué tan bien va la jornada. Un solo acento por tarjeta.
+   */
+  .glow-exito { box-shadow: 0 26px 64px -30px color-mix(in oklch, var(--success) 55%, transparent); }
+  .glow-alerta { box-shadow: 0 26px 64px -30px color-mix(in oklch, var(--warning) 55%, transparent); }
+  .glow-critico { box-shadow: 0 26px 64px -30px color-mix(in oklch, var(--destructive) 50%, transparent); }
+
+  /* El número manda: degradado solo en cifras grandes, nunca en texto denso. */
+  .cifra-vivo {
+    background-image: linear-gradient(
+      170deg in oklch,
+      var(--foreground),
+      color-mix(in oklch, var(--primary) 72%, var(--foreground))
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .canvas-vivo::before { animation: none; }
+    .surface-vivo:hover { transform: none; }
+  }
+
   .surface-clay-pressed {
     @apply relative border;
     border-color: var(--clay-border);

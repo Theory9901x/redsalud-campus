@@ -1268,6 +1268,61 @@ export async function ensureEnrollment(userId: string, activityId: string): Prom
   return { ok: true, courseId: actividad.courseId, quizId: quiz?.id ?? null };
 }
 
+export type ActivityLiveMetrics = {
+  asistentes: number;
+  audiencia: number;
+  porcentajeAsistencia: number;
+  presaberPresentaron: number;
+  presaberPromedio: number | null;
+  postsaberPresentaron: number;
+  postsaberPromedio: number | null;
+  cicloCompleto: number;
+  adherenciaParcial: number | null;
+  actualizado: string;
+};
+
+/**
+ * Las cifras de la jornada EN CURSO, para el panel del tutor.
+ *
+ * No calcula nada nuevo: compone las funciones que ya son la fuente de
+ * verdad del módulo -conteos de asistencia, resumen del ciclo y resultados
+ * por persona-, para que el panel en vivo y el informe final nunca puedan
+ * decir cifras distintas de la misma jornada. El postsaber respeta el gate
+ * por su origen: solo tiene intento de postsaber quien ya cerró su presaber.
+ */
+export async function getActivityLiveMetrics(activityId: string): Promise<ActivityLiveMetrics | null> {
+  const actividad = await prisma.trainingActivity.findUnique({
+    where: { id: activityId },
+    select: { id: true, targetAudience: true, plan: { select: { targetDepartment: true } } },
+  });
+  if (!actividad) return null;
+
+  const [conteos, ciclo, resultados] = await Promise.all([
+    getActivityAttendanceCounts(actividad),
+    getPresaberPostsaberSummary(activityId),
+    getCycleResults(activityId),
+  ]);
+
+  const conAmbos = (resultados?.personas ?? []).filter((p) => p.diferencia !== null);
+  const adherenciaParcial =
+    conAmbos.length > 0
+      ? Math.round(conAmbos.reduce((s, p) => s + (p.diferencia ?? 0), 0) / conAmbos.length)
+      : null;
+
+  return {
+    asistentes: conteos.asistieron,
+    audiencia: conteos.totalAudiencia,
+    porcentajeAsistencia: conteos.porcentaje,
+    presaberPresentaron: ciclo.presaberCantidad,
+    presaberPromedio: ciclo.presaberPromedio,
+    postsaberPresentaron: ciclo.postsaberCantidad,
+    postsaberPromedio: ciclo.postsaberPromedio,
+    cicloCompleto: conAmbos.length,
+    adherenciaParcial,
+    actualizado: new Date().toISOString(),
+  };
+}
+
 /**
  * Registra que alguien asistió, en el instante en que entra a SU evaluación.
  *
