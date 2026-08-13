@@ -1,20 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { MotionConfig, motion } from "framer-motion";
-import { TrendingUp, Layers, Users2, Info } from "lucide-react";
+import { TrendingUp, Layers, Users2, type LucideIcon } from "lucide-react";
 import type { PlanIndicadores, Indicadores } from "@/lib/plan-indicadores";
 import { semaforo, UMBRAL_VERDE, UMBRAL_AMARILLO, type Semaforo } from "@/lib/semaforo-indicadores";
 import { cn } from "@/lib/utils";
 
 const ROMANO = ["I", "II", "III", "IV"];
-
-const GLOW: Record<Semaforo, string> = {
-  verde: "glow-exito",
-  amarillo: "glow-alerta",
-  rojo: "glow-critico",
-  "sin-datos": "",
-};
 
 const TEXTO_SEMAFORO: Record<Semaforo, string> = {
   verde: "text-success",
@@ -23,188 +15,410 @@ const TEXTO_SEMAFORO: Record<Semaforo, string> = {
   "sin-datos": "text-muted-foreground",
 };
 
-const ETIQUETA_CORTA: Record<Semaforo, string> = {
+const PUNTO_SEMAFORO: Record<Semaforo, string> = {
+  verde: "bg-success",
+  amarillo: "bg-warning",
+  rojo: "bg-destructive",
+  "sin-datos": "bg-muted-foreground/40",
+};
+
+const GLOW: Record<Semaforo, string> = {
+  verde: "glow-exito",
+  amarillo: "glow-alerta",
+  rojo: "glow-critico",
+  "sin-datos": "",
+};
+
+const VEREDICTO: Record<Semaforo, string> = {
   verde: "Cumple",
   amarillo: "En alerta",
   rojo: "Crítico",
-  "sin-datos": "—",
+  "sin-datos": "Sin datos",
 };
 
-const ETIQUETA_SEMAFORO: Record<Semaforo, string> = {
-  verde: `Cumple (≥${UMBRAL_VERDE}%)`,
-  amarillo: `En alerta (${UMBRAL_AMARILLO}–${UMBRAL_VERDE - 0.1}%)`,
-  rojo: `Crítico (<${UMBRAL_AMARILLO}%)`,
-  "sin-datos": "Sin datos todavía",
+/** Una fila de la tabla de mediciones de una ficha. */
+type Medicion = {
+  corte: string;
+  celdas: string[];
+  valor: number | null;
+  formatearValor: (v: number) => string;
 };
+
+type Ficha = {
+  codigo: string;
+  nombre: string;
+  principal: boolean;
+  Icono: LucideIcon;
+  /** Valor del acumulado del año, ya formateado, y su semáforo. */
+  valorGrande: string;
+  sem: Semaforo;
+  resumen: string;
+  ficha: { campo: string; contenido: string }[];
+  columnasMedicion: string[];
+  mediciones: Medicion[];
+  analisis: string;
+};
+
+function filaMediciones(
+  datos: PlanIndicadores,
+  extraer: (i: Indicadores) => { celdas: string[]; valor: number | null },
+  formatearValor: (v: number) => string
+): Medicion[] {
+  const filas: Medicion[] = datos.porTrimestre.map((t) => ({
+    corte: `Trimestre ${ROMANO[t.trimestre - 1]}`,
+    ...extraer(t.indicadores),
+    formatearValor,
+  }));
+  filas.push({ corte: "Acumulado año", ...extraer(datos.anual), formatearValor });
+  return filas;
+}
+
+function construirFichas(datos: PlanIndicadores): Ficha[] {
+  const a = datos.anual;
+
+  const adherenciaAnalisis =
+    a.adherencia.valor === null
+      ? "Aún no hay personas con el ciclo presaber–postsaber completo en jornadas cerradas, así que el indicador no tiene línea base. Se poblará solo, a medida que las áreas cierren sus jornadas con evaluación presentada."
+      : a.adherencia.valor > 0
+        ? `El personal que completó el ciclo mejoró en promedio ${a.adherencia.valor} puntos porcentuales entre el presaber y el postsaber (${a.adherencia.personas} ${a.adherencia.personas === 1 ? "persona" : "personas"} en ${a.adherencia.actividadesCerradas} ${a.adherencia.actividadesCerradas === 1 ? "jornada cerrada" : "jornadas cerradas"}). ${semaforo(a.adherencia.valor) === "verde" ? "El resultado cumple la meta institucional." : "El resultado está por debajo de la meta: revisar en la desagregación por área dónde está la menor mejora."}`
+        : `El promedio de variación es ${a.adherencia.valor} pp: el personal no está mejorando entre presaber y postsaber. Revisar el contenido y la metodología de las jornadas cerradas.`;
+
+  const sinContenido = a.cobertura.total - a.cobertura.conContenido;
+  const areasSinContenido = datos.porArea.filter((ar) => ar.cobertura.valor === 0 && ar.cobertura.total > 0);
+  const coberturaAnalisis =
+    `${a.cobertura.conContenido} de ${a.cobertura.total} líneas del PIC tienen curso montado (${a.cobertura.valor}%). ` +
+    (sinContenido === 0
+      ? "Todo el plan tiene contenido publicado."
+      : `Faltan ${sinContenido} líneas por montar${areasSinContenido.length > 0 ? `; las áreas sin ningún contenido son: ${areasSinContenido.map((x) => x.areaNombre).join(", ")}` : ""}.`);
+
+  const asistenciaAnalisis =
+    a.asistencia.asistentes === 0
+      ? "Todavía no hay registros de asistencia. El registro es automático: se llena solo cuando el personal entra a la sala o presenta su evaluación, o cuando el área lo marca manualmente."
+      : `Se registran ${a.asistencia.asistentes} asistencias sobre ${a.asistencia.audiencia} convocatorias (${a.asistencia.valor}%). El denominador cuenta convocatorias —pares persona × capacitación—, no personas distintas: la misma persona está convocada a varias líneas.`;
+
+  return [
+    {
+      codigo: "PIC-ADH-01",
+      nombre: "Adherencia institucional del conocimiento",
+      principal: true,
+      Icono: TrendingUp,
+      valorGrande:
+        a.adherencia.valor === null ? "—" : `${a.adherencia.valor > 0 ? "+" : ""}${a.adherencia.valor} pp`,
+      sem: semaforo(a.adherencia.valor),
+      resumen: "Cuánto mejora el conocimiento del personal entre el presaber y el postsaber.",
+      ficha: [
+        {
+          campo: "Objetivo",
+          contenido:
+            "Medir la apropiación real del conocimiento impartido: la mejora de cada persona entre su evaluación previa (presaber) y su evaluación posterior (postsaber) a la capacitación.",
+        },
+        {
+          campo: "Fórmula",
+          contenido:
+            "((Promedio postsaber − Promedio presaber) ÷ Promedio presaber) × 100, calculada POR PERSONA y luego promediada sobre quienes tienen ambos intentos completos.",
+        },
+        { campo: "Unidad", contenido: "Puntos porcentuales (pp)" },
+        {
+          campo: "Fuente de datos",
+          contenido:
+            "Intentos de evaluación con momento presaber/postsaber, congelados al crear cada intento. En jornadas cerradas se lee del informe congelado del acta: el histórico no cambia aunque se toquen registros después.",
+        },
+        {
+          campo: "Periodicidad",
+          contenido:
+            "Cálculo automático y en tiempo real. Una jornada entra al indicador cuando su responsable la CIERRA; no requiere ningún registro manual.",
+        },
+        { campo: "Responsable", contenido: "Talento Humano (líder del PIC). La medición la hace la plataforma." },
+        {
+          campo: "Alcance",
+          contenido: "Institucional, con desagregación por área y por trimestre según la programación del PIC.",
+        },
+      ],
+      columnasMedicion: ["Corte", "Cerradas", "Personas", "Resultado"],
+      mediciones: filaMediciones(
+        datos,
+        (i) => ({
+          celdas: [String(i.adherencia.actividadesCerradas), String(i.adherencia.personas)],
+          valor: i.adherencia.valor,
+        }),
+        (v) => `${v > 0 ? "+" : ""}${v} pp`
+      ),
+      analisis: adherenciaAnalisis,
+    },
+    {
+      codigo: "PIC-COB-02",
+      nombre: "Cobertura de contenido del PIC",
+      principal: false,
+      Icono: Layers,
+      valorGrande: `${a.cobertura.valor}%`,
+      sem: semaforo(a.cobertura.valor),
+      resumen: "Qué proporción de las líneas del plan ya tiene su curso montado en la plataforma.",
+      ficha: [
+        {
+          campo: "Objetivo",
+          contenido:
+            "Vigilar que cada capacitación programada en el PIC tenga su contenido (presentación y evaluación) publicado y disponible para el personal.",
+        },
+        { campo: "Fórmula", contenido: "(Líneas del PIC con curso vinculado ÷ Total de líneas del PIC) × 100." },
+        { campo: "Unidad", contenido: "Porcentaje (%)" },
+        {
+          campo: "Fuente de datos",
+          contenido: "Vínculo actividad → curso de cada línea del plan. Sin registro manual.",
+        },
+        {
+          campo: "Periodicidad",
+          contenido: "Cálculo automático y en tiempo real: cambia al montar o desvincular contenido.",
+        },
+        { campo: "Responsable", contenido: "Cada área responde por sus líneas; Talento Humano consolida." },
+        { campo: "Alcance", contenido: "Institucional, con desagregación por área y por trimestre." },
+      ],
+      columnasMedicion: ["Corte", "Programadas", "Con contenido", "Resultado"],
+      mediciones: filaMediciones(
+        datos,
+        (i) => ({
+          celdas: [String(i.cobertura.total), String(i.cobertura.conContenido)],
+          valor: i.cobertura.valor,
+        }),
+        (v) => `${v}%`
+      ),
+      analisis: coberturaAnalisis,
+    },
+    {
+      codigo: "PIC-ASI-03",
+      nombre: "Asistencia efectiva",
+      principal: false,
+      Icono: Users2,
+      valorGrande: `${a.asistencia.valor}%`,
+      sem: semaforo(a.asistencia.valor),
+      resumen: "Cuántas de las convocatorias del plan terminan en una asistencia registrada.",
+      ficha: [
+        {
+          campo: "Objetivo",
+          contenido:
+            "Medir la participación real del personal convocado: quién efectivamente llegó a cada capacitación, frente a la audiencia objetivo que el plan define para esa línea.",
+        },
+        {
+          campo: "Fórmula",
+          contenido:
+            "(Asistencias registradas ÷ Convocatorias) × 100, donde cada convocatoria es un par persona × capacitación según la audiencia objetivo de la línea.",
+        },
+        { campo: "Unidad", contenido: "Porcentaje (%), con conteo absoluto «X de Y»." },
+        {
+          campo: "Fuente de datos",
+          contenido:
+            "Registro de asistencia automático (entrar a la sala o presentar la evaluación lo deja solo) y manual del área cuando aplica.",
+        },
+        {
+          campo: "Periodicidad",
+          contenido: "Cálculo automático y en tiempo real, con cada asistencia que se registra.",
+        },
+        { campo: "Responsable", contenido: "Cada área en su jornada; Talento Humano consolida." },
+        { campo: "Alcance", contenido: "Institucional, con desagregación por área, actividad y trimestre." },
+      ],
+      columnasMedicion: ["Corte", "Convocatorias", "Asistencias", "Resultado"],
+      mediciones: filaMediciones(
+        datos,
+        (i) => ({
+          celdas: [String(i.asistencia.audiencia), String(i.asistencia.asistentes)],
+          valor: i.asistencia.audiencia > 0 ? i.asistencia.valor : null,
+        }),
+        (v) => `${v}%`
+      ),
+      analisis: asistenciaAnalisis,
+    },
+  ];
+}
+
+/** Fila de la ficha técnica: campo a la izquierda, contenido a la derecha. */
+function FilaFicha({ campo, contenido }: { campo: string; contenido: string }) {
+  return (
+    <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 px-5 py-3">
+      <dt className="text-[10px] font-bold uppercase leading-4 tracking-wide text-muted-foreground">{campo}</dt>
+      <dd className="text-[12px] leading-relaxed text-foreground/85">{contenido}</dd>
+    </div>
+  );
+}
 
 /**
- * Indicadores del plan.
+ * Indicadores del plan, cada uno con su FICHA TÉCNICA completa, como
+ * cualquier indicador institucional: objetivo, fórmula, unidad, fuente,
+ * periodicidad, responsable, semaforización explícita, mediciones por
+ * trimestre y análisis del resultado.
  *
- * La adherencia manda: va sola, al doble de tamaño y con la cifra en
- * gradiente; cobertura y asistencia acompañan con la misma piel pero menor
- * jerarquía tipográfica, para que nunca compitan con ella.
- *
- * Los trimestres van en un selector y no como cuatro filas apiladas: las
- * cuatro a la vez saturan el panel y obligan a leer doce cifras para
- * responder una sola pregunta.
+ * Tres columnas, una por indicador: el resumen bonito sin la ficha no le
+ * sirve a quien tiene que reportar el indicador ante un ente de control.
  */
 export function PanelIndicadores({ datos }: { datos: PlanIndicadores }) {
-  const [corte, setCorte] = useState<number | "anual">("anual");
-  const actual: Indicadores =
-    corte === "anual"
-      ? datos.anual
-      : datos.porTrimestre.find((t) => t.trimestre === corte)?.indicadores ?? datos.anual;
-
-  const sAdh = semaforo(actual.adherencia.valor);
-  const sCob = semaforo(actual.cobertura.valor);
-  const sAsi = semaforo(actual.asistencia.valor);
-
-  const cortes: { clave: number | "anual"; etiqueta: string }[] = [
-    { clave: "anual", etiqueta: "Acumulado año" },
-    ...[1, 2, 3, 4].map((t) => ({ clave: t as number, etiqueta: `T${ROMANO[t - 1]}` })),
-  ];
+  const fichas = construirFichas(datos);
 
   return (
     <MotionConfig reducedMotion="user">
       <div className="space-y-6">
-        {/* Selector de corte */}
-        <div className="flex flex-wrap items-center gap-2">
-          {cortes.map((c) => (
-            <button
-              key={String(c.clave)}
-              type="button"
-              onClick={() => setCorte(c.clave)}
-              aria-pressed={corte === c.clave}
-              className={cn(
-                "rounded-full border px-4 py-2 text-xs font-bold transition-colors",
-                corte === c.clave
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border/60 bg-card/70 text-muted-foreground hover:text-foreground"
-              )}
+        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-3">
+          {fichas.map((f, i) => (
+            <motion.article
+              key={f.codigo}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.32, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col gap-5"
+              aria-label={`Indicador ${f.nombre}`}
             >
-              {c.etiqueta}
-            </button>
+              {/* Cabecera: el valor vigente del acumulado, con su veredicto. */}
+              <div className={cn("surface-vivo", GLOW[f.sem])}>
+                <div className="flex h-full flex-col gap-4 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+                        <f.Icono className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                          {f.codigo}
+                          {f.principal && <span className="ml-1.5 text-primary">· Principal</span>}
+                        </p>
+                        <p className="font-display text-[14px] font-bold leading-snug text-foreground">{f.nombre}</p>
+                      </div>
+                    </div>
+                    <span className={cn("shrink-0 text-[11px] font-bold uppercase tracking-wide", TEXTO_SEMAFORO[f.sem])}>
+                      {VEREDICTO[f.sem]}
+                    </span>
+                  </div>
+                  <div>
+                    {f.sem === "sin-datos" ? (
+                      <p className="font-display text-xl font-extrabold leading-tight tracking-tight text-muted-foreground">
+                        Sin datos todavía
+                      </p>
+                    ) : (
+                      <p
+                        className={cn(
+                          "font-display text-[2.6rem] font-black leading-none tracking-tight tabular-nums",
+                          f.principal ? "cifra-vivo" : "text-foreground"
+                        )}
+                      >
+                        {f.valorGrande}
+                      </p>
+                    )}
+                    <p className="mt-1.5 text-[12px] leading-snug text-muted-foreground">{f.resumen}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* La ficha técnica propiamente dicha. */}
+              <div className="surface-lumen overflow-hidden">
+                <div className="border-b border-border/60 px-5 py-3">
+                  <h3 className="font-display text-[13px] font-bold uppercase tracking-wide text-foreground">
+                    Ficha técnica
+                  </h3>
+                </div>
+
+                <dl className="divide-y divide-border/40">
+                  {f.ficha.map((fila) => (
+                    <FilaFicha key={fila.campo} campo={fila.campo} contenido={fila.contenido} />
+                  ))}
+
+                  {/* Semaforización: los umbrales, con su color, dentro de la ficha. */}
+                  <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 px-5 py-3">
+                    <dt className="text-[10px] font-bold uppercase leading-4 tracking-wide text-muted-foreground">
+                      Semaforización
+                    </dt>
+                    <dd className="flex flex-wrap gap-1.5">
+                      {[
+                        { sem: "verde" as const, texto: `≥ ${UMBRAL_VERDE}%`, etiqueta: "Cumple" },
+                        { sem: "amarillo" as const, texto: `${UMBRAL_AMARILLO}–${UMBRAL_VERDE - 0.1}%`, etiqueta: "En alerta" },
+                        { sem: "rojo" as const, texto: `< ${UMBRAL_AMARILLO}%`, etiqueta: "Crítico" },
+                      ].map((u) => (
+                        <span
+                          key={u.sem}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/60 px-2.5 py-1 text-[11px] font-semibold",
+                            f.sem === u.sem ? TEXTO_SEMAFORO[u.sem] : "text-muted-foreground"
+                          )}
+                        >
+                          <span className={cn("h-2 w-2 rounded-full", PUNTO_SEMAFORO[u.sem])} aria-hidden="true" />
+                          {u.etiqueta} {u.texto}
+                        </span>
+                      ))}
+                    </dd>
+                  </div>
+                </dl>
+
+                {/* Mediciones por corte: se generan solas desde la programación. */}
+                <div className="border-t border-border/60">
+                  <p className="px-5 pt-3 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Mediciones
+                  </p>
+                  <table className="mt-2 w-full text-left">
+                    <thead>
+                      <tr className="border-b border-border/40 text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {f.columnasMedicion.map((c, j) => (
+                          <th
+                            key={c}
+                            scope="col"
+                            className={cn(
+                              "px-5 py-2 font-bold",
+                              j > 0 && "px-2 text-right",
+                              j === f.columnasMedicion.length - 1 && "pr-5"
+                            )}
+                          >
+                            {c}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {f.mediciones.map((m) => {
+                        const sm = semaforo(m.valor);
+                        const acumulado = m.corte === "Acumulado año";
+                        return (
+                          <tr
+                            key={m.corte}
+                            className={cn(
+                              "border-b border-border/30 last:border-0",
+                              acumulado && "bg-foreground/[0.03] font-semibold"
+                            )}
+                          >
+                            <td className="px-5 py-2 text-[12px] text-foreground">{m.corte}</td>
+                            {m.celdas.map((c, j) => (
+                              <td key={j} className="px-2 py-2 text-right text-[12px] tabular-nums text-muted-foreground">
+                                {c}
+                              </td>
+                            ))}
+                            <td className="py-2 pl-2 pr-5 text-right">
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-1.5 text-[12px] font-bold tabular-nums",
+                                  TEXTO_SEMAFORO[sm]
+                                )}
+                              >
+                                <span className={cn("h-2 w-2 rounded-full", PUNTO_SEMAFORO[sm])} aria-hidden="true" />
+                                {m.valor === null ? "—" : m.formatearValor(m.valor)}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Análisis del resultado vigente, generado desde los datos. */}
+                <div className="border-t border-border/60 px-5 py-4">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Análisis</p>
+                  <p className="mt-1.5 text-[12px] leading-relaxed text-foreground/85">{f.analisis}</p>
+                </div>
+              </div>
+            </motion.article>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-          {/* PRINCIPAL — adherencia institucional */}
-          <motion.div
-            key={`adh-${String(corte)}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            className={cn("surface-vivo xl:col-span-2", GLOW[sAdh])}
-          >
-            <div className="flex h-full flex-col justify-between gap-5 p-6 sm:p-7">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-2.5">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/12 text-primary">
-                    <TrendingUp className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
-                  </span>
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                      Indicador principal
-                    </p>
-                    <p className="font-display text-[15px] font-bold text-foreground">
-                      Adherencia institucional del conocimiento
-                    </p>
-                  </div>
-                </div>
-                <span className={cn("shrink-0 text-[11px] font-bold", TEXTO_SEMAFORO[sAdh])}>
-                  {ETIQUETA_SEMAFORO[sAdh]}
-                </span>
-              </div>
-
-              <div>
-                {actual.adherencia.valor === null ? (
-                  <p className="font-display text-2xl font-extrabold leading-tight tracking-tight text-muted-foreground">
-                    Sin datos todavía
-                  </p>
-                ) : (
-                  <p className="font-display text-[clamp(3rem,7vw,4.25rem)] font-black leading-none tracking-tight">
-                    <span className="cifra-vivo tabular-nums">
-                      {actual.adherencia.valor > 0 ? "+" : ""}
-                      {actual.adherencia.valor}
-                    </span>
-                    <span className="ml-1 text-2xl font-bold text-muted-foreground">pp</span>
-                  </p>
-                )}
-                <p className="mt-2 text-[13px] text-muted-foreground">
-                  {actual.adherencia.valor === null
-                    ? "Aún nadie completa presaber y postsaber en una jornada cerrada."
-                    : `Mejora promedio entre presaber y postsaber · ${actual.adherencia.personas} personas con el ciclo completo en ${actual.adherencia.actividadesCerradas} ${actual.adherencia.actividadesCerradas === 1 ? "jornada cerrada" : "jornadas cerradas"}.`}
-                </p>
-              </div>
-
-              <p className="flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground/80">
-                <Info className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                ((Postsaber − Presaber) ÷ Presaber) × 100, por persona y promediado. Solo jornadas cerradas; el
-                resultado queda congelado con el informe de cada jornada.
-              </p>
-            </div>
-          </motion.div>
-
-          {/* SECUNDARIOS */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-1">
-            {[
-              {
-                clave: "cobertura",
-                titulo: "Cobertura de contenido",
-                Icono: Layers,
-                valor: actual.cobertura.valor,
-                sem: sCob,
-                detalle: `${actual.cobertura.conContenido} de ${actual.cobertura.total} líneas del PIC con curso montado`,
-              },
-              {
-                clave: "asistencia",
-                titulo: "Asistencia efectiva",
-                Icono: Users2,
-                valor: actual.asistencia.valor,
-                sem: sAsi,
-                // El denominador suma la audiencia DE CADA línea, así que son
-                // convocatorias (pares persona-capacitación), no personas
-                // distintas: la misma persona está convocada a varias.
-                detalle: `${actual.asistencia.asistentes} asistencias de ${actual.asistencia.audiencia} convocatorias`,
-              },
-            ].map((s, i) => (
-              <motion.div
-                key={`${s.clave}-${String(corte)}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.32, delay: 0.05 * (i + 1), ease: [0.22, 1, 0.36, 1] }}
-                className={cn("surface-vivo", GLOW[s.sem])}
-              >
-                <div className="flex h-full flex-col justify-between gap-3 p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/12 text-primary">
-                        <s.Icono className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
-                      </span>
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{s.titulo}</p>
-                    </div>
-                    <span className={cn("shrink-0 text-[10px] font-bold uppercase tracking-wide", TEXTO_SEMAFORO[s.sem])}>
-                      {ETIQUETA_CORTA[s.sem]}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-display text-[2rem] font-extrabold leading-none tracking-tight text-foreground tabular-nums">
-                      {s.valor}
-                      <span className="text-lg text-muted-foreground">%</span>
-                    </p>
-                    <p className="mt-1.5 text-[12px] leading-snug text-muted-foreground">{s.detalle}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Desagregación por área: el detalle debajo, no compitiendo arriba. */}
+        {/* Desagregación por área del acumulado: el nivel de detalle común. */}
         {datos.porArea.length > 1 && (
           <section aria-label="Indicadores por área" className="surface-lumen overflow-hidden">
             <div className="border-b border-border/60 px-5 py-3.5">
-              <h3 className="font-display text-sm font-bold text-foreground">Por área · acumulado del año</h3>
+              <h3 className="font-display text-sm font-bold text-foreground">
+                Desagregación por área · acumulado del año
+              </h3>
               <p className="text-[11px] text-muted-foreground">
                 Las mismas tres fórmulas, aplicadas al universo de cada área.
               </p>
