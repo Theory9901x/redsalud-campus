@@ -118,6 +118,13 @@ export default async function AdminPlanCapacitacionDetallePage({
             <Building2 className="h-4 w-4 text-primary" />
             {plan.targetDepartment ?? "Todo el personal"}
           </span>
+          <Link
+            href={`${BASE_PATH}/${id}/indicadores`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold text-primary transition-colors hover:bg-primary/15"
+          >
+            <Gauge className="h-3.5 w-3.5" aria-hidden="true" />
+            Ver indicadores
+          </Link>
           <span className="flex items-center gap-1.5">
             <Gauge className="h-4 w-4 text-primary" />
             {adherenceSummary.overallPercentage !== null
