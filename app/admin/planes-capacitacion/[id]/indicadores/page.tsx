@@ -37,7 +37,10 @@ export default async function IndicadoresPlanPage({ params }: { params: Promise<
   const BASE_PATH = sesion.user.role === "ADMIN" ? "/admin/planes-capacitacion" : "/tutor/planes-capacitacion";
 
   return (
-    <div className="space-y-8">
+    // canvas-vivo: las manchas de luz en deriva lenta (CSS puro), el mismo
+    // lienzo del panel en vivo. Aquí el vidrio de las fichas tiene algo real
+    // que desenfocar detrás; sobre blanco plano el blur no se ve.
+    <div className="canvas-vivo space-y-8">
       <Link
         href={`${BASE_PATH}/${id}`}
         className="flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
@@ -52,7 +55,21 @@ export default async function IndicadoresPlanPage({ params }: { params: Promise<
           Indicadores del plan
         </p>
         <h1 className="mt-2 font-display text-[clamp(1.6rem,3.2vw,2.15rem)] font-extrabold leading-[1.12] tracking-tight text-foreground">
-          {institucional ? "Medición institucional" : "Medición de mis áreas"}
+          {institucional ? (
+            <>
+              Medición{" "}
+              <span className="bg-gradient-to-r from-primary to-success bg-clip-text text-transparent">
+                institucional
+              </span>
+            </>
+          ) : (
+            <>
+              Medición de{" "}
+              <span className="bg-gradient-to-r from-primary to-success bg-clip-text text-transparent">
+                mis áreas
+              </span>
+            </>
+          )}
         </h1>
         <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
           Se calculan solos y en tiempo real: el trimestre sale de la programación del PIC, el cierre de cada jornada
