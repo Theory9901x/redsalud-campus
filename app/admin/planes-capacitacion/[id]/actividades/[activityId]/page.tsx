@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CalendarRange, Users2, ClipboardList, Plus } from "lucide-react";
+import { ArrowLeft, CalendarRange, Users2, ClipboardList, ClipboardCheck, TrendingUp, BookOpen, UserPlus, Plus } from "lucide-react";
 import { requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import {
   getTrainingActivityDetail,
@@ -150,36 +150,113 @@ export default async function AdminActividadDetallePage({
   const closeSessionAction = closeTrainingSessionAction.bind(null, BASE_PATH, id, activityId);
   const deleteSessionAction = deleteTrainingSessionAction.bind(null, BASE_PATH, id, activityId);
 
+  // Indicadores de la jornada, en vivo. Antes estas cifras estaban repartidas
+  // por media página -el % de adherencia en un panel, la asistencia en otro,
+  // los externos más abajo- y no se podía saber cómo iba la jornada sin
+  // recorrerla entera.
+  const kpis = [
+    {
+      etiqueta: "Adherencia",
+      valor: `${adherence.percentage}%`,
+      detalle: `${adherence.adherentCount} de ${adherence.totalExpected} convocados`,
+      Icono: TrendingUp,
+      chip: "bg-success/15 text-success",
+      destacar: false,
+    },
+    {
+      etiqueta: "Asistencia",
+      valor: String(conteosAsistencia.asistieron),
+      detalle: `${conteosAsistencia.porcentaje}% del personal objetivo`,
+      Icono: Users2,
+      chip: "bg-primary/12 text-primary",
+      destacar: false,
+    },
+    {
+      etiqueta: "Presaber",
+      valor: String(resumenCiclo?.presaberCantidad ?? 0),
+      detalle:
+        resumenCiclo?.presaberPromedio != null
+          ? `promedio ${resumenCiclo.presaberPromedio}%`
+          : "sin presentaciones todavía",
+      Icono: ClipboardCheck,
+      chip: "bg-warning/18 text-warning-foreground",
+      destacar: (resumenCiclo?.presaberCantidad ?? 0) > 0,
+    },
+    {
+      etiqueta: "Postsaber",
+      valor: String(resumenCiclo?.postsaberCantidad ?? 0),
+      detalle:
+        resumenCiclo?.postsaberPromedio != null
+          ? `promedio ${resumenCiclo.postsaberPromedio}%`
+          : "se abre al cerrar el presaber",
+      Icono: ClipboardList,
+      chip: "bg-primary/12 text-primary",
+      destacar: (resumenCiclo?.postsaberCantidad ?? 0) > 0,
+    },
+    {
+      etiqueta: "Jornadas",
+      valor: String(activity.sessions.length),
+      detalle: activity.sessions.length === 1 ? "agendada" : "agendadas",
+      Icono: CalendarRange,
+      chip: "bg-success/15 text-success",
+      destacar: false,
+    },
+    {
+      etiqueta: "Externos",
+      valor: String(externos.length),
+      detalle: externos.length === 1 ? "invitado registrado" : "invitados registrados",
+      Icono: UserPlus,
+      chip: "bg-primary/12 text-primary",
+      destacar: false,
+    },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <Link
         href={`${BASE_PATH}/${id}`}
-        className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        className="flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
         {activity.plan.title}
       </Link>
 
-      <div className="surface-panel surface-accent-top p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="font-display text-2xl font-extrabold text-foreground">{activity.title}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+      <header className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+            {activity.area?.name ?? "Capacitación del plan"}
+            {activity.programa ? ` · ${activity.programa}` : ""}
+          </p>
+          <h1 className="mt-2 font-display text-[clamp(1.6rem,3.2vw,2.15rem)] font-extrabold leading-[1.12] tracking-tight text-foreground">
+            {activity.title}
+          </h1>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-[13px] font-medium text-muted-foreground backdrop-blur-sm">
+              <CalendarRange className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+              {etiquetaProgramacion(activity)}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-[13px] font-medium text-muted-foreground backdrop-blur-sm">
+              <Users2 className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+              {COURSE_AUDIENCE_LABELS[activity.targetAudience]}
+            </span>
+            <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-[13px] font-medium text-muted-foreground backdrop-blur-sm">
+              <BookOpen className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
               {activity.course ? (
-                <>
-                  Curso:{" "}
-                  <Link href={`/cursos/${activity.course.slug}`} target="_blank" className="text-primary hover:underline">
-                    {activity.course.title}
-                  </Link>
-                </>
-              ) : activity.type === "EXTERNAL_EVENT" ? (
-                TRAINING_ACTIVITY_TYPE_LABELS.EXTERNAL_EVENT
+                <Link href={`/cursos/${activity.course.slug}`} target="_blank" className="truncate text-primary hover:underline">
+                  {activity.course.title}
+                </Link>
               ) : (
-                "No aplica · gestión directa"
+                <span className="truncate">
+                  {activity.type === "EXTERNAL_EVENT"
+                    ? TRAINING_ACTIVITY_TYPE_LABELS.EXTERNAL_EVENT
+                    : "Sin curso · gestión directa"}
+                </span>
               )}
-            </p>
+            </span>
           </div>
-          <div className="flex flex-col items-end gap-2">
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end gap-2">
             <Badge className={TRAINING_ACTIVITY_STATUS_CLASSES[activity.status]}>
               {TRAINING_ACTIVITY_STATUS_LABELS[activity.status]}
             </Badge>
@@ -193,20 +270,31 @@ export default async function AdminActividadDetallePage({
               onHide={hideAction}
               onShow={showAction}
             />
-          </div>
         </div>
+      </header>
 
-        <div className="mt-4 flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <CalendarRange className="h-4 w-4 text-primary" />
-            {etiquetaProgramacion(activity)}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Users2 className="h-4 w-4 text-primary" />
-            {COURSE_AUDIENCE_LABELS[activity.targetAudience]}
-          </span>
-        </div>
-      </div>
+      {/* Cómo va la jornada, de un vistazo. */}
+      <section aria-label="Indicadores de la jornada" className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+        {kpis.map((k) => (
+          <div key={k.etiqueta} className="surface-lumen flex flex-col justify-between gap-3 p-5">
+            <span className={cn("relative flex h-9 w-9 items-center justify-center rounded-xl", k.chip)}>
+              <k.Icono className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              {k.destacar && (
+                <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-warning" aria-hidden="true" />
+              )}
+            </span>
+            <div className="min-w-0">
+              <p className="font-display text-[1.75rem] font-extrabold leading-none tracking-tight text-foreground">
+                {k.valor}
+              </p>
+              <p className="mt-1 text-[12px] font-semibold leading-tight text-foreground/80">{k.etiqueta}</p>
+              <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground" title={k.detalle}>
+                {k.detalle}
+              </p>
+            </div>
+          </div>
+        ))}
+      </section>
 
       <ActivityPlanCard activity={activity} responsibleUserName={activity.responsibleUser?.fullName ?? null} />
 
@@ -237,12 +325,12 @@ export default async function AdminActividadDetallePage({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* El formulario va PRIMERO (izquierda) y en vidrio: es la acción de
             esta sección; la lista de jornadas la acompaña al lado. */}
-        <div className="surface-glass surface-accent-top h-fit space-y-3 p-6">
+        <div className="surface-lumen h-fit space-y-3 p-6">
           <h3 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">Agendar jornada</h3>
           <TrainingSessionForm action={createSessionAction} municipios={municipios} salaIntegradaUrl={`${baseUrl}/sala/${activityId}`} />
         </div>
         <div className="space-y-3 lg:col-span-2">
-          <h2 className="font-display text-lg font-bold text-foreground">Jornadas agendadas</h2>
+          <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Jornadas agendadas</h2>
           <TrainingSessionList
             sessions={activity.sessions.map((ses) => ({ ...ses, etiqueta: etiquetaJornada(ses) }))}
             onEnable={enableSessionAction}
@@ -253,7 +341,7 @@ export default async function AdminActividadDetallePage({
       </div>
 
       <div className="space-y-3">
-        <h2 className="font-display text-lg font-bold text-foreground">Adherencia y cumplimiento</h2>
+        <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Adherencia y cumplimiento</h2>
         {activity.courseId ? (
           <div className="space-y-4">
             <ActivityAdherencePanel adherence={adherence} />
@@ -277,7 +365,7 @@ export default async function AdminActividadDetallePage({
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold text-foreground">Contenido del curso</h2>
+          <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Contenido del curso</h2>
           {activity.course && (
             <DeleteEntityButton
               action={unlinkCourseAction}
@@ -289,7 +377,7 @@ export default async function AdminActividadDetallePage({
           )}
         </div>
         {activity.course ? (
-          <p className="surface p-4 text-sm text-muted-foreground">
+          <p className="surface-lumen p-5 text-sm text-muted-foreground">
             Esta capacitación se desarrolla con{" "}
             <Link href={`/cursos/${activity.course.slug}`} target="_blank" className="font-medium text-primary hover:underline">
               {activity.course.title}
@@ -297,16 +385,16 @@ export default async function AdminActividadDetallePage({
             .
           </p>
         ) : (
-          <div className="surface p-4">
+          <div className="surface-lumen p-5">
             <LinkCourseForm action={linkCourseAction} courses={linkableCourses} />
           </div>
         )}
       </div>
 
       <div className="space-y-3">
-        <h2 className="font-display text-lg font-bold text-foreground">Documentos de la actividad</h2>
+        <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Documentos de la actividad</h2>
         <TrainingDocumentList documents={activity.documents} />
-        <div className="surface p-4">
+        <div className="surface-lumen p-5">
           <TrainingDocumentUploadForm action={uploadDocumentAction} />
         </div>
       </div>
@@ -315,7 +403,7 @@ export default async function AdminActividadDetallePage({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ClipboardList className="h-4 w-4 text-primary" />
-            <h2 className="font-display text-lg font-bold text-foreground">Encuestas de esta actividad</h2>
+            <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Encuestas de esta actividad</h2>
           </div>
           <Link
             href={`${BASE_PATH}/${id}/encuestas/nueva?actividad=${activityId}`}

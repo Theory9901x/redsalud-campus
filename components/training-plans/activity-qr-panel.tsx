@@ -38,7 +38,7 @@ export function ActivityQrPanel({ enlaces }: { enlaces: EnlaceQr[] }) {
   }
 
   return (
-    <div className="surface-panel space-y-4 p-6 print:shadow-none" data-qr-panel>
+    <section className="space-y-4 print:shadow-none" aria-label="Enlaces y códigos QR" data-qr-panel>
       <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
         <h2 className="flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-foreground">
           <QrCode className="h-4 w-4 text-primary" aria-hidden="true" />
@@ -56,7 +56,7 @@ export function ActivityQrPanel({ enlaces }: { enlaces: EnlaceQr[] }) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {enlaces.map((e) => (
-          <div key={e.url} className="flex flex-col items-center gap-2 rounded-xl border border-border p-4 text-center">
+          <div key={e.url} className="surface-lumen lumen-hover flex flex-col items-center gap-2.5 p-5 text-center print:border print:shadow-none">
             <p className="font-display text-sm font-bold text-foreground">{e.titulo}</p>
             <img src={e.qrDataUrl} alt={`Código QR: ${e.titulo}`} className="h-40 w-40" />
             <p className="text-[11px] leading-snug text-muted-foreground">{e.descripcion}</p>
@@ -77,6 +77,6 @@ export function ActivityQrPanel({ enlaces }: { enlaces: EnlaceQr[] }) {
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }
