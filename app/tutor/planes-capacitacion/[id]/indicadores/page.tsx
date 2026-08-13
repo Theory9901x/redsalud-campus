@@ -37,10 +37,9 @@ export default async function IndicadoresPlanPage({ params }: { params: Promise<
   const BASE_PATH = sesion.user.role === "ADMIN" ? "/admin/planes-capacitacion" : "/tutor/planes-capacitacion";
 
   return (
-    // canvas-vivo: las manchas de luz en deriva lenta (CSS puro), el mismo
-    // lienzo del panel en vivo. Aquí el vidrio de las fichas tiene algo real
-    // que desenfocar detrás; sobre blanco plano el blur no se ve.
-    <div className="canvas-vivo space-y-8">
+    // Sin lienzo propio: canvas-vivo pinta su fondo opaco y dentro del layout
+    // del tutor (que ya decora el suyo) se veía como un rectángulo superpuesto.
+    <div className="space-y-8">
       <Link
         href={`${BASE_PATH}/${id}`}
         className="flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"

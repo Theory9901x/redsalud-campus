@@ -313,29 +313,39 @@ export function PanelIndicadores({ datos }: { datos: PlanIndicadores }) {
                           {VEREDICTO[f.sem]}
                         </span>
                       </div>
+                      {/* Alturas reservadas (2 líneas de título, caja fija de
+                          cifra, 2 líneas de resumen) para que las tres
+                          cabeceras midan LO MISMO a cualquier ancho, aunque un
+                          nombre quepa en una línea o falte la cifra. */}
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/75">
                           {f.codigo}
                           {f.principal && " · Principal"}
                         </p>
-                        <h3 className="mt-1 font-display text-[15px] font-extrabold leading-snug">{f.nombre}</h3>
+                        <h3 className="mt-1 min-h-[2lh] font-display text-[15px] font-extrabold leading-snug">
+                          {f.nombre}
+                        </h3>
                       </div>
                       <div>
-                        {f.sem === "sin-datos" ? (
-                          <p className="font-display text-xl font-extrabold leading-tight tracking-tight text-white/85">
-                            Sin datos todavía
-                          </p>
-                        ) : (
-                          <p
-                            className={cn(
-                              "font-display font-black leading-none tracking-tight tabular-nums drop-shadow-sm",
-                              f.principal ? "text-[3rem]" : "text-[2.5rem]"
-                            )}
-                          >
-                            {f.valorGrande}
-                          </p>
-                        )}
-                        <p className="mt-1.5 text-[12px] leading-snug text-white/80">{f.resumen}</p>
+                        <div className="flex h-12 items-end">
+                          {f.sem === "sin-datos" ? (
+                            <p className="font-display text-xl font-extrabold leading-tight tracking-tight text-white/85">
+                              Sin datos todavía
+                            </p>
+                          ) : (
+                            <p
+                              className={cn(
+                                "font-display font-black leading-none tracking-tight tabular-nums drop-shadow-sm",
+                                f.principal ? "text-[3rem]" : "text-[2.5rem]"
+                              )}
+                            >
+                              {f.valorGrande}
+                            </p>
+                          )}
+                        </div>
+                        <p className="mt-1.5 line-clamp-2 min-h-[2lh] text-[12px] leading-snug text-white/80">
+                          {f.resumen}
+                        </p>
                       </div>
                     </div>
                   </div>
