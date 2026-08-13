@@ -23,6 +23,13 @@ const TEXTO_SEMAFORO: Record<Semaforo, string> = {
   "sin-datos": "text-muted-foreground",
 };
 
+const ETIQUETA_CORTA: Record<Semaforo, string> = {
+  verde: "Cumple",
+  amarillo: "En alerta",
+  rojo: "Crítico",
+  "sin-datos": "—",
+};
+
 const ETIQUETA_SEMAFORO: Record<Semaforo, string> = {
   verde: `Cumple (≥${UMBRAL_VERDE}%)`,
   amarillo: `En alerta (${UMBRAL_AMARILLO}–${UMBRAL_VERDE - 0.1}%)`,
@@ -110,14 +117,19 @@ export function PanelIndicadores({ datos }: { datos: PlanIndicadores }) {
               </div>
 
               <div>
-                <p className="font-display text-[clamp(3rem,7vw,4.25rem)] font-black leading-none tracking-tight">
-                  <span className="cifra-vivo tabular-nums">
-                    {actual.adherencia.valor === null ? "—" : `${actual.adherencia.valor > 0 ? "+" : ""}${actual.adherencia.valor}`}
-                  </span>
-                  {actual.adherencia.valor !== null && (
+                {actual.adherencia.valor === null ? (
+                  <p className="font-display text-2xl font-extrabold leading-tight tracking-tight text-muted-foreground">
+                    Sin datos todavía
+                  </p>
+                ) : (
+                  <p className="font-display text-[clamp(3rem,7vw,4.25rem)] font-black leading-none tracking-tight">
+                    <span className="cifra-vivo tabular-nums">
+                      {actual.adherencia.valor > 0 ? "+" : ""}
+                      {actual.adherencia.valor}
+                    </span>
                     <span className="ml-1 text-2xl font-bold text-muted-foreground">pp</span>
-                  )}
-                </p>
+                  </p>
+                )}
                 <p className="mt-2 text-[13px] text-muted-foreground">
                   {actual.adherencia.valor === null
                     ? "Aún nadie completa presaber y postsaber en una jornada cerrada."
@@ -150,7 +162,10 @@ export function PanelIndicadores({ datos }: { datos: PlanIndicadores }) {
                 Icono: Users2,
                 valor: actual.asistencia.valor,
                 sem: sAsi,
-                detalle: `${actual.asistencia.asistentes} de ${actual.asistencia.audiencia} personas convocadas`,
+                // El denominador suma la audiencia DE CADA línea, así que son
+                // convocatorias (pares persona-capacitación), no personas
+                // distintas: la misma persona está convocada a varias.
+                detalle: `${actual.asistencia.asistentes} asistencias de ${actual.asistencia.audiencia} convocatorias`,
               },
             ].map((s, i) => (
               <motion.div
@@ -168,8 +183,8 @@ export function PanelIndicadores({ datos }: { datos: PlanIndicadores }) {
                       </span>
                       <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{s.titulo}</p>
                     </div>
-                    <span className={cn("shrink-0 text-[10px] font-bold", TEXTO_SEMAFORO[s.sem])}>
-                      {s.sem === "sin-datos" ? "—" : `${s.valor}%`}
+                    <span className={cn("shrink-0 text-[10px] font-bold uppercase tracking-wide", TEXTO_SEMAFORO[s.sem])}>
+                      {ETIQUETA_CORTA[s.sem]}
                     </span>
                   </div>
                   <div>
