@@ -69,6 +69,15 @@ type Chip = (typeof CHIPS)[number];
 const TRIMESTRE_VAR: Record<number, string> = { 1: "--data-2", 2: "--data-1", 3: "--data-3", 4: "--data-5" };
 const ROMANO = ["I", "II", "III", "IV"];
 
+/*
+ * La rejilla de la fila, en un solo sitio: la usan la cabecera de columnas y
+ * cada capacitación, así que no pueden quedar desalineadas. El título pesa
+ * más que el resto porque es lo que se lee; antes las cuatro columnas del
+ * medio medían igual y apretaban el nombre de la capacitación.
+ */
+const REJILLA_FILA =
+  "grid grid-cols-1 gap-x-5 gap-y-2 px-5 lg:grid-cols-[minmax(0,2.6fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,1.2fr)_auto] lg:items-center";
+
 const BADGE: Record<string, string> = {
   Completada: "bg-success/10 text-success",
   Realizado: "bg-success/10 text-success",
@@ -191,7 +200,7 @@ export function CronogramaEstudiante({
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
       <div className="min-w-0 space-y-4">
         {/* Búsqueda y filtros */}
-        <div className="surface-glass flex flex-wrap items-center gap-3 p-4">
+        <div className="surface-lumen flex flex-wrap items-center gap-3 p-4">
           <div className="relative min-w-[200px] flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -259,7 +268,7 @@ export function CronogramaEstudiante({
           const abierto = abiertos.has(t);
           const acento = `var(${TRIMESTRE_VAR[t]})`;
           return (
-            <section key={t} className="surface-glass overflow-hidden p-0">
+            <section key={t} className="surface-lumen overflow-hidden p-0">
               <button
                 type="button"
                 onClick={() => alternar(t)}
@@ -286,9 +295,22 @@ export function CronogramaEstudiante({
               </button>
 
               {abierto && items.length > 0 && (
-                <ul className="divide-y divide-border border-t border-border">
+                <>
+                <div
+                  className={cn(REJILLA_FILA, "hidden border-t border-border/60 bg-foreground/[0.02] py-2.5 lg:grid")}
+                  aria-hidden="true"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Capacitación</span>
+                  <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Modalidad</span>
+                  <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Dirigido a</span>
+                  <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Presaber</span>
+                  <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Postsaber</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Estado</span>
+                  <span />
+                </div>
+                <ul className="divide-y divide-border/60 border-t border-border/60">
                   {items.map((f) => (
-                    <li key={f.id} className="grid grid-cols-1 gap-x-4 gap-y-2 px-4 py-3 lg:grid-cols-[minmax(0,2.2fr)_repeat(4,minmax(0,1fr))_minmax(0,1.1fr)_auto] lg:items-center">
+                    <li key={f.id} className={cn(REJILLA_FILA, "py-3.5 transition-colors hover:bg-foreground/[0.02]")}>
                       <div className="min-w-0">
                         <p className="text-[13px] font-bold leading-snug text-foreground">{f.titulo}</p>
                         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
@@ -343,6 +365,7 @@ export function CronogramaEstudiante({
                     </li>
                   ))}
                 </ul>
+                </>
               )}
               {abierto && items.length === 0 && (
                 <p className="border-t border-border px-4 py-6 text-center text-sm text-muted-foreground">

@@ -33,6 +33,7 @@ import { CronogramaEstudianteCompleto } from "@/components/training-plans/cronog
 import { entrarACapacitacionAction } from "@/app/(estudiante)/mis-capacitaciones/actions";
 import { EmptyState } from "@/components/brand/empty-state";
 import { StaggerSections } from "@/components/brand/stagger-sections";
+import { cn } from "@/lib/utils";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import {
   TRAINING_PLAN_STATUS_LABELS,
@@ -236,81 +237,130 @@ export default async function MiCapacitacionDetallePage({
     .filter((s) => idsAplicables.has(s.activity.id))
     .map((s) => ({ ...s, horaEtiqueta: FORMATO_HORA_SESION.format(s.startsAt) }));
 
+  const metaPlan = [
+    { Icono: CalendarRange, texto: String(plan.year) },
+    { Icono: Building2, texto: plan.targetDepartment ?? "Todo el personal" },
+    { Icono: User, texto: plan.tutor.fullName },
+  ];
+
   return (
-    <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
-      <StaggerSections className="space-y-6">
+    <main className="canvas-formacion min-h-full flex-1">
+      <div className="mx-auto w-full max-w-[1480px] px-4 py-8 sm:px-6 lg:px-8">
+      <StaggerSections className="space-y-8">
         <Link
           href="/mis-capacitaciones"
-          className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+          className="flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Mis capacitaciones
         </Link>
 
         {avisoQr && (
-          <div className="surface-glass flex items-start gap-3 border-l-4 border-l-warning p-4" role="status">
+          <div className="surface-lumen flex items-start gap-3 border-l-4 border-l-warning p-5" role="status">
             <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
             <p className="text-sm text-foreground">{avisoQr}</p>
           </div>
         )}
 
-        <div className="surface-glass surface-accent-top relative overflow-hidden px-6 py-7 sm:px-8">
-          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/[0.12] blur-[80px]" />
-          <div className="relative flex flex-wrap items-start justify-between gap-3">
-            <h1 className="font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">{plan.title}</h1>
-            <Badge className={TRAINING_PLAN_STATUS_CLASSES[plan.status]}>
-              {TRAINING_PLAN_STATUS_LABELS[plan.status]}
-            </Badge>
+        {/* Encabezado del plan: identidad primero, metadatos como fichas
+            sueltas -no apretados en una línea- y el estado a la derecha. */}
+        <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Plan institucional</p>
+            <h1 className="mt-2 font-display text-[clamp(1.9rem,4vw,2.35rem)] font-extrabold leading-[1.1] tracking-tight text-foreground">
+              {plan.title}
+            </h1>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {metaPlan.map((m) => (
+                <span
+                  key={m.texto}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-[13px] font-medium text-muted-foreground backdrop-blur-sm"
+                >
+                  <m.Icono className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                  {m.texto}
+                </span>
+              ))}
+            </div>
           </div>
-          <div className="relative mt-4 flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <CalendarRange className="h-4 w-4 text-primary" />
-              {plan.year}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Building2 className="h-4 w-4 text-primary" />
-              {plan.targetDepartment ?? "Todo el personal"}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <User className="h-4 w-4 text-primary" />
-              {plan.tutor.fullName}
-            </span>
-          </div>
-        </div>
+          <Badge className={cn("w-fit shrink-0", TRAINING_PLAN_STATUS_CLASSES[plan.status])}>
+            {TRAINING_PLAN_STATUS_LABELS[plan.status]}
+          </Badge>
+        </header>
 
-        {/* KPIs compactos: una franja de vidrio, no seis tarjetas grandes.
-            Ícono y número en horizontal; separadores verticales entre celdas.
-            El indicador que pide acción (presaber/postsaber disponible > 0)
-            se enciende con su color; el resto queda tranquilo. */}
-        <div className="surface-glass grid grid-cols-2 divide-border/50 sm:grid-cols-3 sm:divide-x xl:grid-cols-6">
+        {/* Indicadores. El progreso manda -ocupa el doble y lleva su barra- y
+            el resto acompaña; antes los seis competían apretados en una sola
+            franja y ninguno destacaba. Lo que pide acción se enciende. */}
+        <section aria-label="Resumen del plan" className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="surface-lumen col-span-2 flex flex-col justify-between gap-4 p-5">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
+                <TrendingUp className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                Progreso general
+              </span>
+            </div>
+            <div>
+              <p className="font-display text-[2.5rem] font-black leading-none tracking-tight text-foreground">
+                {progresoGeneral}<span className="text-2xl">%</span>
+              </p>
+              <div
+                className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted"
+                role="progressbar"
+                aria-valuenow={progresoGeneral}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Progreso general del plan: ${progresoGeneral}%`}
+              >
+                <div className="h-full rounded-full bg-success transition-[width] duration-500" style={{ width: `${progresoGeneral}%` }} />
+              </div>
+              <p className="mt-2 text-[12px] text-muted-foreground">
+                {completadas} de {filas.length} capacitaciones completadas
+              </p>
+            </div>
+          </div>
+
           {[
-            { label: "Asignadas", value: `${filas.length}`, icon: ClipboardList, chip: "bg-primary/15 text-primary", destacar: false },
-            { label: "Próximas jornadas", value: `${proximasJornadas.length}`, icon: CalendarClock, chip: "bg-warning/15 text-warning-foreground", destacar: false },
-            { label: "Presaberes", value: `${presaberesDisponibles}`, icon: FileQuestion, chip: "bg-warning/15 text-warning-foreground", destacar: presaberesDisponibles > 0 },
-            { label: "Postsaberes", value: `${postsaberesDisponibles}`, icon: ClipboardCheck, chip: "bg-primary/15 text-primary", destacar: postsaberesDisponibles > 0 },
-            { label: "Completadas", value: `${completadas}`, icon: CheckCircle2, chip: "bg-success/15 text-success", destacar: false },
-            { label: "Progreso", value: `${progresoGeneral}%`, icon: TrendingUp, chip: "bg-success/15 text-success", destacar: false },
+            { label: "Asignadas", value: filas.length, icon: ClipboardList, chip: "bg-primary/12 text-primary", destacar: false },
+            { label: "Presaberes", value: presaberesDisponibles, icon: FileQuestion, chip: "bg-warning/18 text-warning-foreground", destacar: presaberesDisponibles > 0 },
+            { label: "Postsaberes", value: postsaberesDisponibles, icon: ClipboardCheck, chip: "bg-primary/12 text-primary", destacar: postsaberesDisponibles > 0 },
+            { label: "Próximas jornadas", value: proximasJornadas.length, icon: CalendarClock, chip: "bg-success/15 text-success", destacar: false },
           ].map((k) => (
-            <div key={k.label} className="flex items-center gap-3 px-4 py-3.5">
-              <span className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${k.chip}`}>
-                <k.icon className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
+            <div key={k.label} className="surface-lumen flex flex-col justify-between gap-3 p-5">
+              <span className={cn("relative flex h-9 w-9 items-center justify-center rounded-xl", k.chip)}>
+                <k.icon className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
                 {k.destacar && (
                   <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-warning" aria-hidden="true" />
                 )}
               </span>
-              <div className="min-w-0 leading-tight">
-                <p className="font-display text-xl font-extrabold tracking-tight text-foreground">{k.value}</p>
-                <p className="truncate text-[11px] font-medium text-muted-foreground">{k.label}</p>
+              <div className="min-w-0">
+                <p className="font-display text-[1.75rem] font-extrabold leading-none tracking-tight text-foreground">
+                  {k.value}
+                </p>
+                <p className="mt-1.5 text-[12px] leading-tight text-muted-foreground">{k.label}</p>
               </div>
             </div>
           ))}
-        </div>
+        </section>
 
         <Tabs defaultValue="cronograma">
-          <TabsList>
-            <TabsTrigger value="cronograma">Cronograma</TabsTrigger>
-            <TabsTrigger value="documentos">Documentos</TabsTrigger>
-            <TabsTrigger value="encuestas">Evaluaciones</TabsTrigger>
+          {/* Control segmentado, igual que el selector de vistas del propio
+              cronograma: dos filas de pestañas con estilos distintos hacían
+              parecer que una era del sistema y la otra del contenido. */}
+          <TabsList className="h-auto gap-1 rounded-full border border-border/60 bg-card/80 p-1 backdrop-blur-sm">
+            {[
+              { valor: "cronograma", etiqueta: "Cronograma" },
+              { valor: "documentos", etiqueta: "Documentos" },
+              { valor: "encuestas", etiqueta: "Evaluaciones" },
+            ].map((t) => (
+              <TabsTrigger
+                key={t.valor}
+                value={t.valor}
+                className="rounded-full px-4 py-2 text-xs font-semibold text-muted-foreground transition-colors data-active:bg-primary data-active:text-primary-foreground data-active:shadow-sm"
+              >
+                {t.etiqueta}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           <TabsContent value="cronograma" className="pt-4">
@@ -389,6 +439,7 @@ export default async function MiCapacitacionDetallePage({
           </TabsContent>
         </Tabs>
       </StaggerSections>
+      </div>
     </main>
   );
 }
