@@ -9,8 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { AssignEnrollmentForm } from "@/components/admin/assign-enrollment-form";
+import { AssignEnrollmentByFilterForm } from "@/components/admin/assign-enrollment-by-filter-form";
 import { CancelEnrollmentButton } from "@/components/admin/cancel-enrollment-button";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AdminPageHeader } from "@/components/admin/page-header";
@@ -42,13 +41,11 @@ export default async function InscripcionesPage({
     };
   }
 
-  const [courses, students, enrollments, totalEnrollments] = await Promise.all([
+  const [courses, municipios, enrollments, totalEnrollments] = await Promise.all([
     prisma.course.findMany({ orderBy: { title: "asc" }, select: { id: true, title: true } }),
-    prisma.user.findMany({
-      where: { role: "STUDENT", status: "ACTIVE" },
-      orderBy: { fullName: "asc" },
-      select: { id: true, fullName: true, documentNumber: true, email: true, username: true },
-    }),
+    // Solo las opciones del filtro, nunca el padrón: 288 cuentas activas ya
+    // no se cargan en esta página para pintar un checklist en el cliente.
+    prisma.municipio.findMany({ orderBy: { nombre: "asc" }, select: { id: true, nombre: true } }),
     prisma.enrollment.findMany({
       where,
       orderBy: { enrolledAt: "desc" },
@@ -71,15 +68,7 @@ export default async function InscripcionesPage({
             Asignar estudiantes a un curso
           </h2>
         </div>
-        <AssignEnrollmentForm
-          courses={courses}
-          students={students.map((s) => ({
-            id: s.id,
-            fullName: s.fullName,
-            documentNumber: s.documentNumber,
-            email: s.email ?? (s.username ? `@${s.username}` : ""),
-          }))}
-        />
+        <AssignEnrollmentByFilterForm courses={courses} municipios={municipios} />
       </section>
 
       <section className="space-y-4">
