@@ -287,57 +287,64 @@ export default async function MiCapacitacionDetallePage({
           </Badge>
         </header>
 
-        {/* Indicadores. El progreso manda -ocupa el doble y lleva su barra- y
-            el resto acompaña; antes los seis competían apretados en una sola
-            franja y ninguno destacaba. Lo que pide acción se enciende. */}
+        {/* Indicadores en vidrio de tres capas (surface-vivo: borde en
+            degradado + blur/saturación + brillo superior), no el vidrio
+            lumen casi blanco de antes -sobre el lienzo claro del estudiante
+            se perdía por completo, borde y fondo casi del mismo tono-. El
+            progreso manda -ocupa el doble y lleva su barra- y el resto
+            acompaña; lo que pide acción se enciende con un halo. */}
         <section aria-label="Resumen del plan" className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-          <div className="surface-lumen col-span-2 flex flex-col justify-between gap-4 p-5">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
-                <TrendingUp className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              </span>
-              <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                Progreso general
-              </span>
-            </div>
-            <div>
-              <p className="font-display text-[2.5rem] font-black leading-none tracking-tight text-foreground">
-                {progresoGeneral}<span className="text-2xl">%</span>
-              </p>
-              <div
-                className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted"
-                role="progressbar"
-                aria-valuenow={progresoGeneral}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label={`Progreso general del plan: ${progresoGeneral}%`}
-              >
-                <div className="h-full rounded-full bg-success transition-[width] duration-500" style={{ width: `${progresoGeneral}%` }} />
+          <div className="surface-vivo col-span-2">
+            <div className="flex h-full flex-col justify-between gap-4 p-5">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
+                  <TrendingUp className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                </span>
+                <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                  Progreso general
+                </span>
               </div>
-              <p className="mt-2 text-[12px] text-muted-foreground">
-                {completadas} de {filas.length} capacitaciones completadas
-              </p>
+              <div>
+                <p className="font-display text-[2.5rem] font-black leading-none tracking-tight text-foreground">
+                  {progresoGeneral}<span className="text-2xl">%</span>
+                </p>
+                <div
+                  className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted"
+                  role="progressbar"
+                  aria-valuenow={progresoGeneral}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`Progreso general del plan: ${progresoGeneral}%`}
+                >
+                  <div className="h-full rounded-full bg-success transition-[width] duration-500" style={{ width: `${progresoGeneral}%` }} />
+                </div>
+                <p className="mt-2 text-[12px] text-muted-foreground">
+                  {completadas} de {filas.length} capacitaciones completadas
+                </p>
+              </div>
             </div>
           </div>
 
           {[
-            { label: "Asignadas", value: filas.length, icon: ClipboardList, chip: "bg-primary/12 text-primary", destacar: false },
-            { label: "Presaberes", value: presaberesDisponibles, icon: FileQuestion, chip: "bg-warning/18 text-warning-foreground", destacar: presaberesDisponibles > 0 },
-            { label: "Postsaberes", value: postsaberesDisponibles, icon: ClipboardCheck, chip: "bg-primary/12 text-primary", destacar: postsaberesDisponibles > 0 },
-            { label: "Próximas jornadas", value: proximasJornadas.length, icon: CalendarClock, chip: "bg-success/15 text-success", destacar: false },
+            { label: "Asignadas", value: filas.length, icon: ClipboardList, chip: "bg-primary/12 text-primary", destacar: false, glow: "" },
+            { label: "Presaberes", value: presaberesDisponibles, icon: FileQuestion, chip: "bg-warning/18 text-warning-foreground", destacar: presaberesDisponibles > 0, glow: "glow-alerta" },
+            { label: "Postsaberes", value: postsaberesDisponibles, icon: ClipboardCheck, chip: "bg-primary/12 text-primary", destacar: postsaberesDisponibles > 0, glow: "glow-exito" },
+            { label: "Próximas jornadas", value: proximasJornadas.length, icon: CalendarClock, chip: "bg-success/15 text-success", destacar: false, glow: "" },
           ].map((k) => (
-            <div key={k.label} className="surface-lumen flex flex-col justify-between gap-3 p-5">
-              <span className={cn("relative flex h-9 w-9 items-center justify-center rounded-xl", k.chip)}>
-                <k.icon className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                {k.destacar && (
-                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-warning" aria-hidden="true" />
-                )}
-              </span>
-              <div className="min-w-0">
-                <p className="font-display text-[1.75rem] font-extrabold leading-none tracking-tight text-foreground">
-                  {k.value}
-                </p>
-                <p className="mt-1.5 text-[12px] leading-tight text-muted-foreground">{k.label}</p>
+            <div key={k.label} className={cn("surface-vivo", k.destacar && k.glow)}>
+              <div className="flex h-full flex-col justify-between gap-3 p-5">
+                <span className={cn("relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", k.chip)}>
+                  <k.icon className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                  {k.destacar && (
+                    <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-warning" aria-hidden="true" />
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-display text-[1.75rem] font-extrabold leading-none tracking-tight text-foreground">
+                    {k.value}
+                  </p>
+                  <p className="mt-1.5 text-[12px] leading-tight text-muted-foreground">{k.label}</p>
+                </div>
               </div>
             </div>
           ))}
