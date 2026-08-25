@@ -25,21 +25,33 @@ declare global {
  * leyendo los eventos oficiales del iframe (entradas y salidas). La sala se
  * crea sola al entrar el primero; el nombre usa el id de la capacitación
  * (un cuid impredecible), así el enlace no es adivinable.
+ *
+ * TRAZABILIDAD DE CONEXIÓN: el propio tiempo de la persona se mide en una
+ * ref -nunca en estado-, así que medir no dispara ningún render mientras
+ * dura la llamada. El tramo (joinedAt → leftAt) se escribe UNA sola vez, al
+ * salir, con `navigator.sendBeacon`: no hay sondeo, ni petición mientras la
+ * llamada sigue en curso, ni nada que competir con el video por CPU.
  */
 export function SalaVirtual({
   domain,
   roomName,
+  activityId,
   displayName,
   subject,
   jwt,
+  externalParticipantId,
 }: {
   /** Dominio del servidor Jitsi (p. ej. campusvirtual.redsaludteforma.com:8443). */
   domain: string;
   roomName: string;
+  /** Id de la jornada, para asociar el tramo de conexión a su plan. */
+  activityId: string;
   displayName: string;
   subject: string;
   /** Token del personal (moderación). Los invitados externos entran sin token: sin controles de moderación. */
   jwt?: string | null;
+  /** Solo para invitados externos: identifica el tramo sin que exista sesión. */
+  externalParticipantId?: string;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
   const [cargando, setCargando] = useState(true);
@@ -47,9 +59,29 @@ export function SalaVirtual({
   const [participantes, setParticipantes] = useState<string[]>([]);
   const [dentro, setDentro] = useState(false);
 
+  // Ref, no estado: el reloj de la propia conexión no debe re-renderizar
+  // nada mientras la llamada está en curso.
+  const joinedAtRef = useRef<Date | null>(null);
+
   useEffect(() => {
     let api: JitsiApi | null = null;
     let cancelado = false;
+
+    function reportarTramo() {
+      const joinedAt = joinedAtRef.current;
+      joinedAtRef.current = null; // un tramo se reporta una sola vez.
+      if (!joinedAt) return;
+      const payload = JSON.stringify({
+        joinedAt: joinedAt.toISOString(),
+        leftAt: new Date().toISOString(),
+        displayName,
+        ...(externalParticipantId ? { externalParticipantId } : {}),
+      });
+      navigator.sendBeacon?.(
+        `/api/planes-capacitacion/actividades/${activityId}/conexion`,
+        new Blob([payload], { type: "application/json" })
+      );
+    }
 
     function refrescarParticipantes() {
       if (!api) return;
@@ -104,10 +136,12 @@ export function SalaVirtual({
       });
       // Quién está: se refresca con cada entrada/salida real de la sala.
       api.addListener("videoConferenceJoined", () => {
+        joinedAtRef.current = new Date();
         setDentro(true);
         refrescarParticipantes();
       });
       api.addListener("videoConferenceLeft", () => {
+        reportarTramo();
         setDentro(false);
         setParticipantes([]);
       });
@@ -131,11 +165,20 @@ export function SalaVirtual({
       document.body.appendChild(script);
     }
 
+    // Cerrar pestaña o navegar fuera de la sala también termina el tramo:
+    // sin esto, quien cierra la pestaña en vez de darle a "Salir" no
+    // quedaría nunca registrado. pagehide es el evento fiable para esto
+    // -beforeunload no siempre dispara en móvil-, y sendBeacon está hecho
+    // justo para funcionar durante la descarga de la página.
+    window.addEventListener("pagehide", reportarTramo);
+
     return () => {
       cancelado = true;
+      window.removeEventListener("pagehide", reportarTramo);
+      reportarTramo(); // navegación dentro de la SPA, sin descarga de página.
       api?.dispose();
     };
-  }, [domain, roomName, displayName, subject, jwt]);
+  }, [domain, roomName, activityId, displayName, subject, jwt, externalParticipantId]);
 
   return (
     <div className="space-y-3">

@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Plus,
   Info,
+  PhoneCall,
 } from "lucide-react";
 import { requireTrainingPlanRead } from "@/lib/auth-helpers";
 import {
@@ -124,6 +125,13 @@ export default async function AdminPlanCapacitacionDetallePage({
           >
             <Gauge className="h-3.5 w-3.5" aria-hidden="true" />
             Ver indicadores
+          </Link>
+          <Link
+            href={`${BASE_PATH}/${id}/conexiones`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold text-primary transition-colors hover:bg-primary/15"
+          >
+            <PhoneCall className="h-3.5 w-3.5" aria-hidden="true" />
+            Conexiones a llamada
           </Link>
           <span className="flex items-center gap-1.5">
             <Gauge className="h-4 w-4 text-primary" />

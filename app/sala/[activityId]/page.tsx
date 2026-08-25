@@ -142,6 +142,7 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
             <SalaVirtual
               domain={jitsiDomain}
               roomName={`RedSaludTeForma-${actividad.id}`}
+              activityId={actividad.id}
               displayName={session.user.name ?? "Participante"}
               subject={actividad.title}
               jwt={tokenSala}

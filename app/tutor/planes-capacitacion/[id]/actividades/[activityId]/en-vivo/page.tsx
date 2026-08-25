@@ -120,6 +120,7 @@ export default async function JornadaEnVivoPage({
               <SalaVirtual
                 domain={jitsiDomain}
                 roomName={`RedSaludTeForma-${actividad.id}`}
+                activityId={actividad.id}
                 displayName={session.user.name ?? "Tutor"}
                 subject={actividad.title}
                 jwt={tokenSala}

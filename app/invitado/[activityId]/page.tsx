@@ -141,9 +141,11 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
             <SalaVirtual
               domain={process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si"}
               roomName={`RedSaludTeForma-${actividad.id}`}
+              activityId={actividad.id}
               displayName={`${participante.fullName} (${participante.company})`}
               subject={actividad.title}
               jwt={tokenStaff}
+              externalParticipantId={participante.id}
             />
             {puedeGrabar && <GrabacionJornada activityId={actividad.id} />}
           </div>

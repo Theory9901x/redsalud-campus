@@ -160,6 +160,7 @@ model User {
   trainingAreasLed              TrainingArea[]     @relation("TrainingAreaTutor")
   trainingAttendances TrainingAttendance[] @relation("TrainingAttendanceUser")
   trainingAttendancesRegistered TrainingAttendance[] @relation("TrainingAttendanceRegisteredBy")
+  callConnections     CallConnectionLog[]
   surveysCreated  Survey[]         @relation("SurveyCreatedBy")
   surveyResponses SurveyResponse[] @relation("SurveyRespondedBy")
 
@@ -859,6 +860,7 @@ model TrainingActivity {
   surveys     Survey[]
   sessions    TrainingSession[]
   externalParticipants ExternalParticipant[]
+  callConnections      CallConnectionLog[]
 
   @@index([planId])
   @@index([courseId])
@@ -919,6 +921,7 @@ model ExternalParticipant {
   createdAt  DateTime         @default(now())
 
   attempts ExternalAttempt[]
+  callConnections CallConnectionLog[]
 
   @@index([activityId])
 }
@@ -974,6 +977,45 @@ model TrainingAttendance {
 
   @@unique([activityId, userId])
   @@index([activityId])
+}
+
+/**
+ * Un TRAMO de conexión a la videollamada de una jornada: se cierra y se
+ * escribe UNA sola vez, cuando la persona sale de la sala (o cierra la
+ * pestaña) -nunca mientras está conectada-. Quien entra y sale varias veces
+ * en la misma jornada deja varios tramos; el minutaje por persona se suma al
+ * leer, no al escribir, así que este modelo es puramente de anexar (append
+ * only) y no compite con nada más por escritura.
+ *
+ * No es la fuente de la asistencia (eso lo sigue siendo TrainingAttendance,
+ * que no se toca): es trazabilidad interna de tiempo conectado, para que
+ * Talento Humano pueda auditar cuánto estuvo realmente cada quien en la
+ * llamada, por plan de capacitación.
+ */
+model CallConnectionLog {
+  id         String           @id @default(cuid())
+  activityId String
+  activity   TrainingActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  // Uno de los dos, nunca los dos ni ninguno: personal con cuenta, o
+  // invitado externo sin ella. Igual que ExternalParticipant frente a User
+  // en el resto del módulo.
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  externalParticipantId String?
+  externalParticipant   ExternalParticipant? @relation(fields: [externalParticipantId], references: [id], onDelete: Cascade)
+
+  // Nombre en el momento de la llamada: si es invitado, o si a alguien le
+  // cambian el nombre después, el registro sigue siendo legible sin tener
+  // que reconstruirlo por join.
+  displayName     String
+  joinedAt        DateTime
+  leftAt          DateTime
+  durationSeconds Int
+  createdAt       DateTime @default(now())
+
+  @@index([activityId])
+  @@index([userId])
 }
 
 // ------------------------------------------------------------------
