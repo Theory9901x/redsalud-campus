@@ -84,8 +84,12 @@ async function main() {
   await page.fill('input[name="email"]', ADMIN);
   await page.fill('input[name="password"]', CLAVE);
   await page.click('button[type="submit"]');
-  await page.waitForURL(/admin|tutor/, { timeout: 30000 });
-  console.log("sesión iniciada como administrador");
+  // Basta con salir de /login: si la cuenta tiene cambio de contraseña
+  // obligatorio aterriza en /cambiar-contrasena, y esperar /admin colgaría
+  // el guion. La sesión ya está iniciada, que es lo único que hace falta
+  // para que la subida lleve su cookie.
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 30000 });
+  console.log(`sesión iniciada (aterrizó en ${new URL(page.url()).pathname})`);
 
   // Ya autenticados y en el mismo origen: la subida lleva la cookie de
   // sesión igual que la llevaría el botón «Grabar jornada».
