@@ -266,11 +266,41 @@ async function main() {
 
   // ---------------------------------------------------------------- 3
   paso(3, "PLAN, ÁREA Y CAPACITACIÓN PROGRAMADA");
+  // Tutor PROPIO de la demostración: el área de demostración es suya, así
+  // que puede gestionar la jornada, subir la grabación y descargar el
+  // informe -sin necesidad de usar la cuenta del administrador real, cuya
+  // contraseña es de su titular y no se toca-.
+  const tutorDemo = await prisma.user.upsert({
+    where: { documentNumber: "DEMO-TUTOR-0001" },
+    update: { department: DEPENDENCIA },
+    create: {
+      fullName: `${MARCA} Tutora del área`,
+      documentType: "CC",
+      documentNumber: "DEMO-TUTOR-0001",
+      email: "demo.tutora@ejemplo.test",
+      passwordHash: hash,
+      role: "TUTOR",
+      status: "ACTIVE",
+      mustChangePassword: false,
+      personnelType: "ADMINISTRATIVO",
+      department: DEPENDENCIA,
+      position: "Profesional responsable del área",
+      municipioId: municipio.id,
+      tipoVinculacion: "CARRERA_ADMINISTRATIVA",
+      origenRegistro: "IMPORTACION",
+      provisionedAt: hace(30),
+      provisionedBy: admin.id,
+    },
+  });
+  console.log(`   ✔ Tutora del área: demo.tutora@ejemplo.test  ·  clave: ${CLAVE}`);
+
   let area = await prisma.trainingArea.findFirst({ where: { name: `${MARCA} Área de demostración` } });
   if (!area) {
     area = await prisma.trainingArea.create({
-      data: { name: `${MARCA} Área de demostración`, sortOrder: 99, tutorId: admin.id },
+      data: { name: `${MARCA} Área de demostración`, sortOrder: 99, tutorId: tutorDemo.id },
     });
+  } else if (area.tutorId !== tutorDemo.id) {
+    area = await prisma.trainingArea.update({ where: { id: area.id }, data: { tutorId: tutorDemo.id } });
   }
 
   let plan = await prisma.trainingPlan.findFirst({ where: { title: `${MARCA} Plan de demostración` } });
@@ -312,7 +342,7 @@ async function main() {
         targetAudienceNote: "Personal de la dependencia de demostración",
         expectedAttendees: 2,
         responsibleLabel: "Profesional de demostración",
-        responsibleUserId: admin.id,
+        responsibleUserId: tutorDemo.id,
         followUpEvidence: ["Registro de asistencia", "Resultados presaber/postsaber"],
         startDate: hace(3),
       },
