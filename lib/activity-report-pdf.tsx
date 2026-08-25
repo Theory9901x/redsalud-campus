@@ -1,5 +1,6 @@
 import { Document, Page, View, Text, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
 import type { ActivityReportData } from "@/lib/training-plans";
+import type { EvidenciaJornada } from "@/lib/activity-evidence";
 
 /**
  * INFORME DE LA JORNADA: el documento con las métricas completas de
@@ -300,7 +301,85 @@ function Encuestas({ data }: { data: ActivityReportData }) {
   );
 }
 
-function ActivityReportDocument({ data, generatedBy }: { data: ActivityReportData; generatedBy: string }) {
+/**
+ * Evidencias: la grabación de la sesión y los soportes adjuntos, más el
+ * tiempo que el personal estuvo realmente conectado a la videollamada.
+ *
+ * Va al final porque es el respaldo del acta, no una métrica más: el PIC
+ * exige poder mostrar QUÉ quedó archivado de cada jornada.
+ */
+function Evidencias({ evidencia }: { evidencia?: EvidenciaJornada }) {
+  if (!evidencia) return null;
+  const { documentos, conexion } = evidencia;
+  const grabaciones = documentos.filter((d) => d.esGrabacion);
+
+  return (
+    <View>
+      <Text style={styles.sectionTitle}>Evidencias de la jornada</Text>
+
+      {conexion.tramos > 0 && (
+        <View style={styles.metaRow}>
+          <Text style={styles.metaItem}>
+            Personas conectadas a la sala: <Text style={styles.metaValue}>{conexion.personas}</Text>
+          </Text>
+          <Text style={styles.metaItem}>
+            Permanencia promedio: <Text style={styles.metaValue}>{conexion.minutosPromedio} min</Text>
+          </Text>
+          <Text style={styles.metaItem}>
+            Tiempo total conectado: <Text style={styles.metaValue}>{conexion.minutosTotales} min</Text>
+          </Text>
+          <Text style={styles.metaItem}>
+            Conexiones registradas: <Text style={styles.metaValue}>{conexion.tramos}</Text>
+          </Text>
+        </View>
+      )}
+
+      {documentos.length === 0 ? (
+        <Text style={styles.emptyText}>
+          Sin archivos adjuntos. La grabación de la sesión y los soportes se archivan en los documentos de la
+          capacitación.
+        </Text>
+      ) : (
+        <View style={styles.table}>
+          <View style={styles.tr}>
+            <Text style={[styles.th, { flex: 3 }]}>Archivo</Text>
+            <Text style={styles.th}>Tipo</Text>
+            <Text style={styles.th}>Tamaño</Text>
+            <Text style={styles.th}>Archivado</Text>
+          </View>
+          {documentos.map((d, i) => (
+            <View key={i} style={i === documentos.length - 1 ? styles.trLast : styles.tr}>
+              <Text style={[styles.td, { flex: 3 }]}>
+                {d.esGrabacion ? "Grabación · " : ""}
+                {d.nombre}
+              </Text>
+              <Text style={styles.td}>{d.esGrabacion ? "Video" : d.tipo.split("/").pop()?.toUpperCase() ?? "—"}</Text>
+              <Text style={styles.td}>{d.tamanoMB > 0 ? `${d.tamanoMB} MB` : "< 0.1 MB"}</Text>
+              <Text style={styles.td}>{d.subidoEl.toLocaleDateString("es-CO")}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {grabaciones.length > 0 && (
+        <Text style={[styles.emptyText, { marginTop: 6 }]}>
+          {grabaciones.length === 1 ? "La grabación queda archivada" : `Las ${grabaciones.length} grabaciones quedan archivadas`}{" "}
+          en los documentos de esta capacitación, con acceso restringido a quien puede gestionarla.
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function ActivityReportDocument({
+  data,
+  generatedBy,
+  evidencia,
+}: {
+  data: ActivityReportData;
+  generatedBy: string;
+  evidencia?: EvidenciaJornada;
+}) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -311,11 +390,16 @@ function ActivityReportDocument({ data, generatedBy }: { data: ActivityReportDat
         <Asistencia data={data} />
         <Externos data={data} />
         <Encuestas data={data} />
+        <Evidencias evidencia={evidencia} />
       </Page>
     </Document>
   );
 }
 
-export async function renderActivityReportPdf(data: ActivityReportData, generatedBy: string): Promise<Buffer> {
-  return renderToBuffer(<ActivityReportDocument data={data} generatedBy={generatedBy} />);
+export async function renderActivityReportPdf(
+  data: ActivityReportData,
+  generatedBy: string,
+  evidencia?: EvidenciaJornada
+): Promise<Buffer> {
+  return renderToBuffer(<ActivityReportDocument data={data} generatedBy={generatedBy} evidencia={evidencia} />);
 }

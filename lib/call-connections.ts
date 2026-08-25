@@ -89,6 +89,26 @@ export async function getCallConnectionSummaryForPlan(
   };
 }
 
+/** Lo mismo, para UNA jornada: es lo que el informe en PDF adjunta como evidencia de permanencia. */
+export async function getCallConnectionSummaryForActivity(
+  activityId: string
+): Promise<{ tramos: number; personas: number; minutosTotales: number; minutosPromedio: number }> {
+  const [agregado, personas] = await Promise.all([
+    prisma.callConnectionLog.aggregate({ where: { activityId }, _count: { _all: true }, _sum: { durationSeconds: true } }),
+    prisma.callConnectionLog.groupBy({ by: ["userId", "externalParticipantId"], where: { activityId } }),
+  ]);
+  const tramos = agregado._count._all;
+  const segundos = agregado._sum.durationSeconds ?? 0;
+  return {
+    tramos,
+    personas: personas.length,
+    minutosTotales: Math.round(segundos / 60),
+    // Promedio POR PERSONA, no por tramo: quien entró y salió tres veces
+    // estuvo una sola jornada, y es su permanencia total la que importa.
+    minutosPromedio: personas.length > 0 ? Math.round(segundos / personas.length / 60) : 0,
+  };
+}
+
 /** Actividades del plan con al menos un tramo registrado, para el filtro. */
 export async function getActivitiesWithConnectionsForPlan(planId: string, areaIds: string[] | null) {
   return prisma.trainingActivity.findMany({

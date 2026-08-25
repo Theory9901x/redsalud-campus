@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import { getActivityReportData } from "@/lib/training-plans";
 import { renderActivityReportPdf } from "@/lib/activity-report-pdf";
+import { getActivityEvidence } from "@/lib/activity-evidence";
 
 /**
  * PDF del informe de la jornada: se habilita SOLO cuando la capacitación está
@@ -32,7 +33,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ act
     );
   }
 
-  const pdf = await renderActivityReportPdf(data, generatedBy);
+  // Las evidencias se leen en vivo: la grabación se sube DESPUÉS de
+  // cerrar la jornada, así que no puede venir del informe congelado.
+  const evidencia = await getActivityEvidence(activityId);
+  const pdf = await renderActivityReportPdf(data, generatedBy, evidencia);
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",

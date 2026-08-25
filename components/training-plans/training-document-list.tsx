@@ -1,4 +1,4 @@
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, Video } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState } from "@/components/brand/empty-state";
 
@@ -34,8 +34,39 @@ export function TrainingDocumentList({
     );
   }
 
+  // Las grabaciones de la jornada se ven aquí mismo: una evidencia de video
+  // que solo se puede descargar obliga a salir de la plataforma para saber
+  // qué quedó grabado. El archivo se sirve por la misma ruta privada, así
+  // que sigue restringido a quien puede gestionar la capacitación.
+  const grabaciones = documents.filter((d) => d.fileType.startsWith("video/"));
+
   return (
-    <div className="surface-panel overflow-hidden">
+    <div className="space-y-3">
+      {grabaciones.length > 0 && (
+        <div className="surface-lumen space-y-4 p-5">
+          <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+            <Video className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+            {grabaciones.length === 1 ? "Grabación de la jornada" : "Grabaciones de la jornada"}
+          </p>
+          {grabaciones.map((g) => (
+            <div key={g.id} className="space-y-1.5">
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video
+                src={g.fileUrl}
+                controls
+                preload="metadata"
+                className="max-h-[420px] w-full rounded-xl border border-border/60 bg-navy"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {g.fileName} · {formatFileSize(g.fileSize)} ·{" "}
+                {g.createdAt.toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="surface-panel overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
@@ -74,6 +105,7 @@ export function TrainingDocumentList({
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
