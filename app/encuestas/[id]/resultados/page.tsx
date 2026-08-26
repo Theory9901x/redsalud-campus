@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BarChart3, CheckCircle2, Clock, FileSpreadsheet, Users2 } from "lucide-react";
+import { ArrowLeft, BarChart3, CheckCircle2, Clock, FileSpreadsheet, FileText, Users2 } from "lucide-react";
 import { requireSurveyAccess } from "@/lib/auth-helpers";
 import { getResultadosEncuesta } from "@/lib/encuestas/consultas";
 import { GraficaEvolucion, GraficaOpciones, GraficaDistribucion } from "@/components/encuestas/graficas-resultados";
@@ -69,11 +69,18 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
             </Link>
             <a
               href={`/api/encuestas/${encuesta.slug}/csv`}
-              className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold text-white"
-              style={{ backgroundColor: acento }}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border/60 bg-card/70 px-4 py-2.5 text-[13px] font-bold text-foreground transition-colors hover:border-primary/40"
             >
               <FileSpreadsheet className="h-4 w-4" />
-              Exportar CSV
+              CSV
+            </a>
+            <a
+              href={`/api/encuestas/${encuesta.slug}/informe`}
+              className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: acento }}
+            >
+              <FileText className="h-4 w-4" />
+              Informe PDF
             </a>
           </div>
         </header>
