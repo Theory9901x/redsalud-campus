@@ -47,7 +47,10 @@ const NAV_GROUPS: GrupoNav[] = [
     // ciclo, no las presenta, así que aquí ve en vivo quién está
     // presentando y quién terminó -no la pantalla del estudiante-.
     label: "Seguimiento",
-    items: [{ href: "/tutor/mis-encuestas", label: "Evaluaciones en vivo", icon: ClipboardList }],
+    items: [
+      { href: "/tutor/mis-encuestas", label: "Evaluaciones en vivo", icon: ClipboardList },
+      { href: "/encuestas", label: "Encuestas", icon: ClipboardList },
+    ],
   },
   {
     label: "Explorar",

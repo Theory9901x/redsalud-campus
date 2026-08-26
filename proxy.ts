@@ -92,6 +92,10 @@ export const config = {
     "/mis-capacitaciones/:path*",
     "/mis-certificados/:path*",
     "/evaluaciones/:path*",
+    // El módulo de encuestas lo ven los tres roles, cada uno con su alcance.
+    // El enlace público (/e/:slug) queda deliberadamente FUERA: se responde
+    // sin cuenta.
+    "/encuestas/:path*",
     "/cambiar-contrasena",
     "/login",
     "/registro",

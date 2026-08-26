@@ -45,6 +45,7 @@ const ENTIDAD_LABELS: Record<string, string> = {
   TrainingActivity: "Jornada de capacitación",
   Notification: "Notificación",
   Settings: "Configuración",
+  Survey: "Encuesta",
 };
 
 export default async function BitacoraPage({

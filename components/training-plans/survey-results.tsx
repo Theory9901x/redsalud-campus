@@ -11,7 +11,7 @@ function QuestionResultCard({ result }: { result: SurveyQuestionResult }) {
 
       {(result.type === "SINGLE_CHOICE" || result.type === "MULTIPLE_CHOICE") && (
         <div className="space-y-2">
-          {result.options.map((option) => {
+          {(result.options ?? []).map((option) => {
             const pct = result.totalAnswers > 0 ? Math.round((option.count / result.totalAnswers) * 100) : 0;
             return (
               <div key={option.text} className="space-y-1">
@@ -32,7 +32,7 @@ function QuestionResultCard({ result }: { result: SurveyQuestionResult }) {
             Promedio: <span className="font-bold text-foreground">{result.average ?? "—"}</span>
           </p>
           <div className="flex flex-wrap gap-3">
-            {result.distribution.map((d) => (
+            {(result.distribution ?? []).map((d) => (
               <div key={d.value} className="rounded-lg bg-muted px-3 py-1.5 text-center text-xs">
                 <p className="font-bold text-foreground">{d.value}</p>
                 <p className="text-muted-foreground">{d.count}</p>
@@ -43,11 +43,11 @@ function QuestionResultCard({ result }: { result: SurveyQuestionResult }) {
       )}
 
       {result.type === "TEXT" &&
-        (result.texts.length === 0 ? (
+        ((result.texts ?? []).length === 0 ? (
           <p className="text-sm text-muted-foreground">Sin respuestas de texto todavía.</p>
         ) : (
           <ul className="space-y-1.5">
-            {result.texts.map((text, i) => (
+            {(result.texts ?? []).map((text, i) => (
               <li key={i} className="rounded-lg bg-muted px-3 py-2 text-sm text-foreground">
                 “{text}”
               </li>

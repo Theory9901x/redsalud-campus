@@ -1019,88 +1019,199 @@ model CallConnectionLog {
 }
 
 // ------------------------------------------------------------------
-// Etapa 4: encuestas de opinión (detección de necesidades / evaluación
-// post-capacitación). Distinto de Quiz: sin nota de aprobación, sin
-// intentos, una sola respuesta por usuario. Solo responden usuarios de la
-// plataforma con sesión iniciada (sin enlace público) — población fija y
-// verificable.
+// MÓDULO DE ENCUESTAS
+//
+// Sustituye al modelo plano de la Etapa 4 (cuatro tipos de pregunta, sin
+// páginas y solo para gente con sesión). Aquel nunca llegó a usarse -cero
+// filas- y se quedaba corto para lo que la entidad necesita: encuestas de
+// satisfacción abiertas a la comunidad, evaluaciones de conocimiento con
+// clave de respuesta, y material de apoyo embebido dentro del formulario.
+//
+// Tres decisiones de fondo:
+//
+//  1. PÁGINAS (bloques). Una encuesta se recorre por pasos, no como una
+//     lista interminable: cada bloque agrupa sus preguntas y puede llevar
+//     su propio material (las diapositivas de la guía que se está
+//     evaluando). Es también la unidad de puntaje: "Manejo de IVU: 68/80".
+//
+//  2. CONFIGURACIÓN EN JSON por pregunta, en vez de una columna por
+//     variante. Las opciones, la escala, la clave de respuesta y los puntos
+//     viven en `config`; así un tipo nuevo no obliga a migrar la tabla, que
+//     es justo lo que dejó clavado al modelo anterior en cuatro tipos.
+//
+//  3. ENLACE PÚBLICO con `slug`. Una encuesta de satisfacción dirigida a la
+//     comunidad no puede exigir cuenta institucional. `requireLogin`
+//     decide caso por caso, y la respuesta queda igual de almacenada.
 // ------------------------------------------------------------------
 
+enum SurveyStatus {
+  DRAFT // se está construyendo: no admite respuestas
+  PUBLISHED // enlace vivo
+  CLOSED // ya no recibe respuestas; los resultados quedan para consulta
+}
+
+/** A quién va dirigida: define si el enlace público tiene sentido y con qué alcance. */
+enum SurveyAudience {
+  INTERNO // personal de la entidad
+  EXTERNO // comunidad, usuarios, proveedores
+  MIXTA
+}
+
 enum SurveyQuestionType {
+  SHORT_TEXT
+  LONG_TEXT
   SINGLE_CHOICE
   MULTIPLE_CHOICE
-  SCALE // escala Likert 1..N (scaleMin/scaleMax en la pregunta)
-  TEXT
+  YES_NO
+  SCALE // Likert; el rango va en config
+  NUMBER
+  DATE
+  IMAGE_CHOICE // opciones con imagen
+  MATCHING // relacionar elementos con grupos
 }
 
 model Survey {
-  id   String  @id @default(cuid())
+  id   String @id @default(cuid())
+  /** Consecutivo legible para citarla en actas: ENC-2026-0001. */
+  code String @unique
+  /** Identificador del enlace público. Corto e impredecible: va en un QR. */
+  slug String @unique
+
   title       String
   description String?
+  /** Portada del formulario público. */
+  coverImageUrl String?
+  /** Acento del formulario público, para que cada encuesta tenga identidad propia. */
+  themeColor    String?
+  /** Minutos aproximados, para anunciarlos antes de empezar. */
+  estimatedMinutes Int?
 
-  trainingPlanId     String
-  trainingPlan       TrainingPlan      @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
-  trainingActivityId String? // si se asigna: encuesta de esa jornada puntual ("participantes de la actividad"); si no, del plan en general
+  audience   SurveyAudience @default(INTERNO)
+  status     SurveyStatus   @default(DRAFT)
+  /** Plantilla reutilizable: no se responde, se duplica. */
+  isTemplate Boolean        @default(false)
+
+  // ---- Modularización por capacitación -------------------------------
+  // Una encuesta puede colgar de un plan, de una jornada concreta, o de
+  // ninguno de los dos (encuesta institucional suelta). Es lo que permite
+  // medir satisfacción y adherencia POR capacitación sin mezclarlas.
+  trainingPlanId     String?
+  trainingPlan       TrainingPlan?     @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+  trainingActivityId String?
   trainingActivity   TrainingActivity? @relation(fields: [trainingActivityId], references: [id], onDelete: Cascade)
 
-  // Audiencia objetivo (Etapa 3, mismo mecanismo): dependencia + tipo de personal.
-  // targetDepartment null = todo el personal, cualquier área.
+  // ---- Alcance dentro del personal (solo aplica a las internas) -------
   targetDepartment String?
   targetAudience   CourseAudience @default(AMBOS)
+
+  /** Exigir sesión aunque el enlace sea público (encuestas nominales). */
+  requireLogin           Boolean @default(false)
+  /** Permitir responder varias veces desde el mismo enlace. */
+  allowMultipleResponses Boolean @default(false)
+  /** Mostrar el puntaje al terminar (evaluaciones de conocimiento). */
+  showScoreToRespondent  Boolean @default(false)
+  thankYouMessage        String?
+
+  opensAt     DateTime?
+  closesAt    DateTime?
+  publishedAt DateTime?
+  closedAt    DateTime?
 
   createdBy String
   creator   User     @relation("SurveyCreatedBy", fields: [createdBy], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  questions SurveyQuestion[]
+  pages     SurveyPage[]
   responses SurveyResponse[]
 
   @@index([trainingPlanId])
   @@index([trainingActivityId])
+  @@index([status])
 }
 
-model SurveyQuestion {
-  id         String             @id @default(cuid())
-  surveyId   String
-  survey     Survey             @relation(fields: [surveyId], references: [id], onDelete: Cascade)
-  type       SurveyQuestionType
-  statement  String
-  isRequired Boolean            @default(true)
-  scaleMin   Int?               @default(1) // solo type = SCALE
-  scaleMax   Int?               @default(5) // solo type = SCALE
-  sortOrder  Int
+/** Un bloque del recorrido: "Paso 2 de 5". Unidad de agrupación y de puntaje. */
+model SurveyPage {
+  id       String @id @default(cuid())
+  surveyId String
+  survey   Survey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
 
-  options SurveyQuestionOption[]
-  answers SurveyAnswer[]
+  sortOrder   Int
+  title       String
+  description String?
+  /**
+   * Material de apoyo del bloque: la presentación o la guía que se está
+   * evaluando, embebida DENTRO del formulario. Sin esto, quien responde
+   * tiene que buscar el documento por fuera y la mitad no lo hace.
+   */
+  attachmentUrl  String?
+  attachmentName String?
+
+  questions SurveyQuestion[]
 
   @@unique([surveyId, sortOrder])
 }
 
-model SurveyQuestionOption {
-  id         String         @id @default(cuid())
-  questionId String
-  question   SurveyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  text       String
-  sortOrder  Int
+model SurveyQuestion {
+  id     String @id @default(cuid())
+  pageId String
+  page   SurveyPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
-  selectedIn SurveyAnswerOption[]
+  sortOrder   Int
+  type        SurveyQuestionType
+  prompt      String
+  description String?
+  imageUrl    String?
+  isRequired  Boolean            @default(true)
 
-  @@unique([questionId, sortOrder])
-}
-
-/** Una fila por usuario por encuesta: garantiza una sola respuesta (no hay "intentos"). */
-model SurveyResponse {
-  id          String   @id @default(cuid())
-  surveyId    String
-  survey      Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation("SurveyRespondedBy", fields: [userId], references: [id], onDelete: Cascade)
-  submittedAt DateTime @default(now())
+  /**
+   * Todo lo que depende del tipo: `options` (con su id y texto), `scaleMin`
+   * y `scaleMax`, `correctOptionId` y `points` cuando la pregunta califica,
+   * los grupos de una de relacionar.
+   *
+   * Una pregunta entra al puntaje SOLO si trae `correctOptionId`. Nunca se
+   * asume una respuesta correcta por defecto: una pregunta sin clave se
+   * queda fuera del cálculo en vez de adivinarla.
+   */
+  config Json?
 
   answers SurveyAnswer[]
 
-  @@unique([surveyId, userId])
+  @@unique([pageId, sortOrder])
+}
+
+model SurveyResponse {
+  id       String @id @default(cuid())
+  surveyId String
+  survey   Survey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+
+  /** Null cuando se respondió por el enlace público sin sesión. */
+  userId String?
+  user   User?   @relation("SurveyRespondedBy", fields: [userId], references: [id], onDelete: SetNull)
+  /** Nombre declarado por quien responde sin cuenta. */
+  respondentName String?
+
+  /**
+   * Una respuesta empieza al abrir el formulario y se marca completa al
+   * enviarla. Guardar las incompletas es deliberado: la tasa de abandono
+   * -cuánta gente empieza y no termina- dice tanto como el resultado.
+   */
+  completed   Boolean   @default(false)
+  startedAt   DateTime  @default(now())
+  submittedAt DateTime?
+
+  /** Puntaje congelado al enviar, cuando la encuesta tiene clave de respuesta. */
+  scorePercent  Int?
+  scoreEarned   Int?
+  scorePossible Int?
+
+  /** "publico" | "plataforma": por dónde entró. */
+  channel String?
+
+  answers SurveyAnswer[]
+
+  @@index([surveyId])
+  @@index([userId])
 }
 
 model SurveyAnswer {
@@ -1109,23 +1220,15 @@ model SurveyAnswer {
   response   SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
   questionId String
   question   SurveyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  textValue  String? // type = TEXT
-  scaleValue Int? // type = SCALE
 
-  selectedOptions SurveyAnswerOption[] // type = SINGLE_CHOICE / MULTIPLE_CHOICE
+  /** Valor tipado según la pregunta: ids elegidos, número, fecha, pares de relación. */
+  value     Json?
+  /** Texto libre, aparte del JSON, para poder buscarlo y exportarlo directo. */
+  textValue String?
 
   @@unique([responseId, questionId])
 }
 
-model SurveyAnswerOption {
-  id       String               @id @default(cuid())
-  answerId String
-  answer   SurveyAnswer         @relation(fields: [answerId], references: [id], onDelete: Cascade)
-  optionId String
-  option   SurveyQuestionOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
-
-  @@unique([answerId, optionId])
-}
 
 // ------------------------------------------------------------------
 // Recuperación de contraseña por código enviado al correo

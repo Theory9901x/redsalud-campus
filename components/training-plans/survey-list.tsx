@@ -7,7 +7,9 @@ export type SurveyListItem = {
   title: string;
   trainingActivity: { id: string; title: string } | null;
   targetCount: number;
-  _count: { responses: number; questions: number };
+  /** Total de preguntas, sumadas de todas las páginas de la encuesta. */
+  preguntas: number;
+  _count: { responses: number };
 };
 
 export function SurveyList({
@@ -44,7 +46,7 @@ export function SurveyList({
           <div className="min-w-0 space-y-1">
             <p className="font-display text-sm font-bold text-foreground">{survey.title}</p>
             <p className="text-xs text-muted-foreground">
-              {survey._count.questions} {survey._count.questions === 1 ? "pregunta" : "preguntas"}
+              {survey.preguntas} {survey.preguntas === 1 ? "pregunta" : "preguntas"}
               {showActivityScope && (
                 <> · {survey.trainingActivity ? `Actividad: ${survey.trainingActivity.title}` : "General del plan"}</>
               )}

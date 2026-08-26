@@ -136,6 +136,9 @@ export async function requireSurveyAccess(surveyId: string) {
     return { session, planId: survey.trainingPlanId };
   }
 
+  // Una encuesta institucional puede no colgar de ningún plan: en ese caso
+  // no hay adscripción que verificar y solo el administrador llega aquí.
+  if (!survey.trainingPlanId) throw new Error("No autorizado: encuesta sin plan adscrito.");
   await requireTrainingPlanAccess(survey.trainingPlanId);
   return { session, planId: survey.trainingPlanId };
 }

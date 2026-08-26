@@ -238,7 +238,7 @@ export default async function EvaluacionesPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-display text-sm font-bold text-foreground">{survey.title}</p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {survey.trainingActivity ? survey.trainingActivity.title : survey.trainingPlan.title}
+                        {survey.trainingActivity?.title ?? survey.trainingPlan?.title ?? "Encuesta institucional"}
                       </p>
                     </div>
                     <CircleCheck className="h-5 w-5 shrink-0 text-success" strokeWidth={1.7} aria-hidden="true" />

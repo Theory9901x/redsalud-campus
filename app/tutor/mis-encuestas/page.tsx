@@ -335,7 +335,7 @@ export default async function TutorMisEncuestasPage() {
                           {e.ultimasRespuestas.map((r, i) => (
                             <li key={i} className="flex items-center justify-between gap-2 text-xs">
                               <span className="truncate font-medium text-foreground">{r.fullName}</span>
-                              <span className="shrink-0 text-muted-foreground">{hace(r.fecha, ahora)}</span>
+                              {r.fecha && <span className="shrink-0 text-muted-foreground">{hace(r.fecha, ahora)}</span>}
                             </li>
                           ))}
                         </ul>

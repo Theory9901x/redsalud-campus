@@ -153,7 +153,7 @@ export async function getTrainingDashboardData(role: Role, userId: string) {
       return {
         id: survey.id,
         title: survey.title,
-        scope: survey.trainingActivity ? survey.trainingActivity.title : survey.trainingPlan.title,
+        scope: survey.trainingActivity ? survey.trainingActivity.title : survey.trainingPlan?.title ?? "—",
         planId: survey.trainingPlanId,
         targetCount,
         respondedCount,

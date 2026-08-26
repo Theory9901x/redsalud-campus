@@ -37,7 +37,7 @@ export type EvaluacionCiclo = {
 export type EncuestaPendiente = {
   id: string;
   title: string;
-  trainingPlan: { title: string };
+  trainingPlan: { title: string } | null;
   trainingActivity: { title: string; area: { name: string; tutor: { fullName: string } | null } | null } | null;
   _count: { questions: number };
 };
@@ -133,7 +133,7 @@ function armarTarjetas(evaluaciones: EvaluacionCiclo[], encuestas: EncuestaPendi
     area: e.trainingActivity?.area?.name ?? "Plan general",
     titulo: e.title,
     descripcion: DESCRIPCIONES.ENCUESTA,
-    planTitle: e.trainingPlan.title,
+    planTitle: e.trainingPlan?.title ?? "Encuesta institucional",
     tutorName: e.trainingActivity?.area?.tutor?.fullName ?? null,
     meta: [
       {

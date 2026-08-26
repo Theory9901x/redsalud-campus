@@ -18,6 +18,7 @@ const GRUPOS: GrupoNav[] = [
       { href: "/mis-certificados", label: "Mis certificados", icon: Award },
       { href: "/mis-capacitaciones", label: "Mis capacitaciones", icon: CalendarRange },
       { href: "/evaluaciones", label: "Evaluaciones", icon: ClipboardList },
+      { href: "/encuestas", label: "Mis encuestas", icon: ClipboardList },
     ],
   },
   {

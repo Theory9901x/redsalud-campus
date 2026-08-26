@@ -854,26 +854,35 @@ export async function getTutorEncuestasEnVivo(tutorUserId: string) {
       title: true,
       trainingPlanId: true,
       trainingActivity: { select: { title: true } },
-      _count: { select: { questions: true, responses: true } },
+      // Las preguntas ahora cuelgan de las páginas: se cuentan sumando las de
+      // cada una, no con un _count directo sobre la encuesta.
+      pages: { select: { _count: { select: { questions: true } } } },
+      _count: { select: { responses: true } },
       responses: {
+        where: { completed: true },
         orderBy: { submittedAt: "desc" },
         take: 5,
-        select: { submittedAt: true, user: { select: { fullName: true } } },
+        select: { submittedAt: true, respondentName: true, user: { select: { fullName: true } } },
       },
     },
     orderBy: { createdAt: "desc" },
   });
 
   return encuestas
-    .filter((e) => e._count.questions > 0)
+    .map((e) => ({ ...e, totalPreguntas: e.pages.reduce((s, p) => s + p._count.questions, 0) }))
+    .filter((e) => e.totalPreguntas > 0)
     .map((e) => ({
       id: e.id,
-      planId: e.trainingPlanId,
+      planId: e.trainingPlanId ?? "",
       titulo: e.title,
       actividad: e.trainingActivity?.title ?? null,
-      totalPreguntas: e._count.questions,
+      totalPreguntas: e.totalPreguntas,
       totalRespuestas: e._count.responses,
-      ultimasRespuestas: e.responses.map((r) => ({ fullName: r.user.fullName, fecha: r.submittedAt })),
+      ultimasRespuestas: e.responses.map((r) => ({
+        // Sin cuenta -enlace público- se muestra el nombre declarado.
+        fullName: r.user?.fullName ?? r.respondentName ?? "Respuesta anónima",
+        fecha: r.submittedAt,
+      })),
     }));
 }
 
@@ -914,13 +923,17 @@ export async function getHistorialEvaluaciones(userId: string, limite = 8) {
       resultado: i.score,
       aprobado: i.passed,
     })),
-    ...respuestas.map((r) => ({
-      titulo: r.survey.title,
-      tipo: "ENCUESTA" as const,
-      fecha: r.submittedAt,
-      resultado: null,
-      aprobado: null,
-    })),
+    // Una respuesta completa siempre tiene fecha de envío; las incompletas
+    // no son historial, se descartan aquí en vez de inventarles una fecha.
+    ...respuestas
+      .filter((r): r is typeof r & { submittedAt: Date } => r.submittedAt !== null)
+      .map((r) => ({
+        titulo: r.survey.title,
+        tipo: "ENCUESTA" as const,
+        fecha: r.submittedAt,
+        resultado: null,
+        aprobado: null,
+      })),
   ];
 
   return filas.sort((a, b) => b.fecha.getTime() - a.fecha.getTime()).slice(0, limite);
