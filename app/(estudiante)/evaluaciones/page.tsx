@@ -3,21 +3,16 @@ import { requireSession } from "@/lib/auth-helpers";
 import {
   ClipboardCheck,
   CircleCheck,
-  ArrowRight,
+  CalendarClock,
   ShieldQuestion,
-  TrendingUp,
-  ClipboardList,
   History,
+  ArrowRight,
 } from "lucide-react";
-import { getSurveysForUser } from "@/lib/surveys";
-import {
-  getEvaluacionesCicloDisponibles,
-  getHistorialEvaluaciones,
-  getPromedioEvaluaciones,
-} from "@/lib/training-plans";
+import { getHistorialEvaluaciones, getPromedioEvaluaciones } from "@/lib/training-plans";
+import { getTableroEvaluaciones } from "@/lib/tablero-evaluaciones";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { EmptyState } from "@/components/brand/empty-state";
-import { EvaluacionesBoard } from "@/components/training-plans/evaluaciones-board";
+import { TableroEvaluaciones } from "@/components/training-plans/tablero-evaluaciones";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -49,53 +44,43 @@ export default async function EvaluacionesPage() {
   const userId = session.user.id;
   const primerNombre = session.user.name?.split(" ")[0];
 
-  const [{ pending, answered }, evaluaciones, historial, promedio] = await Promise.all([
-    getSurveysForUser(userId),
-    getEvaluacionesCicloDisponibles(userId, session.user.personnelType ?? null),
+  const [tablero, historial, promedio] = await Promise.all([
+    getTableroEvaluaciones(userId),
     getHistorialEvaluaciones(userId),
     getPromedioEvaluaciones(userId),
   ]);
+  void promedio; // el promedio vive ahora dentro de cada tarjeta del ciclo
 
-  const disponiblesAhora = evaluaciones.length + pending.length;
-  const presentadas = historial.filter((h) => h.tipo !== "ENCUESTA").length;
+  const disponiblesAhora = tablero.kpis.pendientes;
 
+  // FASE 10: los cuatro indicadores del rediseño.
   const KPIS = [
     {
-      valor: String(disponiblesAhora),
-      etiqueta: "Disponibles ahora",
+      valor: String(tablero.kpis.pendientes),
+      etiqueta: "Pendientes por presentar",
       icon: ClipboardCheck,
-      chip: "bg-primary/12 text-primary",
-      destacar: disponiblesAhora > 0,
-    },
-    {
-      valor: String(pending.length),
-      etiqueta: "Encuestas por responder",
-      icon: ShieldQuestion,
       chip: "bg-warning/18 text-warning-foreground",
+      destacar: tablero.kpis.pendientes > 0,
     },
     {
-      valor: String(presentadas + answered.length),
-      etiqueta: "Completadas",
+      valor: String(tablero.kpis.ciclosCompletos),
+      etiqueta: "Ciclos completos",
       icon: CircleCheck,
       chip: "bg-success/15 text-success",
     },
-    ...(promedio !== null
-      ? [
-          {
-            valor: `${promedio}%`,
-            etiqueta: "Promedio obtenido",
-            icon: TrendingUp,
-            chip: "bg-primary/12 text-primary",
-          },
-        ]
-      : [
-          {
-            valor: String(historial.length),
-            etiqueta: "En tu historial",
-            icon: History,
-            chip: "bg-primary/12 text-primary",
-          },
-        ]),
+    {
+      valor: String(tablero.kpis.encuestasPendientes),
+      etiqueta: "Encuestas pendientes",
+      icon: ShieldQuestion,
+      chip: "bg-primary/12 text-primary",
+    },
+    {
+      valor: String(tablero.kpis.proximasSesiones),
+      etiqueta: "Próximas sesiones presenciales",
+      icon: CalendarClock,
+      chip: "bg-primary/12 text-primary",
+      destacar: tablero.kpis.proximasSesiones > 0,
+    },
   ];
 
   return (
@@ -148,8 +133,8 @@ export default async function EvaluacionesPage() {
             </div>
           </section>
 
-          {/* Lo que se puede presentar ahora */}
-          <EvaluacionesBoard evaluaciones={evaluaciones} encuestas={pending} />
+          {/* FASE 10: navegación por CAPACITACIÓN y ciclo, no por examen suelto */}
+          <TableroEvaluaciones filas={tablero.filas} />
 
           {/* Historial */}
           <section aria-label="Historial de evaluaciones" className="space-y-5">
@@ -217,36 +202,6 @@ export default async function EvaluacionesPage() {
               </div>
             )}
           </section>
-
-          {/* Encuestas ya respondidas: constancia, no acción */}
-          {answered.length > 0 && (
-            <section aria-label="Encuestas respondidas" className="space-y-5">
-              <div>
-                <h2 className="font-display text-xl font-bold tracking-tight text-foreground sm:text-[21px]">
-                  Encuestas respondidas
-                </h2>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Quedan como constancia de tu participación; no requieren ninguna acción.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {answered.map((survey) => (
-                  <div key={survey.id} className="surface-lumen flex items-center gap-4 p-5">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
-                      <ClipboardList className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-display text-sm font-bold text-foreground">{survey.title}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {survey.trainingActivity?.title ?? survey.trainingPlan?.title ?? "Encuesta institucional"}
-                      </p>
-                    </div>
-                    <CircleCheck className="h-5 w-5 shrink-0 text-success" strokeWidth={1.7} aria-hidden="true" />
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
 
           {/* Salida hacia el plan, para quien no tiene nada pendiente */}
           {disponiblesAhora === 0 && (
