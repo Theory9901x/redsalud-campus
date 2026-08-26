@@ -1,4 +1,5 @@
-import { ClipboardList } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, ClipboardList } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { FormularioNuevaEncuesta } from "@/components/encuestas/formulario-nueva";
@@ -30,6 +31,14 @@ export default async function NuevaEncuestaPage() {
   return (
     <main className="canvas-vivo min-h-screen">
       <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6">
+        <Link
+          href="/encuestas"
+          className="mb-5 flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Encuestas
+        </Link>
+
         <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
           <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />
           Módulo de encuestas
