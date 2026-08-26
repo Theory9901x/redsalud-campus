@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import { saveTrainingActivityDocument } from "@/lib/storage";
+import { repararDuracionWebm } from "@/lib/webm-remux";
 
 /**
  * Recibe la GRABACIÓN de la jornada y la guarda como documento de la
@@ -33,6 +34,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ act
     return NextResponse.json({ error: "La grabación supera el tamaño máximo (1.5 GB)." }, { status: 413 });
   }
 
-  await saveTrainingActivityDocument(file, activityId, userId);
+  // MediaRecorder entrega el WebM sin duración ni índice de búsqueda: se
+  // repara aquí, una sola vez al archivar, para que quien revise la jornada
+  // vea cuánto dura y pueda saltar a un punto sin descargarla entera.
+  const reparado = await repararDuracionWebm(Buffer.from(await file.arrayBuffer()));
+  const archivo = new File([new Uint8Array(reparado)], file.name, { type: file.type });
+
+  await saveTrainingActivityDocument(archivo, activityId, userId);
   return NextResponse.json({ ok: true });
 }
