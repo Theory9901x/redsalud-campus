@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { estadoPresaber, estadoPostsaber, cicloEsAutomatico } from "@/lib/presaber-postsaber";
 import { ensureEnrollment, AVISO_POR_BLOQUEO } from "@/lib/training-plans";
+import { registrarAsistenciaSesion } from "@/lib/sesiones-presenciales";
 
 /**
  * Enlaces cortos y ESTABLES de cada capacitación del plan, pensados para
@@ -25,6 +26,11 @@ export async function GET(
   // Detrás del proxy (nginx) el origin de la petición es localhost:3200;
   // los redirects deben salir con el dominio público, no con el interno.
   const base = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
+  // FASE 10: cuando el enlace viene de la página de una sesión presencial
+  // (/s/<token> añade ?s=<token>), la FASE de esa sesión manda: presaber
+  // solo en fase PRESABER, postsaber solo en POSTSABER. Sin el parámetro,
+  // el comportamiento virtual queda exactamente como estaba.
+  const tokenSesion = new URL(request.url).searchParams.get("s");
 
   if (!["meet", "presaber", "postsaber"].includes(destino)) {
     return NextResponse.redirect(`${base}/mis-capacitaciones`);
@@ -81,9 +87,33 @@ export async function GET(
     return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}?aviso=${aviso}`);
   }
 
+  // ---- Gate por FASE de la sesión presencial (server-side) ---------------
+  let sesionPresencial: { id: string; fase: string } | null = null;
+  if (tokenSesion && (destino === "presaber" || destino === "postsaber")) {
+    sesionPresencial = await prisma.trainingSession.findUnique({
+      where: { tokenPublico: tokenSesion },
+      select: { id: true, fase: true },
+    });
+    const faseEsperada = destino === "presaber" ? "PRESABER" : "POSTSABER";
+    if (sesionPresencial && sesionPresencial.fase !== faseEsperada) {
+      // La fase la controla el tutor: pedir el postsaber en fase presaber
+      // (o cualquier otro salto) rebota a la página de la sesión, que
+      // muestra lo que SÍ está abierto en este momento.
+      return NextResponse.redirect(`${base}/s/${tokenSesion}`);
+    }
+  }
+
   const session = await auth();
   if (!session?.user) {
-    return NextResponse.redirect(`${base}/login?callbackUrl=${encodeURIComponent(`/c/${activityId}/${destino}`)}`);
+    const destinoConSesion = tokenSesion ? `/c/${activityId}/${destino}?s=${tokenSesion}` : `/c/${activityId}/${destino}`;
+    return NextResponse.redirect(`${base}/login?callbackUrl=${encodeURIComponent(destinoConSesion)}`);
+  }
+
+  // Entrar a la evaluación desde una sesión presencial registra la
+  // asistencia a ESA sesión si aún no estaba (regla de la Fase 10: quien
+  // llega directo al postsaber no se queda sin asistencia). Idempotente.
+  if (sesionPresencial) {
+    await registrarAsistenciaSesion(sesionPresencial.id, session.user.id, "QR").catch(() => null);
   }
 
   // Modo AUTOMÁTICO: el momento depende del recorrido de ESTA persona, así

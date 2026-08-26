@@ -345,6 +345,7 @@ export default async function TutorActividadDetallePage({
             onEnable={enableSessionAction}
             onClose={closeSessionAction}
             onDelete={deleteSessionAction}
+            vivoBaseUrl={`/tutor/planes-capacitacion/${id}/actividades/${activityId}/sesion`}
           />
         </div>
       </div>

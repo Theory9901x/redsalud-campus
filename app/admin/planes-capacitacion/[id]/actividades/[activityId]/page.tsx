@@ -336,6 +336,7 @@ export default async function AdminActividadDetallePage({
             onEnable={enableSessionAction}
             onClose={closeSessionAction}
             onDelete={deleteSessionAction}
+            vivoBaseUrl={`/admin/planes-capacitacion/${id}/actividades/${activityId}/sesion`}
           />
         </div>
       </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
-import { CalendarClock, MapPin, Link2, Users, PlayCircle, CheckCircle2 } from "lucide-react";
+import { CalendarClock, MapPin, Link2, Users, PlayCircle, CheckCircle2, Radio } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,11 +39,14 @@ export function TrainingSessionList({
   onEnable,
   onClose,
   onDelete,
+  vivoBaseUrl,
 }: {
   sessions: Sesion[];
   onEnable: (sessionId: string) => Promise<void>;
   onClose: (sessionId: string) => Promise<void>;
   onDelete: (sessionId: string) => Promise<{ error: string | null }>;
+  /** FASE 10: base de la vista en vivo de la sesión ("{basePath}/{plan}/actividades/{actividad}/sesion"). */
+  vivoBaseUrl?: string;
 }) {
   const [pendiente, iniciar] = useTransition();
 
@@ -107,6 +111,15 @@ export function TrainingSessionList({
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
+            {vivoBaseUrl && (
+              <Link
+                href={`${vivoBaseUrl}/${s.id}`}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary/10 px-3 text-[12px] font-bold text-primary transition-colors hover:bg-primary/15"
+              >
+                <Radio className="h-3.5 w-3.5" aria-hidden="true" />
+                Sesión en vivo
+              </Link>
+            )}
             {s.status === "DRAFT" && (
               <Button type="button" size="sm" variant="outline" disabled={pendiente} onClick={() => ejecutar(() => onEnable(s.id))} className="gap-1.5">
                 <PlayCircle className="h-3.5 w-3.5" aria-hidden="true" />

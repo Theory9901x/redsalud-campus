@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarRange, Lock } from "lucide-react";
+import { CalendarRange, Lock, MapPin, MonitorPlay } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
 import { deleteTrainingActivityAction } from "@/app/admin/planes-capacitacion/actions";
@@ -10,9 +10,10 @@ import {
   TRAINING_ACTIVITY_TYPE_ICONS,
   TRAINING_ACTIVITY_STATUS_LABELS,
   TRAINING_ACTIVITY_STATUS_CLASSES,
+  TRAINING_MODALITY_LABELS,
   etiquetaProgramacion,
 } from "@/components/training-plans/labels";
-import type { TrainingActivityStatus, TrainingActivityType, CourseAudience } from "@prisma/client";
+import type { TrainingActivityStatus, TrainingActivityType, CourseAudience, TrainingModality } from "@prisma/client";
 
 export type TrainingActivityTimelineItem = {
   id: string;
@@ -24,6 +25,8 @@ export type TrainingActivityTimelineItem = {
   targetAudience: CourseAudience;
   isRequired: boolean;
   status: TrainingActivityStatus;
+  /** FASE 10: toda actividad lleva su tag de modalidad visible. */
+  modality: TrainingModality;
   course: { id: string; title: string; slug: string } | null;
   area: { id: string; name: string; sortOrder: number } | null;
   programa: string | null;
@@ -181,6 +184,15 @@ export function TrainingActivityTimeline({
                           {activity.programa}
                         </span>
                       )}
+                      {/* FASE 10: la modalidad siempre visible, con su ícono. */}
+                      <span className="flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-accent-foreground">
+                        {activity.modality === "PRESENCIAL" ? (
+                          <MapPin className="h-3 w-3" />
+                        ) : (
+                          <MonitorPlay className="h-3 w-3" />
+                        )}
+                        {TRAINING_MODALITY_LABELS[activity.modality]}
+                      </span>
                       {activity.isRequired && (
                         <span className="flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
                           <Lock className="h-3 w-3" />
