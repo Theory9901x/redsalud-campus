@@ -17,11 +17,26 @@ import { TRAINING_MODALITY_LABELS } from "@/components/training-plans/labels";
 import type { AccionTablero, FilaTablero, PasoCiclo } from "@/lib/tablero-evaluaciones";
 import type { TrainingModality } from "@prisma/client";
 
-type Agrupacion = "area" | "trimestre" | "cronologico" | "modalidad";
+type Agrupacion = "area" | "pendiente" | "trimestre" | "cronologico" | "modalidad";
 type FiltroTipo = "todas" | "presaber" | "postsaber" | "encuesta";
 type FiltroEstado = "todos" | "pendiente" | "en-curso" | "completada";
 
 const ROMANO = ["I", "II", "III", "IV"];
+
+/**
+ * Categoría de la lista "Por pendiente": lo primero que la persona tiene
+ * DISPONIBLE ahora mismo; si no hay nada, si el ciclo está completo o al día.
+ */
+function categoriaPendiente(f: FilaTablero): { clave: string; titulo: string; orden: number } {
+  const disponible = f.pasos.find((p) => p.estado === "disponible");
+  if (disponible?.clave === "presaber") return { clave: "presaber", titulo: "Presaber por presentar", orden: 1 };
+  if (disponible?.clave === "postsaber") return { clave: "postsaber", titulo: "Postsaber por presentar", orden: 2 };
+  if (disponible?.clave === "encuesta") return { clave: "encuesta", titulo: "Encuesta por responder", orden: 3 };
+  if (disponible?.clave === "capacitacion")
+    return { clave: "en-curso", titulo: "Capacitación en curso", orden: 4 };
+  if (f.cicloCompleto) return { clave: "completas", titulo: "Ciclo completo · consulta", orden: 5 };
+  return { clave: "al-dia", titulo: "Al día por ahora", orden: 6 };
+}
 
 /**
  * FASE 10 — Tablero de /evaluaciones: la unidad es la CAPACITACIÓN con su
@@ -71,7 +86,9 @@ export function TableroEvaluaciones({ filas }: { filas: FilaTablero[] }) {
       const claves =
         agrupacion === "area"
           ? [{ clave: f.area, titulo: f.area, orden: f.areaOrden }]
-          : agrupacion === "modalidad"
+          : agrupacion === "pendiente"
+            ? [categoriaPendiente(f)]
+            : agrupacion === "modalidad"
             ? [{ clave: f.modalidad, titulo: TRAINING_MODALITY_LABELS[f.modalidad], orden: 0 }]
             : (f.trimestres.length > 0 ? f.trimestres : [0]).map((t) => ({
                 clave: `T${t}`,
@@ -113,6 +130,7 @@ export function TableroEvaluaciones({ filas }: { filas: FilaTablero[] }) {
             {(
               [
                 { valor: "area", etiqueta: "Por área" },
+                { valor: "pendiente", etiqueta: "Por pendiente" },
                 { valor: "trimestre", etiqueta: "Por trimestre" },
                 { valor: "cronologico", etiqueta: "Cronológico" },
                 { valor: "modalidad", etiqueta: "Por modalidad" },
