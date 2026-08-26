@@ -42,6 +42,11 @@ npx prisma generate >/dev/null
 
 echo "▸ compilando (la aplicación sigue en línea)"
 rm -rf "$nuevo"
+# Los tipos generados de la build ANTERIOR referencian las rutas de aquel
+# momento: si este despliegue ELIMINA una página, el typecheck del build
+# nuevo tropieza con ese validator viejo. Son artefactos de compilación, no
+# de ejecución: borrarlos no toca al servidor que sigue sirviendo.
+rm -rf "$activo/types"
 NEXT_DIST_DIR="$nuevo" nice -n 19 npm run build
 
 # A partir de aquí el build nuevo está completo: el reinicio es lo único que
