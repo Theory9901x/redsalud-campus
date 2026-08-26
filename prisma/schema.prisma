@@ -1155,6 +1155,13 @@ model Survey {
   status     SurveyStatus   @default(DRAFT)
   /** Plantilla reutilizable: no se responde, se duplica. */
   isTemplate Boolean        @default(false)
+  /**
+   * Encuesta de satisfacción FIJA: el modelo institucional que se clona y
+   * publica automáticamente para cada capacitación al cerrar su jornada.
+   * Solo debería haber una con la marca; se sobreescribe cuando Talento
+   * Humano entregue el modelo definitivo.
+   */
+  esSatisfaccionFija Boolean @default(false)
 
   // ---- Modularización por capacitación -------------------------------
   // Una encuesta puede colgar de un plan, de una jornada concreta, o de

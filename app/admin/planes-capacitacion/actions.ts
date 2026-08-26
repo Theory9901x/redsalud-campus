@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { desplegarEncuestaSatisfaccion } from "@/lib/encuestas/satisfaccion";
 import { requireTutorOrAdmin, requireTrainingPlanAccess, requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import { saveTrainingPlanDocument, saveTrainingActivityDocument } from "@/lib/storage";
 import { trainingPlanSchema, trainingActivitySchema, trainingSessionSchema } from "@/lib/validations/training-plan";
@@ -345,6 +346,15 @@ export async function closeActivityAction(basePath: string, planId: string, acti
     await freezeActivityReport(activityId);
   } catch (error) {
     console.error(`No se pudo congelar el informe de la jornada ${activityId}:`, error);
+  }
+
+  // Al cerrar la jornada se despliega su encuesta de satisfacción (copia
+  // del modelo institucional fijo, ya publicada). Mejor esfuerzo, igual que
+  // el informe: si falla, el cierre no se pierde y se puede crear a mano.
+  try {
+    await desplegarEncuestaSatisfaccion(activityId);
+  } catch (error) {
+    console.error(`No se pudo desplegar la encuesta de satisfacción de la jornada ${activityId}:`, error);
   }
 
   revalidatePath(`${basePath}/${planId}`);

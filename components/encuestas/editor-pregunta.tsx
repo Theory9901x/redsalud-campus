@@ -69,6 +69,7 @@ export function EditorPregunta({
   const [grupos, setGrupos] = useState(inicial.grupos ?? []);
   const [escalaMin, setEscalaMin] = useState(inicial.escalaMin ?? 1);
   const [escalaMax, setEscalaMax] = useState(inicial.escalaMax ?? 5);
+  const [escalaEstilo, setEscalaEstilo] = useState<"numeros" | "estrellas">(inicial.escalaEstilo ?? "numeros");
   const [etiquetaMin, setEtiquetaMin] = useState(inicial.etiquetaMin ?? "");
   const [etiquetaMax, setEtiquetaMax] = useState(inicial.etiquetaMax ?? "");
   const [clave, setClave] = useState(inicial.opcionCorrectaId ?? "");
@@ -86,6 +87,7 @@ export function EditorPregunta({
     if (tipo === "SCALE") {
       config.escalaMin = escalaMin;
       config.escalaMax = escalaMax;
+      config.escalaEstilo = escalaEstilo;
       if (etiquetaMin.trim()) config.etiquetaMin = etiquetaMin.trim();
       if (etiquetaMax.trim()) config.etiquetaMax = etiquetaMax.trim();
     }
@@ -209,6 +211,29 @@ export function EditorPregunta({
 
           {tipo === "SCALE" && (
             <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 space-y-1.5">
+                <label className="text-[12.5px] font-semibold text-foreground">Presentación</label>
+                <div className="flex gap-2">
+                  {([
+                    { valor: "numeros", etiqueta: "Números" },
+                    { valor: "estrellas", etiqueta: "Estrellas" },
+                  ] as const).map((o) => (
+                    <button
+                      key={o.valor}
+                      type="button"
+                      onClick={() => setEscalaEstilo(o.valor)}
+                      className={cn(
+                        "rounded-xl border px-4 py-2 text-[12.5px] font-semibold transition-colors",
+                        escalaEstilo === o.valor
+                          ? "border-primary/50 bg-primary/10 text-primary"
+                          : "border-border/60 bg-card/70 text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {o.etiqueta}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="space-y-1.5">
                 <label className="text-[12.5px] font-semibold text-foreground">Rango</label>
                 <div className="flex items-center gap-2">

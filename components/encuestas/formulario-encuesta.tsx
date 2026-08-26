@@ -471,6 +471,54 @@ function CampoRespuesta({
       const min = config.escalaMin ?? 1;
       const max = config.escalaMax ?? 5;
       const elegido = valor?.tipo === "escala" ? valor.valor : null;
+
+      // Puntuación por estrellas: mismas respuestas (un número del rango),
+      // otra presentación. Las estrellas se llenan hasta la elegida.
+      if (config.escalaEstilo === "estrellas") {
+        return (
+          <div>
+            <div className="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="Puntuación por estrellas">
+              {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((n) => {
+                const llena = elegido !== null && n <= elegido;
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    role="radio"
+                    aria-checked={elegido === n}
+                    aria-label={`${n} de ${max}`}
+                    onClick={() => onResponder({ tipo: "escala", valor: n })}
+                    className="rounded-lg p-1 transition-transform hover:scale-110 focus-visible:outline focus-visible:outline-2"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-10 w-10"
+                      fill={llena ? acento : "none"}
+                      stroke={llena ? acento : "var(--muted-foreground)"}
+                      strokeWidth={llena ? 0 : 1.6}
+                      aria-hidden="true"
+                    >
+                      <path d="M12 2.6l2.9 6.03 6.6.87-4.85 4.6 1.23 6.55L12 17.5l-5.88 3.15 1.23-6.55L2.5 9.5l6.6-.87L12 2.6z" />
+                    </svg>
+                  </button>
+                );
+              })}
+              {elegido !== null && (
+                <span className="ml-2 text-[14px] font-bold tabular-nums" style={{ color: acento }}>
+                  {elegido}/{max}
+                </span>
+              )}
+            </div>
+            {(config.etiquetaMin || config.etiquetaMax) && (
+              <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
+                <span>{config.etiquetaMin}</span>
+                <span>{config.etiquetaMax}</span>
+              </div>
+            )}
+          </div>
+        );
+      }
+
       return (
         <div>
           <div className="flex flex-wrap gap-2">

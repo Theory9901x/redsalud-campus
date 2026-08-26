@@ -31,6 +31,8 @@ export type ConfigPregunta = {
   /** SCALE */
   escalaMin?: number;
   escalaMax?: number;
+  /** Presentación: botones numéricos (defecto) o puntuación por estrellas. */
+  escalaEstilo?: "numeros" | "estrellas";
   etiquetaMin?: string;
   etiquetaMax?: string;
 
