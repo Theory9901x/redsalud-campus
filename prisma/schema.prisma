@@ -161,6 +161,7 @@ model User {
   trainingAttendances TrainingAttendance[] @relation("TrainingAttendanceUser")
   trainingAttendancesRegistered TrainingAttendance[] @relation("TrainingAttendanceRegisteredBy")
   callConnections     CallConnectionLog[]
+  asistenciasSesion   AsistenciaSesion[]  @relation("AsistenciaSesionUser")
   surveysCreated  Survey[]         @relation("SurveyCreatedBy")
   surveyResponses SurveyResponse[] @relation("SurveyRespondedBy")
 
@@ -810,7 +811,9 @@ model TrainingActivity {
   programa   String?
   objective  String? // "Objetivo" del Excel
   methodology String? // "Metodología": texto completo, incluida la distribución por trimestre
-  modality   TrainingModality?
+  // Obligatoria desde la Fase 10: toda actividad lleva su tag de modalidad
+  // visible. MIXTA se conserva -38 de las 59 líneas reales del PIC lo son-.
+  modality   TrainingModality @default(VIRTUAL)
   /**
    * "Dirigido A" en las palabras del PIC ("Vacunadores y auxiliares de
    * enfermería de APS"). Se conserva literal porque es mucho más específico
@@ -878,6 +881,24 @@ model TrainingActivity {
  * asistencia. Meter la fecha en la actividad obligaría a duplicar la línea
  * del plan una vez por ejecución y a perder el vínculo con el PIC.
  */
+/**
+ * FASE 10 — Sesión presencial con fases en vivo.
+ *
+ * La sesión ya existía (TrainingSession, con fecha, lugar, municipio y
+ * cupo); lo que la Fase 10 agrega es la MÁQUINA DE FASES que el tutor
+ * controla durante la jornada y el token del enlace público /s/[token]. Se
+ * extiende el modelo real en vez de crear un "SesionPresencial" paralelo:
+ * dos modelos de sesión conviviendo habría sido la fuente segura de
+ * jornadas a medio camino entre uno y otro.
+ */
+enum FaseSesion {
+  REGISTRO // se registra asistencia con el QR
+  PRESABER
+  CAPACITACION // en curso: pantalla informativa
+  POSTSABER
+  CERRADA
+}
+
 model TrainingSession {
   id         String           @id @default(cuid())
   activityId String
@@ -891,17 +912,61 @@ model TrainingSession {
   location   String?
   meetingUrl String?
   capacity   Int?
+  /** Nombre del ponente o facilitador, tal como se anuncia en el auditorio. */
+  facilitador String?
 
   municipioId String?
   municipio   Municipio? @relation(fields: [municipioId], references: [id])
 
   status TrainingActivityStatus @default(DRAFT)
 
+  /**
+   * Fase EN VIVO de la sesión presencial, controlada solo por el tutor o el
+   * administrador: el mismo QR cambia de comportamiento según la fase, así
+   * que un solo cartel impreso sirve toda la jornada.
+   */
+  fase FaseSesion @default(REGISTRO)
+  /** Identificador del enlace público /s/[token]: impredecible, va en el QR. */
+  tokenPublico String @unique @default(cuid())
+  /**
+   * Totales congelados al CERRAR la sesión (asistentes, presaber, postsaber,
+   * adherencia): el informe de una jornada que ya pasó no debe moverse
+   * porque después se toquen registros. Mismo principio del acta congelada
+   * de la actividad.
+   */
+  cierreSnapshot Json?
+  cerradaEl      DateTime?
+
+  asistencias AsistenciaSesion[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([activityId])
   @@index([startsAt])
+}
+
+/**
+ * Asistencia a UNA sesión presencial concreta (a diferencia de
+ * TrainingAttendance, que es por actividad y sigue intacta para lo
+ * virtual). Resuelve la limitación conocida de "asistencia solo con curso":
+ * una sesión presencial registra asistencia aunque la actividad no tenga
+ * curso enganchado.
+ */
+model AsistenciaSesion {
+  id       String          @id @default(cuid())
+  sesionId String
+  sesion   TrainingSession @relation(fields: [sesionId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User            @relation("AsistenciaSesionUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  registradaEn DateTime @default(now())
+  /** "QR" cuando la persona escaneó; "MANUAL" cuando la registró el tutor. */
+  medio String @default("QR")
+
+  // Doble escaneo no duplica: la restricción es la idempotencia.
+  @@unique([sesionId, userId])
+  @@index([sesionId])
 }
 
 /**

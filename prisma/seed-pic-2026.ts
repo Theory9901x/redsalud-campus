@@ -131,7 +131,7 @@ async function main() {
         status: "DRAFT",
         objective: a.objetivo,
         methodology: a.metodologia,
-        modality: derivarModalidad(a.modalidades),
+        modality: derivarModalidad(a.modalidades) ?? "VIRTUAL",
         expectedAttendeesNote: a.cupoTexto,
         expectedAttendees: a.cupo,
         responsibleLabel: a.responsable,
