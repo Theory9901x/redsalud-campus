@@ -36,7 +36,7 @@ export default async function MiResultadoPage({ params }: { params: Promise<{ id
   const muestraPuntaje = respuesta.survey.showScoreToRespondent && respuesta.scorePercent !== null;
 
   return (
-    <main className="canvas-vivo min-h-screen">
+    <div>
       <div className="mx-auto w-full max-w-xl px-4 py-10 sm:px-6">
         <Link
           href="/encuestas"
@@ -93,6 +93,6 @@ export default async function MiResultadoPage({ params }: { params: Promise<{ id
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

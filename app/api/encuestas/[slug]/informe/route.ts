@@ -28,7 +28,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   const datos = await getResultadosEncuesta(id);
   if (!datos) return NextResponse.json({ error: "Encuesta no encontrada." }, { status: 404 });
 
-  const pdf = await renderInformeEncuestaPdf(datos, generatedBy);
+  const ajustes = await prisma.institutionSettings.findUnique({ where: { id: "singleton" }, select: { logoUrl: true } });
+  const pdf = await renderInformeEncuestaPdf(datos, generatedBy, ajustes?.logoUrl);
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",

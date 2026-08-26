@@ -41,7 +41,7 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
   ];
 
   return (
-    <main className="canvas-vivo min-h-screen">
+    <div>
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6">
         <Link
           href="/encuestas"
@@ -191,7 +191,7 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
           ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 

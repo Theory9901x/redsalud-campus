@@ -29,7 +29,7 @@ export default async function NuevaEncuestaPage() {
   });
 
   return (
-    <main className="canvas-vivo min-h-screen">
+    <div>
       <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6">
         <Link
           href="/encuestas"
@@ -60,6 +60,6 @@ export default async function NuevaEncuestaPage() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

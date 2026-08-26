@@ -17,7 +17,7 @@ export default async function ConstructorPage({ params }: { params: Promise<{ id
   if (!encuesta) notFound();
 
   return (
-    <main className="canvas-vivo min-h-screen">
+    <div>
       <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
         <Link
           href="/encuestas"
@@ -31,6 +31,6 @@ export default async function ConstructorPage({ params }: { params: Promise<{ id
           encuesta={JSON.parse(JSON.stringify(encuesta))}
         />
       </div>
-    </main>
+    </div>
   );
 }

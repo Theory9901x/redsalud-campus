@@ -60,7 +60,7 @@ export default async function RespuestasPage({
   const acento = encuesta.themeColor || "#6D3BF5";
 
   return (
-    <main className="canvas-vivo min-h-screen">
+    <div>
       <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8 sm:px-6">
         <Link
           href="/encuestas"
@@ -151,6 +151,6 @@ export default async function RespuestasPage({
           <TablePagination total={total} page={pagina} pageSize={porPagina} />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

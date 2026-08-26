@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ClipboardList, Layers, Plus, Sparkles, TrendingUp, Users2 } from "lucide-react";
+import { ClipboardList, Layers, Plus, Sparkles, TrendingUp, Users2 } from "lucide-react";
 import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { listarEncuestas, type AlcanceEncuestas } from "@/lib/encuestas/consultas";
@@ -76,21 +76,9 @@ export default async function EncuestasPage({
         { etiqueta: "Encuestas respondidas", valor: String(encuestas.length), Icono: ClipboardList, destacar: false },
       ];
 
-  // El módulo es un espacio aislado sin barra lateral: el regreso al entorno
-  // principal se resuelve aquí, según el panel de cada rol.
-  const rutaPanel = rol === "ADMIN" ? "/admin" : rol === "TUTOR" ? "/tutor" : "/inicio";
-
   return (
-    <main className="canvas-vivo min-h-screen">
+    <div>
       <div className="mx-auto w-full max-w-[1480px] px-4 py-8 sm:px-6 lg:px-8">
-        <Link
-          href={rutaPanel}
-          className="mb-5 flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Volver al panel
-        </Link>
-
         <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
@@ -210,6 +198,6 @@ export default async function EncuestasPage({
           )}
         </section>
       </div>
-    </main>
+    </div>
   );
 }
