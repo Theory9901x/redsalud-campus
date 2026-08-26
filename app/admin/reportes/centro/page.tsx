@@ -49,6 +49,7 @@ export default async function CentroDatosPage({
     cargoId: sp.cargo,
     vinculacion: sp.vinculacion,
     cursoId: sp.curso,
+    modalidad: sp.modalidad,
   };
 
   // Una consulta agregada por panel; todas en paralelo.
@@ -118,6 +119,15 @@ export default async function CentroDatosPage({
           paramName="curso"
           label="Curso"
           options={cursos.map((c) => ({ value: c.id, label: c.title }))}
+        />
+        <AutoFilterSelect
+          paramName="modalidad"
+          label="Modalidad"
+          options={[
+            { value: "VIRTUAL", label: "Virtual" },
+            { value: "PRESENCIAL", label: "Presencial" },
+            { value: "MIXTA", label: "Mixta" },
+          ]}
         />
       </div>
 

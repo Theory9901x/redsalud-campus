@@ -17,6 +17,8 @@ export type FiltrosReporte = {
   cargoId?: string;
   vinculacion?: string; // TipoVinculacion
   cursoId?: string;
+  /** FASE 10: cursos ligados a capacitaciones del PIC de esa modalidad. */
+  modalidad?: string; // TrainingModality
 };
 
 /** Condición SQL común a los paneles que miden sobre personas inscritas. */
@@ -30,6 +32,10 @@ function condiciones(f: FiltrosReporte) {
   if (f.cargoId) partes.push(Prisma.sql`u."cargoId" = ${f.cargoId}`);
   if (f.vinculacion) partes.push(Prisma.sql`u."tipoVinculacion"::text = ${f.vinculacion}`);
   if (f.cursoId) partes.push(Prisma.sql`e."courseId" = ${f.cursoId}`);
+  if (f.modalidad)
+    partes.push(
+      Prisma.sql`e."courseId" IN (SELECT ta."courseId" FROM "TrainingActivity" ta WHERE ta."modality"::text = ${f.modalidad} AND ta."courseId" IS NOT NULL)`
+    );
   if (f.desde) partes.push(Prisma.sql`e."enrolledAt" >= ${new Date(f.desde)}`);
   if (f.hasta) partes.push(Prisma.sql`e."enrolledAt" <= ${new Date(`${f.hasta}T23:59:59`)}`);
   return Prisma.join(partes, " AND ");

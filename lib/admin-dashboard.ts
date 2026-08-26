@@ -27,6 +27,8 @@ export type FiltrosPanel = {
   personnelType?: PersonnelType;
   courseId?: string;
   estado?: EstadoFormacion;
+  /** FASE 10: acota a los cursos ligados a capacitaciones de esa modalidad. */
+  modalidad?: "VIRTUAL" | "PRESENCIAL" | "MIXTA";
 };
 
 /**
@@ -38,17 +40,20 @@ export function leerFiltros(params: Record<string, string | string[] | undefined
   const uno = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) || undefined;
   const personnelType = uno(params.personal);
   const estado = uno(params.estado);
+  const modalidad = uno(params.modalidad);
   return {
     municipioId: uno(params.municipio),
     personnelType:
       personnelType === "ADMINISTRATIVO" || personnelType === "ASISTENCIAL" ? personnelType : undefined,
     courseId: uno(params.curso),
     estado: esEstadoFormacion(estado) ? estado : undefined,
+    modalidad:
+      modalidad === "VIRTUAL" || modalidad === "PRESENCIAL" || modalidad === "MIXTA" ? modalidad : undefined,
   };
 }
 
 export function hayFiltrosActivos(f: FiltrosPanel) {
-  return Boolean(f.municipioId || f.personnelType || f.courseId || f.estado);
+  return Boolean(f.municipioId || f.personnelType || f.courseId || f.estado || f.modalidad);
 }
 
 /**
@@ -75,21 +80,26 @@ function condicionesPersona(f: FiltrosPanel) {
  */
 function estadoPorPersona(f: FiltrosPanel) {
   const filtroCurso = f.courseId ? Prisma.sql`AND e."courseId" = ${f.courseId}` : Prisma.empty;
+  // FASE 10: la modalidad es de la capacitación del PIC; filtrar por ella
+  // significa "formación de cursos ligados a capacitaciones así dictadas".
+  const filtroModalidad = f.modalidad
+    ? Prisma.sql`AND e."courseId" IN (SELECT ta."courseId" FROM "TrainingActivity" ta WHERE ta."modality"::text = ${f.modalidad} AND ta."courseId" IS NOT NULL)`
+    : Prisma.empty;
   return Prisma.sql`
     SELECT
       u."id",
       CASE
         WHEN NOT EXISTS (
-          SELECT 1 FROM "Enrollment" e WHERE e."userId" = u."id" ${filtroCurso}
+          SELECT 1 FROM "Enrollment" e WHERE e."userId" = u."id" ${filtroCurso} ${filtroModalidad}
         ) THEN 'SIN_ASIGNAR'
         WHEN u."lastLoginAt" IS NULL THEN 'SIN_INGRESAR'
         WHEN EXISTS (
           SELECT 1 FROM "Enrollment" e
-          WHERE e."userId" = u."id" AND e."status" = 'COMPLETED' ${filtroCurso}
+          WHERE e."userId" = u."id" AND e."status" = 'COMPLETED' ${filtroCurso} ${filtroModalidad}
         ) THEN 'COMPLETADO'
         WHEN EXISTS (
           SELECT 1 FROM "Enrollment" e
-          WHERE e."userId" = u."id" AND e."progressPercentage" > 0 ${filtroCurso}
+          WHERE e."userId" = u."id" AND e."progressPercentage" > 0 ${filtroCurso} ${filtroModalidad}
         ) THEN 'EN_CURSO'
         ELSE 'SIN_AVANCE'
       END AS estado
