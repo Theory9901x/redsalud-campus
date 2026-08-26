@@ -69,7 +69,13 @@ export type EncuestaConstructor = {
   thankYouMessage: string | null;
   pages: BloqueData[];
   trainingActivity: { id: string; title: string } | null;
+  trainingPlan: { id: string; title: string } | null;
   _count: { responses: number };
+};
+
+export type OpcionesAdscripcion = {
+  planes: { id: string; titulo: string }[];
+  actividades: { id: string; titulo: string; planId: string; plan: string }[];
 };
 
 /**
@@ -77,7 +83,13 @@ export type EncuestaConstructor = {
  * con sus preguntas, su material y su edición en línea. La vista previa
  * real es el propio enlace público -no una imitación que luego difiera-.
  */
-export function Constructor({ encuesta }: { encuesta: EncuestaConstructor }) {
+export function Constructor({
+  encuesta,
+  adscripcion,
+}: {
+  encuesta: EncuestaConstructor;
+  adscripcion: OpcionesAdscripcion;
+}) {
   const router = useRouter();
   const [ocupado, startTransition] = useTransition();
   const [editando, setEditando] = useState<{ bloqueId: string; pregunta: PreguntaData | null } | null>(null);
@@ -176,7 +188,7 @@ export function Constructor({ encuesta }: { encuesta: EncuestaConstructor }) {
             </div>
           </div>
 
-          {ajustesAbiertos && <PanelAjustes encuesta={encuesta} onGuardar={correr} />}
+          {ajustesAbiertos && <PanelAjustes encuesta={encuesta} adscripcion={adscripcion} onGuardar={correr} />}
         </div>
       </header>
 
@@ -477,13 +489,32 @@ function BloqueCabecera({
 
 function PanelAjustes({
   encuesta,
+  adscripcion,
   onGuardar,
 }: {
   encuesta: EncuestaConstructor;
+  adscripcion: OpcionesAdscripcion;
   onGuardar: (fn: () => Promise<{ error: string | null }>) => void;
 }) {
   const [minutos, setMinutos] = useState(encuesta.estimatedMinutes?.toString() ?? "");
   const [gracias, setGracias] = useState(encuesta.thankYouMessage ?? "");
+  const [planId, setPlanId] = useState(encuesta.trainingPlan?.id ?? "");
+  const [actividadId, setActividadId] = useState(encuesta.trainingActivity?.id ?? "");
+
+  const actividadesDelPlan = planId
+    ? adscripcion.actividades.filter((a) => a.planId === planId)
+    : adscripcion.actividades;
+
+  function guardarAdscripcion(nuevoPlan: string, nuevaActividad: string) {
+    setPlanId(nuevoPlan);
+    setActividadId(nuevaActividad);
+    onGuardar(() =>
+      actualizarEncuestaAction(encuesta.id, {
+        trainingPlanId: nuevoPlan || null,
+        trainingActivityId: nuevaActividad || null,
+      })
+    );
+  }
 
   const opciones: { clave: "requireLogin" | "allowMultipleResponses" | "showScoreToRespondent"; titulo: string; detalle: string; valor: boolean }[] = [
     {
@@ -529,6 +560,53 @@ function PanelAjustes({
       </div>
 
       <div className="space-y-3">
+        {/* Trazabilidad: plan y capacitación, alineado con el resto del sistema */}
+        <div className="grid grid-cols-1 gap-3">
+          <div className="space-y-1">
+            <label htmlFor="ads-plan" className="text-[12.5px] font-semibold text-foreground">
+              Plan de capacitación
+            </label>
+            <select
+              id="ads-plan"
+              value={planId}
+              onChange={(e) => guardarAdscripcion(e.target.value, "")}
+              className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none"
+            >
+              <option value="">Sin plan (institucional)</option>
+              {adscripcion.planes.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.titulo}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="ads-actividad" className="text-[12.5px] font-semibold text-foreground">
+              Capacitación concreta
+            </label>
+            <select
+              id="ads-actividad"
+              value={actividadId}
+              onChange={(e) => {
+                const id = e.target.value;
+                const actividad = adscripcion.actividades.find((a) => a.id === id);
+                guardarAdscripcion(actividad ? actividad.planId : planId, id);
+              }}
+              className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none"
+            >
+              <option value="">{planId ? "Todo el plan (sin jornada concreta)" : "Ninguna"}</option>
+              {actividadesDelPlan.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.titulo} · {a.plan}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              Sus resultados alimentan la medición de lo que elijas aquí.
+            </p>
+          </div>
+        </div>
+
         <div className="space-y-1">
           <label htmlFor="minutos" className="text-[12.5px] font-semibold text-foreground">
             Duración estimada (minutos)

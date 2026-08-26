@@ -22,9 +22,9 @@ import type { SurveyStatus, SurveyAudience } from "@prisma/client";
 export default async function EncuestasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; estado?: string; audiencia?: string; vista?: string }>;
+  searchParams: Promise<{ q?: string; estado?: string; audiencia?: string; vista?: string; area?: string; capacitacion?: string }>;
 }) {
-  const { q, estado, audiencia, vista } = await searchParams;
+  const { q, estado, audiencia, vista, area, capacitacion } = await searchParams;
   const sesion = await requireSession("/encuestas");
   const rol = sesion.user.role;
   const esGestor = rol === "ADMIN" || rol === "TUTOR";
@@ -42,12 +42,34 @@ export default async function EncuestasPage({
           }
         : { tipo: "respondidas", userId: sesion.user.id };
 
+  // Opciones de los filtros por área y capacitación (solo gestores): las
+  // mismas fronteras de alcance que el listado.
+  const [areasFiltro, actividadesFiltro] = esGestor
+    ? await Promise.all([
+        prisma.trainingArea.findMany({
+          where: rol === "ADMIN" ? {} : { tutorId: sesion.user.id },
+          select: { id: true, name: true },
+          orderBy: { name: "asc" },
+        }),
+        prisma.trainingActivity.findMany({
+          where: {
+            surveys: { some: {} },
+            ...(rol === "ADMIN" ? {} : { area: { tutorId: sesion.user.id } }),
+          },
+          select: { id: true, title: true },
+          orderBy: { title: "asc" },
+        }),
+      ])
+    : [[], []];
+
   const verPlantillas = esGestor && vista === "plantillas";
   const encuestas = await listarEncuestas(
     {
       buscar: q,
       estado: estado as SurveyStatus | undefined,
       audiencia: audiencia as SurveyAudience | undefined,
+      areaId: area || undefined,
+      actividadId: capacitacion || undefined,
       plantillas: verPlantillas,
     },
     alcance
@@ -167,7 +189,12 @@ export default async function EncuestasPage({
           </div>
         )}
 
-        {esGestor && <FiltrosEncuestasBarra />}
+        {esGestor && (
+          <FiltrosEncuestasBarra
+            areas={areasFiltro.map((a) => ({ id: a.id, nombre: a.name }))}
+            actividades={actividadesFiltro.map((a) => ({ id: a.id, titulo: a.title }))}
+          />
+        )}
 
         <section className="mt-6">
           {encuestas.length === 0 ? (

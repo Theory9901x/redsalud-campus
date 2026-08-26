@@ -39,6 +39,10 @@ export type FiltrosEncuestas = {
   estado?: SurveyStatus;
   audiencia?: SurveyAudience;
   planId?: string;
+  /** Área de la capacitación adscrita (o del plan, si la encuesta es de plan). */
+  areaId?: string;
+  /** Capacitación concreta a la que está adscrita. */
+  actividadId?: string;
   plantillas?: boolean;
 };
 
@@ -93,20 +97,36 @@ export async function listarEncuestas(
   filtros: FiltrosEncuestas,
   alcance: AlcanceEncuestas
 ): Promise<EncuestaDeLista[]> {
+  // Cada condición con OR interno (búsqueda, área, alcance) va como entrada
+  // de un AND: en spread plano un OR pisaría al otro y el filtro que llegó
+  // último ganaría en silencio.
+  const condiciones: Prisma.SurveyWhereInput[] = [whereDeAlcance(alcance)];
+  if (filtros.buscar?.trim()) {
+    condiciones.push({
+      OR: [
+        { title: { contains: filtros.buscar.trim(), mode: "insensitive" } },
+        { code: { contains: filtros.buscar.trim(), mode: "insensitive" } },
+      ],
+    });
+  }
+  // Área: la de su jornada adscrita; una encuesta de plan (sin jornada)
+  // cuenta en el área si el plan tiene jornadas de esa área.
+  if (filtros.areaId) {
+    condiciones.push({
+      OR: [
+        { trainingActivity: { areaId: filtros.areaId } },
+        { trainingActivityId: null, trainingPlan: { activities: { some: { areaId: filtros.areaId } } } },
+      ],
+    });
+  }
+
   const where: Prisma.SurveyWhereInput = {
     isTemplate: filtros.plantillas ?? false,
     ...(filtros.estado ? { status: filtros.estado } : {}),
     ...(filtros.audiencia ? { audience: filtros.audiencia } : {}),
     ...(filtros.planId ? { trainingPlanId: filtros.planId } : {}),
-    ...(filtros.buscar?.trim()
-      ? {
-          OR: [
-            { title: { contains: filtros.buscar.trim(), mode: "insensitive" } },
-            { code: { contains: filtros.buscar.trim(), mode: "insensitive" } },
-          ],
-        }
-      : {}),
-    ...whereDeAlcance(alcance),
+    ...(filtros.actividadId ? { trainingActivityId: filtros.actividadId } : {}),
+    AND: condiciones,
   };
 
   const encuestas = await prisma.survey.findMany({

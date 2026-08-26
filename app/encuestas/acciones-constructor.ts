@@ -46,10 +46,12 @@ export async function crearEncuestaAction(_prev: EstadoAccion, formData: FormDat
   const audience = (String(formData.get("audience") ?? "INTERNO") as SurveyAudience) ?? "INTERNO";
   const themeColor = String(formData.get("themeColor") ?? "").trim() || null;
   const trainingActivityId = String(formData.get("trainingActivityId") ?? "").trim() || null;
+  const planElegido = String(formData.get("trainingPlanId") ?? "").trim() || null;
   const desdePlantilla = String(formData.get("plantillaId") ?? "").trim() || null;
 
-  // La capacitación define el plan: no se piden los dos por separado para
-  // que no puedan quedar en contradicción.
+  // Trazabilidad: la encuesta puede colgar de una capacitación concreta
+  // (que define su plan, para que no queden en contradicción) o solo del
+  // plan, cuando mide la satisfacción del plan completo.
   let trainingPlanId: string | null = null;
   if (trainingActivityId) {
     const actividad = await prisma.trainingActivity.findUnique({
@@ -58,6 +60,10 @@ export async function crearEncuestaAction(_prev: EstadoAccion, formData: FormDat
     });
     if (!actividad) return { error: "La capacitación elegida no existe." };
     trainingPlanId = actividad.planId;
+  } else if (planElegido) {
+    const plan = await prisma.trainingPlan.findUnique({ where: { id: planElegido }, select: { id: true } });
+    if (!plan) return { error: "El plan elegido no existe." };
+    trainingPlanId = plan.id;
   }
 
   const [code, slug] = [await generarCodigoEncuesta(), generarSlug()];
@@ -136,6 +142,7 @@ export async function actualizarEncuestaAction(surveyId: string, datos: {
   allowMultipleResponses?: boolean;
   showScoreToRespondent?: boolean;
   trainingActivityId?: string | null;
+  trainingPlanId?: string | null;
 }): Promise<EstadoAccion> {
   await puedeGestionarEncuesta(surveyId);
 
@@ -143,8 +150,10 @@ export async function actualizarEncuestaAction(surveyId: string, datos: {
     return { error: "El título debe tener al menos 5 caracteres." };
   }
 
+  // Trazabilidad: capacitación concreta manda (define su plan); sin
+  // capacitación, puede colgar solo del plan; sin ninguno, institucional.
   let planPatch = {};
-  if (datos.trainingActivityId !== undefined) {
+  if (datos.trainingActivityId !== undefined || datos.trainingPlanId !== undefined) {
     if (datos.trainingActivityId) {
       const actividad = await prisma.trainingActivity.findUnique({
         where: { id: datos.trainingActivityId },
@@ -152,6 +161,13 @@ export async function actualizarEncuestaAction(surveyId: string, datos: {
       });
       if (!actividad) return { error: "La capacitación elegida no existe." };
       planPatch = { trainingActivityId: datos.trainingActivityId, trainingPlanId: actividad.planId };
+    } else if (datos.trainingPlanId) {
+      const plan = await prisma.trainingPlan.findUnique({
+        where: { id: datos.trainingPlanId },
+        select: { id: true },
+      });
+      if (!plan) return { error: "El plan elegido no existe." };
+      planPatch = { trainingActivityId: null, trainingPlanId: plan.id };
     } else {
       planPatch = { trainingActivityId: null, trainingPlanId: null };
     }

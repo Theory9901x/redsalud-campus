@@ -15,7 +15,13 @@ const selectClase =
  * filtro concreto se pueda compartir por enlace. La búsqueda espera a que se
  * deje de teclear antes de navegar, para no lanzar una consulta por tecla.
  */
-export function FiltrosEncuestasBarra() {
+export function FiltrosEncuestasBarra({
+  areas = [],
+  actividades = [],
+}: {
+  areas?: { id: string; nombre: string }[];
+  actividades?: { id: string; titulo: string }[];
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const [texto, setTexto] = useState(params.get("q") ?? "");
@@ -56,6 +62,38 @@ export function FiltrosEncuestasBarra() {
           <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
         )}
       </div>
+
+      {areas.length > 0 && (
+        <select
+          aria-label="Filtrar por área"
+          defaultValue={params.get("area") ?? ""}
+          onChange={(e) => navegar({ area: e.target.value || null })}
+          className={selectClase}
+        >
+          <option value="">Todas las áreas</option>
+          {areas.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.nombre}
+            </option>
+          ))}
+        </select>
+      )}
+
+      {actividades.length > 0 && (
+        <select
+          aria-label="Filtrar por capacitación"
+          defaultValue={params.get("capacitacion") ?? ""}
+          onChange={(e) => navegar({ capacitacion: e.target.value || null })}
+          className={selectClase + " max-w-[260px]"}
+        >
+          <option value="">Toda capacitación</option>
+          {actividades.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.titulo}
+            </option>
+          ))}
+        </select>
+      )}
 
       <select
         aria-label="Estado"

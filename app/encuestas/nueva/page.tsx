@@ -6,19 +6,40 @@ import { FormularioNuevaEncuesta } from "@/components/encuestas/formulario-nueva
 
 /**
  * Crear una encuesta. El formulario pide lo mínimo -título, audiencia y,
- * opcionalmente, la capacitación a la que pertenece o una plantilla de la
- * que partir-; todo lo demás se define en el constructor.
+ * opcionalmente, su lugar en el sistema: área › plan › capacitación, o una
+ * plantilla de la que partir-; todo lo demás se define en el constructor.
  */
 export default async function NuevaEncuestaPage() {
   const sesion = await requireTutorOrAdmin();
+  const esAdmin = sesion.user.role === "ADMIN";
 
-  // Un tutor solo puede colgar la encuesta de jornadas de sus áreas.
-  const actividades = await prisma.trainingActivity.findMany({
-    where:
-      sesion.user.role === "ADMIN"
+  // Un tutor solo ve sus áreas y lo que cuelga de ellas; el administrador,
+  // todo. Es la misma trazabilidad área › plan › capacitación del resto
+  // del sistema.
+  const [areas, actividades] = await Promise.all([
+    prisma.trainingArea.findMany({
+      where: esAdmin ? {} : { tutorId: sesion.user.id },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.trainingActivity.findMany({
+      where: esAdmin
         ? { status: { not: "CLOSED" } }
         : { status: { not: "CLOSED" }, area: { tutorId: sesion.user.id } },
-    select: { id: true, title: true, plan: { select: { title: true } } },
+      select: {
+        id: true,
+        title: true,
+        planId: true,
+        areaId: true,
+        plan: { select: { title: true } },
+      },
+      orderBy: { title: "asc" },
+    }),
+  ]);
+
+  const planes = await prisma.trainingPlan.findMany({
+    where: esAdmin ? {} : { activities: { some: { area: { tutorId: sesion.user.id } } } },
+    select: { id: true, title: true },
     orderBy: { title: "asc" },
   });
 
@@ -54,7 +75,15 @@ export default async function NuevaEncuestaPage() {
         <div className="surface-vivo mt-7">
           <div className="p-6">
             <FormularioNuevaEncuesta
-              actividades={actividades.map((a) => ({ id: a.id, titulo: a.title, plan: a.plan.title }))}
+              areas={areas.map((a) => ({ id: a.id, nombre: a.name }))}
+              planes={planes.map((p) => ({ id: p.id, titulo: p.title }))}
+              actividades={actividades.map((a) => ({
+                id: a.id,
+                titulo: a.title,
+                planId: a.planId,
+                areaId: a.areaId,
+                plan: a.plan.title,
+              }))}
               plantillas={plantillas.map((p) => ({ id: p.id, titulo: p.title }))}
             />
           </div>
