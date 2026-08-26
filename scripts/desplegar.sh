@@ -46,7 +46,7 @@ rm -rf "$nuevo"
 # momento: si este despliegue ELIMINA una página, el typecheck del build
 # nuevo tropieza con ese validator viejo. Son artefactos de compilación, no
 # de ejecución: borrarlos no toca al servidor que sigue sirviendo.
-rm -rf "$activo/types"
+rm -rf "$activo/types" .next/types
 NEXT_DIST_DIR="$nuevo" nice -n 19 npm run build
 
 # A partir de aquí el build nuevo está completo: el reinicio es lo único que
