@@ -27,6 +27,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   const encuesta = await prisma.survey.findUnique({ where: { slug }, select: { id: true } });
   if (!encuesta) return NextResponse.json({ error: "Encuesta no encontrada." }, { status: 404 });
 
-  const qr = await QRCode.toDataURL(`${APP_URL}/e/${slug}`, { width: 320, margin: 1 });
+  // 640px: nítido también en pantallas de alta densidad y al proyectarlo.
+  const qr = await QRCode.toDataURL(`${APP_URL}/e/${slug}`, { width: 640, margin: 2 });
   return NextResponse.json({ qr }, { headers: { "Cache-Control": "private, max-age=3600" } });
 }
