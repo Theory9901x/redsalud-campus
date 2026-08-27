@@ -1,5 +1,4 @@
 import { chromium, type Page } from "playwright";
-import { prisma } from "../../lib/prisma";
 
 /**
  * DEMO del constructor de cursos, hecho POR LA INTERFAZ del tutor (es lo
@@ -8,7 +7,8 @@ import { prisma } from "../../lib/prisma";
  * con los 4 tipos de pregunta → publicación → recorrido del estudiante hasta
  * aprobar la evaluación.
  */
-const BASE = "http://localhost:3000";
+const BASE = process.env.DEMO_BASE ?? "http://localhost:3000";
+const COURSE_ID = process.env.DEMO_COURSE_ID ?? "";
 const SHOTS = "C:/Users/USUARIO/AppData/Local/Temp/claude/d--redsaludlms/0515329b-aad2-41a1-9184-2b88a262b03b/scratchpad";
 const ASSETS = `${SHOTS}/demo-assets`;
 const SLUG = "demo-manejo-residuos-hospitalarios";
@@ -111,18 +111,12 @@ async function crearPregunta(
 }
 
 async function main() {
-  const curso = await prisma.course.findUniqueOrThrow({ where: { slug: SLUG }, select: { id: true } });
-  // Empezar limpio: el demo se puede repetir.
-  await prisma.courseModule.deleteMany({ where: { courseId: curso.id } });
-  await prisma.quiz.deleteMany({ where: { courseId: curso.id } });
-  await prisma.enrollment.deleteMany({ where: { courseId: curso.id } });
-  await prisma.course.update({ where: { id: curso.id }, data: { status: "DRAFT" } });
-
+  if (!COURSE_ID) throw new Error("Falta DEMO_COURSE_ID");
+  const curso = { id: COURSE_ID };
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1500, height: 1000 } });
   page.on("pageerror", (e) => errores.push("tutor: " + String(e).slice(0, 140)));
 
-  // ================= TUTOR: constructor =================
   await entrar(page, "demo.tutora@ejemplo.test");
   await page.goto(`${BASE}/tutor/cursos/${curso.id}`);
   await page.click('[role="tab"]:has-text("Temario")');
@@ -287,84 +281,8 @@ async function main() {
   });
   await page.screenshot({ path: `${SHOTS}/curso-03-cuestionario.png`, fullPage: true });
 
-  // Verificación en BD de lo creado por la interfaz
-  const armado = await prisma.course.findUniqueOrThrow({
-    where: { id: curso.id },
-    include: {
-      modules: { include: { lessons: { select: { title: true, contentType: true, fileUrl: true, contentBody: true, description: true } } } },
-      quizzes: { include: { questions: { include: { options: true } } } },
-    },
-  });
-  const lecciones = armado.modules[0].lessons;
-  console.log("lecciones en BD:", lecciones.length, "| con archivo:", lecciones.filter((l) => l.fileUrl).length, "(debe ser 4: PDF, IMAGE, VIDEO, MIXED)");
-  console.log("descripción conservada:", lecciones.every((l) => l.description));
-  const texto = lecciones[0].contentBody ?? "";
-  console.log("texto enriquecido: h2 =", texto.includes("<h2"), "| enlace =", texto.includes('href="https://www.minsalud.gov.co"'), "| embebido youtube =", texto.includes('youtube.com/embed/3PmVJQUCm4E'), "| script =", texto.includes("<script"));
-  console.log("preguntas:", armado.quizzes[0].questions.map((q) => `${q.type}:${q.options.length}op${q.imageUrl ? "+img" : ""}`).join(", "));
-
-  // 4. Publicar (acción de administrador) y recorrido del estudiante
-  await prisma.course.update({ where: { id: curso.id }, data: { status: "PUBLISHED", publishedAt: new Date() } });
-
-  const est = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
-  est.on("pageerror", (e) => errores.push("est: " + String(e).slice(0, 140)));
-  await entrar(est, "demo.carlos@ejemplo.test");
-  await est.goto(`${BASE}/cursos/${SLUG}`);
-  await est.click('button:has-text("Inscribirme")');
-  await est.waitForTimeout(2500);
-  await est.goto(`${BASE}/aula/${curso.id}`);
-  await est.waitForTimeout(1200);
-  await est.screenshot({ path: `${SHOTS}/curso-04-aula.png`, fullPage: true });
-
-  // Recorrer las 7 lecciones (secuencial) marcando cada una
-  const ids = await prisma.lesson.findMany({ where: { module: { courseId: curso.id } }, orderBy: { sortOrder: "asc" }, select: { id: true, contentType: true } });
-  for (const [i, l] of ids.entries()) {
-    await est.goto(`${BASE}/aula/${curso.id}/${l.id}`);
-    await est.waitForSelector('button:has-text("Marcar como completada")', { timeout: 20000 });
-    if (i === 0 || l.contentType === "VIDEO" || l.contentType === "PDF") {
-      await est.waitForTimeout(1200);
-      await est.screenshot({ path: `${SHOTS}/curso-05-leccion-${l.contentType.toLowerCase()}.png`, fullPage: true });
-    }
-    await est.click('button:has-text("Marcar como completada")');
-    // Texto EXACTO: has-text() no distingue mayúsculas y "Marcar como
-    // completada" también coincide, con lo que se navegaba antes de guardar.
-    await est.waitForSelector('button:text-is("Completada")', { timeout: 20000 });
-    await est.waitForTimeout(400);
-  }
-  console.log("estudiante: 7 lecciones completadas");
-
-  // Evaluación
-  const quiz = armado.quizzes[0];
-  await est.goto(`${BASE}/aula/${curso.id}/quiz/${quiz.id}`);
-  await est.waitForSelector('button:has-text("Enviar evaluación")', { timeout: 30000 }).catch(async () => {
-    await est.screenshot({ path: `${SHOTS}/fallo-quiz.png`, fullPage: true });
-    console.log("quiz: url =", est.url(), "| h1 =", await est.locator("h1").allTextContents());
-  });
-  await est.waitForTimeout(800);
-  for (const q of quiz.questions) {
-    if (q.type === "OPEN_TEXT") {
-      await est.fill(`textarea[name="q_${q.id}_text"]`, "No lo toco con la mano: uso pinzas y guantes, lo llevo al guardián y reporto el incidente al líder.");
-    } else {
-      // Como un usuario: clic sobre el texto de la opción correcta.
-      for (const o of q.options.filter((o) => o.isCorrect)) {
-        await est.locator(`label:has-text("${o.text}")`).first().click();
-        await est.waitForTimeout(150);
-      }
-    }
-  }
-  await est.screenshot({ path: `${SHOTS}/curso-06-quiz.png`, fullPage: true });
-  await est.click('button:has-text("Enviar evaluación")');
-  await est.waitForSelector('[role="dialog"]');
-  await est.locator('[role="dialog"] button:has-text("Enviar")').last().click();
-  await est.waitForTimeout(3000);
-  await est.screenshot({ path: `${SHOTS}/curso-07-resultado.png`, fullPage: true });
-
-  const intento = await prisma.quizAttempt.findFirst({ where: { quizId: quiz.id }, orderBy: { startedAt: "desc" }, select: { score: true, passed: true } });
-  const inscripcion = await prisma.enrollment.findFirst({ where: { courseId: curso.id }, select: { status: true, progressPercentage: true } });
-  const cert = await prisma.certificate.findFirst({ where: { courseId: curso.id }, select: { id: true } });
-  console.log("intento:", JSON.stringify(intento), "| inscripción:", JSON.stringify(inscripcion), "| certificado:", cert ? "emitido" : "no");
-
   console.log("errores de página:", errores.length, errores.slice(0, 3));
   await browser.close();
 }
 
-main().finally(() => prisma.$disconnect());
+main();
