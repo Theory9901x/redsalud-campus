@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getAulaData } from "@/lib/aula";
 import { getYoutubeEmbedUrl } from "@/lib/youtube";
+import { htmlSeguro } from "@/lib/html-seguro";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -105,7 +106,7 @@ export default async function AulaLessonPage({
         {showText && lesson.contentBody && (
           <div
             className="prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: lesson.contentBody }}
+            dangerouslySetInnerHTML={{ __html: htmlSeguro(lesson.contentBody) }}
           />
         )}
 

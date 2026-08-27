@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, Award, Clock, FileText, Info, User, ClipboardList, Layers } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { htmlSeguro } from "@/lib/html-seguro";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -214,7 +215,7 @@ export default async function CursoDetallePage({
             <CourseDetailCard icon={ClipboardList} iconClassName="bg-warning/15 text-warning-foreground" title="Instrucciones">
               <div
                 className="prose prose-sm max-w-none text-foreground/80"
-                dangerouslySetInnerHTML={{ __html: course.instructions }}
+                dangerouslySetInnerHTML={{ __html: htmlSeguro(course.instructions) }}
               />
             </CourseDetailCard>
           )}

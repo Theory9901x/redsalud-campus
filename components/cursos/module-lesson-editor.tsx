@@ -64,6 +64,7 @@ import type { LessonContentType, QuestionType } from "@prisma/client";
 type LessonItem = {
   id: string;
   title: string;
+  description: string | null;
   contentType: LessonContentType;
   contentBody: string | null;
   videoUrl: string | null;
@@ -450,7 +451,9 @@ function SortableLessonRow({ lesson }: { lesson: LessonItem }) {
         action={updateLessonAction.bind(null, lesson.id)}
         defaultValues={{
           title: lesson.title,
-          description: "",
+          // Antes iba "" fijo: al editar cualquier otro campo, la descripción
+          // se borraba en silencio al guardar.
+          description: lesson.description ?? "",
           contentType: lesson.contentType,
           contentBody: lesson.contentBody ?? "",
           videoUrl: lesson.videoUrl ?? "",

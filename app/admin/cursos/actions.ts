@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { htmlSeguro } from "@/lib/html-seguro";
 import { requireCourseAccess, requireTutorOrAdmin, requireAdmin } from "@/lib/auth-helpers";
 import { courseSchema } from "@/lib/validations/course";
 import { saveCourseImage } from "@/lib/storage";
@@ -68,7 +69,7 @@ export async function createCourseAction(
         slug: data.slug,
         shortDescription: data.shortDescription,
         fullDescription: data.fullDescription || null,
-        instructions: data.instructions || null,
+        instructions: htmlSeguro(data.instructions) || null,
         categoryId: data.categoryId || null,
         courseType: data.courseType,
         durationHours: data.durationHours,
@@ -118,7 +119,7 @@ export async function updateCourseAction(
         slug: data.slug,
         shortDescription: data.shortDescription,
         fullDescription: data.fullDescription || null,
-        instructions: data.instructions || null,
+        instructions: htmlSeguro(data.instructions) || null,
         categoryId: data.categoryId || null,
         courseType: data.courseType,
         durationHours: data.durationHours,

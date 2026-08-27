@@ -168,7 +168,16 @@ export const getAulaData = cache(async (courseId: string, userId: string) => {
     // "todas las lecciones y luego el quiz".
     const crudos = [
       ...module_.lessons.map((l) => ({ tipo: "leccion" as const, sortOrder: l.sortOrder, lesson: l })),
-      ...(quizzesByModuleId.get(module_.id) ?? []).map((q) => ({ tipo: "quiz" as const, sortOrder: q.sortOrder, quizRaw: q })),
+      // Un cuestionario SIN posición explícita (sortOrder 0, que es lo que
+      // deja el constructor) va al FINAL del módulo: "todas las lecciones y
+      // luego el quiz". Antes el 0 lo intercalaba junto a la primera lección
+      // y, en un curso secuencial, mandaba al estudiante a la evaluación con
+      // seis lecciones todavía bloqueadas.
+      ...(quizzesByModuleId.get(module_.id) ?? []).map((q) => ({
+        tipo: "quiz" as const,
+        sortOrder: q.sortOrder > 0 ? q.sortOrder : Number.MAX_SAFE_INTEGER,
+        quizRaw: q,
+      })),
     ].sort((a, b) => a.sortOrder - b.sortOrder || (a.tipo === "leccion" ? -1 : 1));
 
     const lessons: AulaLesson[] = [];

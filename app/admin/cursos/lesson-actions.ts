@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCourseAccess } from "@/lib/auth-helpers";
 import { lessonSchema } from "@/lib/validations/course";
 import { saveLessonFile } from "@/lib/storage";
+import { htmlSeguro } from "@/lib/html-seguro";
 
 export type LessonFormState = {
   error: string | null;
@@ -124,7 +125,7 @@ export async function createLessonAction(
       title: data.title,
       description: data.description || null,
       contentType: data.contentType,
-      contentBody: data.contentBody || null,
+      contentBody: htmlSeguro(data.contentBody) || null,
       videoUrl: data.videoUrl || null,
       externalUrl: data.externalUrl || null,
       isRequired: data.isRequired,
@@ -164,7 +165,7 @@ export async function updateLessonAction(
       title: data.title,
       description: data.description || null,
       contentType: data.contentType,
-      contentBody: data.contentBody || null,
+      contentBody: htmlSeguro(data.contentBody) || null,
       videoUrl: data.videoUrl || null,
       externalUrl: data.externalUrl || null,
       isRequired: data.isRequired,

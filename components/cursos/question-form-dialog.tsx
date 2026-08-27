@@ -64,6 +64,21 @@ export function QuestionFormDialog({
   // Cierra el diálogo cuando el envío acaba de terminar bien.
   useAlTenerExito(state, () => setOpen(false));
 
+  /*
+   * El diálogo vive montado entre una pregunta y la siguiente, así que su
+   * estado local (tipo, opciones, imagen) sobrevivía al cierre: la segunda
+   * pregunta arrancaba con las opciones de la primera ya escritas y una
+   * "Opción 5" vacía que bloqueaba el guardado. Al abrir en modo crear se
+   * vuelve al punto de partida; en modo editar se recargan los valores.
+   */
+  function abrir() {
+    const tipoInicial = defaultValues?.type ?? "SINGLE_CHOICE";
+    setType(tipoInicial);
+    setOptions(defaultValues?.options ?? (tipoInicial === "TRUE_FALSE" ? TRUE_FALSE_OPTIONS : EMPTY_OPTIONS));
+    setImagenPreview(defaultValues?.imageUrl ?? null);
+    setOpen(true);
+  }
+
   function handleTypeChange(nextType: QuestionType) {
     setType(nextType);
     if (nextType === "TRUE_FALSE") {
@@ -97,7 +112,7 @@ export function QuestionFormDialog({
 
   return (
     <>
-      <span onClick={() => setOpen(true)}>{trigger}</span>
+      <span onClick={abrir}>{trigger}</span>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>

@@ -70,6 +70,15 @@ export function LessonFormDialog({
   // Cierra el diálogo cuando el envío acaba de terminar bien.
   useAlTenerExito(state, () => setOpen(false));
 
+  // Mismo cuidado que en las preguntas: el diálogo sigue montado entre una
+  // lección y la siguiente, y el tipo elegido y el aviso "se subirá X"
+  // se quedaban pegados al reabrirlo.
+  function abrir() {
+    setContentType(values.contentType);
+    setArchivoElegido(null);
+    setOpen(true);
+  }
+
   const showText = contentType === "TEXT" || contentType === "MIXED";
   const showYoutube = contentType === "YOUTUBE" || contentType === "MIXED";
   const showFile = contentType === "PDF" || contentType === "IMAGE" || contentType === "MIXED";
@@ -78,7 +87,7 @@ export function LessonFormDialog({
 
   return (
     <>
-      <span onClick={() => setOpen(true)}>{trigger}</span>
+      <span onClick={abrir}>{trigger}</span>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
           <DialogHeader>
