@@ -32,6 +32,11 @@ echo "▸ trayendo cambios"
 git checkout -- tsconfig.json 2>/dev/null || true
 git pull --ff-only
 
+# Dependencias nuevas: sin esto, un paquete añadido en el commit rompe el
+# build en el servidor con "module not found" (pasó con sanitize-html).
+echo "▸ dependencias"
+npm install --no-audit --no-fund --loglevel=error
+
 if [ "${1:-}" = "--migrar" ]; then
   echo "▸ migraciones"
   npx prisma migrate deploy

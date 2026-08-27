@@ -6,14 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { PanelEnLinea, PieFormulario } from "@/components/cursos/panel-en-linea";
 import { QUESTION_TYPE_LABELS } from "@/components/cursos/labels";
 import type { QuizFormState } from "@/app/admin/cursos/quiz-actions";
 import type { QuestionType } from "@prisma/client";
@@ -33,6 +26,10 @@ const EMPTY_OPTIONS: OptionDraft[] = [
   { text: "", isCorrect: false },
 ];
 
+/**
+ * Formulario de pregunta EN LÍNEA (el nombre "Dialog" es histórico: se
+ * despliega dentro del cuestionario, debajo del disparador).
+ */
 export function QuestionFormDialog({
   mode,
   action,
@@ -61,17 +58,19 @@ export function QuestionFormDialog({
     defaultValues?.options ?? (defaultValues?.type === "TRUE_FALSE" ? TRUE_FALSE_OPTIONS : EMPTY_OPTIONS)
   );
 
-  // Cierra el diálogo cuando el envío acaba de terminar bien.
   useAlTenerExito(state, () => setOpen(false));
 
   /*
-   * El diálogo vive montado entre una pregunta y la siguiente, así que su
-   * estado local (tipo, opciones, imagen) sobrevivía al cierre: la segunda
-   * pregunta arrancaba con las opciones de la primera ya escritas y una
-   * "Opción 5" vacía que bloqueaba el guardado. Al abrir en modo crear se
-   * vuelve al punto de partida; en modo editar se recargan los valores.
+   * El panel vive montado entre una pregunta y la siguiente, así que su
+   * estado local (tipo, opciones, imagen) sobreviviría al cierre: la segunda
+   * pregunta arrancaría con las opciones de la primera ya escritas. Al abrir
+   * en modo crear se vuelve al punto de partida; en editar se recargan.
    */
-  function abrir() {
+  function alternar() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
     const tipoInicial = defaultValues?.type ?? "SINGLE_CHOICE";
     setType(tipoInicial);
     setOptions(defaultValues?.options ?? (tipoInicial === "TRUE_FALSE" ? TRUE_FALSE_OPTIONS : EMPTY_OPTIONS));
@@ -112,29 +111,35 @@ export function QuestionFormDialog({
 
   return (
     <>
-      <span onClick={abrir}>{trigger}</span>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{mode === "create" ? "Nueva pregunta" : "Editar pregunta"}</DialogTitle>
-            <DialogDescription>Marca la o las opciones correctas. Nunca se muestran al estudiante antes de responder.</DialogDescription>
-          </DialogHeader>
+      <span onClick={alternar}>{trigger}</span>
+      {open && (
+        <PanelEnLinea
+          titulo={mode === "create" ? "Nueva pregunta" : "Editar pregunta"}
+          descripcion="Marca la o las opciones correctas. Nunca se muestran al estudiante antes de responder."
+          onCerrar={() => setOpen(false)}
+        >
           <form action={formAction} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="type">Tipo de pregunta</Label>
-              <select
-                id="type"
-                name="type"
-                value={type}
-                onChange={(e) => handleTypeChange(e.target.value as QuestionType)}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              >
-                {Object.entries(QUESTION_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_140px]">
+              <div className="space-y-1.5">
+                <Label htmlFor="type">Tipo de pregunta</Label>
+                <select
+                  id="type"
+                  name="type"
+                  value={type}
+                  onChange={(e) => handleTypeChange(e.target.value as QuestionType)}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {Object.entries(QUESTION_TYPE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="score">Puntaje</Label>
+                <Input id="score" name="score" type="number" min={1} max={100} required defaultValue={defaultValues?.score ?? 1} />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="statement">Enunciado</Label>
@@ -167,12 +172,6 @@ export function QuestionFormDialog({
                 className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-secondary-foreground"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="score">Puntaje</Label>
-                <Input id="score" name="score" type="number" min={1} max={100} required defaultValue={defaultValues?.score ?? 1} />
-              </div>
-            </div>
             <div className="space-y-1.5">
               <Label htmlFor="explanation">Retroalimentación (opcional)</Label>
               <Textarea
@@ -202,42 +201,42 @@ export function QuestionFormDialog({
                 </p>
               </div>
             ) : (
-            <div className="space-y-2">
-              <Label>Opciones</Label>
               <div className="space-y-2">
-                {options.map((option, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <input
-                      type={type === "MULTIPLE_CHOICE" ? "checkbox" : "radio"}
-                      name={type === "MULTIPLE_CHOICE" ? undefined : "correctRadio"}
-                      checked={option.isCorrect}
-                      onChange={() => toggleCorrect(index)}
-                      className="h-4 w-4 shrink-0"
-                      aria-label="Marcar como correcta"
-                    />
-                    <Input
-                      value={option.text}
-                      onChange={(e) => updateOptionText(index, e.target.value)}
-                      placeholder={`Opción ${index + 1}`}
-                      readOnly={type === "TRUE_FALSE"}
-                      required
-                      className="flex-1"
-                    />
-                    {type !== "TRUE_FALSE" && options.length > 2 && (
-                      <Button type="button" variant="ghost" size="icon-sm" onClick={() => removeOption(index)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                <Label>Opciones</Label>
+                <div className="space-y-2">
+                  {options.map((option, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type={type === "MULTIPLE_CHOICE" ? "checkbox" : "radio"}
+                        name={type === "MULTIPLE_CHOICE" ? undefined : "correctRadio"}
+                        checked={option.isCorrect}
+                        onChange={() => toggleCorrect(index)}
+                        className="h-4 w-4 shrink-0"
+                        aria-label="Marcar como correcta"
+                      />
+                      <Input
+                        value={option.text}
+                        onChange={(e) => updateOptionText(index, e.target.value)}
+                        placeholder={`Opción ${index + 1}`}
+                        readOnly={type === "TRUE_FALSE"}
+                        required
+                        className="flex-1"
+                      />
+                      {type !== "TRUE_FALSE" && options.length > 2 && (
+                        <Button type="button" variant="ghost" size="icon-sm" onClick={() => removeOption(index)} aria-label="Quitar opción">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {type !== "TRUE_FALSE" && (
+                  <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={addOption}>
+                    <Plus className="h-4 w-4" />
+                    Añadir opción
+                  </Button>
+                )}
               </div>
-              {type !== "TRUE_FALSE" && (
-                <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={addOption}>
-                  <Plus className="h-4 w-4" />
-                  Añadir opción
-                </Button>
-              )}
-            </div>
             )}
 
             {/* La abierta no lleva opciones: se envía una lista vacía. */}
@@ -246,14 +245,10 @@ export function QuestionFormDialog({
             {state.error && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>
             )}
-            <DialogFooter>
-              <Button type="submit" disabled={pending}>
-                {pending ? "Guardando..." : "Guardar pregunta"}
-              </Button>
-            </DialogFooter>
+            <PieFormulario pending={pending} etiqueta="Guardar pregunta" onCancelar={() => setOpen(false)} />
           </form>
-        </DialogContent>
-      </Dialog>
+        </PanelEnLinea>
+      )}
     </>
   );
 }

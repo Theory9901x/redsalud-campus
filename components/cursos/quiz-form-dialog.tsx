@@ -1,24 +1,20 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { PanelEnLinea, PieFormulario } from "@/components/cursos/panel-en-linea";
 import type { QuizFormState } from "@/app/admin/cursos/quiz-actions";
 import { useAlTenerExito } from "@/lib/use-exito-accion";
 
 const initialState: QuizFormState = { error: null };
 
+/**
+ * Formulario de cuestionario EN LÍNEA (el nombre "Dialog" es histórico: se
+ * despliega dentro del módulo, debajo del disparador).
+ */
 export function QuizFormDialog({
   mode,
   action,
@@ -47,29 +43,28 @@ export function QuizFormDialog({
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(action, initialState);
 
-  // Cierra el diálogo cuando el envío acaba de terminar bien.
   useAlTenerExito(state, () => setOpen(false));
 
   return (
     <>
-      <span onClick={() => setOpen(true)}>{trigger}</span>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{mode === "create" ? "Nuevo cuestionario" : "Editar cuestionario"}</DialogTitle>
-            <DialogDescription>{contextLabel}</DialogDescription>
-          </DialogHeader>
+      <span onClick={() => setOpen((v) => !v)}>{trigger}</span>
+      {open && (
+        <PanelEnLinea
+          titulo={mode === "create" ? "Nuevo cuestionario" : "Editar cuestionario"}
+          descripcion={contextLabel}
+          onCerrar={() => setOpen(false)}
+        >
           <form action={formAction} className="space-y-4">
             <input type="hidden" name="moduleId" value={moduleId ?? ""} />
             <div className="space-y-1.5">
-              <Label htmlFor="title">Título</Label>
-              <Input id="title" name="title" required defaultValue={defaultValues?.title} />
+              <Label htmlFor="quiz-title">Título</Label>
+              <Input id="quiz-title" name="title" required defaultValue={defaultValues?.title} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="description">Descripción</Label>
-              <Textarea id="description" name="description" rows={2} defaultValue={defaultValues?.description} />
+              <Label htmlFor="quiz-description">Descripción</Label>
+              <Textarea id="quiz-description" name="description" rows={2} defaultValue={defaultValues?.description} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label htmlFor="passingScore">Puntaje mínimo (%)</Label>
                 <Input
@@ -94,18 +89,18 @@ export function QuizFormDialog({
                   defaultValue={defaultValues?.maxAttempts ?? 10}
                 />
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="timeLimitMinutes">Tiempo límite (min, opcional)</Label>
+                <Input
+                  id="timeLimitMinutes"
+                  name="timeLimitMinutes"
+                  type="number"
+                  min={1}
+                  defaultValue={defaultValues?.timeLimitMinutes ?? ""}
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="timeLimitMinutes">Tiempo límite en minutos (opcional)</Label>
-              <Input
-                id="timeLimitMinutes"
-                name="timeLimitMinutes"
-                type="number"
-                min={1}
-                defaultValue={defaultValues?.timeLimitMinutes ?? ""}
-              />
-            </div>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="flex items-center gap-3">
                 <Switch
                   id="randomizeQuestions"
@@ -133,21 +128,17 @@ export function QuizFormDialog({
                   defaultChecked={defaultValues?.showResultsNow ?? true}
                 />
                 <Label htmlFor="showResultsNow" className="font-normal">
-                  Mostrar retroalimentación al finalizar
+                  Retroalimentación al finalizar
                 </Label>
               </div>
             </div>
             {state.error && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>
             )}
-            <DialogFooter>
-              <Button type="submit" disabled={pending}>
-                {pending ? "Guardando..." : "Guardar cuestionario"}
-              </Button>
-            </DialogFooter>
+            <PieFormulario pending={pending} etiqueta="Guardar cuestionario" onCancelar={() => setOpen(false)} />
           </form>
-        </DialogContent>
-      </Dialog>
+        </PanelEnLinea>
+      )}
     </>
   );
 }

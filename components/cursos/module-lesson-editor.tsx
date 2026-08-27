@@ -205,7 +205,7 @@ export function ModuleLessonEditor({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-display text-lg font-bold text-foreground">Temario</h3>
         <ModuleFormDialog
           mode="create"
@@ -247,7 +247,7 @@ export function ModuleLessonEditor({
       </DndContext>
 
       <div className="surface space-y-3 p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h4 className="font-display text-sm font-bold text-foreground">Evaluación final del curso</h4>
             <p className="text-xs text-muted-foreground">
@@ -306,7 +306,7 @@ function SortableModuleCard({
 
   return (
     <div ref={setNodeRef} style={style} className="surface">
-      <div className="flex items-center gap-2 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3">
         <button
           type="button"
           {...attributes}
@@ -381,7 +381,7 @@ function SortableModuleCard({
           </div>
 
           <div className="space-y-3 rounded-xl border border-dashed border-border p-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Cuestionario del módulo
               </p>
@@ -431,7 +431,7 @@ function SortableLessonRow({ lesson }: { lesson: LessonItem }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2"
+      className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background px-3 py-2"
     >
       <button
         type="button"
@@ -503,7 +503,8 @@ function QuizCard({
             {quiz.timeLimitMinutes} min
           </span>
         )}
-        <div className="ml-auto flex items-center gap-1">
+        <span className="ml-auto" aria-hidden="true" />
+        <div className="contents">
           <QuizFormDialog
             mode="edit"
             action={updateQuizAction.bind(null, quiz.id)}
@@ -571,7 +572,7 @@ function SortableQuestionRow({ question, index }: { question: QuestionItem; inde
 
   return (
     <div ref={setNodeRef} style={style} className="rounded-lg border border-border bg-background px-3 py-2">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           {...attributes}

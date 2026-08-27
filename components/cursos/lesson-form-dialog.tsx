@@ -1,21 +1,12 @@
 "use client";
 
 import { Check, Paperclip } from "lucide-react";
-
 import { useActionState, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { PanelEnLinea, PieFormulario } from "@/components/cursos/panel-en-linea";
 import { RichTextEditor } from "@/components/cursos/rich-text-editor";
 import { LESSON_CONTENT_TYPE_LABELS } from "@/components/cursos/labels";
 import type { LessonContentType } from "@prisma/client";
@@ -48,6 +39,11 @@ const EMPTY_DEFAULTS: LessonDefaults = {
   fileUrl: null,
 };
 
+/**
+ * Formulario de lección EN LÍNEA (el nombre "Dialog" es histórico: se
+ * despliega dentro del módulo, debajo del disparador, con el editor de
+ * texto enriquecido y los campos del tipo de contenido elegido).
+ */
 export function LessonFormDialog({
   mode,
   action,
@@ -67,13 +63,15 @@ export function LessonFormDialog({
   // clic en "examinar" surtió efecto hasta después de guardar.
   const [archivoElegido, setArchivoElegido] = useState<string | null>(null);
 
-  // Cierra el diálogo cuando el envío acaba de terminar bien.
   useAlTenerExito(state, () => setOpen(false));
 
-  // Mismo cuidado que en las preguntas: el diálogo sigue montado entre una
-  // lección y la siguiente, y el tipo elegido y el aviso "se subirá X"
-  // se quedaban pegados al reabrirlo.
-  function abrir() {
+  // El panel sigue montado entre una lección y la siguiente: el tipo elegido
+  // y el aviso "se subirá X" se reinician al abrirlo.
+  function alternar() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
     setContentType(values.contentType);
     setArchivoElegido(null);
     setOpen(true);
@@ -87,39 +85,40 @@ export function LessonFormDialog({
 
   return (
     <>
-      <span onClick={abrir}>{trigger}</span>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{mode === "create" ? "Nueva lección" : "Editar lección"}</DialogTitle>
-            <DialogDescription>Elige el tipo de contenido y completa los campos correspondientes.</DialogDescription>
-          </DialogHeader>
+      <span onClick={alternar}>{trigger}</span>
+      {open && (
+        <PanelEnLinea
+          titulo={mode === "create" ? "Nueva lección" : "Editar lección"}
+          descripcion="Elige el tipo de contenido y completa los campos correspondientes."
+          onCerrar={() => setOpen(false)}
+        >
           <form action={formAction} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="title">Título</Label>
-              <Input id="title" name="title" required defaultValue={values.title} />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_220px]">
+              <div className="space-y-1.5">
+                <Label htmlFor="title">Título</Label>
+                <Input id="title" name="title" required defaultValue={values.title} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="contentType">Tipo de contenido</Label>
+                <select
+                  id="contentType"
+                  name="contentType"
+                  value={contentType}
+                  onChange={(e) => setContentType(e.target.value as LessonContentType)}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {Object.entries(LESSON_CONTENT_TYPE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="description">Descripción breve</Label>
               <Textarea id="description" name="description" rows={2} defaultValue={values.description} />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="contentType">Tipo de contenido</Label>
-              <select
-                id="contentType"
-                name="contentType"
-                value={contentType}
-                onChange={(e) => setContentType(e.target.value as LessonContentType)}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              >
-                {Object.entries(LESSON_CONTENT_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
             </div>
 
             {showText && (
@@ -212,24 +211,16 @@ export function LessonFormDialog({
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>
             )}
 
-            <DialogFooter>
-              <Button type="submit" disabled={pending}>
-                {pending ? "Guardando..." : "Guardar lección"}
-              </Button>
-            </DialogFooter>
+            <PieFormulario pending={pending} etiqueta="Guardar lección" onCancelar={() => setOpen(false)} />
           </form>
-        </DialogContent>
-      </Dialog>
+        </PanelEnLinea>
+      )}
     </>
   );
 }
 
 /**
  * Dice si la lección ya tiene archivo y cuál se va a subir.
- *
- * Antes el campo solo avisaba "ya hay un archivo cargado", sin nombre y sin
- * confirmar la selección: no se distinguía haber elegido un archivo de no
- * haberlo elegido, y por tanto tampoco se notaba cuando la subida se perdía.
  */
 function EstadoArchivo({ elegido, yaHay }: { elegido: string | null; yaHay: boolean }) {
   if (elegido) {
