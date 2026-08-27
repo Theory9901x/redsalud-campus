@@ -1,4 +1,8 @@
 @import "tailwindcss";
+/* Tipografía del texto enriquecido (.prose): títulos, listas, enlaces y citas
+   de las lecciones. Sin el plugin, la clase no aplicaba nada y el contenido
+   se veía plano. */
+@plugin "@tailwindcss/typography";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 

@@ -8,7 +8,7 @@ import { prisma } from "../../lib/prisma";
  * tipo y la evaluación- se monta después por la interfaz del tutor demo,
  * que es justo el flujo que se va a enseñar. Idempotente por slug.
  */
-export const SLUG_DEMO = "demo-manejo-residuos-hospitalarios";
+import { SLUG_DEMO } from "./curso-demo";
 
 async function main() {
   const tutora = await prisma.user.findUniqueOrThrow({ where: { email: "demo.tutora@ejemplo.test" }, select: { id: true } });

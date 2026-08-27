@@ -1,5 +1,5 @@
 import { prisma } from "../../lib/prisma";
-import { SLUG_DEMO } from "./montar-curso-demo";
+import { SLUG_DEMO } from "./curso-demo";
 
 /** Publica el curso demo (acción de administrador) y resume lo montado. */
 async function main() {

@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { htmlSeguro } from "../../lib/html-seguro";
-import { SLUG_DEMO } from "./montar-curso-demo";
+import { SLUG_DEMO } from "./curso-demo";
 
 /**
  * Deja la lección 1 del curso demo con un contenido enriquecido limpio y
