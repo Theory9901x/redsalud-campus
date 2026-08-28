@@ -124,7 +124,7 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
   return (
     <main className="aula-canvas min-h-screen">
       <div className="mx-auto w-full max-w-[1560px] px-3 py-4 sm:px-5 lg:px-6">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_340px]">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
           {/* Barra lateral de la sala */}
           <div className="hidden lg:block">
             <NavSala archivosHref={volverHref} conGrabacion={esPersonal} />
@@ -177,16 +177,8 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
               jwt={tokenSala}
               esPresentador={esPersonal}
               grabacion={esPersonal ? <GrabacionJornada activityId={actividad.id} /> : undefined}
-            />
-
-            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              <ShieldCheck className="h-4 w-4 text-success" aria-hidden="true" />
-              Tu ingreso quedó registrado en la lista de asistencia de la jornada.
-            </p>
-          </div>
-
-          {/* Informe de la capacitación */}
-          <aside id="informe" className="space-y-4 scroll-mt-24">
+              panelDerecho={
+                <div id="informe" className="space-y-4 scroll-mt-24">
             {evaluacion && (
               <section className="surface-glass space-y-3 p-5">
                 <h2 className="font-display text-[14px] font-bold text-foreground">Tu evaluación</h2>
@@ -251,7 +243,16 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
                 <p className="text-[13px] leading-relaxed text-muted-foreground">{actividad.methodology}</p>
               </section>
             )}
-          </aside>
+                </div>
+              }
+            />
+
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <ShieldCheck className="h-4 w-4 text-success" aria-hidden="true" />
+              Tu ingreso quedó registrado en la lista de asistencia de la jornada.
+            </p>
+          </div>
+
         </div>
       </div>
     </main>

@@ -34,7 +34,7 @@ export function NavSala({ archivosHref, conGrabacion }: { archivosHref: string; 
     { clave: "resumen", etiqueta: "Resumen", icono: Home, ancla: "informe" },
     { clave: "llamada", etiqueta: "Llamada", icono: PhoneCall, ancla: "llamada" },
     { clave: "participantes", etiqueta: "Participantes", icono: Users, ancla: "participantes" },
-    { clave: "chat", etiqueta: "Chat", icono: MessageCircle, comando: "toggleChat" },
+    { clave: "chat", etiqueta: "Chat", icono: MessageCircle, comando: "enfocarChat" },
     ...(conGrabacion
       ? [{ clave: "grabaciones", etiqueta: "Grabaciones", icono: CircleDot, ancla: "grabacion" } as Item]
       : []),

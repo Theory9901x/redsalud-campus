@@ -113,22 +113,16 @@ export default async function JornadaEnVivoPage({
         </header>
 
         {conVideo ? (
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-            {/* El embed NO lleva vidrio: el glass se reserva para las tarjetas
-                de estado, donde aporta jerarquía. */}
-            <div className="min-w-0">
-              <SalaVirtual
-                domain={jitsiDomain}
-                roomName={`RedSaludTeForma-${actividad.id}`}
-                activityId={actividad.id}
-                displayName={session.user.name ?? "Tutor"}
-                subject={actividad.title}
-                jwt={tokenSala}
-                esPresentador
-              />
-            </div>
-            <PanelEnVivo activityId={activityId} inicial={metricas} conVideo />
-          </div>
+          <SalaVirtual
+            domain={jitsiDomain}
+            roomName={`RedSaludTeForma-${actividad.id}`}
+            activityId={actividad.id}
+            displayName={session.user.name ?? "Tutor"}
+            subject={actividad.title}
+            jwt={tokenSala}
+            esPresentador
+            panelDerecho={<PanelEnVivo activityId={activityId} inicial={metricas} conVideo />}
+          />
         ) : (
           <PanelEnVivo activityId={activityId} inicial={metricas} conVideo={false} />
         )}

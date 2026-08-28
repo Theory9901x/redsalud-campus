@@ -130,7 +130,7 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
           </span>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-3">
           <div className="min-w-0 space-y-3">
             <div className="surface-glass surface-accent-top px-5 py-4">
               <h1 className="flex items-center gap-2 font-display text-lg font-extrabold leading-snug text-foreground">
@@ -148,10 +148,8 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
               externalParticipantId={participante.id}
               esPresentador={puedeGrabar}
               grabacion={puedeGrabar ? <GrabacionJornada activityId={actividad.id} /> : undefined}
-            />
-          </div>
-
-          <aside className="space-y-4">
+              panelDerecho={
+                <div className="space-y-4">
             {/* Evaluaciones del ciclo */}
             <section className="surface-glass space-y-3 p-5">
               <h2 className="font-display text-xs font-bold uppercase tracking-wide text-foreground">Tu evaluación</h2>
@@ -212,7 +210,11 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
                 <p className="text-[13px] leading-relaxed text-muted-foreground">{actividad.objective}</p>
               </section>
             )}
-          </aside>
+                </div>
+              }
+            />
+          </div>
+
         </div>
       </div>
     </main>

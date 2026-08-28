@@ -22,8 +22,10 @@ import {
   Gauge,
   Check,
   RotateCcw,
+  SendHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { etiquetaHora } from "@/components/training-plans/labels";
 
 type ParticipanteJitsi = {
   participantId: string;
@@ -52,10 +54,11 @@ declare global {
 }
 
 /** Comandos que otras partes de la página (la barra lateral) pueden enviar a la sala. */
-export type ComandoSala = "toggleChat" | "toggleParticipantsPane" | "abrirConfiguracion" | "enfocarNotas";
+export type ComandoSala = "enfocarChat" | "toggleParticipantsPane" | "abrirConfiguracion" | "enfocarNotas";
 export const EVENTO_COMANDO_SALA = "sala:comando";
 
 type Participante = { id: string; nombre: string; esLocal: boolean; manoAlzada: boolean };
+type Mensaje = { id: number; autor: string; texto: string; hora: string; propio: boolean; privado: boolean };
 type Evento = { hora: string; texto: string };
 
 const FORMATO_HORA = new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit" });
@@ -93,6 +96,7 @@ export function SalaVirtual({
   externalParticipantId,
   esPresentador = false,
   grabacion,
+  panelDerecho,
 }: {
   domain: string;
   roomName: string;
@@ -105,6 +109,8 @@ export function SalaVirtual({
   esPresentador?: boolean;
   /** Control de grabación (solo personal), se pinta en su tarjeta al pie. */
   grabacion?: React.ReactNode;
+  /** Lo que va debajo del chat en la columna derecha (informe, evaluación, métricas…). */
+  panelDerecho?: React.ReactNode;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiApi | null>(null);
@@ -125,7 +131,11 @@ export function SalaVirtual({
   const [menu, setMenu] = useState<"mic" | "cam" | "config" | null>(null);
   const [dispositivos, setDispositivos] = useState<{ mic: DispositivoJitsi[]; cam: DispositivoJitsi[] }>({ mic: [], cam: [] });
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [mensajes, setMensajes] = useState<Mensaje[]>([]);
+  const [noLeidos, setNoLeidos] = useState(0);
   const notasRef = useRef<HTMLTextAreaElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+  const contadorMensajes = useRef(0);
 
   const joinedAtRef = useRef<Date | null>(null);
   const localIdRef = useRef<string | null>(null);
@@ -188,6 +198,9 @@ export function SalaVirtual({
           disableDeepLinking: true,
           // La barra de Jitsi se oculta: los controles son los de la plataforma.
           toolbarButtons: [],
+          // Sus avisos flotantes ("X joined", "Open chat") también: el chat y
+          // la actividad de la sesión ya los muestran fuera del video.
+          notifications: [],
           // ---- Rendimiento (VPS de 2 CPU y redes institucionales) ----
           startWithAudioMuted: true,
           startWithVideoMuted: true,
@@ -245,7 +258,28 @@ export function SalaVirtual({
         setCompartiendo(on);
         registrar(on ? "Empezaste a compartir pantalla" : "Dejaste de compartir pantalla");
       });
-      api.addListener("chatUpdated", (...args: unknown[]) => setChatAbierto(Boolean((args[0] as { isOpen?: boolean })?.isOpen)));
+      // Chat de la sala: viaja por el canal propio de Jitsi (XMPP), en
+      // tiempo real y sin tocar nuestro servidor. Se muestra en el panel
+      // derecho de la plataforma en vez de en la ventana nativa.
+      api.addListener("incomingMessage", (...args: unknown[]) => {
+        const m = args[0] as { from?: string; nick?: string; message?: string; privateMessage?: boolean } | undefined;
+        if (!m?.message) return;
+        const texto = m.message;
+        setMensajes((prev) =>
+          [
+            ...prev,
+            {
+              id: ++contadorMensajes.current,
+              autor: m.nick || "Participante",
+              texto,
+              hora: etiquetaHora(new Date()),
+              propio: false,
+              privado: Boolean(m.privateMessage),
+            },
+          ].slice(-200)
+        );
+        setNoLeidos((n) => n + 1);
+      });
       api.addListener("tileViewChanged", (...args: unknown[]) => setMosaico(Boolean((args[0] as { enabled?: boolean })?.enabled)));
       api.addListener("raiseHandUpdated", (...args: unknown[]) => {
         const d = args[0] as { id?: string; handRaised?: number | boolean } | undefined;
@@ -288,7 +322,10 @@ export function SalaVirtual({
   useEffect(() => {
     function alComando(e: Event) {
       const tipo = (e as CustomEvent<{ tipo: ComandoSala }>).detail?.tipo;
-      if (tipo === "toggleChat") apiRef.current?.executeCommand("toggleChat");
+      if (tipo === "enfocarChat") {
+        document.getElementById("chat-sala")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        chatInputRef.current?.focus();
+      }
       if (tipo === "toggleParticipantsPane") apiRef.current?.executeCommand("toggleParticipantsPane");
       if (tipo === "abrirConfiguracion") setMenu((m) => (m === "config" ? null : "config"));
       if (tipo === "enfocarNotas") notasRef.current?.focus();
@@ -314,8 +351,18 @@ export function SalaVirtual({
   const comando = (nombre: string, ...args: unknown[]) => apiRef.current?.executeCommand(nombre, ...args);
   const inactivo = !dentro;
 
+  function enviarMensaje(texto: string) {
+    const limpio = texto.trim();
+    if (!limpio || !apiRef.current) return;
+    apiRef.current.executeCommand("sendChatMessage", limpio);
+    setMensajes((prev) =>
+      [...prev, { id: ++contadorMensajes.current, autor: displayName, texto: limpio, hora: etiquetaHora(new Date()), propio: true, privado: false }].slice(-200)
+    );
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="min-w-0 space-y-4">
       {/* ---------------- Video ---------------- */}
       <section
         id="llamada"
@@ -403,7 +450,18 @@ export function SalaVirtual({
             onClick={() => comando("toggleParticipantsPane")}
           />
           <BotonControl etiqueta="Compartir" activo={compartiendo} icono={MonitorUp} disabled={inactivo} onClick={() => comando("toggleShareScreen")} />
-          <BotonControl etiqueta="Chat" activo={chatAbierto} icono={MessageCircle} disabled={inactivo} onClick={() => comando("toggleChat")} />
+          <BotonControl
+            etiqueta="Chat"
+            activo={chatAbierto}
+            icono={MessageCircle}
+            disabled={inactivo}
+            contador={noLeidos > 0 ? noLeidos : undefined}
+            onClick={() => {
+              setNoLeidos(0);
+              document.getElementById("chat-sala")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              chatInputRef.current?.focus();
+            }}
+          />
           <BotonControl
             etiqueta="Configuración"
             activo={menu === "config"}
@@ -545,6 +603,133 @@ export function SalaVirtual({
         </div>
       )}
     </div>
+
+    {/* ---------------- Columna derecha: chat + panel ---------------- */}
+    <div className="min-w-0 space-y-4">
+      <ChatSala
+        mensajes={mensajes}
+        dentro={dentro}
+        inputRef={chatInputRef}
+        onEnviar={enviarMensaje}
+        onLeer={() => setNoLeidos(0)}
+        participantes={participantes.length}
+      />
+      {panelDerecho}
+    </div>
+    </div>
+  );
+}
+
+/**
+ * Chat de la sala, al lado derecho como en cualquier videollamada. Solo
+ * funciona estando dentro de la reunión (el canal es el de Jitsi); quien
+ * aún no entra ve el aviso, no un cuadro muerto.
+ */
+function ChatSala({
+  mensajes,
+  dentro,
+  inputRef,
+  onEnviar,
+  onLeer,
+  participantes,
+}: {
+  mensajes: Mensaje[];
+  dentro: boolean;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onEnviar: (texto: string) => void;
+  onLeer: () => void;
+  participantes: number;
+}) {
+  const [texto, setTexto] = useState("");
+  const listaRef = useRef<HTMLDivElement>(null);
+
+  // Al llegar mensajes, el hilo baja solo al último.
+  useEffect(() => {
+    const lista = listaRef.current;
+    if (lista) lista.scrollTop = lista.scrollHeight;
+  }, [mensajes.length]);
+
+  function enviar() {
+    if (!texto.trim()) return;
+    onEnviar(texto);
+    setTexto("");
+  }
+
+  return (
+    <section
+      id="chat-sala"
+      className="surface-glass flex h-[58vh] min-h-[420px] flex-col scroll-mt-24"
+      onFocus={onLeer}
+      onMouseEnter={onLeer}
+      aria-label="Chat de la sala"
+    >
+      <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
+        <h3 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground">
+          <MessageCircle className="h-4 w-4 text-primary" aria-hidden="true" />
+          Chat de la sala
+        </h3>
+        <span className="text-[11px] font-semibold text-muted-foreground">
+          {dentro ? `${participantes} en línea` : "Sin conectar"}
+        </span>
+      </div>
+
+      <div ref={listaRef} className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-4 py-3">
+        {!dentro ? (
+          <p className="rounded-xl bg-card/60 p-3 text-center text-[12.5px] text-muted-foreground">
+            Únete a la reunión para escribir en el chat. Los mensajes llegan a todos los que están en la sala.
+          </p>
+        ) : mensajes.length === 0 ? (
+          <p className="pt-6 text-center text-[12.5px] text-muted-foreground">Todavía no hay mensajes. ¡Escribe el primero!</p>
+        ) : (
+          mensajes.map((m) => (
+            <div key={m.id} className={cn("flex flex-col", m.propio ? "items-end" : "items-start")}>
+              {!m.propio && (
+                <span className="mb-0.5 px-1 text-[11px] font-bold text-foreground">
+                  {m.autor}
+                  {m.privado && <span className="ml-1 font-semibold text-warning-foreground">· privado</span>}
+                </span>
+              )}
+              <div
+                className={cn(
+                  "max-w-[88%] rounded-2xl px-3 py-2 text-[13px] leading-snug break-words",
+                  m.propio ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md bg-card/80 text-foreground"
+                )}
+              >
+                {m.texto}
+              </div>
+              <span className="mt-0.5 px-1 text-[10.5px] text-muted-foreground">{m.hora}</span>
+            </div>
+          ))
+        )}
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          enviar();
+        }}
+        className="flex items-center gap-2 border-t border-border/50 p-3"
+      >
+        <input
+          ref={inputRef}
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          disabled={!dentro}
+          maxLength={1000}
+          placeholder={dentro ? "Escribe un mensaje…" : "Únete para chatear"}
+          aria-label="Mensaje para el chat de la sala"
+          className="h-10 min-w-0 flex-1 rounded-xl border border-border/60 bg-background/70 px-3 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/50 disabled:opacity-60"
+        />
+        <button
+          type="submit"
+          disabled={!dentro || !texto.trim()}
+          aria-label="Enviar"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0"
+        >
+          <SendHorizontal className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </form>
+    </section>
   );
 }
 
