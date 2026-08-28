@@ -124,6 +124,7 @@ export default async function JornadaEnVivoPage({
                 displayName={session.user.name ?? "Tutor"}
                 subject={actividad.title}
                 jwt={tokenSala}
+                esPresentador
               />
             </div>
             <PanelEnVivo activityId={activityId} inicial={metricas} conVideo />

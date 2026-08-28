@@ -146,8 +146,9 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
               subject={actividad.title}
               jwt={tokenStaff}
               externalParticipantId={participante.id}
+              esPresentador={puedeGrabar}
+              grabacion={puedeGrabar ? <GrabacionJornada activityId={actividad.id} /> : undefined}
             />
-            {puedeGrabar && <GrabacionJornada activityId={actividad.id} />}
           </div>
 
           <aside className="space-y-4">
