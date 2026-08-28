@@ -55,19 +55,49 @@ export const SESSION_SHIFT_LABELS: Record<SessionShift, string> = {
   TARDE: "Tarde",
 };
 
-const FORMATO_FECHA_HORA = new Intl.DateTimeFormat("es-CO", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-});
-const FORMATO_HORA = new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit" });
+/*
+ * FECHAS DETERMINISTAS.
+ *
+ * Estas etiquetas se pintan tanto en el servidor como en componentes
+ * cliente (el cronograma), así que NO pueden depender de dos cosas que
+ * cambian entre Node y el navegador: el literal que cada ICU pone entre la
+ * fecha y la hora ("2026, 7:42" en Node, "2026 a las 7:42" en Chrome) y la
+ * zona horaria (UTC en el VPS, Colombia en el equipo de la persona). Ambas
+ * hacían fallar la hidratación (React #418). Se toman solo las PARTES
+ * numéricas/nominales en zona Bogotá y el texto se arma a mano.
+ */
+const ZONA = "America/Bogota";
+
+function partes(fecha: Date, opciones: Intl.DateTimeFormatOptions): Record<string, string> {
+  const salida: Record<string, string> = {};
+  for (const p of new Intl.DateTimeFormat("es-CO", { timeZone: ZONA, ...opciones }).formatToParts(fecha)) {
+    if (p.type !== "literal") salida[p.type] = p.value;
+  }
+  return salida;
+}
+
+/**
+ * "7:42 p. m." — el "a. m./p. m." se arma a mano: el ICU de Node lo separa
+ * con un espacio normal y el de Chrome con un espacio estrecho (U+202F), y
+ * esa diferencia invisible también rompía la hidratación.
+ */
+export function etiquetaHora(fecha: Date): string {
+  const p = partes(fecha, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  const hora24 = Number(p.hour);
+  const hora12 = hora24 % 12 === 0 ? 12 : hora24 % 12;
+  return `${hora12}:${p.minute} ${hora24 < 12 ? "a. m." : "p. m."}`;
+}
+
+/** "25 de agosto de 2026" */
+export function etiquetaFecha(fecha: Date): string {
+  const p = partes(fecha, { day: "numeric", month: "long", year: "numeric" });
+  return `${p.day} de ${p.month} de ${p.year}`;
+}
 
 /** "12 de mayo de 2026, 8:00 a. m. – 10:00 a. m." — la jornada real, no el trimestre del plan. */
 export function etiquetaJornada(sesion: { startsAt: Date; endsAt: Date | null }): string {
-  const inicio = FORMATO_FECHA_HORA.format(sesion.startsAt);
-  return sesion.endsAt ? `${inicio} – ${FORMATO_HORA.format(sesion.endsAt)}` : inicio;
+  const inicio = `${etiquetaFecha(sesion.startsAt)}, ${etiquetaHora(sesion.startsAt)}`;
+  return sesion.endsAt ? `${inicio} – ${etiquetaHora(sesion.endsAt)}` : inicio;
 }
 
 /**
@@ -95,7 +125,6 @@ export const SEMAFORO_CLASSES: Record<NivelSemaforo, string> = {
 };
 
 const NUMERO_ROMANO = ["I", "II", "III", "IV"] as const;
-const FORMATO_FECHA = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" });
 
 /** "I", "I y III", "I, II y IV" — como los nombra el PIC. */
 export function etiquetaTrimestres(quarters: number[]): string | null {
@@ -131,8 +160,8 @@ export function etiquetaProgramacion(activity: {
     return restantes > 0 ? `${fecha} (+${restantes})` : fecha;
   }
   if (activity.startDate) {
-    const inicio = FORMATO_FECHA.format(activity.startDate);
-    return activity.endDate ? `${inicio} — ${FORMATO_FECHA.format(activity.endDate)}` : inicio;
+    const inicio = etiquetaFecha(activity.startDate);
+    return activity.endDate ? `${inicio} — ${etiquetaFecha(activity.endDate)}` : inicio;
   }
   return etiquetaTrimestres(activity.quarters ?? []) ?? "Sin programar";
 }

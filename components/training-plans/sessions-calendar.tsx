@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { EmptyState } from "@/components/brand/empty-state";
@@ -60,6 +60,18 @@ export function SessionsCalendar({
   /** false = solo consulta (vista de estudiante): sin enlaces a la ficha de gestión. */
   linkable?: boolean;
 }) {
+  /*
+   * El calendario se arma SOLO en el navegador, después de montar.
+   *
+   * "Hoy" y el día de cada jornada dependen de la zona horaria: el servidor
+   * (UTC) ponía una jornada de las 7 p. m. de Colombia en el día siguiente
+   * y el cliente (UTC-5) en el día correcto, y React abortaba la
+   * hidratación por el texto distinto (error #418). Hasta montar se pinta
+   * un esqueleto del mismo tamaño; luego todo se calcula con la hora local
+   * de la persona, que es la que debe ver.
+   */
+  const [montado, setMontado] = useState(false);
+  useEffect(() => setMontado(true), []);
   const hoy = useMemo(() => new Date(), []);
   const primerMesConSesion = sessions.find((s) => s.startsAt >= hoy)?.startsAt ?? sessions[0]?.startsAt ?? hoy;
   const [cursor, setCursor] = useState(() => new Date(primerMesConSesion.getFullYear(), primerMesConSesion.getMonth(), 1));
@@ -95,6 +107,15 @@ export function SessionsCalendar({
   }, [cursor, porDia, hoy]);
 
   const etiquetaMes = `${MESES[cursor.getMonth()]} de ${cursor.getFullYear()}`;
+
+  if (!montado) {
+    return (
+      <div className="space-y-3" aria-busy="true" aria-label="Cargando calendario">
+        <div className="surface h-14 animate-pulse" />
+        <div className="surface h-[420px] animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
