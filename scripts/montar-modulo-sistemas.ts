@@ -18,7 +18,7 @@ import { saveLessonFile } from "../lib/storage";
  * administrativo) se decidirá qué ve y qué debe completar cada quien.
  *
  * La lección de Laboratorio clínico usa el video institucional local
- * (VIDEO_LAB=/ruta/laboratorioredsalud.mp4); antes se enviaba por WhatsApp.
+ * (VIDEO_LAB=/ruta/laboratorioredsalud.mp4).
  *
  * Idempotente por título de módulo. Sin evaluación, a propósito.
  */
@@ -91,7 +91,7 @@ const MODULOS: { titulo: string; descripcion: string; lecciones: LeccionDef[] }[
       },
       {
         titulo: "Laboratorio clínico",
-        descripcion: "Videotutorial institucional para profesionales de laboratorio clínico (antes se enviaba por WhatsApp).",
+        descripcion: "Videotutorial institucional para profesionales de laboratorio clínico.",
         tipo: "VIDEO",
         minutos: 15,
       },

@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { markLessonCompleteAction } from "@/app/aula/[courseId]/actions";
 import { ReproductorVideo } from "@/components/aula/reproductor-video";
 import type { LessonContentType } from "@prisma/client";
@@ -76,6 +75,7 @@ export function CompletarLeccion({
   return (
     <div className="space-y-4">
       {esVideoArchivo && (
+        <div className="player-shell">
         <ReproductorVideo
           courseId={courseId}
           lessonId={lessonId}
@@ -84,34 +84,43 @@ export function CompletarLeccion({
           yaCompletada={completada}
           onCompletar={completar}
         />
+        </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
+      <div className={esVideoArchivo ? "flex flex-col items-center gap-2" : "flex flex-col items-center gap-2 sm:items-stretch"}>
+        <button
           type="button"
           onClick={completar}
           disabled={completada || estado === "guardando"}
-          className="gap-1.5"
+          data-completada={completada}
+          className="btn-cta-leccion w-full sm:w-auto sm:min-w-[280px]"
         >
-          {estado === "guardando" ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : estado === "error" ? (
-            <RotateCcw className="h-4 w-4" />
-          ) : (
-            <CheckCircle2 className="h-4 w-4" />
-          )}
-          {completada
-            ? "Completada"
-            : estado === "guardando"
-              ? "Guardando…"
-              : estado === "error"
-                ? "Reintentar"
-                : "Marcar como completada"}
-        </Button>
+          <span className="flex items-center gap-2.5">
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/20">
+              {estado === "guardando" ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : estado === "error" ? (
+                <RotateCcw className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              )}
+            </span>
+            {completada
+              ? "Lección completada"
+              : estado === "guardando"
+                ? "Guardando…"
+                : estado === "error"
+                  ? "Reintentar"
+                  : "Marcar como completada"}
+          </span>
+          <span className="micro">
+            {completada ? "Registrada en tu avance" : "Avanza en tu aprendizaje"}
+          </span>
+        </button>
 
         {esVideoArchivo && !completada && (
           <p className="text-xs text-muted-foreground">
-También se marca sola al llegar al 90 % del video.
+            También se marca sola al llegar al 90 % del video.
           </p>
         )}
         {estado === "error" && (

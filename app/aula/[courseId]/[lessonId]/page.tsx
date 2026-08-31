@@ -7,12 +7,17 @@ import { prisma } from "@/lib/prisma";
 import { getAulaData } from "@/lib/aula";
 import { getYoutubeEmbedUrl } from "@/lib/youtube";
 import { htmlSeguro } from "@/lib/html-seguro";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LESSON_CONTENT_TYPE_LABELS, LESSON_CONTENT_TYPE_ICONS } from "@/components/cursos/labels";
 import { CompletarLeccion } from "@/components/aula/completar-leccion";
 
+/**
+ * Vista de la lección: UN workspace glass flotante donde el video es el
+ * protagonista, el título manda y el CTA es evidente. La estructura
+ * funcional (navegación, completar, tipos de contenido, estados) es la
+ * misma de siempre; solo cambió la piel.
+ */
 export default async function AulaLessonPage({
   params,
 }: {
@@ -26,14 +31,9 @@ export default async function AulaLessonPage({
   if (!data) notFound();
 
   /*
-   * Una lección que ya no existe NO es un 404.
-   *
-   * Al reemplazar el contenido de un módulo, las lecciones nuevas reciben
-   * identificadores nuevos, así que cualquier enlace guardado, pestaña
-   * abierta o marcador del temario anterior apunta a algo que se borró.
-   * Devolver "página no encontrada" deja al estudiante en un callejón sin
-   * salida sobre un curso en el que sí está inscrito; se le lleva al curso,
-   * que además lo reanuda donde le corresponde ahora.
+   * Una lección que ya no existe NO es un 404: al reemplazar el contenido de
+   * un módulo, los enlaces guardados apuntan a ids que se borraron. Se lleva
+   * a la persona al curso, que la reanuda donde le corresponde ahora.
    */
   const lessonMeta = data.flattenedLessons.find((l) => l.id === lessonId);
   if (!lessonMeta) redirect(`/aula/${courseId}`);
@@ -61,155 +61,186 @@ export default async function AulaLessonPage({
   const showLink = (lesson.contentType === "LINK" || lesson.contentType === "MIXED") && lesson.externalUrl;
   const embedUrl = lesson.videoUrl ? getYoutubeEmbedUrl(lesson.videoUrl) : null;
 
-  // Un documento embebido (PDF) necesita más lienzo que un texto de lectura:
-  // se ensancha el contenedor y el visor ocupa casi toda la altura de la
-  // ventana, para que se pueda leer sin abrir el archivo en otra pestaña.
+  // Un documento (PDF) necesita más lienzo que un texto de lectura.
   const isDocumentLesson = Boolean(showFile && lesson.contentType !== "IMAGE");
 
+  // "Título · Subtítulo": la segunda parte se pinta como subtítulo en
+  // degradado. Si el título no trae separador, no hay subtítulo.
+  const [tituloPrincipal, ...restoTitulo] = lesson.title.split(" · ");
+  const subtitulo = restoTitulo.join(" · ") || null;
+
+  const TypeIcon = LESSON_CONTENT_TYPE_ICONS[lesson.contentType];
+
+  const botonAnterior = prevLesson ? (
+    <Link href={`/aula/${courseId}/${prevLesson.id}`} className="btn-nav-leccion" data-dir="anterior">
+      <span className="flex items-center gap-1.5">
+        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+        Anterior
+      </span>
+      <span className="micro">Lección anterior</span>
+    </Link>
+  ) : (
+    <span aria-hidden="true" />
+  );
+
+  const botonSiguiente = nextLesson ? (
+    <Link href={`/aula/${courseId}/${nextLesson.id}`} className="btn-nav-leccion" data-dir="siguiente">
+      <span className="flex items-center gap-1.5">
+        Siguiente
+        <ChevronRight className="h-4 w-4" aria-hidden="true" />
+      </span>
+      <span className="micro">Siguiente lección</span>
+    </Link>
+  ) : (
+    <span aria-hidden="true" />
+  );
+
   return (
-    <div className={cn("mx-auto space-y-6", isDocumentLesson ? "max-w-6xl" : "max-w-3xl")}>
+    <div className={cn("mx-auto", isDocumentLesson ? "max-w-[1250px]" : "max-w-[1180px]")}>
       <div className="reading-progress" aria-hidden="true" />
-      <div>
-        {/* Badges de tipo de contenido + duración + estado de avance. */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {(() => {
-            const TypeIcon = LESSON_CONTENT_TYPE_ICONS[lesson.contentType];
-            return (
-              <Badge className="gap-1 bg-primary/10 text-primary">
-                <TypeIcon className="h-3 w-3" />
-                {LESSON_CONTENT_TYPE_LABELS[lesson.contentType]}
-              </Badge>
-            );
-          })()}
-          {lesson.estimatedMinutes !== null && lesson.estimatedMinutes > 0 && (
-            <Badge className="gap-1 bg-secondary text-secondary-foreground">
-              <Clock className="h-3 w-3" />
-              {lesson.estimatedMinutes} min
-            </Badge>
-          )}
-          <Badge
-            className={cn(
-              "gap-1",
-              lessonMeta.completed ? "bg-success/15 text-success" : "bg-warning/15 text-warning-foreground"
+
+      <article className="leccion-workspace p-[clamp(18px,3.2vw,36px)]">
+        {/* ---- Metadatos ---- */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <span className="pildora-leccion !text-[var(--accent)]">
+            <TypeIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            {LESSON_CONTENT_TYPE_LABELS[lesson.contentType]}
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {lesson.estimatedMinutes !== null && lesson.estimatedMinutes > 0 && (
+              <span className="pildora-leccion">
+                <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                {lesson.estimatedMinutes} min
+              </span>
             )}
-          >
-            {lessonMeta.completed && <CheckCircle2 className="h-3 w-3" />}
-            {lessonMeta.completed ? "Completada" : "En curso"}
-          </Badge>
+            <span className="pildora-leccion">
+              <span
+                className={cn("h-1.5 w-1.5 rounded-full", lessonMeta.completed ? "bg-success" : "bg-[var(--accent)]")}
+                aria-hidden="true"
+              />
+              {lessonMeta.completed ? "Completada" : "En curso"}
+            </span>
+          </div>
         </div>
-        <h1 className="mt-2 font-display text-2xl font-extrabold text-foreground">{lesson.title}</h1>
-        {lesson.description && <p className="mt-2 text-sm text-muted-foreground">{lesson.description}</p>}
-      </div>
 
-      {/* Tarjeta glass del contenido: difumina los blobs del aula-canvas. */}
-      <div className="surface-glass space-y-5 p-6">
-        {showText && lesson.contentBody && (
-          <div
-            className="prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: htmlSeguro(lesson.contentBody) }}
-          />
+        {/* ---- Título ---- */}
+        <h1 className="leccion-titulo mt-4">{tituloPrincipal}</h1>
+        {subtitulo && <p className="leccion-subtitulo mt-[5px]">{subtitulo}</p>}
+        {lesson.description && (
+          <p className="mt-2.5 max-w-[780px] text-[14.5px] leading-[1.55] text-muted-foreground">
+            {lesson.description}
+          </p>
         )}
 
-        {showYoutube && embedUrl && (
-          <div className="aspect-video w-full overflow-hidden rounded-xl border border-border shadow-sm">
-            <iframe
-              src={embedUrl}
-              title={lesson.title}
-              className="h-full w-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
+        {/* ---- Contenido ---- */}
+        <div className="mt-6 space-y-6">
+          {showText && lesson.contentBody && (
+            <div
+              className="prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: htmlSeguro(lesson.contentBody) }}
             />
-          </div>
-        )}
+          )}
 
-        {showFile && lesson.contentType === "IMAGE" && (
-          <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
-            {/* unoptimized: fileUrl es una ruta privada (/api/media/[id]) protegida por sesión;
-                el optimizador de next/image la pide desde el servidor sin cookies y recibe 401. */}
-            <Image
-              src={lesson.fileUrl!}
-              alt={lesson.title}
-              fill
-              unoptimized
-              sizes="(min-width: 768px) 700px, 100vw"
-              className="object-contain"
-            />
-          </div>
-        )}
-
-        {showFile && lesson.contentType !== "IMAGE" && (
-          <div className="space-y-3">
-            {/* Visor a casi toda la altura de la ventana, ajustado al ancho de
-                página y sin panel de miniaturas, para leer el documento aquí
-                mismo sin tener que abrirlo en otra pestaña. */}
-            <div className="h-[82vh] min-h-[520px] w-full overflow-hidden rounded-xl border border-border shadow-sm">
-              <iframe src={`${lesson.fileUrl!}#view=FitH&navpanes=0`} title={lesson.title} className="h-full w-full" />
+          {showYoutube && embedUrl && (
+            <div className="player-shell">
+              <iframe
+                src={embedUrl}
+                title={lesson.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
             </div>
+          )}
+
+          {showFile && lesson.contentType === "IMAGE" && (
+            <div className="player-shell">
+              <div className="relative aspect-video w-full overflow-hidden rounded-[18px] bg-muted">
+                {/* unoptimized: fileUrl es una ruta privada (/api/media/[id]) protegida por sesión;
+                    el optimizador de next/image la pide desde el servidor sin cookies y recibe 401. */}
+                <Image
+                  src={lesson.fileUrl!}
+                  alt={lesson.title}
+                  fill
+                  unoptimized
+                  sizes="(min-width: 768px) 1100px, 100vw"
+                  className="object-contain"
+                />
+              </div>
+            </div>
+          )}
+
+          {showFile && lesson.contentType !== "IMAGE" && (
+            <div className="space-y-3">
+              {/* Visor a casi toda la altura de la ventana, para leer el
+                  documento aquí mismo sin abrirlo en otra pestaña. */}
+              <div className="h-[80vh] min-h-[520px] w-full overflow-hidden rounded-[20px] border border-border/60 shadow-sm">
+                <iframe src={`${lesson.fileUrl!}#view=FitH&navpanes=0`} title={lesson.title} className="h-full w-full" />
+              </div>
+              <Link
+                href={lesson.fileUrl!}
+                target="_blank"
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
+              >
+                <FileText className="h-4 w-4" />
+                Abrir documento en una pestaña nueva
+              </Link>
+            </div>
+          )}
+
+          {showLink && (
             <Link
-              href={lesson.fileUrl!}
+              href={lesson.externalUrl!}
               target="_blank"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
+              className="btn-nav-leccion !flex-row justify-between gap-3 px-4 py-3"
             >
-              <FileText className="h-4 w-4" />
-              Abrir documento en una pestaña nueva
+              <span className="min-w-0 truncate text-sm font-medium">{lesson.externalUrl}</span>
+              <ExternalLink className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden="true" />
             </Link>
-          </div>
-        )}
+          )}
 
-        {showLink && (
-          <Link
-            href={lesson.externalUrl!}
-            target="_blank"
-            className="surface-hover flex items-center justify-between p-4"
-          >
-            <span className="text-sm font-medium text-foreground">{lesson.externalUrl}</span>
-            <ExternalLink className="h-4 w-4 text-primary" />
-          </Link>
-        )}
-
-        {!showText && !showYoutube && !showVideoFile && !showFile && !showLink && (
-          <p className="text-sm text-muted-foreground">Esta lección todavía no tiene contenido.</p>
-        )}
-      </div>
-
-      {/* En pantallas estrechas los tres bloques no caben en una fila: el de
-          completar baja a su propia línea en vez de desbordar la página. */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {prevLesson ? (
-          <Link
-            href={`/aula/${courseId}/${prevLesson.id}`}
-            className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Anterior
-          </Link>
-        ) : (
-          <span />
-        )}
-
-        <div className="order-last w-full sm:order-none sm:w-auto">
-          <CompletarLeccion
-            courseId={courseId}
-            lessonId={lessonId}
-            contentType={lesson.contentType}
-            fileUrl={lesson.fileUrl}
-            yaCompletada={lessonMeta.completed}
-            posicionInicial={progresoLeccion?.lastPositionSeconds ?? null}
-          />
+          {!showText && !showYoutube && !showVideoFile && !showFile && !showLink && (
+            <p className="text-sm text-muted-foreground">Esta lección todavía no tiene contenido.</p>
+          )}
         </div>
 
-        {nextLesson ? (
-          <Link
-            href={`/aula/${courseId}/${nextLesson.id}`}
-            className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}
-          >
-            Siguiente
-            <ChevronRight className="h-4 w-4" />
-          </Link>
+        {/* ---- Botonera ---- */}
+        {showVideoFile ? (
+          /* El video subido vive dentro del control de completar (reanuda y
+             auto-completa al 90%): ocupa el ancho y la navegación va debajo. */
+          <div className="mt-6 space-y-5 border-t border-border/40 pt-6">
+            <CompletarLeccion
+              courseId={courseId}
+              lessonId={lessonId}
+              contentType={lesson.contentType}
+              fileUrl={lesson.fileUrl}
+              yaCompletada={lessonMeta.completed}
+              posicionInicial={progresoLeccion?.lastPositionSeconds ?? null}
+            />
+            <div className="flex items-center justify-between gap-3">
+              {botonAnterior}
+              {botonSiguiente}
+            </div>
+          </div>
         ) : (
-          <span />
+          <div className="leccion-botonera mt-6 border-t border-border/40 pt-6">
+            <div className="justify-self-start">{botonAnterior}</div>
+            <div data-slot="cta" className="justify-self-center">
+              <CompletarLeccion
+                courseId={courseId}
+                lessonId={lessonId}
+                contentType={lesson.contentType}
+                fileUrl={lesson.fileUrl}
+                yaCompletada={lessonMeta.completed}
+                posicionInicial={progresoLeccion?.lastPositionSeconds ?? null}
+              />
+            </div>
+            <div className="justify-self-end">{botonSiguiente}</div>
+          </div>
         )}
-      </div>
+      </article>
+
+      {/* Un respiro al final para que el workspace no muera contra el borde. */}
+      <div className="h-8" aria-hidden="true" />
     </div>
   );
 }
