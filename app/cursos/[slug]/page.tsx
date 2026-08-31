@@ -93,7 +93,9 @@ export default async function CursoDetallePage({
   const colors = COURSE_TYPE_COLORS[course.courseType];
   // Cada quien ve los módulos de su grupo poblacional (AMBOS = todos). Sin
   // sesión se muestra el temario completo: es la vitrina del curso.
-  const tipoPersonal = session?.user?.personnelType ?? null;
+  // ADMIN y TUTOR ven el temario completo; el filtro es solo para estudiantes.
+  const esGestion = session?.user?.role === "ADMIN" || session?.user?.role === "TUTOR";
+  const tipoPersonal = esGestion ? null : session?.user?.personnelType ?? null;
   const modulosVisibles = course.modules.filter((m) => m.audience === "AMBOS" || !tipoPersonal || m.audience === tipoPersonal);
   const totalLessons = modulosVisibles.reduce((total, m) => total + m.lessons.length, 0);
 

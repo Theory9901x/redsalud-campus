@@ -109,10 +109,11 @@ export const getAulaData = cache(async (courseId: string, userId: string) => {
   // El grupo poblacional decide qué módulos ve la persona: en un mismo curso
   // (p. ej. inducción) el asistencial ve Chronis y el administrativo solo la
   // parte financiera. AMBOS se muestra a todos.
-  const usuario = await prisma.user.findUnique({ where: { id: userId }, select: { personnelType: true } });
-  const audiencias: ("AMBOS" | "ADMINISTRATIVO" | "ASISTENCIAL")[] = usuario
-    ? ["AMBOS", usuario.personnelType]
-    : ["AMBOS", "ADMINISTRATIVO", "ASISTENCIAL"];
+  // ADMIN y TUTOR gestionan el contenido: ven TODOS los módulos siempre.
+  const usuario = await prisma.user.findUnique({ where: { id: userId }, select: { personnelType: true, role: true } });
+  const esGestion = usuario?.role === "ADMIN" || usuario?.role === "TUTOR";
+  const audiencias: ("AMBOS" | "ADMINISTRATIVO" | "ASISTENCIAL")[] =
+    usuario && !esGestion ? ["AMBOS", usuario.personnelType] : ["AMBOS", "ADMINISTRATIVO", "ASISTENCIAL"];
 
   const [course, enrollment] = await Promise.all([
     prisma.course.findUnique({
