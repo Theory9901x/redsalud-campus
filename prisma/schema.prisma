@@ -263,6 +263,13 @@ model CourseModule {
   sortOrder   Int
   isRequired  Boolean @default(true)
   isActive    Boolean @default(true)
+  /**
+   * A quién se le muestra el módulo, según el grupo poblacional del
+   * funcionario (User.personnelType). AMBOS = todos. Permite que dentro de
+   * un mismo curso (p. ej. inducción) el personal asistencial vea Chronis
+   * y el administrativo vea solo la parte financiera.
+   */
+  audience    CourseAudience @default(AMBOS)
 
   lessons Lesson[]
   quizzes Quiz[]

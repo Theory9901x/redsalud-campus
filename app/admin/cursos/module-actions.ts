@@ -29,6 +29,7 @@ export async function createModuleAction(
     title: formData.get("title"),
     description: formData.get("description"),
     isRequired: formData.get("isRequired") === "on" || formData.get("isRequired") === "true",
+    audience: formData.get("audience") ?? "AMBOS",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
@@ -43,6 +44,7 @@ export async function createModuleAction(
       title: parsed.data.title,
       description: parsed.data.description || null,
       isRequired: parsed.data.isRequired,
+      audience: parsed.data.audience,
       sortOrder: (max._max.sortOrder ?? -1) + 1,
     },
   });
@@ -64,6 +66,7 @@ export async function updateModuleAction(
     title: formData.get("title"),
     description: formData.get("description"),
     isRequired: formData.get("isRequired") === "on" || formData.get("isRequired") === "true",
+    audience: formData.get("audience") ?? "AMBOS",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
@@ -75,6 +78,7 @@ export async function updateModuleAction(
       title: parsed.data.title,
       description: parsed.data.description || null,
       isRequired: parsed.data.isRequired,
+      audience: parsed.data.audience,
     },
   });
 

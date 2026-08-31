@@ -59,7 +59,7 @@ import {
   deleteQuestionAction,
   reorderQuestionsAction,
 } from "@/app/admin/cursos/quiz-actions";
-import type { LessonContentType, QuestionType } from "@prisma/client";
+import type { CourseAudience, LessonContentType, QuestionType } from "@prisma/client";
 
 type LessonItem = {
   id: string;
@@ -79,6 +79,7 @@ type ModuleItem = {
   title: string;
   description: string | null;
   isRequired: boolean;
+  audience: CourseAudience;
   lessons: LessonItem[];
 };
 
@@ -325,6 +326,11 @@ function SortableModuleCard({
           <span className="text-xs font-semibold text-muted-foreground">Módulo {index + 1}</span>
           <span className="font-medium text-foreground">{module_.title}</span>
           {module_.isRequired && <Badge className="bg-primary/10 text-primary">Obligatorio</Badge>}
+          {module_.audience !== "AMBOS" && (
+            <Badge className="bg-warning/15 text-warning-foreground">
+              Solo {module_.audience === "ASISTENCIAL" ? "asistencial" : "administrativo"}
+            </Badge>
+          )}
           <span className="text-xs text-muted-foreground">
             {module_.lessons.length} {module_.lessons.length === 1 ? "lección" : "lecciones"}
           </span>
@@ -336,6 +342,7 @@ function SortableModuleCard({
             title: module_.title,
             description: module_.description ?? "",
             isRequired: module_.isRequired,
+            audience: module_.audience,
           }}
           trigger={
             <Button type="button" variant="ghost" size="icon-sm">

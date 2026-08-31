@@ -106,12 +106,20 @@ function buildQuizSummary(
  * ejecuta una vez contra la base de datos.
  */
 export const getAulaData = cache(async (courseId: string, userId: string) => {
+  // El grupo poblacional decide qué módulos ve la persona: en un mismo curso
+  // (p. ej. inducción) el asistencial ve Chronis y el administrativo solo la
+  // parte financiera. AMBOS se muestra a todos.
+  const usuario = await prisma.user.findUnique({ where: { id: userId }, select: { personnelType: true } });
+  const audiencias: ("AMBOS" | "ADMINISTRATIVO" | "ASISTENCIAL")[] = usuario
+    ? ["AMBOS", usuario.personnelType]
+    : ["AMBOS", "ADMINISTRATIVO", "ASISTENCIAL"];
+
   const [course, enrollment] = await Promise.all([
     prisma.course.findUnique({
       where: { id: courseId },
       include: {
         modules: {
-          where: { isActive: true },
+          where: { isActive: true, audience: { in: audiencias } },
           orderBy: { sortOrder: "asc" },
           include: { lessons: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } },
         },

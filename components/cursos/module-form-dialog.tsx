@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { PanelEnLinea, PieFormulario } from "@/components/cursos/panel-en-linea";
+import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
+import type { CourseAudience } from "@prisma/client";
 import type { ModuleFormState } from "@/app/admin/cursos/module-actions";
 import { useAlTenerExito } from "@/lib/use-exito-accion";
 
@@ -23,7 +25,7 @@ export function ModuleFormDialog({
 }: {
   mode: "create" | "edit";
   action: (prevState: ModuleFormState, formData: FormData) => Promise<ModuleFormState>;
-  defaultValues?: { title: string; description: string; isRequired: boolean };
+  defaultValues?: { title: string; description: string; isRequired: boolean; audience?: CourseAudience };
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -50,11 +52,31 @@ export function ModuleFormDialog({
               <Label htmlFor="mod-description">Descripción</Label>
               <Textarea id="mod-description" name="description" rows={2} defaultValue={defaultValues?.description} />
             </div>
-            <div className="flex items-center gap-3">
-              <Switch id="mod-isRequired" name="isRequired" defaultChecked={defaultValues?.isRequired ?? true} />
-              <Label htmlFor="mod-isRequired" className="font-normal">
-                Obligatorio
-              </Label>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="mod-audience">Dirigido a</Label>
+                <select
+                  id="mod-audience"
+                  name="audience"
+                  defaultValue={defaultValues?.audience ?? "AMBOS"}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {Object.entries(COURSE_AUDIENCE_LABELS).map(([valor, etiqueta]) => (
+                    <option key={valor} value={valor}>
+                      {etiqueta}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Solo el grupo elegido ve este módulo en el aula y el catálogo.
+                </p>
+              </div>
+              <div className="flex items-end gap-3 pb-1.5">
+                <Switch id="mod-isRequired" name="isRequired" defaultChecked={defaultValues?.isRequired ?? true} />
+                <Label htmlFor="mod-isRequired" className="font-normal">
+                  Obligatorio
+                </Label>
+              </div>
             </div>
             {state.error && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>

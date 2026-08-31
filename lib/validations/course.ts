@@ -31,6 +31,7 @@ export const moduleSchema = z.object({
   title: z.string().trim().min(2, "El título del módulo es obligatorio."),
   description: z.string().trim().optional().or(z.literal("")),
   isRequired: z.coerce.boolean(),
+  audience: z.enum(["ADMINISTRATIVO", "ASISTENCIAL", "AMBOS"]).default("AMBOS"),
 });
 
 export const lessonSchema = z.object({

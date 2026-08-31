@@ -91,7 +91,11 @@ export default async function CursoDetallePage({
 
   const TypeIcon = COURSE_TYPE_ICONS[course.courseType];
   const colors = COURSE_TYPE_COLORS[course.courseType];
-  const totalLessons = course.modules.reduce((total, m) => total + m.lessons.length, 0);
+  // Cada quien ve los módulos de su grupo poblacional (AMBOS = todos). Sin
+  // sesión se muestra el temario completo: es la vitrina del curso.
+  const tipoPersonal = session?.user?.personnelType ?? null;
+  const modulosVisibles = course.modules.filter((m) => m.audience === "AMBOS" || !tipoPersonal || m.audience === tipoPersonal);
+  const totalLessons = modulosVisibles.reduce((total, m) => total + m.lessons.length, 0);
 
   return (
     <PublicCoursesShell maxWidth="max-w-6xl">
@@ -139,10 +143,10 @@ export default async function CursoDetallePage({
                 {course.durationHours}h
               </span>
               )}
-              {course.modules.length > 0 && (
+              {modulosVisibles.length > 0 && (
                 <span className="chip-glass">
                   <Layers className="h-3.5 w-3.5" />
-                  {course.modules.length} {course.modules.length === 1 ? "módulo" : "módulos"}
+                  {modulosVisibles.length} {modulosVisibles.length === 1 ? "módulo" : "módulos"}
                 </span>
               )}
               {totalLessons > 0 && (
@@ -225,15 +229,15 @@ export default async function CursoDetallePage({
             iconClassName="bg-success/10 text-success"
             title="Contenido del curso"
             action={
-              course.modules.length > 0 ? (
+              modulosVisibles.length > 0 ? (
                 <p className="shrink-0 text-xs text-muted-foreground">
-                  {course.modules.length} módulos · {totalLessons} lecciones
+                  {modulosVisibles.length} módulos · {totalLessons} lecciones
                 </p>
               ) : undefined
             }
           >
             <CourseLessonAccordion
-              modules={course.modules}
+              modules={modulosVisibles}
               completedLessonIds={completedLessonIds}
               isEnrolled={!!enrollment}
             />
