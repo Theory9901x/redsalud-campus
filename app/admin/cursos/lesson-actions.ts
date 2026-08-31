@@ -117,7 +117,9 @@ export async function createLessonAction(
   }
 
   const data = parsed.data;
-  const count = await prisma.lesson.count({ where: { moduleId } });
+  // max+1, no count(): borrar una lección deja hueco y count() chocaría
+  // con la restricción única (moduleId, sortOrder).
+  const max = await prisma.lesson.aggregate({ where: { moduleId }, _max: { sortOrder: true } });
 
   const lesson = await prisma.lesson.create({
     data: {
@@ -130,7 +132,7 @@ export async function createLessonAction(
       externalUrl: data.externalUrl || null,
       isRequired: data.isRequired,
       estimatedMinutes: data.estimatedMinutes ?? null,
-      sortOrder: count,
+      sortOrder: (max._max.sortOrder ?? -1) + 1,
     },
   });
 

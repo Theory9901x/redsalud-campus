@@ -140,7 +140,10 @@ async function main() {
   });
   console.log("curso:", curso.title, curso.id);
 
-  let ordenModulo = await prisma.courseModule.count({ where: { courseId: curso.id } });
+  // max+1, no count(): el temario real tiene huecos de sortOrder (módulos
+  // borrados) y count() choca con la restricción única (courseId, sortOrder).
+  const maxModulo = await prisma.courseModule.aggregate({ where: { courseId: curso.id }, _max: { sortOrder: true } });
+  let ordenModulo = (maxModulo._max.sortOrder ?? -1) + 1;
 
   for (const mod of MODULOS) {
     const existente = await prisma.courseModule.findFirst({
@@ -165,7 +168,8 @@ async function main() {
       console.log("módulo ya existía:", mod.titulo);
     }
 
-    let ordenLeccion = await prisma.lesson.count({ where: { moduleId: moduloId } });
+    const maxLeccion = await prisma.lesson.aggregate({ where: { moduleId: moduloId }, _max: { sortOrder: true } });
+    let ordenLeccion = (maxLeccion._max.sortOrder ?? -1) + 1;
     for (const lec of mod.lecciones) {
       const ya = await prisma.lesson.findFirst({
         where: { moduleId: moduloId, title: lec.titulo },

@@ -207,7 +207,9 @@ export async function createQuestionAction(
   const optionsError = validateOptionsForType(data.type, data.options);
   if (optionsError) return { error: optionsError };
 
-  const count = await prisma.question.count({ where: { quizId } });
+  // max+1, no count(): borrar una pregunta deja hueco y count() chocaría
+  // con la restricción única del orden.
+  const max = await prisma.question.aggregate({ where: { quizId }, _max: { sortOrder: true } });
   const imageUrl = await resolverImagenPregunta(formData, quizId);
 
   await prisma.question.create({
@@ -219,7 +221,7 @@ export async function createQuestionAction(
       score: data.score,
       explanation: data.explanation || null,
       expectedAnswer: data.expectedAnswer || null,
-      sortOrder: count,
+      sortOrder: (max._max.sortOrder ?? -1) + 1,
       options: {
         create: data.options.map((o, index) => ({
           text: o.text,

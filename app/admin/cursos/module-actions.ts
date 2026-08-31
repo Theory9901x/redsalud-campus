@@ -34,14 +34,16 @@ export async function createModuleAction(
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   }
 
-  const count = await prisma.courseModule.count({ where: { courseId } });
+  // max+1, no count(): borrar un módulo deja hueco y count() chocaría con
+  // la restricción única (courseId, sortOrder).
+  const max = await prisma.courseModule.aggregate({ where: { courseId }, _max: { sortOrder: true } });
   await prisma.courseModule.create({
     data: {
       courseId,
       title: parsed.data.title,
       description: parsed.data.description || null,
       isRequired: parsed.data.isRequired,
-      sortOrder: count,
+      sortOrder: (max._max.sortOrder ?? -1) + 1,
     },
   });
 
