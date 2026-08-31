@@ -96,10 +96,10 @@ export default async function AulaLessonPage({
   );
 
   return (
-    <div className={cn("mx-auto", isDocumentLesson ? "max-w-[1250px]" : "max-w-[1180px]")}>
+    <div className={cn("mx-auto", isDocumentLesson ? "max-w-[1180px]" : "max-w-[1020px]")}>
       <div className="reading-progress" aria-hidden="true" />
 
-      <article className="leccion-workspace p-[clamp(18px,3.2vw,36px)]">
+      <article className="leccion-workspace p-[clamp(16px,2.2vw,28px)]">
         {/* ---- Metadatos ---- */}
         <div className="flex flex-wrap items-center justify-between gap-2.5">
           <span className="pildora-leccion !text-[var(--accent)]">
@@ -124,16 +124,16 @@ export default async function AulaLessonPage({
         </div>
 
         {/* ---- Título ---- */}
-        <h1 className="leccion-titulo mt-4">{tituloPrincipal}</h1>
+        <h1 className="leccion-titulo mt-3.5">{tituloPrincipal}</h1>
         {subtitulo && <p className="leccion-subtitulo mt-[5px]">{subtitulo}</p>}
         {lesson.description && (
-          <p className="mt-2.5 max-w-[780px] text-[14.5px] leading-[1.55] text-muted-foreground">
+          <p className="mt-2 max-w-[720px] text-[14px] leading-[1.55] text-muted-foreground">
             {lesson.description}
           </p>
         )}
 
         {/* ---- Contenido ---- */}
-        <div className="mt-6 space-y-6">
+        <div className="mt-5 space-y-5">
           {showText && lesson.contentBody && (
             <div
               className="prose prose-sm max-w-none"
@@ -207,7 +207,7 @@ export default async function AulaLessonPage({
         {showVideoFile ? (
           /* El video subido vive dentro del control de completar (reanuda y
              auto-completa al 90%): ocupa el ancho y la navegación va debajo. */
-          <div className="mt-6 space-y-5 border-t border-border/40 pt-6">
+          <div className="mt-5 space-y-4 border-t border-border/40 pt-5">
             <CompletarLeccion
               courseId={courseId}
               lessonId={lessonId}
@@ -222,7 +222,7 @@ export default async function AulaLessonPage({
             </div>
           </div>
         ) : (
-          <div className="leccion-botonera mt-6 border-t border-border/40 pt-6">
+          <div className="leccion-botonera mt-5 border-t border-border/40 pt-5">
             <div className="justify-self-start">{botonAnterior}</div>
             <div data-slot="cta" className="justify-self-center">
               <CompletarLeccion

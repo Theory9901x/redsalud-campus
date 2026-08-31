@@ -56,7 +56,7 @@ export default async function AulaLayout({
           modules={data.modules}
           finalQuizzes={data.finalQuizzes}
         />
-        <main className="min-w-0 flex-1 px-4 py-8 sm:px-8 lg:overflow-y-auto">{children}</main>
+        <main className="min-w-0 flex-1 px-4 py-4 pb-8 sm:px-6 lg:overflow-y-auto">{children}</main>
       </div>
     </div>
   );
