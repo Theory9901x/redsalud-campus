@@ -1704,3 +1704,35 @@
     border-left-width: 1.5px;
     border-left-color: color-mix(in oklch, var(--border) 80%, transparent);
   }
+
+  /* Pulido fino del aula: el video no desborda el pliegue y los rieles de
+     scroll son discretos, como el resto de la composición. */
+  .player-shell iframe,
+  .player-shell video {
+    max-width: calc(min(54vh, 520px) * 16 / 9);
+    margin-inline: auto;
+  }
+  .aula-canvas main::-webkit-scrollbar,
+  .aula-canvas aside::-webkit-scrollbar,
+  .aula-canvas [data-carril]::-webkit-scrollbar {
+    width: 8px;
+  }
+  .aula-canvas main::-webkit-scrollbar-thumb,
+  .aula-canvas aside::-webkit-scrollbar-thumb,
+  .aula-canvas [data-carril]::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in oklch, var(--muted-foreground) 28%, transparent);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  .aula-canvas main::-webkit-scrollbar-track,
+  .aula-canvas aside::-webkit-scrollbar-track,
+  .aula-canvas [data-carril]::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .aula-canvas main,
+  .aula-canvas aside,
+  .aula-canvas [data-carril] {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--muted-foreground) 28%, transparent) transparent;
+  }
