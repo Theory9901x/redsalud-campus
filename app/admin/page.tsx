@@ -1,7 +1,7 @@
 import { Suspense } from "react";
-import { AdminPageHeader } from "@/components/admin/page-header";
+import { Database, Users } from "lucide-react";
 import { ExportarReporte } from "@/components/admin/dashboard/exportar-reporte";
-import { DashboardPanel } from "@/components/dashboard/dashboard-kit";
+import { DashboardHero, DashboardPanel, QuickAction } from "@/components/dashboard/dashboard-kit";
 import { FiltrosGlobales } from "@/components/admin/dashboard/filtros-globales";
 import { Indicadores } from "@/components/admin/dashboard/indicadores";
 import { EmbudoParticipacion } from "@/components/admin/dashboard/embudo-participacion";
@@ -53,9 +53,17 @@ export default async function AdminDashboardPage({
 
   return (
     <div className="accent-admin space-y-5">
-      <AdminPageHeader
+      {/* Hero HUD, la misma firma visual del centro de datos. */}
+      <DashboardHero
+        eyebrow="Talento Humano"
         title="Panel de control"
-        description="Estado de la formación del personal de Red Salud Casanare E.S.E."
+        subtitle="Estado de la formación del personal de Red Salud Casanare E.S.E."
+        actions={
+          <>
+            <QuickAction href="/admin/reportes/centro" label="Centro de datos" icon={Database} />
+            <QuickAction href="/admin/usuarios" label="Usuarios" icon={Users} />
+          </>
+        }
       />
 
       <div className="flex flex-wrap items-center gap-2">
