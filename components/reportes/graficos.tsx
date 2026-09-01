@@ -8,6 +8,10 @@ import {
   CartesianGrid,
   Cell,
   Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -159,5 +163,137 @@ export function AreaActividad({
         />
       </AreaChart>
     </ResponsiveContainer>
+  );
+}
+
+
+const MES_CORTO = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const fmtMes = (m: string) => {
+  const [a, mm] = m.split("-");
+  return `${MES_CORTO[Number(mm) - 1] ?? mm} ${a.slice(2)}`;
+};
+
+/** Evolución mensual: inscripciones, finalizaciones y certificados. */
+export function LineaMensual({
+  datos,
+  alto = 260,
+}: {
+  datos: { mes: string; inscripciones: number; completadas: number; certificados: number }[];
+  alto?: number;
+}) {
+  return (
+    <ResponsiveContainer width="100%" height={alto}>
+      <LineChart data={datos} margin={{ left: 0, right: 12, top: 8, bottom: 4 }}>
+        <CartesianGrid vertical={false} stroke="var(--border)" />
+        <XAxis dataKey="mes" tickFormatter={fmtMes} tick={EJE} axisLine={false} tickLine={false} minTickGap={24} />
+        <YAxis allowDecimals={false} tick={EJE} axisLine={false} tickLine={false} width={32} />
+        <Tooltip {...tooltipProps} labelFormatter={(v) => fmtMes(String(v))} formatter={(valor) => nf.format(Number(valor))} />
+        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <Line type="monotone" dataKey="inscripciones" name="Inscripciones" stroke="var(--primary)" strokeWidth={2.2} dot={false} isAnimationActive={false} />
+        <Line type="monotone" dataKey="completadas" name="Finalizadas" stroke="var(--success)" strokeWidth={2.2} dot={false} isAnimationActive={false} />
+        <Line type="monotone" dataKey="certificados" name="Certificados" stroke="var(--warning)" strokeWidth={2} dot={false} isAnimationActive={false} />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Mini-tendencia para los KPI: sin ejes, solo la forma. */
+export function Sparkline({
+  datos,
+  dataKey,
+  color,
+}: {
+  datos: Record<string, unknown>[];
+  dataKey: string;
+  color: string;
+}) {
+  return (
+    <ResponsiveContainer width="100%" height={34}>
+      <AreaChart data={datos} margin={{ left: 0, right: 0, top: 2, bottom: 0 }}>
+        <defs>
+          <linearGradient id={`spark-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.35} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={1.8} fill={`url(#spark-${dataKey})`} dot={false} isAnimationActive={false} />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Dona de distribución por grupo poblacional, con el total en el centro. */
+export function DonaGrupos({ datos }: { datos: { etiqueta: string; personas: number }[] }) {
+  const COLORES = ["var(--primary)", "var(--accent)", "var(--warning)"];
+  const total = datos.reduce((s, d) => s + d.personas, 0);
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-6">
+      <div className="relative h-[190px] w-[190px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={datos}
+              dataKey="personas"
+              nameKey="etiqueta"
+              innerRadius={62}
+              outerRadius={88}
+              paddingAngle={3}
+              strokeWidth={0}
+              isAnimationActive={false}
+            >
+              {datos.map((d, i) => (
+                <Cell key={d.etiqueta} fill={COLORES[i % COLORES.length]} />
+              ))}
+            </Pie>
+            <Tooltip {...tooltipProps} formatter={(valor) => [nf.format(Number(valor)), "Personas"]} />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
+          <div>
+            <p className="font-display text-2xl font-extrabold tabular-nums text-foreground">{nf.format(total)}</p>
+            <p className="text-[11px] text-muted-foreground">personas</p>
+          </div>
+        </div>
+      </div>
+      <ul className="space-y-2">
+        {datos.map((d, i) => (
+          <li key={d.etiqueta} className="flex items-center gap-2 text-[13px]">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: COLORES[i % COLORES.length] }} />
+            <span className="text-foreground">{d.etiqueta}</span>
+            <span className="tabular-nums text-muted-foreground">
+              {nf.format(d.personas)} · {total > 0 ? Math.round((d.personas / total) * 100) : 0}%
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Cohortes por mes de inscripción: qué % de cada camada ya terminó. */
+export function Cohortes({ datos }: { datos: { mes: string; total: number; completadas: number }[] }) {
+  if (datos.length === 0) {
+    return <p className="py-8 text-center text-sm text-muted-foreground">Sin inscripciones en los últimos meses.</p>;
+  }
+  return (
+    <div className="space-y-2.5">
+      {datos.map((c) => {
+        const pct = c.total > 0 ? Math.round((c.completadas / c.total) * 100) : 0;
+        return (
+          <div key={c.mes} className="flex items-center gap-3">
+            <span className="w-16 shrink-0 text-[12px] font-semibold capitalize text-foreground">{fmtMes(c.mes)}</span>
+            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[color-mix(in_oklch,var(--muted-foreground)_14%,transparent)]">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--accent)]"
+                style={{ width: `${Math.max(pct, 2)}%` }}
+              />
+            </div>
+            <span className="w-28 shrink-0 text-right text-[12px] tabular-nums text-muted-foreground">
+              {pct}% · {nf.format(c.completadas)}/{nf.format(c.total)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 }

@@ -268,3 +268,97 @@ export async function detalleInscripciones(
 
   return { filas, total: totales[0]?.total ?? 0 };
 }
+
+
+// ---------------------------------------------------------------- series
+
+export type FilaMensual = { mes: string; inscripciones: number; completadas: number; certificados: number };
+
+/**
+ * Serie MENSUAL de los últimos 12 meses: inscripciones, finalizaciones y
+ * certificados. Alimenta la evolución del centro de datos y los sparklines
+ * de los KPI. Respeta municipio y grupo (los filtros de persona); las
+ * fechas del filtro no aplican: la serie ES el eje temporal.
+ */
+export async function serieMensual(f: FiltrosReporte): Promise<FilaMensual[]> {
+  const municipio = f.municipioId ?? null;
+  const grupo = f.grupo ?? null;
+  return prisma.$queryRaw<FilaMensual[]>`
+    WITH meses AS (
+      SELECT generate_series(date_trunc('month', now()) - interval '11 months', date_trunc('month', now()), '1 month')::date AS m
+    )
+    SELECT
+      to_char(meses.m, 'YYYY-MM') AS mes,
+      (SELECT COUNT(*)::int FROM "Enrollment" e JOIN "User" u ON u."id" = e."userId"
+        WHERE date_trunc('month', e."enrolledAt") = meses.m
+          AND (${municipio}::text IS NULL OR u."municipioId" = ${municipio})
+          AND (${grupo}::text IS NULL OR u."personnelType"::text = ${grupo})) AS inscripciones,
+      (SELECT COUNT(*)::int FROM "Enrollment" e JOIN "User" u ON u."id" = e."userId"
+        WHERE e."completedAt" IS NOT NULL AND date_trunc('month', e."completedAt") = meses.m
+          AND (${municipio}::text IS NULL OR u."municipioId" = ${municipio})
+          AND (${grupo}::text IS NULL OR u."personnelType"::text = ${grupo})) AS completadas,
+      (SELECT COUNT(*)::int FROM "Certificate" c JOIN "User" u ON u."id" = c."userId"
+        WHERE date_trunc('month', c."issuedAt") = meses.m
+          AND (${municipio}::text IS NULL OR u."municipioId" = ${municipio})
+          AND (${grupo}::text IS NULL OR u."personnelType"::text = ${grupo})) AS certificados
+    FROM meses
+    ORDER BY meses.m
+  `;
+}
+
+export type FilaCurso = { etiqueta: string; personas: number; completaron: number; avancePromedio: number };
+
+/** Avance por curso: inscritos, completados y avance promedio, sobre los mismos filtros. */
+export async function avancePorCurso(f: FiltrosReporte): Promise<FilaCurso[]> {
+  return prisma.$queryRaw<FilaCurso[]>`
+    SELECT
+      c."title" AS etiqueta,
+      COUNT(*)::int AS personas,
+      COUNT(*) FILTER (WHERE e."status" = 'COMPLETED')::int AS completaron,
+      ROUND(AVG(e."progressPercentage"))::int AS "avancePromedio"
+    FROM "Enrollment" e
+    JOIN "User" u ON u."id" = e."userId"
+    JOIN "Course" c ON c."id" = e."courseId"
+    WHERE ${condiciones(f)}
+    GROUP BY c."title"
+    ORDER BY COUNT(*) DESC
+    LIMIT 14
+  `;
+}
+
+export type FilaCohorte = { mes: string; total: number; completadas: number };
+
+/**
+ * Cohortes por mes de inscripción (últimos 6): de lo que se inscribió ese
+ * mes, cuánto está completado HOY. Lee retención real, no promesas.
+ */
+export async function cohortesInscripcion(f: FiltrosReporte): Promise<FilaCohorte[]> {
+  return prisma.$queryRaw<FilaCohorte[]>`
+    SELECT
+      to_char(date_trunc('month', e."enrolledAt"), 'YYYY-MM') AS mes,
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE e."status" = 'COMPLETED')::int AS completadas
+    FROM "Enrollment" e
+    JOIN "User" u ON u."id" = e."userId"
+    WHERE ${condiciones(f)}
+      AND e."enrolledAt" >= date_trunc('month', now()) - interval '5 months'
+    GROUP BY 1
+    ORDER BY 1
+  `;
+}
+
+export type Adopcion = { totalActivos: number; nuncaIngresaron: number };
+
+/** Adopción de la plataforma: personas activas que nunca han iniciado sesión. */
+export async function adopcion(f: FiltrosReporte): Promise<Adopcion> {
+  const where = {
+    status: "ACTIVE" as const,
+    ...(f.municipioId ? { municipioId: f.municipioId } : {}),
+    ...(f.grupo ? { personnelType: f.grupo as "ASISTENCIAL" | "ADMINISTRATIVO" } : {}),
+  };
+  const [totalActivos, nuncaIngresaron] = await Promise.all([
+    prisma.user.count({ where }),
+    prisma.user.count({ where: { ...where, lastLoginAt: null } }),
+  ]);
+  return { totalActivos, nuncaIngresaron };
+}

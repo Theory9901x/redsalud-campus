@@ -123,7 +123,8 @@ export function AppSidebar({
           {grupos.map((grupo, i) => (
             <div key={grupo.label ?? `grupo-${i}`} className={cn(i > 0 && "mt-4 border-t border-white/10 pt-4")}>
               {grupo.label && (
-                <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+                <p className="flex items-center gap-1.5 px-3 pb-2 text-[10.5px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40">
+                  <span className="h-1 w-1 rounded-full bg-[var(--accent)]/60" aria-hidden="true" />
                   {grupo.label}
                 </p>
               )}
@@ -140,7 +141,7 @@ export function AppSidebar({
                       onClick={onClose}
                       aria-current={activo ? "page" : undefined}
                       className={cn(
-                        "group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-300",
+                        "group relative flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-300",
                         activo
                           ? // Activo: no un rectángulo sólido, sino un bloque
                             // con halo del acento que se lee elevado.
@@ -148,12 +149,19 @@ export function AppSidebar({
                           : "border-transparent text-sidebar-foreground/85 hover:translate-x-1 hover:bg-white/5 hover:text-white"
                       )}
                     >
+                      {/* Indicador lateral del activo: la marca clásica de "estás aquí". */}
+                      {activo && (
+                        <span
+                          className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[var(--accent)] shadow-[0_0_10px_color-mix(in_oklch,var(--accent)_70%,transparent)]"
+                          aria-hidden="true"
+                        />
+                      )}
                       <span
                         className={cn(
-                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
+                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-300",
                           activo
-                            ? "bg-[color-mix(in_oklch,var(--accent)_30%,transparent)] text-white"
-                            : "bg-white/5 group-hover:bg-white/10"
+                            ? "bg-[color-mix(in_oklch,var(--accent)_30%,transparent)] text-white ring-1 ring-[color-mix(in_oklch,var(--accent)_45%,transparent)]"
+                            : "bg-white/5 group-hover:scale-105 group-hover:bg-white/10"
                         )}
                       >
                         <Icono className="h-4 w-4" strokeWidth={2} />

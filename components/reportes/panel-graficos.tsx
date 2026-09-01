@@ -21,3 +21,19 @@ export const AreaActividad = dynamic(
   () => import("@/components/reportes/graficos").then((m) => m.AreaActividad),
   { loading: cargando }
 );
+export const LineaMensual = dynamic(
+  () => import("@/components/reportes/graficos").then((m) => m.LineaMensual),
+  { loading: cargando }
+);
+export const Sparkline = dynamic(
+  () => import("@/components/reportes/graficos").then((m) => m.Sparkline),
+  { loading: () => <div className="h-[34px]" /> }
+);
+export const DonaGrupos = dynamic(
+  () => import("@/components/reportes/graficos").then((m) => m.DonaGrupos),
+  { loading: cargando }
+);
+export const Cohortes = dynamic(
+  () => import("@/components/reportes/graficos").then((m) => m.Cohortes),
+  { loading: cargando }
+);
