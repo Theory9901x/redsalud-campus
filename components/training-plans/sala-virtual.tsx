@@ -584,7 +584,7 @@ export function SalaVirtual({
       </div>
 
       {/* ---------------- Tarjetas ---------------- */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3">
         <section id="participantes" className="surface-glass flex flex-col p-6 scroll-mt-24">
           <h3 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground">
             <Users className="h-4 w-4 text-primary" aria-hidden="true" />
@@ -602,19 +602,33 @@ export function SalaVirtual({
               </li>
             ) : (
               participantes.map((p) => (
-                <li key={p.id} className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-card/60">
+                <li key={p.id} className="flex items-start gap-3 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-card/60">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-success text-[12px] font-extrabold text-white">
                     {iniciales(p.nombre)}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
-                    {p.nombre}
-                    {p.esLocal && <span className="text-muted-foreground"> (Tú)</span>}
+                  <span className="min-w-0 flex-1">
+                    <span className="block break-words text-[13.5px] font-medium leading-snug text-foreground">
+                      {p.nombre}
+                      {p.esLocal && <span className="text-muted-foreground"> (Tú)</span>}
+                    </span>
+                    <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                      {p.esLocal && esPresentador && (
+                        <span className="rounded-md bg-primary/12 px-2 py-0.5 text-[10.5px] font-bold text-primary">Presentador</span>
+                      )}
+                      {p.manoAlzada && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-warning/15 px-2 py-0.5 text-[10.5px] font-bold text-warning-foreground">
+                          <Hand className="h-3 w-3" aria-hidden="true" />
+                          Mano levantada
+                        </span>
+                      )}
+                      {p.esLocal && micSilenciado && (
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-muted-foreground">
+                          <MicOff className="h-3 w-3 text-destructive" aria-hidden="true" />
+                          Micrófono apagado
+                        </span>
+                      )}
+                    </span>
                   </span>
-                  {p.esLocal && esPresentador && (
-                    <span className="shrink-0 rounded-md bg-primary/12 px-2 py-0.5 text-[10.5px] font-bold text-primary">Presentador</span>
-                  )}
-                  {p.manoAlzada && <Hand className="h-4 w-4 shrink-0 text-warning-foreground" aria-label="Mano levantada" />}
-                  {p.esLocal && micSilenciado && <MicOff className="h-4 w-4 shrink-0 text-destructive" aria-label="Micrófono silenciado" />}
                 </li>
               ))
             )}
