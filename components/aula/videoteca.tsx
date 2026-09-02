@@ -1,7 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, Play, Search } from "lucide-react";
+import {
+  BookOpenCheck,
+  Boxes,
+  CheckCircle2,
+  FileSignature,
+  Landmark,
+  LayoutGrid,
+  Play,
+  RefreshCcw,
+  Search,
+  Users,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type VideoTeca = { id: string; titulo: string; grupo: string; seg: number };
@@ -9,34 +22,82 @@ export type VideoTeca = { id: string; titulo: string; grupo: string; seg: number
 function duracion(seg: number) {
   const m = Math.floor(seg / 60);
   const s = seg % 60;
-  return m > 0 ? `${m}:${String(s).padStart(2, "0")}` : `0:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+const ICONO_GRUPO: Record<string, LucideIcon> = {
+  "Contratación": FileSignature,
+  "Presupuesto": Wallet,
+  "Contabilidad": BookOpenCheck,
+  "Tesorería": Landmark,
+  "Nómina": Users,
+  "Almacén y activos": Boxes,
+};
+
+const TODAS = "__todas__";
+
 /**
- * VIDEOTECA: muchos videos en UNA sola lección, sin 44 sub-lecciones.
+ * VIDEOTECA: muchos videos en UNA sola lección.
  *
- * Un único reproductor arriba y la lista vertical de títulos agrupada por
- * tema debajo: el iframe de YouTube se monta solo para el video elegido
- * -44 iframes a la vez congelarían la página-. Lo visto se recuerda en el
- * navegador de cada persona (es una guía de repaso, no una calificación:
- * la lección se completa con su botón normal).
+ * Al entrar, la persona ELIGE SU ÁREA (los videos ya vienen categorizados)
+ * y solo se despliegan los de esa categoría: quien es de tesorería no tiene
+ * por qué navegar los de nómina. La elección se recuerda en su navegador y
+ * se puede cambiar en cualquier momento; también existe "ver todo".
+ *
+ * Un único reproductor (fachada: cero iframes hasta dar play) y la lista
+ * vertical de títulos del área elegida. Lo visto se recuerda localmente:
+ * es guía de repaso, no calificación.
  */
 export function Videoteca({ leccionId, videos }: { leccionId: string; videos: VideoTeca[] }) {
-  const clave = `videoteca-${leccionId}`;
+  const claveVistos = `videoteca-${leccionId}`;
+  const claveArea = `videoteca-area-${leccionId}`;
+
+  const [area, setArea] = useState<string | null>(null);
+  const [cargado, setCargado] = useState(false);
   const [actual, setActual] = useState(videos[0]?.id ?? "");
   const [reproduciendo, setReproduciendo] = useState(false);
   const [vistos, setVistos] = useState<Set<string>>(new Set());
   const [busqueda, setBusqueda] = useState("");
   const playerRef = useRef<HTMLDivElement>(null);
 
+  const grupos = useMemo(() => {
+    const mapa = new Map<string, VideoTeca[]>();
+    for (const v of videos) {
+      const lista = mapa.get(v.grupo) ?? [];
+      lista.push(v);
+      mapa.set(v.grupo, lista);
+    }
+    return [...mapa.entries()];
+  }, [videos]);
+
   useEffect(() => {
     try {
-      const guardado = JSON.parse(localStorage.getItem(clave) ?? "[]");
+      const guardado = JSON.parse(localStorage.getItem(claveVistos) ?? "[]");
       if (Array.isArray(guardado)) setVistos(new Set(guardado.filter((x) => typeof x === "string")));
+      const areaGuardada = localStorage.getItem(claveArea);
+      if (areaGuardada && (areaGuardada === TODAS || grupos.some(([g]) => g === areaGuardada))) {
+        setArea(areaGuardada);
+      }
     } catch {
-      // Sin almacenamiento: la guía de vistos vive solo esta sesión.
+      // Sin almacenamiento: se pregunta el área cada vez.
     }
-  }, [clave]);
+    setCargado(true);
+  }, [claveVistos, claveArea, grupos]);
+
+  function elegirArea(a: string) {
+    setArea(a);
+    setBusqueda("");
+    try {
+      localStorage.setItem(claveArea, a);
+    } catch {
+      // idem
+    }
+    const primera = a === TODAS ? videos[0] : videos.find((v) => v.grupo === a);
+    if (primera) {
+      setActual(primera.id);
+      setReproduciendo(false);
+    }
+  }
 
   function elegir(id: string) {
     setActual(id);
@@ -44,7 +105,7 @@ export function Videoteca({ leccionId, videos }: { leccionId: string; videos: Vi
     setVistos((prev) => {
       const siguiente = new Set(prev).add(id);
       try {
-        localStorage.setItem(clave, JSON.stringify([...siguiente]));
+        localStorage.setItem(claveVistos, JSON.stringify([...siguiente]));
       } catch {
         // idem
       }
@@ -53,12 +114,76 @@ export function Videoteca({ leccionId, videos }: { leccionId: string; videos: Vi
     playerRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
+  // Hasta leer el almacenamiento no se decide qué pintar (evita el parpadeo
+  // selector→lista en quien ya eligió).
+  if (!cargado) {
+    return <div className="h-64 animate-pulse rounded-2xl bg-foreground/[0.05]" aria-busy="true" />;
+  }
+
+  /* ---------------- Selector de área ---------------- */
+  if (!area) {
+    return (
+      <div>
+        <div className="mb-4 text-center">
+          <h2 className="font-display text-[19px] font-extrabold tracking-tight text-foreground">
+            ¿A qué área perteneces?
+          </h2>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            Se desplegarán solo los videotutoriales de tu área. Puedes cambiarla cuando quieras.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {grupos.map(([g, lista]) => {
+            const Icono = ICONO_GRUPO[g] ?? LayoutGrid;
+            const min = Math.round(lista.reduce((s, v) => s + v.seg, 0) / 60);
+            const vistosGrupo = lista.filter((v) => vistos.has(v.id)).length;
+            return (
+              <button
+                key={g}
+                type="button"
+                onClick={() => elegirArea(g)}
+                className="group flex items-center gap-3 rounded-2xl border border-border/60 bg-card/60 p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_oklch,var(--accent)_40%,transparent)] hover:shadow-md"
+              >
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[color-mix(in_oklch,var(--accent)_13%,transparent)] text-[var(--accent)] transition-transform group-hover:scale-105">
+                  <Icono className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[14px] font-bold text-foreground">{g}</span>
+                  <span className="block text-[11.5px] text-muted-foreground">
+                    {lista.length} {lista.length === 1 ? "video" : "videos"} · {min} min
+                    {vistosGrupo > 0 && <span className="ml-1 font-semibold text-success">· {vistosGrupo} vistos</span>}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => elegirArea(TODAS)}
+            className="flex items-center gap-3 rounded-2xl border border-dashed border-border/70 bg-card/30 p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_oklch,var(--accent)_40%,transparent)]"
+          >
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
+              <LayoutGrid className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[14px] font-bold text-foreground">Ver toda la videoteca</span>
+              <span className="block text-[11.5px] text-muted-foreground">
+                Los {videos.length} videos, agrupados por área
+              </span>
+            </span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------------- Vista del área elegida ---------------- */
+  const delArea = area === TODAS ? videos : videos.filter((v) => v.grupo === area);
   const termino = busqueda.trim().toLowerCase();
-  const filtrados = useMemo(
-    () => (termino ? videos.filter((v) => v.titulo.toLowerCase().includes(termino) || v.grupo.toLowerCase().includes(termino)) : videos),
-    [videos, termino]
-  );
-  const grupos = useMemo(() => {
+  const filtrados = termino
+    ? delArea.filter((v) => v.titulo.toLowerCase().includes(termino) || v.grupo.toLowerCase().includes(termino))
+    : delArea;
+  const seccionado = (() => {
     const mapa = new Map<string, VideoTeca[]>();
     for (const v of filtrados) {
       const lista = mapa.get(v.grupo) ?? [];
@@ -66,13 +191,39 @@ export function Videoteca({ leccionId, videos }: { leccionId: string; videos: Vi
       mapa.set(v.grupo, lista);
     }
     return [...mapa.entries()];
-  }, [filtrados]);
+  })();
 
-  const activo = videos.find((v) => v.id === actual) ?? videos[0];
-  const totalMin = Math.round(videos.reduce((s, v) => s + v.seg, 0) / 60);
+  const activo = delArea.find((v) => v.id === actual) ?? delArea[0] ?? videos[0];
+  const vistosArea = delArea.filter((v) => vistos.has(v.id)).length;
+  const minArea = Math.round(delArea.reduce((s, v) => s + v.seg, 0) / 60);
+  const IconoArea = area === TODAS ? LayoutGrid : (ICONO_GRUPO[area] ?? LayoutGrid);
 
   return (
     <div className="space-y-4">
+      {/* ---- Área activa ---- */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-2 rounded-full border border-[color-mix(in_oklch,var(--accent)_30%,transparent)] bg-[color-mix(in_oklch,var(--accent)_10%,transparent)] px-3.5 py-1.5 text-[12.5px] font-bold text-[var(--accent)]">
+          <IconoArea className="h-4 w-4" aria-hidden="true" />
+          {area === TODAS ? "Toda la videoteca" : `Área: ${area}`}
+          <span className="font-semibold text-muted-foreground">· {delArea.length} videos · {minArea} min</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            setArea(null);
+            try {
+              localStorage.removeItem(claveArea);
+            } catch {
+              // idem
+            }
+          }}
+          className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-3 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" />
+          Cambiar de área
+        </button>
+      </div>
+
       {/* ---- Reproductor único ---- */}
       <div ref={playerRef} className="scroll-mt-24">
         <div className="player-shell">
@@ -85,7 +236,6 @@ export function Videoteca({ leccionId, videos }: { leccionId: string; videos: Vi
               allowFullScreen
             />
           ) : (
-            /* Fachada: ni un solo iframe hasta que la persona da play. */
             <button
               type="button"
               onClick={() => elegir(activo.id)}
@@ -115,17 +265,16 @@ export function Videoteca({ leccionId, videos }: { leccionId: string; videos: Vi
         </p>
       </div>
 
-      {/* ---- Barra: progreso de repaso + buscador ---- */}
+      {/* ---- Progreso del área + buscador ---- */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-[200px]">
           <p className="text-[12px] font-semibold text-foreground">
-            {vistos.size} de {videos.length} videos vistos
-            <span className="ml-1.5 font-normal text-muted-foreground">· {totalMin} min en total</span>
+            {vistosArea} de {delArea.length} videos vistos
           </p>
           <div className="mt-1 h-1.5 w-48 overflow-hidden rounded-full bg-[color-mix(in_oklch,var(--muted-foreground)_16%,transparent)]">
             <div
               className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--primary)] transition-[width] duration-300"
-              style={{ width: `${Math.round((vistos.size / Math.max(videos.length, 1)) * 100)}%` }}
+              style={{ width: `${Math.round((vistosArea / Math.max(delArea.length, 1)) * 100)}%` }}
             />
           </div>
         </div>
@@ -135,24 +284,26 @@ export function Videoteca({ leccionId, videos }: { leccionId: string; videos: Vi
             type="search"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar en la videoteca…"
+            placeholder="Buscar en el área…"
             aria-label="Buscar video"
             className="w-full bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
           />
         </label>
       </div>
 
-      {/* ---- Lista vertical agrupada ---- */}
-      {grupos.length === 0 ? (
+      {/* ---- Lista vertical ---- */}
+      {seccionado.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">Nada coincide con «{busqueda}».</p>
       ) : (
-        grupos.map(([grupo, lista]) => (
+        seccionado.map(([grupo, lista]) => (
           <section key={grupo}>
-            <h3 className="mb-2 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" aria-hidden="true" />
-              {grupo}
-              <span className="font-semibold normal-case tracking-normal">· {lista.length}</span>
-            </h3>
+            {(area === TODAS || seccionado.length > 1) && (
+              <h3 className="mb-2 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-muted-foreground">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" aria-hidden="true" />
+                {grupo}
+                <span className="font-semibold normal-case tracking-normal">· {lista.length}</span>
+              </h3>
+            )}
             <ul className="space-y-1.5">
               {lista.map((v) => {
                 const esActual = v.id === actual && reproduciendo;
