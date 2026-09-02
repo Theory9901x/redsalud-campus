@@ -115,6 +115,23 @@ export default async function AulaLessonPage({
     <span aria-hidden="true" />
   );
 
+  const botoneraGrid = (clases: string) => (
+    <div className={clases}>
+      <div className="justify-self-start">{botonAnterior}</div>
+      <div data-slot="cta" className="justify-self-center">
+        <CompletarLeccion
+          courseId={courseId}
+          lessonId={lessonId}
+          contentType={lesson.contentType}
+          fileUrl={lesson.fileUrl}
+          yaCompletada={lessonMeta.completed}
+          posicionInicial={progresoLeccion?.lastPositionSeconds ?? null}
+        />
+      </div>
+      <div className="justify-self-end">{botonSiguiente}</div>
+    </div>
+  );
+
   return (
     <div className={cn("mx-auto", isDocumentLesson ? "max-w-[1180px]" : "max-w-[1020px]")}>
       <div className="reading-progress" aria-hidden="true" />
@@ -151,6 +168,8 @@ export default async function AulaLessonPage({
             {lesson.description}
           </p>
         )}
+
+        {videoteca && botoneraGrid("leccion-botonera mt-4 border-b border-border/40 pb-5")}
 
         {/* ---- Contenido ---- */}
         <div className="mt-5 space-y-5">
@@ -229,7 +248,7 @@ export default async function AulaLessonPage({
         </div>
 
         {/* ---- Botonera ---- */}
-        {showVideoFile ? (
+        {videoteca ? null : showVideoFile ? (
           /* El video subido vive dentro del control de completar (reanuda y
              auto-completa al 90%): ocupa el ancho y la navegación va debajo. */
           <div className="mt-5 space-y-4 border-t border-border/40 pt-5">
@@ -247,20 +266,7 @@ export default async function AulaLessonPage({
             </div>
           </div>
         ) : (
-          <div className="leccion-botonera mt-5 border-t border-border/40 pt-5">
-            <div className="justify-self-start">{botonAnterior}</div>
-            <div data-slot="cta" className="justify-self-center">
-              <CompletarLeccion
-                courseId={courseId}
-                lessonId={lessonId}
-                contentType={lesson.contentType}
-                fileUrl={lesson.fileUrl}
-                yaCompletada={lessonMeta.completed}
-                posicionInicial={progresoLeccion?.lastPositionSeconds ?? null}
-              />
-            </div>
-            <div className="justify-self-end">{botonSiguiente}</div>
-          </div>
+          botoneraGrid("leccion-botonera mt-5 border-t border-border/40 pt-5")
         )}
       </article>
 
