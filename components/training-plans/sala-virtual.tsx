@@ -229,6 +229,15 @@ export function SalaVirtual({
           // la actividad de la sesión ya los muestran fuera del video. En
           // móvil se dejan: ahí la interfaz de Jitsi es la que se usa.
           ...(esMovil ? {} : { notifications: [] }),
+          /*
+           * La barra de Jitsi se esconde sola a los pocos segundos y hay que
+           * tocar el video para que vuelva. Para el personal que no está
+           * familiarizado con videollamadas eso es una barrera real: se deja
+           * FIJA en móvil, con el micrófono siempre a la vista.
+           */
+          ...(esMovil
+            ? { toolbarConfig: { alwaysVisible: true, initialTimeout: 86400000, timeout: 86400000 } }
+            : {}),
           // ---- Rendimiento (VPS de 2 CPU y redes institucionales) ----
           startWithAudioMuted: true,
           startWithVideoMuted: true,
@@ -242,7 +251,9 @@ export function SalaVirtual({
         interfaceConfigOverwrite: {
           SHOW_JITSI_WATERMARK: false,
           MOBILE_APP_PROMO: false,
-          ...(esMovil ? {} : { TOOLBAR_BUTTONS: [] }),
+          ...(esMovil
+            ? { TOOLBAR_ALWAYS_VISIBLE: true, TOOLBAR_TIMEOUT: 86400000, INITIAL_TOOLBAR_TIMEOUT: 86400000 }
+            : { TOOLBAR_BUTTONS: [] }),
         },
       });
       apiRef.current = api;
@@ -447,6 +458,13 @@ export function SalaVirtual({
           )}
         </div>
       </section>
+
+      {/* Guía para quien no está familiarizado con videollamadas: en el
+          teléfono los controles viven en la barra del propio video. */}
+      <p className="flex items-center justify-center gap-2 rounded-2xl border border-[color-mix(in_oklch,var(--accent)_25%,transparent)] bg-[color-mix(in_oklch,var(--accent)_10%,transparent)] px-4 py-3 text-center text-[13px] font-semibold text-foreground lg:hidden">
+        <Mic className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden="true" />
+        Para hablar, toca el micrófono en la barra del video y permite el acceso.
+      </p>
 
       {/* ---------------- Barra de controles ---------------- */}
       <div className="surface-glass relative hidden px-3 py-2.5 lg:block">
