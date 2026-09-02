@@ -11,13 +11,20 @@ import {
   Play,
   RefreshCcw,
   Search,
+  Stethoscope,
+  Syringe,
+  Smile,
+  FlaskConical,
+  HeartPulse,
+  Film,
   Users,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type VideoTeca = { id: string; titulo: string; grupo: string; seg: number };
+/** `archivo` (URL /api/media/...) reemplaza a YouTube para videos propios. */
+export type VideoTeca = { id: string; titulo: string; grupo: string; seg: number; archivo?: string };
 
 function duracion(seg: number) {
   const m = Math.floor(seg / 60);
@@ -32,6 +39,11 @@ const ICONO_GRUPO: Record<string, LucideIcon> = {
   "Tesorería": Landmark,
   "Nómina": Users,
   "Almacén y activos": Boxes,
+  "Urgencias y hospitalización": HeartPulse,
+  "Consulta externa": Stethoscope,
+  "Odontología": Smile,
+  "Promoción y mantenimiento (Res. 3280)": Syringe,
+  "Laboratorio clínico": FlaskConical,
 };
 
 const TODAS = "__todas__";
@@ -132,26 +144,35 @@ export function Videoteca({ leccionId, videos }: { leccionId: string; videos: Vi
             Se desplegarán solo los videotutoriales de tu área. Puedes cambiarla cuando quieras.
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {grupos.map(([g, lista]) => {
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+          {grupos.map(([g, lista], i) => {
             const Icono = ICONO_GRUPO[g] ?? LayoutGrid;
             const min = Math.round(lista.reduce((s, v) => s + v.seg, 0) / 60);
             const vistosGrupo = lista.filter((v) => vistos.has(v.id)).length;
+            const pct = Math.round((vistosGrupo / lista.length) * 100);
             return (
               <button
                 key={g}
                 type="button"
                 onClick={() => elegirArea(g)}
-                className="group flex items-center gap-3 rounded-2xl border border-border/60 bg-card/60 p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_oklch,var(--accent)_40%,transparent)] hover:shadow-md"
+                style={{ animationDelay: `${i * 60}ms` }}
+                className="tarjeta-area group"
               >
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[color-mix(in_oklch,var(--accent)_13%,transparent)] text-[var(--accent)] transition-transform group-hover:scale-105">
+                <span className="tarjeta-area-halo" aria-hidden="true" />
+                <span className="relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[color-mix(in_oklch,var(--accent)_22%,transparent)] to-[color-mix(in_oklch,var(--primary)_14%,transparent)] text-[var(--accent)] ring-1 ring-[color-mix(in_oklch,var(--accent)_25%,transparent)] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-4deg]">
                   <Icono className="h-5 w-5" aria-hidden="true" />
                 </span>
-                <span className="min-w-0">
-                  <span className="block text-[14px] font-bold text-foreground">{g}</span>
-                  <span className="block text-[11.5px] text-muted-foreground">
+                <span className="relative min-w-0 flex-1">
+                  <span className="block text-[14px] font-bold leading-snug text-foreground">{g}</span>
+                  <span className="mt-0.5 block text-[11.5px] text-muted-foreground">
                     {lista.length} {lista.length === 1 ? "video" : "videos"} · {min} min
-                    {vistosGrupo > 0 && <span className="ml-1 font-semibold text-success">· {vistosGrupo} vistos</span>}
+                    {vistosGrupo > 0 && <span className="ml-1 font-semibold text-success">· {pct}% visto</span>}
+                  </span>
+                  <span className="mt-2 block h-1 w-full overflow-hidden rounded-full bg-[color-mix(in_oklch,var(--muted-foreground)_14%,transparent)]">
+                    <span
+                      className="block h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--primary)] transition-[width] duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
                   </span>
                 </span>
               </button>
@@ -160,15 +181,16 @@ export function Videoteca({ leccionId, videos }: { leccionId: string; videos: Vi
           <button
             type="button"
             onClick={() => elegirArea(TODAS)}
-            className="flex items-center gap-3 rounded-2xl border border-dashed border-border/70 bg-card/30 p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_oklch,var(--accent)_40%,transparent)]"
+            style={{ animationDelay: `${grupos.length * 60}ms` }}
+            className="tarjeta-area group !border-dashed"
           >
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
+            <span className="relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-muted/70 text-muted-foreground transition-transform duration-300 group-hover:scale-110">
               <LayoutGrid className="h-5 w-5" aria-hidden="true" />
             </span>
-            <span className="min-w-0">
+            <span className="relative min-w-0">
               <span className="block text-[14px] font-bold text-foreground">Ver toda la videoteca</span>
               <span className="block text-[11.5px] text-muted-foreground">
-                Los {videos.length} videos, agrupados por área
+                Los {videos.length} videos, agrupados
               </span>
             </span>
           </button>
@@ -228,13 +250,17 @@ export function Videoteca({ leccionId, videos }: { leccionId: string; videos: Vi
       <div ref={playerRef} className="scroll-mt-24">
         <div className="player-shell">
           {reproduciendo ? (
-            <iframe
-              key={activo.id}
-              src={`https://www.youtube.com/embed/${activo.id}?autoplay=1`}
-              title={activo.titulo}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+            activo.archivo ? (
+              <video key={activo.id} src={activo.archivo} controls autoPlay controlsList="nodownload" />
+            ) : (
+              <iframe
+                key={activo.id}
+                src={`https://www.youtube.com/embed/${activo.id}?autoplay=1`}
+                title={activo.titulo}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            )
           ) : (
             <button
               type="button"
@@ -243,12 +269,18 @@ export function Videoteca({ leccionId, videos }: { leccionId: string; videos: Vi
               style={{ aspectRatio: "16 / 9" }}
               aria-label={`Reproducir: ${activo.titulo}`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element -- miniatura externa de YouTube */}
-              <img
-                src={`https://i.ytimg.com/vi/${activo.id}/hqdefault.jpg`}
-                alt=""
-                className="h-full w-full object-cover opacity-80 transition-transform duration-300 group-hover:scale-[1.02]"
-              />
+              {activo.archivo ? (
+                <span className="grid h-full w-full place-items-center bg-gradient-to-br from-[color-mix(in_oklch,var(--accent)_35%,black)] to-black">
+                  <Film className="h-12 w-12 text-white/40" aria-hidden="true" />
+                </span>
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element -- miniatura externa de YouTube
+                <img
+                  src={`https://i.ytimg.com/vi/${activo.id}/hqdefault.jpg`}
+                  alt=""
+                  className="h-full w-full object-cover opacity-80 transition-transform duration-300 group-hover:scale-[1.02]"
+                />
+              )}
               <span className="absolute inset-0 grid place-items-center">
                 <span className="grid h-16 w-16 place-items-center rounded-full bg-[var(--accent)] text-white shadow-xl transition-transform group-hover:scale-110">
                   <Play className="ml-1 h-7 w-7 fill-current" aria-hidden="true" />
@@ -322,13 +354,19 @@ export function Videoteca({ leccionId, videos }: { leccionId: string; videos: Vi
                       )}
                     >
                       <span className="relative h-12 w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
-                        {/* eslint-disable-next-line @next/next/no-img-element -- miniatura externa de YouTube */}
-                        <img
-                          src={`https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`}
-                          alt=""
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                        />
+                        {v.archivo ? (
+                          <span className="grid h-full w-full place-items-center bg-gradient-to-br from-[color-mix(in_oklch,var(--accent)_30%,black)] to-black">
+                            <Film className="h-5 w-5 text-white/50" aria-hidden="true" />
+                          </span>
+                        ) : (
+                          // eslint-disable-next-line @next/next/no-img-element -- miniatura externa de YouTube
+                          <img
+                            src={`https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`}
+                            alt=""
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                          />
+                        )}
                         <span className="absolute bottom-0.5 right-0.5 rounded bg-black/75 px-1 text-[10px] font-semibold tabular-nums text-white">
                           {duracion(v.seg)}
                         </span>
