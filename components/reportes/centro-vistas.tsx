@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Grid2x2, LineChart, Map, BookOpen, TableProperties, type LucideIcon } from "lucide-react";
+import { Grid2x2, LineChart, Map, BookOpen, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const VISTAS: { clave: string; etiqueta: string; icono: LucideIcon }[] = [
@@ -10,7 +10,6 @@ const VISTAS: { clave: string; etiqueta: string; icono: LucideIcon }[] = [
   { clave: "tendencias", etiqueta: "Tendencias", icono: LineChart },
   { clave: "territorio", etiqueta: "Territorio", icono: Map },
   { clave: "cursos", etiqueta: "Cursos", icono: BookOpen },
-  { clave: "detalle", etiqueta: "Detalle", icono: TableProperties },
 ];
 
 /**
@@ -24,13 +23,11 @@ export function CentroVistas({
   tendencias,
   territorio,
   cursos,
-  detalle,
 }: {
   resumen: React.ReactNode;
   tendencias: React.ReactNode;
   territorio: React.ReactNode;
   cursos: React.ReactNode;
-  detalle: React.ReactNode;
 }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -46,7 +43,7 @@ export function CentroVistas({
     router.replace(`?${siguientes.toString()}`, { scroll: false });
   }
 
-  const secciones: Record<string, React.ReactNode> = { resumen, tendencias, territorio, cursos, detalle };
+  const secciones: Record<string, React.ReactNode> = { resumen, tendencias, territorio, cursos };
 
   return (
     <div className="space-y-5">

@@ -11,6 +11,25 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LESSON_CONTENT_TYPE_LABELS, LESSON_CONTENT_TYPE_ICONS } from "@/components/cursos/labels";
 import { CompletarLeccion } from "@/components/aula/completar-leccion";
+import { Videoteca, type VideoTeca } from "@/components/aula/videoteca";
+
+/**
+ * Una lección YOUTUBE cuyo contenido es el JSON de una VIDEOTECA (muchos
+ * videos en una pantalla) se pinta con su vista dedicada. Tolerante a que
+ * el constructor haya envuelto el JSON en etiquetas.
+ */
+function parseVideoteca(body: string | null): VideoTeca[] | null {
+  if (!body) return null;
+  const limpio = body.replace(/<[^>]+>/g, " ").replace(/&quot;/g, String.fromCharCode(34)).replace(/&amp;/g, "&").trim();
+  if (!limpio.startsWith("{")) return null;
+  try {
+    const j = JSON.parse(limpio) as { videoteca?: boolean; videos?: VideoTeca[] };
+    if (j?.videoteca && Array.isArray(j.videos) && j.videos.length > 1) return j.videos;
+  } catch {
+    // No era una videoteca: se renderiza como lección normal.
+  }
+  return null;
+}
 
 /**
  * Vista de la lección: UN workspace glass flotante donde el video es el
@@ -60,6 +79,7 @@ export default async function AulaLessonPage({
   const showFile = (lesson.contentType === "PDF" || lesson.contentType === "IMAGE" || lesson.contentType === "MIXED") && lesson.fileUrl;
   const showLink = (lesson.contentType === "LINK" || lesson.contentType === "MIXED") && lesson.externalUrl;
   const embedUrl = lesson.videoUrl ? getYoutubeEmbedUrl(lesson.videoUrl) : null;
+  const videoteca = lesson.contentType === "YOUTUBE" ? parseVideoteca(lesson.contentBody) : null;
 
   // Un documento (PDF) necesita más lienzo que un texto de lectura.
   const isDocumentLesson = Boolean(showFile && lesson.contentType !== "IMAGE");
@@ -141,15 +161,20 @@ export default async function AulaLessonPage({
             />
           )}
 
-          {showYoutube && embedUrl && (
-            <div className="player-shell">
-              <iframe
-                src={embedUrl}
-                title={lesson.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
+          {videoteca ? (
+            <Videoteca leccionId={lesson.id} videos={videoteca} />
+          ) : (
+            showYoutube &&
+            embedUrl && (
+              <div className="player-shell">
+                <iframe
+                  src={embedUrl}
+                  title={lesson.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            )
           )}
 
           {showFile && lesson.contentType === "IMAGE" && (
