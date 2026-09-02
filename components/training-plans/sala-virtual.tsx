@@ -23,6 +23,7 @@ import {
   Check,
   RotateCcw,
   SendHorizontal,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { etiquetaHora } from "@/components/training-plans/labels";
@@ -54,7 +55,17 @@ declare global {
 }
 
 /** Comandos que otras partes de la página (la barra lateral) pueden enviar a la sala. */
-export type ComandoSala = "enfocarChat" | "toggleParticipantsPane" | "abrirConfiguracion" | "enfocarNotas";
+export type ComandoSala =
+  | "enfocarChat"
+  | "toggleParticipantsPane"
+  | "abrirConfiguracion"
+  | "enfocarNotas"
+  | "abrirParticipantes"
+  | "abrirBitacora"
+  | "abrirNotas";
+
+/** Panel lateral emergente (estilo Meet): se abre desde la barra lateral. */
+export type PanelSala = "participantes" | "bitacora" | "notas";
 export const EVENTO_COMANDO_SALA = "sala:comando";
 
 type Participante = { id: string; nombre: string; esLocal: boolean; manoAlzada: boolean };
@@ -133,6 +144,7 @@ export function SalaVirtual({
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [noLeidos, setNoLeidos] = useState(0);
+  const [panel, setPanel] = useState<PanelSala | null>(null);
   const notasRef = useRef<HTMLTextAreaElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
   const contadorMensajes = useRef(0);
@@ -368,10 +380,22 @@ export function SalaVirtual({
       if (tipo === "toggleParticipantsPane") apiRef.current?.executeCommand("toggleParticipantsPane");
       if (tipo === "abrirConfiguracion") setMenu((m) => (m === "config" ? null : "config"));
       if (tipo === "enfocarNotas") notasRef.current?.focus();
+      if (tipo === "abrirParticipantes") setPanel((a) => (a === "participantes" ? null : "participantes"));
+      if (tipo === "abrirBitacora") setPanel((a) => (a === "bitacora" ? null : "bitacora"));
+      if (tipo === "abrirNotas") setPanel((a) => (a === "notas" ? null : "notas"));
     }
     window.addEventListener(EVENTO_COMANDO_SALA, alComando);
     return () => window.removeEventListener(EVENTO_COMANDO_SALA, alComando);
   }, []);
+
+  useEffect(() => {
+    if (!panel) return;
+    function alTeclado(e: KeyboardEvent) {
+      if (e.key === "Escape") setPanel(null);
+    }
+    window.addEventListener("keydown", alTeclado);
+    return () => window.removeEventListener("keydown", alTeclado);
+  }, [panel]);
 
   async function abrirMenuDispositivos(tipo: "mic" | "cam") {
     if (menu === tipo) {
@@ -400,7 +424,7 @@ export function SalaVirtual({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
     <div className="min-w-0 space-y-5">
       {/* ---------------- Video ---------------- */}
       <section
@@ -583,89 +607,6 @@ export function SalaVirtual({
         )}
       </div>
 
-      {/* ---------------- Tarjetas ---------------- */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3">
-        <section id="participantes" className="surface-glass flex flex-col p-6 scroll-mt-24">
-          <h3 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground">
-            <Users className="h-4 w-4 text-primary" aria-hidden="true" />
-            Participantes conectados
-            <span className="rounded-full bg-primary/12 px-2 py-0.5 text-[12px] font-extrabold tabular-nums text-primary">
-              {dentro ? participantes.length : 0}
-            </span>
-          </h3>
-          {/* Con mucha gente conectada la lista se desplaza dentro de su
-              tarjeta en vez de estirar la página, y cada fila respira. */}
-          <ul className="mt-4 max-h-[260px] space-y-1 overflow-y-auto pr-1">
-            {!dentro ? (
-              <li className="rounded-xl bg-card/50 px-3 py-3 text-[12.5px] leading-relaxed text-muted-foreground">
-                Únete a la reunión para ver quiénes están conectados.
-              </li>
-            ) : (
-              participantes.map((p) => (
-                <li key={p.id} className="flex items-start gap-3 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-card/60">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-success text-[12px] font-extrabold text-white">
-                    {iniciales(p.nombre)}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block break-words text-[13.5px] font-medium leading-snug text-foreground">
-                      {p.nombre}
-                      {p.esLocal && <span className="text-muted-foreground"> (Tú)</span>}
-                    </span>
-                    <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                      {p.esLocal && esPresentador && (
-                        <span className="rounded-md bg-primary/12 px-2 py-0.5 text-[10.5px] font-bold text-primary">Presentador</span>
-                      )}
-                      {p.manoAlzada && (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-warning/15 px-2 py-0.5 text-[10.5px] font-bold text-warning-foreground">
-                          <Hand className="h-3 w-3" aria-hidden="true" />
-                          Mano levantada
-                        </span>
-                      )}
-                      {p.esLocal && micSilenciado && (
-                        <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-muted-foreground">
-                          <MicOff className="h-3 w-3 text-destructive" aria-hidden="true" />
-                          Micrófono apagado
-                        </span>
-                      )}
-                    </span>
-                  </span>
-                </li>
-              ))
-            )}
-          </ul>
-        </section>
-
-        <section className="surface-glass flex flex-col p-6">
-          <h3 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground">
-            <StickyNote className="h-4 w-4 text-primary" aria-hidden="true" />
-            Notas rápidas
-          </h3>
-          <NotasRapidas activityId={activityId} textareaRef={notasRef} />
-        </section>
-
-        <section className="surface-glass flex flex-col p-6">
-          <h3 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground">
-            <Activity className="h-4 w-4 text-primary" aria-hidden="true" />
-            Actividad de la sesión
-          </h3>
-          {eventos.length === 0 ? (
-            <p className="mt-4 rounded-xl bg-card/50 px-3 py-3 text-[12.5px] leading-relaxed text-muted-foreground">
-              Aquí verás entradas, salidas y manos levantadas.
-            </p>
-          ) : (
-            <ol className="mt-4 max-h-[260px] space-y-3.5 overflow-y-auto pr-1">
-              {eventos.map((e, i) => (
-                <li key={i} className="relative pl-4 text-[12.5px] leading-relaxed">
-                  <span className="absolute left-0 top-[7px] h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
-                  <span className="block font-semibold text-foreground">{e.hora}</span>
-                  <span className="text-muted-foreground">{e.texto}</span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
-      </div>
-
       {grabacion && (
         <div id="grabacion" className="scroll-mt-24">
           {grabacion}
@@ -685,6 +626,98 @@ export function SalaVirtual({
       />
       {panelDerecho}
     </div>
+
+    {/* ---------------- Panel emergente (estilo Meet) ---------------- */}
+    {panel && (
+      <aside
+        role="dialog"
+        aria-label={panel === "participantes" ? "Personas conectadas" : panel === "bitacora" ? "Bitácora de la sesión" : "Notas rápidas"}
+        className="panel-sala fixed inset-y-0 right-0 z-50 flex w-full max-w-[400px] flex-col border-l border-border/50 bg-card/95 shadow-2xl backdrop-blur-xl"
+      >
+        <header className="flex items-center gap-2.5 border-b border-border/50 px-5 py-4">
+          {panel === "participantes" && <Users className="h-4.5 w-4.5 text-primary" aria-hidden="true" />}
+          {panel === "bitacora" && <Activity className="h-4.5 w-4.5 text-primary" aria-hidden="true" />}
+          {panel === "notas" && <StickyNote className="h-4.5 w-4.5 text-primary" aria-hidden="true" />}
+          <h3 className="font-display text-[15px] font-bold text-foreground">
+            {panel === "participantes" ? "Personas conectadas" : panel === "bitacora" ? "Bitácora de la sesión" : "Notas rápidas"}
+          </h3>
+          {panel === "participantes" && (
+            <span className="rounded-full bg-primary/12 px-2.5 py-0.5 text-[12.5px] font-extrabold tabular-nums text-primary">
+              {dentro ? participantes.length : 0}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => setPanel(null)}
+            aria-label="Cerrar panel"
+            className="ml-auto grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <X className="h-4.5 w-4.5" aria-hidden="true" />
+          </button>
+        </header>
+
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
+          {panel === "participantes" &&
+            (!dentro ? (
+              <p className="rounded-xl bg-muted/50 px-3 py-3 text-[13px] leading-relaxed text-muted-foreground">
+                Únete a la reunión para ver quiénes están conectados.
+              </p>
+            ) : (
+              <ul className="space-y-1">
+                {participantes.map((p) => (
+                  <li key={p.id} className="flex items-start gap-3 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-muted/60">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-success text-[13px] font-extrabold text-white">
+                      {iniciales(p.nombre)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block break-words text-[13.5px] font-medium leading-snug text-foreground">
+                        {p.nombre}
+                        {p.esLocal && <span className="text-muted-foreground"> (Tú)</span>}
+                      </span>
+                      <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                        {p.esLocal && esPresentador && (
+                          <span className="rounded-md bg-primary/12 px-2 py-0.5 text-[10.5px] font-bold text-primary">Presentador</span>
+                        )}
+                        {p.manoAlzada && (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-warning/15 px-2 py-0.5 text-[10.5px] font-bold text-warning-foreground">
+                            <Hand className="h-3 w-3" aria-hidden="true" />
+                            Mano levantada
+                          </span>
+                        )}
+                        {p.esLocal && micSilenciado && (
+                          <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-muted-foreground">
+                            <MicOff className="h-3 w-3 text-destructive" aria-hidden="true" />
+                            Micrófono apagado
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ))}
+
+          {panel === "bitacora" &&
+            (eventos.length === 0 ? (
+              <p className="rounded-xl bg-muted/50 px-3 py-3 text-[13px] leading-relaxed text-muted-foreground">
+                Aquí verás entradas, salidas y manos levantadas.
+              </p>
+            ) : (
+              <ol className="space-y-3.5 pl-1">
+                {eventos.map((e, i) => (
+                  <li key={i} className="relative pl-4 text-[13px] leading-relaxed">
+                    <span className="absolute left-0 top-[7px] h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
+                    <span className="block font-semibold text-foreground">{e.hora}</span>
+                    <span className="text-muted-foreground">{e.texto}</span>
+                  </li>
+                ))}
+              </ol>
+            ))}
+
+          {panel === "notas" && <NotasRapidas activityId={activityId} textareaRef={notasRef} />}
+        </div>
+      </aside>
+    )}
     </div>
   );
 }

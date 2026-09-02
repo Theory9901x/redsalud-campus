@@ -1736,3 +1736,69 @@
     scrollbar-width: thin;
     scrollbar-color: color-mix(in oklch, var(--muted-foreground) 28%, transparent) transparent;
   }
+
+  /* Tarjetas del selector de área de la videoteca: glass con entrada
+     escalonada y halo de acento al pasar el mouse. */
+  @keyframes tarjeta-area-entra {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .tarjeta-area {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1.05rem;
+    border-radius: 20px;
+    text-align: left;
+    border: 1px solid var(--glass-border);
+    background: color-mix(in oklch, var(--card) 55%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+    animation: tarjeta-area-entra 380ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    transition:
+      transform 220ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      border-color 220ms,
+      box-shadow 220ms;
+  }
+  .tarjeta-area:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+    box-shadow: 0 14px 34px -14px color-mix(in oklch, var(--accent) 40%, transparent);
+  }
+  .tarjeta-area-halo {
+    position: absolute;
+    inset: -40% -20% auto auto;
+    height: 130%;
+    width: 60%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, color-mix(in oklch, var(--accent) 18%, transparent), transparent);
+    opacity: 0;
+    transition: opacity 300ms;
+    pointer-events: none;
+  }
+  .tarjeta-area:hover .tarjeta-area-halo {
+    opacity: 1;
+  }
+
+  /* Panel emergente de la sala (participantes, bitácora, notas). */
+  @keyframes panel-sala-entra {
+    from {
+      opacity: 0;
+      transform: translateX(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  .panel-sala {
+    animation: panel-sala-entra 220ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
