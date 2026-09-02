@@ -400,8 +400,8 @@ export function SalaVirtual({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-    <div className="min-w-0 space-y-4">
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="min-w-0 space-y-5">
       {/* ---------------- Video ---------------- */}
       <section
         id="llamada"
@@ -584,18 +584,25 @@ export function SalaVirtual({
       </div>
 
       {/* ---------------- Tarjetas ---------------- */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <section id="participantes" className="surface-glass p-5 scroll-mt-24">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <section id="participantes" className="surface-glass flex flex-col p-6 scroll-mt-24">
           <h3 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground">
             <Users className="h-4 w-4 text-primary" aria-hidden="true" />
-            Participantes conectados ({dentro ? participantes.length : 0})
+            Participantes conectados
+            <span className="rounded-full bg-primary/12 px-2 py-0.5 text-[12px] font-extrabold tabular-nums text-primary">
+              {dentro ? participantes.length : 0}
+            </span>
           </h3>
-          <ul className="mt-3 space-y-2">
+          {/* Con mucha gente conectada la lista se desplaza dentro de su
+              tarjeta en vez de estirar la página, y cada fila respira. */}
+          <ul className="mt-4 max-h-[260px] space-y-1 overflow-y-auto pr-1">
             {!dentro ? (
-              <li className="text-xs text-muted-foreground">Únete a la reunión para ver quiénes están conectados.</li>
+              <li className="rounded-xl bg-card/50 px-3 py-3 text-[12.5px] leading-relaxed text-muted-foreground">
+                Únete a la reunión para ver quiénes están conectados.
+              </li>
             ) : (
               participantes.map((p) => (
-                <li key={p.id} className="flex items-center gap-2.5">
+                <li key={p.id} className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-card/60">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-success text-[12px] font-extrabold text-white">
                     {iniciales(p.nombre)}
                   </span>
@@ -604,17 +611,17 @@ export function SalaVirtual({
                     {p.esLocal && <span className="text-muted-foreground"> (Tú)</span>}
                   </span>
                   {p.esLocal && esPresentador && (
-                    <span className="rounded-md bg-primary/12 px-2 py-0.5 text-[10.5px] font-bold text-primary">Presentador</span>
+                    <span className="shrink-0 rounded-md bg-primary/12 px-2 py-0.5 text-[10.5px] font-bold text-primary">Presentador</span>
                   )}
-                  {p.manoAlzada && <Hand className="h-4 w-4 text-warning-foreground" aria-label="Mano levantada" />}
-                  {p.esLocal && micSilenciado && <MicOff className="h-4 w-4 text-destructive" aria-label="Micrófono silenciado" />}
+                  {p.manoAlzada && <Hand className="h-4 w-4 shrink-0 text-warning-foreground" aria-label="Mano levantada" />}
+                  {p.esLocal && micSilenciado && <MicOff className="h-4 w-4 shrink-0 text-destructive" aria-label="Micrófono silenciado" />}
                 </li>
               ))
             )}
           </ul>
         </section>
 
-        <section className="surface-glass p-5">
+        <section className="surface-glass flex flex-col p-6">
           <h3 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground">
             <StickyNote className="h-4 w-4 text-primary" aria-hidden="true" />
             Notas rápidas
@@ -622,18 +629,20 @@ export function SalaVirtual({
           <NotasRapidas activityId={activityId} textareaRef={notasRef} />
         </section>
 
-        <section className="surface-glass p-5">
+        <section className="surface-glass flex flex-col p-6">
           <h3 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground">
             <Activity className="h-4 w-4 text-primary" aria-hidden="true" />
             Actividad de la sesión
           </h3>
           {eventos.length === 0 ? (
-            <p className="mt-3 text-xs text-muted-foreground">Aquí verás entradas, salidas y manos levantadas.</p>
+            <p className="mt-4 rounded-xl bg-card/50 px-3 py-3 text-[12.5px] leading-relaxed text-muted-foreground">
+              Aquí verás entradas, salidas y manos levantadas.
+            </p>
           ) : (
-            <ol className="mt-3 max-h-44 space-y-2.5 overflow-y-auto pr-1">
+            <ol className="mt-4 max-h-[260px] space-y-3.5 overflow-y-auto pr-1">
               {eventos.map((e, i) => (
-                <li key={i} className="relative pl-4 text-[12.5px] leading-snug">
-                  <span className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
+                <li key={i} className="relative pl-4 text-[12.5px] leading-relaxed">
+                  <span className="absolute left-0 top-[7px] h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
                   <span className="block font-semibold text-foreground">{e.hora}</span>
                   <span className="text-muted-foreground">{e.texto}</span>
                 </li>
@@ -651,7 +660,7 @@ export function SalaVirtual({
     </div>
 
     {/* ---------------- Columna derecha: chat + panel ---------------- */}
-    <div className="min-w-0 space-y-4">
+    <div className="min-w-0 space-y-5">
       <ChatSala
         mensajes={mensajes}
         dentro={dentro}
@@ -890,12 +899,12 @@ function NotasRapidas({ activityId, textareaRef }: { activityId: string; textare
     return () => clearTimeout(t);
   }, [clave, texto]);
   return (
-    <div className="mt-3">
+    <div className="mt-4 flex flex-1 flex-col">
       <textarea
         ref={textareaRef}
         value={texto}
         onChange={(e) => setTexto(e.target.value)}
-        rows={4}
+        rows={6}
         placeholder="Escribe aquí notas importantes de la sesión…"
         className="w-full resize-y rounded-xl border border-border/60 bg-background/70 p-3 text-[13px] leading-relaxed text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/50"
       />
