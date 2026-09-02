@@ -183,6 +183,19 @@ export function SalaVirtual({
       );
     }
 
+    /*
+     * En MÓVIL manda la barra NATIVA de Jitsi.
+     *
+     * El micrófono y la cámara los abre el navegador con getUserMedia DENTRO
+     * del iframe, y en teléfonos el permiso solo se solicita si el toque
+     * ocurrió en ese mismo marco. Nuestros botones viven fuera y mandan la
+     * orden por postMessage: sin gesto propio, el móvil no muestra el diálogo
+     * de permiso y el micrófono nunca se abre. En escritorio no pasa (el
+     * permiso ya está concedido por origen) y ahí sí se usa nuestra barra.
+     */
+    const esMovil =
+      window.matchMedia("(max-width: 1023px)").matches || window.matchMedia("(pointer: coarse)").matches;
+
     function crear() {
       if (cancelado || !contenedor.current || !window.JitsiMeetExternalAPI) return;
       api = new window.JitsiMeetExternalAPI(domain, {
@@ -196,11 +209,26 @@ export function SalaVirtual({
           subject,
           prejoinConfig: { enabled: true },
           disableDeepLinking: true,
-          // La barra de Jitsi se oculta: los controles son los de la plataforma.
-          toolbarButtons: [],
+          // La barra de Jitsi se oculta SOLO en escritorio: los controles son
+          // los de la plataforma. En móvil se conserva la nativa (ver arriba).
+          toolbarButtons: esMovil
+            ? [
+                "microphone",
+                "camera",
+                "toggle-camera",
+                "hangup",
+                "chat",
+                "participants-pane",
+                "raisehand",
+                "tileview",
+                "settings",
+                "fullscreen",
+              ]
+            : [],
           // Sus avisos flotantes ("X joined", "Open chat") también: el chat y
-          // la actividad de la sesión ya los muestran fuera del video.
-          notifications: [],
+          // la actividad de la sesión ya los muestran fuera del video. En
+          // móvil se dejan: ahí la interfaz de Jitsi es la que se usa.
+          ...(esMovil ? {} : { notifications: [] }),
           // ---- Rendimiento (VPS de 2 CPU y redes institucionales) ----
           startWithAudioMuted: true,
           startWithVideoMuted: true,
@@ -214,7 +242,7 @@ export function SalaVirtual({
         interfaceConfigOverwrite: {
           SHOW_JITSI_WATERMARK: false,
           MOBILE_APP_PROMO: false,
-          TOOLBAR_BUTTONS: [],
+          ...(esMovil ? {} : { TOOLBAR_BUTTONS: [] }),
         },
       });
       apiRef.current = api;
@@ -421,7 +449,7 @@ export function SalaVirtual({
       </section>
 
       {/* ---------------- Barra de controles ---------------- */}
-      <div className="surface-glass relative px-3 py-2.5">
+      <div className="surface-glass relative hidden px-3 py-2.5 lg:block">
         <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
           <BotonControl
             etiqueta="Micrófono"
