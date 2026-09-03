@@ -118,10 +118,16 @@ export default async function AdminActividadDetallePage({
   // porque el QR es una imagen determinista del enlace; el cliente solo
   // los muestra e imprime.
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  // Presaber/postsaber viven en el curso vinculado: sin curso (comités,
+  // eventos externos) esos dos QR llevarían a una página vacía.
   const definicionQr = [
     { url: `${baseUrl}/c/${activityId}/meet`, titulo: "Sesión virtual", descripcion: "Abre la sala vigente de esta capacitación." },
-    { url: `${baseUrl}/c/${activityId}/presaber`, titulo: "Presaber", descripcion: "Lleva a la evaluación en su momento presaber. Pide iniciar sesión." },
-    { url: `${baseUrl}/c/${activityId}/postsaber`, titulo: "Postsaber", descripcion: "Lleva a la evaluación en su momento postsaber. Pide iniciar sesión." },
+    ...(activity.courseId
+      ? [
+          { url: `${baseUrl}/c/${activityId}/presaber`, titulo: "Presaber", descripcion: "Lleva a la evaluación en su momento presaber. Pide iniciar sesión." },
+          { url: `${baseUrl}/c/${activityId}/postsaber`, titulo: "Postsaber", descripcion: "Lleva a la evaluación en su momento postsaber. Pide iniciar sesión." },
+        ]
+      : []),
     { url: `${baseUrl}/invitado/${activityId}`, titulo: "Acceso externo (invitados)", descripcion: "Para gente de otras entidades: registro breve de nombre y empresa, sin cuenta. Solo ven la sala y el presaber/postsaber." },
   ];
   const enlacesQr: EnlaceQr[] = await Promise.all(
@@ -312,9 +318,9 @@ export default async function AdminActividadDetallePage({
 
       {resultadosCiclo && <CycleResults resultados={resultadosCiclo} activityId={activityId} />}
 
-      {activity.courseId && <ActivityReportPanel activityId={activityId} cerrada={isClosed} />}
+      <ActivityReportPanel activityId={activityId} cerrada={isClosed} />
 
-      {activity.courseId && <ActivityQrPanel enlaces={enlacesQr} />}
+      <ActivityQrPanel enlaces={enlacesQr} />
 
       {externos.length > 0 && (
         <ExternalParticipantsPanel

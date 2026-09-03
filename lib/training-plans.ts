@@ -1079,14 +1079,16 @@ async function computeActivityReportData(activityId: string): Promise<ActivityRe
       plan: { select: { title: true } },
     },
   });
-  if (!actividad?.courseId) return null;
+  if (!actividad) return null;
 
   const [resultados, quiz, asistencia, encuestas, externos] = await Promise.all([
     computeCycleResults(activityId),
-    prisma.quiz.findFirst({
-      where: { courseId: actividad.courseId, moduleId: null },
-      select: { passingScore: true },
-    }),
+    actividad.courseId
+      ? prisma.quiz.findFirst({
+          where: { courseId: actividad.courseId, moduleId: null },
+          select: { passingScore: true },
+        })
+      : Promise.resolve(null),
     prisma.trainingAttendance.findMany({
       where: { activityId, attended: true },
       select: { userId: true, user: { select: { fullName: true, documentNumber: true } }, registeredAt: true, source: true },
