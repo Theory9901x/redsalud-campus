@@ -531,7 +531,7 @@ export async function deleteTrainingPlanAction(basePath: string, planId: string)
 
   const plan = await prisma.trainingPlan.findUnique({
     where: { id: planId },
-    select: { title: true, activities: { select: { _count: { select: { attendances: true } } } } },
+    select: { title: true, activities: { select: { _count: { select: { attendances: { where: { attended: true } } } } } } },
   });
   if (!plan) return { error: "El plan ya no existe." };
 
@@ -560,13 +560,13 @@ export async function deleteTrainingActivityAction(
 
   const activity = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
-    select: { title: true, _count: { select: { attendances: true } } },
+    select: { title: true, _count: { select: { attendances: { where: { attended: true } } } } },
   });
   if (!activity) return { error: "La jornada ya no existe." };
 
   if (activity._count.attendances > 0) {
     return {
-      error: `No se puede eliminar "${activity.title}": ya tiene ${activity._count.attendances} asistencia(s) registrada(s).`,
+      error: `No se puede eliminar "${activity.title}": ya tiene ${activity._count.attendances} asistencia(s) en firme. Si es un duplicado, desmarca esas asistencias en su lista y vuelve a intentarlo.`,
     };
   }
 
