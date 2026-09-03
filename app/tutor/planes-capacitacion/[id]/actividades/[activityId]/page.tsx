@@ -49,6 +49,7 @@ import { PresaberPostsaberPanel } from "@/components/training-plans/presaber-pos
 import { CycleResults } from "@/components/training-plans/cycle-results";
 import { ActivityQrPanel, type EnlaceQr } from "@/components/training-plans/activity-qr-panel";
 import { ActivityReportPanel } from "@/components/training-plans/activity-report-panel";
+import { RegistroConexiones } from "@/components/training-plans/registro-conexiones";
 import { ExternalParticipantsPanel } from "@/components/training-plans/external-participants-panel";
 import QRCode from "qrcode";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
@@ -355,6 +356,8 @@ export default async function TutorActividadDetallePage({
           />
         </div>
       </div>
+
+      <RegistroConexiones activityId={activityId} />
 
       <div className="space-y-3">
         <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Adherencia y cumplimiento</h2>
