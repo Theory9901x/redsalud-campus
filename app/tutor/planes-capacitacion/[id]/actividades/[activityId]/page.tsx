@@ -59,6 +59,8 @@ import {
   TRAINING_ACTIVITY_STATUS_CLASSES,
   etiquetaProgramacion,
   etiquetaJornada,
+  etiquetaDiaMes,
+  etiquetaHora,
 } from "@/components/training-plans/labels";
 
 const BASE_PATH = "/tutor/planes-capacitacion";
@@ -348,7 +350,12 @@ export default async function TutorActividadDetallePage({
         <div className="space-y-3 lg:col-span-2">
           <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Jornadas agendadas</h2>
           <TrainingSessionList
-            sessions={activity.sessions.map((ses) => ({ ...ses, etiqueta: etiquetaJornada(ses) }))}
+            sessions={activity.sessions.map((ses) => ({
+              ...ses,
+              etiqueta: etiquetaJornada(ses),
+              ficha: etiquetaDiaMes(ses.startsAt),
+              horario: `${etiquetaHora(ses.startsAt)}${ses.endsAt ? ` – ${etiquetaHora(ses.endsAt)}` : ""}`,
+            }))}
             onEnable={enableSessionAction}
             onClose={closeSessionAction}
             onDelete={deleteSessionAction}

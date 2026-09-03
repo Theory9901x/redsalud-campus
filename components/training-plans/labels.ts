@@ -94,6 +94,12 @@ export function etiquetaFecha(fecha: Date): string {
   return `${p.day} de ${p.month} de ${p.year}`;
 }
 
+/** Partes sueltas para la ficha de calendario de una jornada: { dia: "2", mes: "sep", anio: "2026" }. */
+export function etiquetaDiaMes(fecha: Date): { dia: string; mes: string; anio: string } {
+  const p = partes(fecha, { day: "numeric", month: "short", year: "numeric" });
+  return { dia: p.day, mes: p.month.replace(".", ""), anio: p.year };
+}
+
 /** "12 de mayo de 2026, 8:00 a. m. – 10:00 a. m." — la jornada real, no el trimestre del plan. */
 export function etiquetaJornada(sesion: { startsAt: Date; endsAt: Date | null }): string {
   const inicio = `${etiquetaFecha(sesion.startsAt)}, ${etiquetaHora(sesion.startsAt)}`;
