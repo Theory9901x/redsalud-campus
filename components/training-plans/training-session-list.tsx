@@ -71,13 +71,28 @@ export function TrainingSessionList({
   return (
     <div className="space-y-2.5">
       {sessions.map((s) => (
-        <div key={s.id} className="surface flex flex-col gap-2.5 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          key={s.id}
+          className="surface flex flex-col gap-2.5 p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                <CalendarClock className="h-4 w-4 text-primary" aria-hidden="true" />
-                {s.etiqueta}
-              </span>
+              {/* La fecha lleva a la gestión de la jornada: asistencia,
+                  conexiones, encuestas. El enlace de la sala queda aparte. */}
+              {vivoBaseUrl ? (
+                <Link
+                  href={`${vivoBaseUrl}/${s.id}`}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-foreground transition-colors hover:text-primary hover:underline"
+                >
+                  <CalendarClock className="h-4 w-4 text-primary" aria-hidden="true" />
+                  {s.etiqueta}
+                </Link>
+              ) : (
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <CalendarClock className="h-4 w-4 text-primary" aria-hidden="true" />
+                  {s.etiqueta}
+                </span>
+              )}
               {s.shift && (
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
                   {SESSION_SHIFT_LABELS[s.shift]}
@@ -117,7 +132,7 @@ export function TrainingSessionList({
                 className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary/10 px-3 text-[12px] font-bold text-primary transition-colors hover:bg-primary/15"
               >
                 <Radio className="h-3.5 w-3.5" aria-hidden="true" />
-                Sesión en vivo
+                Gestión de la jornada
               </Link>
             )}
             {s.status === "DRAFT" && (
