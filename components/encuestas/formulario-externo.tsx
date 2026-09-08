@@ -545,6 +545,7 @@ export function FormularioExterno({
   if (rechazo) {
     return (
       <MotionConfig reducedMotion="user">
+        <div className="encuesta-externa min-h-screen bg-[#f7f9fb]">
         {cabecera}
         <main className="mx-auto max-w-xl px-4 py-16 text-center sm:px-6">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -565,6 +566,7 @@ export function FormularioExterno({
             </button>
           </motion.div>
         </main>
+        </div>
       </MotionConfig>
     );
   }
@@ -574,6 +576,7 @@ export function FormularioExterno({
     const seg = (segundos ?? 0) % 60;
     return (
       <MotionConfig reducedMotion="user">
+        <div className="encuesta-externa min-h-screen bg-[#f7f9fb]">
         {cabecera}
         <main className="relative mx-auto max-w-xl overflow-hidden px-4 py-16 text-center sm:px-6">
           <Confeti colores={[acento, "#1f9d5a", "#2f80c2", "#e0a11c", "#0d2a4c"]} activo />
@@ -611,6 +614,7 @@ export function FormularioExterno({
             </div>
           </motion.div>
         </main>
+        </div>
       </MotionConfig>
     );
   }

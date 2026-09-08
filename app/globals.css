@@ -1805,8 +1805,26 @@
 
   /* Encuesta de cara al usuario externo: alto contraste para personas
      mayores. Texto casi negro, bordes visibles y campos altos. */
-  .encuesta-externa {
+  .encuesta-externa,
+  .dark .encuesta-externa {
+    /* La encuesta pública se ve SIEMPRE en claro: sus fondos son blancos
+       fijos y, con el tema oscuro del teléfono, los tokens de texto se
+       volvían claros sobre blanco (la "letra clarita" que no se leía). */
+    color-scheme: light;
+    --background: #f7f9fb;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --muted: #eef2f6;
+    --muted-foreground: #475569;
+    --border: #cbd5e1;
+    --input: #94a3b8;
+    --destructive: #d64545;
+    --success: #1f9d5a;
+    --warning: #e0a11c;
+    --warning-foreground: #7a5300;
     color: #0f172a;
+    background: #f7f9fb;
     -webkit-font-smoothing: antialiased;
   }
   .encuesta-externa .h-13 {
