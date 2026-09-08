@@ -523,9 +523,9 @@ export function FormularioExterno({
         )}
         <div className="min-w-0">
           <p className="truncate font-display text-[14px] font-extrabold leading-tight text-foreground">{institucion.nombre}</p>
-          <p className="truncate text-[12px] text-muted-foreground">{encuesta.title}</p>
+          <p className="truncate text-[13px] font-medium text-slate-700">{encuesta.title}</p>
         </div>
-        <div className="ml-auto hidden text-right text-[11px] leading-snug text-muted-foreground sm:block">
+        <div className="ml-auto hidden text-right text-[12px] leading-snug text-slate-700 sm:block">
           <b className="block font-semibold text-foreground">{codigo}</b>
           Resolución 0256 de 2016
         </div>
@@ -552,7 +552,7 @@ export function FormularioExterno({
               <ShieldCheck className="h-8 w-8" aria-hidden="true" />
             </span>
             <h1 className="mt-6 font-display text-2xl font-extrabold tracking-tight text-foreground">Entendido</h1>
-            <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
+            <p className="mt-3 text-[17px] leading-relaxed text-slate-800">
               Respetamos su decisión. No se ha guardado ningún dato. Gracias por su visita a {institucion.nombre}.
             </p>
             <button
@@ -588,7 +588,7 @@ export function FormularioExterno({
               </svg>
             </span>
             <h1 className="mt-7 font-display text-3xl font-extrabold tracking-tight text-foreground">¡Gracias!</h1>
-            <p className="mx-auto mt-3 max-w-md text-[15px] leading-relaxed text-muted-foreground">
+            <p className="mx-auto mt-3 max-w-md text-[17px] leading-relaxed text-slate-800">
               {encuesta.thankYouMessage || "Su respuesta quedó registrada. Gracias por tomarse el tiempo."}
             </p>
             {segundos !== null && (
@@ -622,7 +622,7 @@ export function FormularioExterno({
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="min-h-screen bg-[#f7f9fb] pb-28">
+      <div className="encuesta-externa min-h-screen bg-[#f7f9fb] pb-28">
         {cabecera}
 
         {/* Stepper de preguntas: círculos con check en las completadas. */}
@@ -635,8 +635,8 @@ export function FormularioExterno({
                 <span
                   key={p.i}
                   className={cn(
-                    "grid h-7 w-7 place-items-center rounded-full text-[11px] font-extrabold transition-all sm:h-8 sm:w-8 sm:text-[12px]",
-                    actual ? "text-white shadow-md" : hecha ? "text-white" : "bg-white text-muted-foreground ring-1 ring-border/70"
+                    "grid h-8 w-8 place-items-center rounded-full text-[12px] font-extrabold transition-all sm:h-9 sm:w-9 sm:text-[13px]",
+                    actual ? "text-white shadow-md" : hecha ? "text-white" : "bg-white text-slate-700 ring-2 ring-slate-300"
                   )}
                   style={actual ? { backgroundColor: acento, boxShadow: `0 8px 20px -8px ${acento}`, transform: "scale(1.12)" } : hecha ? { backgroundColor: `${acento}b3` } : undefined}
                   aria-current={actual ? "step" : undefined}
@@ -675,7 +675,7 @@ export function FormularioExterno({
                     </p>
                   )}
                   {pagina?.description && (
-                    <p className="mx-auto mt-5 max-w-xl text-[15.5px] leading-relaxed text-foreground/85">{pagina.description}</p>
+                    <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-foreground">{pagina.description}</p>
                   )}
                 </div>
               ) : (
@@ -695,7 +695,7 @@ export function FormularioExterno({
                       <h2 className="mt-2 font-display text-[clamp(1.1rem,3vw,1.4rem)] font-extrabold leading-snug tracking-tight text-foreground">
                         {tituloPaso}
                       </h2>
-                      {pagina?.description && <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{pagina.description}</p>}
+                      {pagina?.description && <p className="mt-1.5 text-[15px] leading-relaxed text-slate-700">{pagina.description}</p>}
                     </>
                   )}
                 </div>
@@ -726,7 +726,7 @@ export function FormularioExterno({
               type="button"
               onClick={() => ir(paso - 1, -1)}
               disabled={paso === 0 || enviando}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-border/60 bg-white px-4 py-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-xl border-2 border-slate-400 bg-white px-4 py-3 text-[15px] font-bold text-slate-800 transition-colors hover:border-slate-600 disabled:pointer-events-none disabled:opacity-40"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               Anterior
@@ -736,7 +736,7 @@ export function FormularioExterno({
                 type="button"
                 onClick={siguiente}
                 disabled={enviando}
-                className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[14px] font-bold text-white shadow-lg transition-transform hover:-translate-y-px disabled:pointer-events-none disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-[16px] font-bold text-white shadow-lg transition-transform hover:-translate-y-px disabled:pointer-events-none disabled:opacity-60"
                 style={{ backgroundColor: acento, boxShadow: `0 18px 40px -18px ${acento}` }}
               >
                 {enviando ? (
@@ -759,7 +759,7 @@ export function FormularioExterno({
             )}
           </div>
 
-          <p className="mt-8 text-center text-[11px] text-muted-foreground">
+          <p className="mt-8 text-center text-[13px] text-slate-600">
             {codigo} · {institucion.nombre} · Sus respuestas son confidenciales y se usan solo para evaluar la calidad del servicio.
           </p>
         </main>
@@ -874,7 +874,7 @@ function PreguntaExterna({
         "scroll-mt-28",
         esEnunciadoLargo
           ? "font-display text-[clamp(1.1rem,3vw,1.4rem)] font-extrabold leading-snug tracking-tight text-foreground"
-          : "text-[13px] font-semibold text-foreground",
+          : "text-[15px] font-bold text-foreground",
         falta && "text-destructive"
       )}
     >
@@ -883,7 +883,8 @@ function PreguntaExterna({
     </p>
   );
 
-  const campo = "h-11 w-full rounded-xl border border-border/70 bg-white px-4 text-[15px] outline-none transition-shadow focus:ring-2";
+  const campo =
+    "h-13 w-full rounded-xl border-2 border-slate-400 bg-white px-4 text-[17px] text-slate-900 outline-none transition-shadow placeholder:text-slate-500 focus:border-slate-700 focus:ring-2";
   const estiloFoco = { ["--tw-ring-color" as string]: `${acento}66` } as React.CSSProperties;
 
   switch (config.estilo) {
@@ -892,7 +893,7 @@ function PreguntaExterna({
       const no = opciones.find((o) => o.id === "no") ?? { id: "no", texto: "NO autorizo" };
       return (
         <div className="rounded-2xl border border-border/60 bg-[#f7f9fb] p-5">
-          <p className="flex items-start gap-2.5 text-[13.5px] leading-relaxed text-foreground/85">
+          <p className="flex items-start gap-2.5 text-[15.5px] font-medium leading-relaxed text-foreground">
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" style={{ color: acento }} aria-hidden="true" />
             {q.prompt}
           </p>
@@ -911,7 +912,7 @@ function PreguntaExterna({
               type="button"
               whileTap={{ scale: 0.98 }}
               onClick={() => onResponder({ tipo: "opcion", opcionId: no.id })}
-              className="inline-flex h-14 items-center justify-center rounded-2xl border border-border/70 bg-white text-[15px] font-bold text-muted-foreground transition-colors hover:text-foreground"
+              className="inline-flex h-14 items-center justify-center rounded-2xl border-2 border-slate-400 bg-white text-[16px] font-bold text-slate-800 transition-colors hover:border-slate-600"
             >
               {no.texto}
             </motion.button>
@@ -934,7 +935,7 @@ function PreguntaExterna({
                   role="radio"
                   aria-checked={activo}
                   onClick={() => onResponder({ tipo: "opcion", opcionId: o.id })}
-                  className={cn("h-12 rounded-xl border text-[15px] font-bold transition-all", activo ? "border-transparent text-white shadow-md" : "border-border/70 bg-white text-foreground/80 hover:border-foreground/30")}
+                  className={cn("h-13 rounded-xl border-2 text-[16px] font-bold transition-all", activo ? "border-transparent text-white shadow-md" : "border-slate-400 bg-white text-slate-800 hover:border-slate-600")}
                   style={activo ? { backgroundColor: acento, boxShadow: `0 10px 24px -12px ${acento}` } : undefined}
                 >
                   {o.texto === "M" ? "Masculino" : o.texto === "F" ? "Femenino" : o.texto}
@@ -989,7 +990,7 @@ function PreguntaExterna({
                   onClick={() => onResponder({ tipo: "opcion", opcionId: o.id })}
                   className={cn(
                     "group min-h-[96px] rounded-2xl border bg-white p-3.5 text-left",
-                    activo ? "border-transparent shadow-lg" : "border-border/60 hover:border-foreground/25 hover:shadow-xl"
+                    activo ? "border-transparent shadow-lg" : "border-slate-300 hover:border-slate-500 hover:shadow-xl"
                   )}
                   style={{ color: acento, ...(activo ? { boxShadow: `0 0 0 2px ${acento}, 0 16px 34px -18px ${acento}` } : {}) }}
                 >
@@ -1002,7 +1003,7 @@ function PreguntaExterna({
                     >
                       <Icono className="h-5 w-5" aria-hidden="true" />
                     </motion.span>
-                    <span className={cn("mt-2 text-[13.5px] leading-snug", activo ? "font-bold text-foreground" : "font-semibold text-foreground/80")}>{o.texto}</span>
+                    <span className={cn("mt-2 text-[15px] leading-snug", activo ? "font-bold text-foreground" : "font-bold text-slate-800")}>{o.texto}</span>
                   </span>
                 </Tarjeta3D>
               );
@@ -1031,15 +1032,15 @@ function PreguntaExterna({
                   {...escalonado(i)}
                   whileTap={{ scale: 0.96 }}
                   onClick={() => onResponder({ tipo: "opcion", opcionId: o.id })}
-                  className={cn("group flex flex-col items-center rounded-2xl border bg-white px-3 pb-4 pt-5 text-center", activo ? "border-transparent shadow-lg" : "border-border/60 hover:shadow-xl")}
+                  className={cn("group flex flex-col items-center rounded-2xl border bg-white px-3 pb-4 pt-5 text-center", activo ? "border-transparent shadow-lg" : "border-slate-300 hover:shadow-xl")}
                   style={{ color: t.color, ...(activo ? { boxShadow: `0 0 0 2px ${t.color}, 0 22px 44px -20px ${t.color}`, backgroundColor: t.suave } : {}) }}
                 >
                   <Carita tono={tono} activa={activo} />
-                  <span className="mt-3 font-display text-[15px] font-extrabold" style={{ color: t.color }}>
+                  <span className="mt-3 font-display text-[17px] font-extrabold" style={{ color: t.color }}>
                     {o.texto}
                   </span>
                   <span className="mt-0.5 h-0.5 w-8 rounded-full transition-all group-hover:w-12" style={{ backgroundColor: t.color, opacity: activo ? 1 : 0.35 }} aria-hidden="true" />
-                  {o.ayuda && <span className="mt-2 text-[11.5px] leading-snug text-muted-foreground">{o.ayuda}</span>}
+                  {o.ayuda && <span className="mt-2 text-[13.5px] font-medium leading-snug text-slate-700">{o.ayuda}</span>}
                 </Tarjeta3D>
               );
             })}
@@ -1072,7 +1073,7 @@ function PreguntaExterna({
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full" style={{ backgroundColor: activo ? t.color : t.suave, color: activo ? "#fff" : t.color }}>
                     <Icono className={cn("h-4 w-4", tono === "muymal" && "rotate-12")} aria-hidden="true" />
                   </span>
-                  <span className={cn("text-[14px] leading-snug", activo ? "font-bold text-foreground" : "font-semibold text-foreground/80")}>{o.texto}</span>
+                  <span className={cn("text-[15.5px] leading-snug", activo ? "font-bold text-foreground" : "font-bold text-slate-800")}>{o.texto}</span>
                 </motion.button>
               );
             })}
@@ -1098,12 +1099,12 @@ function PreguntaExterna({
                   {...escalonado(i)}
                   whileTap={{ scale: 0.99 }}
                   onClick={() => onResponder({ tipo: "opcion", opcionId: o.id })}
-                  className={cn("flex w-full items-center gap-4 rounded-2xl border bg-white py-4 pl-5 pr-4 text-left transition-all", activo ? "shadow-lg" : "border-border/60 hover:shadow-md")}
+                  className={cn("flex w-full items-center gap-4 rounded-2xl border bg-white py-4 pl-5 pr-4 text-left transition-all", activo ? "shadow-lg" : "border-slate-300 hover:shadow-md")}
                   style={{ borderLeft: `6px solid ${t.color}`, borderColor: activo ? t.color : undefined, backgroundColor: activo ? t.suave : undefined }}
                 >
                   <Carita tono={tono} activa={activo} tamano={40} />
-                  <span className={cn("flex-1 text-[14.5px] leading-snug", activo ? "font-bold text-foreground" : "font-semibold text-foreground/85")}>{o.texto}</span>
-                  <span className={cn("grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-colors", activo ? "border-transparent" : "border-border")} style={activo ? { backgroundColor: t.color } : undefined}>
+                  <span className={cn("flex-1 text-[16px] leading-snug", activo ? "font-bold text-foreground" : "font-bold text-slate-800")}>{o.texto}</span>
+                  <span className={cn("grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-colors", activo ? "border-transparent" : "border-slate-400")} style={activo ? { backgroundColor: t.color } : undefined}>
                     {activo && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} aria-hidden="true" />}
                   </span>
                 </motion.button>
@@ -1155,10 +1156,10 @@ function PreguntaExterna({
             onChange={(e) => onResponder({ tipo: "texto", texto: e.target.value })}
             placeholder="Cuéntenos qué podríamos hacer mejor (opcional)"
             rows={5}
-            className="mt-4 w-full resize-y rounded-2xl border border-border/70 bg-white px-4 py-3 text-[15px] leading-relaxed outline-none transition-shadow focus:ring-2"
+            className="mt-4 w-full resize-y rounded-2xl border-2 border-slate-400 bg-white px-4 py-3 text-[17px] leading-relaxed text-slate-900 outline-none transition-shadow placeholder:text-slate-500 focus:border-slate-700 focus:ring-2"
             style={estiloFoco}
           />
-          <p className="mt-1.5 text-right text-[11.5px] tabular-nums text-muted-foreground">
+          <p className="mt-1.5 text-right text-[13px] font-medium tabular-nums text-slate-600">
             {texto.length} / {tope}
           </p>
         </div>
@@ -1199,7 +1200,7 @@ function MatrizPersonal({
     return (
       <div key={f.q.id} id={`pregunta-${f.q.id}`} className={cn("rounded-2xl border p-3.5", destacada ? "bg-white" : "border-border/60 bg-white")} style={destacada ? { borderColor: `${acento}66` } : undefined}>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[14px] font-bold text-foreground">{f.q.prompt}</p>
+          <p className="text-[15.5px] font-bold text-foreground">{f.q.prompt}</p>
           {destacada && servicioElegido && (
             <span className="rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide" style={{ backgroundColor: `${acento}1a`, color: acento }}>
               Lo atendió hoy
@@ -1218,11 +1219,11 @@ function MatrizPersonal({
                 aria-checked={activo}
                 aria-label={o.texto}
                 onClick={() => onResponder(f.q, { tipo: "opcion", opcionId: o.id })}
-                className={cn("flex flex-col items-center rounded-xl border px-1 py-1.5 transition-all", activo ? "border-transparent shadow-md" : "border-border/60 hover:border-foreground/25")}
+                className={cn("flex flex-col items-center rounded-xl border px-1 py-1.5 transition-all", activo ? "border-transparent shadow-md" : "border-slate-300 hover:border-slate-500")}
                 style={activo ? { backgroundColor: t.suave, boxShadow: `0 0 0 2px ${t.color}` } : undefined}
               >
                 <Carita tono={o.tono ?? "na"} activa={activo} tamano={26} viva={false} />
-                <span className="mt-1 text-[10px] font-bold leading-none" style={{ color: t.color }}>
+                <span className="mt-1 text-[11px] font-extrabold leading-none" style={{ color: t.color }}>
                   {o.id === "NA" ? "N/A" : o.texto}
                 </span>
               </button>
@@ -1235,7 +1236,7 @@ function MatrizPersonal({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-[#f7f9fb] px-4 py-3 text-[12.5px] text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-[#f7f9fb] px-4 py-3 text-[14px] text-slate-700">
         <span>
           <b className="text-foreground">¿Cómo responder?</b> Califique solo al personal que lo atendió; marque <b>N/A</b> si no aplica.
         </span>

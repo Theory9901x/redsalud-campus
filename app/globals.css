@@ -1802,3 +1802,21 @@
   .panel-sala {
     animation: panel-sala-entra 220ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
   }
+
+  /* Encuesta de cara al usuario externo: alto contraste para personas
+     mayores. Texto casi negro, bordes visibles y campos altos. */
+  .encuesta-externa {
+    color: #0f172a;
+    -webkit-font-smoothing: antialiased;
+  }
+  .encuesta-externa .h-13 {
+    height: 3.25rem;
+  }
+  .encuesta-externa select {
+    color: #0f172a;
+    font-weight: 600;
+  }
+  .encuesta-externa input[type="date"] {
+    color: #0f172a;
+    font-weight: 600;
+  }
