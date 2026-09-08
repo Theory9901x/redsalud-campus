@@ -192,7 +192,9 @@ function BloquePregunta({
   const acento =
     pregunta.aciertos !== null && pregunta.aciertos !== undefined
       ? colorSemaforo(pregunta.aciertos)
-      : COLORES.primario;
+      : pregunta.favorable && pregunta.favorable.validas > 0
+        ? colorSemaforo(pregunta.favorable.porcentaje)
+        : COLORES.primario;
 
   return (
     <View style={[styles.preguntaCaja, { borderLeftColor: acento }]} wrap={false}>
@@ -200,6 +202,9 @@ function BloquePregunta({
         Pregunta {indice} · {etiquetaTipo} · {pregunta.respuestas} de {totalRespuestas} respondieron
         {pregunta.aciertos !== null && pregunta.aciertos !== undefined ? ` · ${pregunta.aciertos}% de acierto` : ""}
         {pregunta.promedio !== null && pregunta.promedio !== undefined ? ` · promedio ${pregunta.promedio}` : ""}
+        {pregunta.favorable && pregunta.favorable.validas > 0
+          ? ` · ${pregunta.favorable.porcentaje}% favorable sobre ${pregunta.favorable.validas} válidas`
+          : ""}
       </Text>
       <Text style={styles.preguntaTexto}>{textoImprimible(pregunta.prompt)}</Text>
 
@@ -250,7 +255,7 @@ function InformeEncuestaDocument({
   generatedBy: string;
   logo: string | null;
 }) {
-  const { encuesta, totales, minutosPromedio, puntaje, cumplimiento, evolucion, porPregunta } = datos;
+  const { encuesta, totales, minutosPromedio, puntaje, cumplimiento, indicadores, evolucion, porPregunta } = datos;
   const totalPreguntas = encuesta.pages.reduce((s, p) => s + p.questions.length, 0);
   const hoy = new Date().toLocaleString("es-CO", { dateStyle: "long", timeStyle: "short" });
   const colorCumpl = colorSemaforo(cumplimiento.porcentaje);
@@ -337,14 +342,44 @@ function InformeEncuestaDocument({
             <View style={[styles.kpi, { borderLeftWidth: 3, borderLeftColor: colorCumpl }]}>
               <Text style={[styles.kpiValor, { color: colorCumpl }]}>{cumplimiento.porcentaje}%</Text>
               <Text style={styles.kpiEtiqueta}>
-                {cumplimiento.base === "puntaje" ? "Puntaje global" : "Cumplimiento"}
+                {cumplimiento.base === "puntaje"
+                  ? "Puntaje global"
+                  : cumplimiento.base === "satisfaccion"
+                    ? "Satisfacción global"
+                    : "Cumplimiento"}
               </Text>
               <Text style={styles.kpiDetalle}>
-                {semaforo} · {cumplimiento.base === "puntaje" ? "según clave de respuestas" : "según finalización"}
+                {semaforo} ·{" "}
+                {cumplimiento.base === "puntaje"
+                  ? "según clave de respuestas"
+                  : cumplimiento.base === "satisfaccion"
+                    ? "favorables sobre válidas"
+                    : "según finalización"}
               </Text>
             </View>
           </View>
         </View>
+
+        {/* Indicadores de satisfacción (encuestas de cara al usuario) */}
+        {indicadores.length > 0 && (
+          <View style={styles.seccion}>
+            <Text style={styles.seccionTitulo}>Indicadores de satisfacción</Text>
+            {indicadores.map((ind) => (
+              <BarraFila
+                key={ind.id}
+                etiqueta={textoImprimible(ind.etiqueta.length > 70 ? `${ind.etiqueta.slice(0, 70)}…` : ind.etiqueta)}
+                fraccion={ind.porcentaje / 100}
+                cifra={`${ind.porcentaje}% (${ind.validas} válidas)`}
+                color={colorSemaforo(ind.porcentaje)}
+              />
+            ))}
+            <Text style={styles.notaSuave}>
+              Porcentaje de respuestas favorables (Excelente / Bueno / positivas) sobre las válidas: No aplica, No responde y En
+              blanco se excluyen del denominador (Resolución 0256 de 2016). Semaforización institucional: verde de 85 % en
+              adelante, amarillo 70–84,9 %, rojo por debajo de 70 %.
+            </Text>
+          </View>
+        )}
 
         {/* Puntaje por bloque */}
         {puntaje && puntaje.porBloque.length > 0 && (

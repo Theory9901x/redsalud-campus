@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { CalendarClock, Lock } from "lucide-react";
 import { auth } from "@/auth";
 import { getEncuestaPublica, estaAbierta } from "@/lib/encuestas/consultas";
+import { esPresentacionExterna } from "@/lib/encuestas/tipos";
 import { prisma } from "@/lib/prisma";
 import { LanzadorFormulario } from "@/components/encuestas/lanzador-formulario";
 
@@ -18,8 +19,15 @@ import { LanzadorFormulario } from "@/components/encuestas/lanzador-formulario";
  * satisfacción dirigida a la comunidad no puede exigir cuenta institucional,
  * y una interna tampoco debería obligar a cerrar sesión para responderse.
  */
-export default async function EncuestaPublicaPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function EncuestaPublicaPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ modo?: string }>;
+}) {
   const { slug } = await params;
+  const { modo } = await searchParams;
   const encuesta = await getEncuestaPublica(slug);
   if (!encuesta || encuesta.isTemplate) notFound();
 
@@ -76,9 +84,28 @@ export default async function EncuestaPublicaPage({ params }: { params: Promise<
     );
   }
 
+  // Encuestas de cara al usuario externo (SIAU): cabecera institucional
+  // con logo y código de formato, y modo tótem opcional (?modo=kiosco).
+  const externa = esPresentacionExterna(encuesta.pages);
+  const institucion = externa
+    ? await prisma.institutionSettings.findUnique({
+        where: { id: "singleton" },
+        select: { institutionName: true, logoUrl: true },
+      })
+    : null;
+
   return (
     <main className="bg-background">
       <LanzadorFormulario
+        externo={
+          externa
+            ? {
+                codigo: encuesta.code,
+                institucion: { nombre: institucion?.institutionName ?? "Red Salud Casanare E.S.E.", logoUrl: institucion?.logoUrl ?? null },
+                modoKiosco: modo === "kiosco",
+              }
+            : undefined
+        }
         encuesta={{
           id: encuesta.id,
           title: encuesta.title,

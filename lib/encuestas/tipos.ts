@@ -12,7 +12,35 @@ export type OpcionPregunta = {
   texto: string;
   /** Solo IMAGE_CHOICE. */
   imagenUrl?: string;
+  /**
+   * PRESENTACIÓN (encuestas externas de cara al usuario, como la SIAU).
+   * `tono` colorea la opción según lo que significa -no según su posición-,
+   * `ayuda` es la frase de lectura bajo la carita (no se persiste) e
+   * `icono` es el nombre del icono lucide de la tarjeta de servicio.
+   */
+  tono?: TonoOpcion;
+  ayuda?: string;
+  icono?: string;
 };
+
+/** Semántica de una opción: manda el color y la carita, nunca la posición. */
+export type TonoOpcion = "exc" | "bue" | "reg" | "mal" | "muymal" | "na";
+
+/**
+ * Cómo se PINTA una pregunta en el formulario público. Sin estilo se usa la
+ * presentación estándar del módulo; con él, la versión de cara al usuario
+ * externo (tarjetas con icono, caritas, semáforo…). Son solo hints de
+ * presentación: la respuesta guardada es la misma en ambos casos.
+ */
+export type EstiloPregunta =
+  | "habeas"    // puerta de consentimiento: NO cierra sin guardar nada
+  | "servicios" // tarjetas con icono, una por servicio
+  | "caritas"   // E/B/R/M como caritas grandes con frase de ayuda
+  | "matriz"    // fila de calificación E/B/R/M/NA de un perfil del personal
+  | "tarjetas"  // opciones literales en tarjetas de dos columnas con color por tono
+  | "semaforo"  // tres opciones verde/amarillo/rojo con borde izquierdo
+  | "sexo"      // dos botones grandes M/F
+  | "selector"; // lista desplegable (municipio, EPS)
 
 export type GrupoRelacion = {
   id: string;
@@ -52,7 +80,34 @@ export type ConfigPregunta = {
    */
   opcionCorrectaId?: string;
   puntos?: number;
+
+  // ---- presentación de cara al usuario externo (solo hints) ----
+  estilo?: EstiloPregunta;
+  /**
+   * Papel del dato en la ficha: `nombre` se usa como nombre de quien
+   * responde (y el formulario ya no lo pide aparte), `fecha` nace con el día
+   * de hoy, `otro` es el "¿cuál?" que solo aparece si en la pregunta anterior
+   * se eligió la opción cuyo texto empieza por "Otro".
+   */
+  rol?: "nombre" | "telefono" | "fecha" | "eps" | "municipio" | "otro";
+  /** Avanzar solo 500 ms después de elegir (preguntas de una sola elección). */
+  autoAvanzar?: boolean;
+  /** Tope de caracteres del texto libre. */
+  maxLen?: number;
+  /**
+   * `matriz`: servicios (texto literal de P1) en los que este perfil atiende.
+   * El formulario sube y resalta las filas del servicio elegido; las demás
+   * quedan plegadas bajo "Otro personal que lo atendió".
+   */
+  servicios?: string[];
+  /** `matriz`: perfil transversal (facturación, vigilancia, servicios generales): siempre visible. */
+  transversal?: boolean;
 };
+
+/** ¿La encuesta se pinta con la presentación de cara al usuario externo? */
+export function esPresentacionExterna(pages: { questions: { config: unknown }[] }[]): boolean {
+  return pages.some((p) => p.questions.some((q) => Boolean(leerConfig(q.config).estilo)));
+}
 
 /** Lo que el navegador manda como respuesta, según el tipo. */
 export type ValorRespuesta =

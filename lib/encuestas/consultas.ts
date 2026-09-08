@@ -259,6 +259,22 @@ export type ResultadoPregunta = {
   distribucion?: { valor: number; conteo: number }[];
   /** Textos, para las abiertas. */
   textos?: string[];
+  /**
+   * ÍNDICE FAVORABLE, solo cuando las opciones traen `tono`: respuestas
+   * Excelente/Bueno (o positivas) sobre las VÁLIDAS -se excluyen del
+   * denominador No aplica / No responde / En blanco, como pide la
+   * Resolución 0256 de 2016 para satisfacción y recomendación-.
+   */
+  favorable?: { porcentaje: number; validas: number; favorables: number };
+};
+
+export type IndicadorEncuesta = {
+  id: string;
+  etiqueta: string;
+  porcentaje: number;
+  validas: number;
+  /** Cuántas preguntas se promediaron (la matriz de personal agrupa varias). */
+  preguntas: number;
 };
 
 export type ResultadosEncuesta = {
@@ -267,8 +283,14 @@ export type ResultadosEncuesta = {
   /** Minutos promedio entre abrir y enviar, solo de las completadas. */
   minutosPromedio: number | null;
   puntaje: ReturnType<typeof agregarPuntajes> | null;
-  /** Cumplimiento general: el puntaje si califica; si no, la tasa de finalización. */
-  cumplimiento: { porcentaje: number; base: "puntaje" | "finalizacion" };
+  /**
+   * Cumplimiento general: el puntaje si califica; el índice de
+   * satisfacción si es una encuesta de cara al usuario (opciones con tono);
+   * si no, la tasa de finalización.
+   */
+  cumplimiento: { porcentaje: number; base: "puntaje" | "satisfaccion" | "finalizacion" };
+  /** Indicadores de satisfacción por pregunta (solo encuestas con tonos). */
+  indicadores: IndicadorEncuesta[];
   evolucion: { fecha: string; conteo: number }[];
   porPregunta: ResultadoPregunta[];
 };
@@ -323,10 +345,6 @@ export async function getResultadosEncuesta(id: string): Promise<ResultadosEncue
       )
     : null;
 
-  const cumplimiento =
-    puntaje?.porcentaje != null
-      ? { porcentaje: puntaje.porcentaje, base: "puntaje" as const }
-      : { porcentaje: totales.tasaFinalizacion, base: "finalizacion" as const };
 
   // ---- evolución por día ----
   const porDia = new Map<string, number>();
@@ -404,6 +422,16 @@ export async function getResultadosEncuesta(id: string): Promise<ResultadosEncue
           const aciertos = conteo.get(config.opcionCorrectaId) ?? 0;
           base.aciertos = dadas.length > 0 ? Math.round((aciertos / dadas.length) * 100) : null;
         }
+        // Índice favorable sobre válidas (excluye No aplica / No responde / En blanco).
+        if (config.estilo !== "habeas" && opcionesEfectivas.some((o) => o.tono)) {
+          const validas = opcionesEfectivas
+            .filter((o) => o.tono && o.tono !== "na")
+            .reduce((s, o) => s + (conteo.get(o.id) ?? 0), 0);
+          const favorables = opcionesEfectivas
+            .filter((o) => o.tono === "exc" || o.tono === "bue")
+            .reduce((s, o) => s + (conteo.get(o.id) ?? 0), 0);
+          base.favorable = { porcentaje: validas > 0 ? Math.round((favorables / validas) * 100) : 0, validas, favorables };
+        }
       } else if (q.type === "SCALE" || q.type === "NUMBER") {
         const valores = dadas
           .map((d) => {
@@ -420,9 +448,58 @@ export async function getResultadosEncuesta(id: string): Promise<ResultadosEncue
         base.textos = dadas.map((d) => d.textValue ?? "").filter(Boolean);
       }
 
+      // La matriz de personal se lee mejor con su contexto por delante.
+      if (config.estilo === "matriz") base.prompt = `Trato del personal · ${q.prompt}`;
+
       porPregunta.push(base);
     }
   }
 
-  return { encuesta, totales, minutosPromedio, puntaje, cumplimiento, evolucion, porPregunta };
+  // ---- indicadores de satisfacción (encuestas con tonos) ----
+  // Cada pregunta con índice favorable es un indicador; las filas de la
+  // matriz de personal se promedian en uno solo. El global es el promedio
+  // simple de los indicadores con respuestas válidas.
+  const indicadores: IndicadorEncuesta[] = [];
+  const filasMatriz: ResultadoPregunta[] = [];
+  const estiloDe = new Map(
+    encuesta.pages.flatMap((p) => p.questions.map((q) => [q.id, leerConfig(q.config).estilo] as const))
+  );
+  for (const r of porPregunta) {
+    if (!r.favorable || r.favorable.validas === 0) continue;
+    const estilo = estiloDe.get(r.id);
+    if (estilo === "matriz") {
+      filasMatriz.push(r);
+      continue;
+    }
+    if (estilo === "habeas") continue;
+    indicadores.push({
+      id: r.id,
+      etiqueta: r.prompt.replace(/^\d+:\s*/, ""),
+      porcentaje: r.favorable.porcentaje,
+      validas: r.favorable.validas,
+      preguntas: 1,
+    });
+  }
+  if (filasMatriz.length > 0) {
+    const validas = filasMatriz.reduce((s, r) => s + r.favorable!.validas, 0);
+    const favorables = filasMatriz.reduce((s, r) => s + r.favorable!.favorables, 0);
+    indicadores.unshift({
+      id: "matriz",
+      etiqueta: "Amabilidad, trato digno y respeto del personal",
+      porcentaje: validas > 0 ? Math.round((favorables / validas) * 100) : 0,
+      validas,
+      preguntas: filasMatriz.length,
+    });
+  }
+  const global =
+    indicadores.length > 0 ? Math.round(indicadores.reduce((s, i) => s + i.porcentaje, 0) / indicadores.length) : null;
+
+  const cumplimiento =
+    puntaje?.porcentaje != null
+      ? { porcentaje: puntaje.porcentaje, base: "puntaje" as const }
+      : global !== null
+        ? { porcentaje: global, base: "satisfaccion" as const }
+        : { porcentaje: totales.tasaFinalizacion, base: "finalizacion" as const };
+
+  return { encuesta, totales, minutosPromedio, puntaje, cumplimiento, indicadores, evolucion, porPregunta };
 }

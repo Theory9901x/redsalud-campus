@@ -140,7 +140,7 @@ export function Constructor({
               </span>
 
               {encuesta.status !== "DRAFT" && (
-                <BotonEnlacePublico slug={encuesta.slug} titulo={encuesta.title} acento={acento} />
+                <BotonEnlacePublico slug={encuesta.slug} titulo={encuesta.title} acento={acento} variante="boton" />
               )}
 
               <button

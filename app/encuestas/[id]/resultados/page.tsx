@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BarChart3, CheckCircle2, Clock, FileSpreadsheet, FileText, Users2 } from "lucide-react";
+import { ArrowLeft, BarChart3, CheckCircle2, Clock, FileSpreadsheet, FileText, Gauge, Users2 } from "lucide-react";
 import { requireSurveyAccess } from "@/lib/auth-helpers";
 import { getResultadosEncuesta } from "@/lib/encuestas/consultas";
 import { GraficaEvolucion, GraficaOpciones, GraficaDistribucion } from "@/components/encuestas/graficas-resultados";
@@ -18,7 +18,7 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
 
   const datos = await getResultadosEncuesta(id);
   if (!datos) notFound();
-  const { encuesta, totales, minutosPromedio, puntaje, cumplimiento, evolucion, porPregunta } = datos;
+  const { encuesta, totales, minutosPromedio, puntaje, cumplimiento, indicadores, evolucion, porPregunta } = datos;
   const acento = encuesta.themeColor || "#6D3BF5";
 
   const semaforo =
@@ -90,7 +90,11 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
           <div className="flex flex-wrap items-center justify-between gap-4 p-6">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                {cumplimiento.base === "puntaje" ? "Cumplimiento general (acierto)" : "Cumplimiento general (finalización)"}
+                {cumplimiento.base === "puntaje"
+                  ? "Cumplimiento general (acierto)"
+                  : cumplimiento.base === "satisfaccion"
+                    ? "Índice global de satisfacción (sobre respuestas válidas)"
+                    : "Cumplimiento general (finalización)"}
               </p>
               <p className="mt-1 font-display text-[2.8rem] font-black leading-none tracking-tight cifra-vivo">
                 {cumplimiento.porcentaje}%
@@ -125,6 +129,43 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
             </div>
           ))}
         </section>
+
+        {/* Indicadores de satisfacción (encuestas de cara al usuario) */}
+        {indicadores.length > 0 && (
+          <section className="surface-lumen p-6">
+            <div className="flex items-center gap-2">
+              <Gauge className="h-4 w-4 text-primary" aria-hidden="true" />
+              <h2 className="font-display text-[15px] font-bold text-foreground">Indicadores de satisfacción</h2>
+            </div>
+            <p className="mt-1 text-[12.5px] text-muted-foreground">
+              Porcentaje de respuestas favorables (Excelente / Bueno / positivas) sobre las válidas: No aplica, No
+              responde y En blanco no cuentan en el denominador (Resolución 0256 de 2016).
+            </p>
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {indicadores.map((ind) => {
+                const color =
+                  ind.porcentaje >= 85 ? "var(--success)" : ind.porcentaje >= 70 ? "var(--warning)" : "var(--destructive)";
+                return (
+                  <div key={ind.id} className="rounded-2xl border border-border/60 bg-card/70 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-[13px] font-semibold leading-snug text-foreground">{ind.etiqueta}</p>
+                      <p className="shrink-0 font-display text-[1.4rem] font-extrabold leading-none tabular-nums" style={{ color }}>
+                        {ind.porcentaje}%
+                      </p>
+                    </div>
+                    <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full" style={{ width: `${ind.porcentaje}%`, backgroundColor: color }} />
+                    </div>
+                    <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+                      {ind.validas} {ind.validas === 1 ? "respuesta válida" : "respuestas válidas"}
+                      {ind.preguntas > 1 ? ` · ${ind.preguntas} perfiles promediados` : ""}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Puntaje por bloque (solo si la encuesta califica) */}
         {puntaje && puntaje.porBloque.length > 0 && (
@@ -165,10 +206,34 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
             <section key={p.id} className="surface-lumen p-6">
               <div className="flex items-start justify-between gap-3">
                 <h3 className="text-[14.5px] font-semibold leading-snug text-foreground">{p.prompt}</h3>
-                <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-                  {p.respuestas} {p.respuestas === 1 ? "respuesta" : "respuestas"}
-                </span>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+                    {p.respuestas} {p.respuestas === 1 ? "respuesta" : "respuestas"}
+                  </span>
+                  <a
+                    href={`/api/encuestas/${encuesta.slug}/csv?pregunta=${p.id}`}
+                    title="Exportar esta pregunta (CSV)"
+                    className="inline-flex h-7 items-center gap-1 rounded-full border border-border/60 bg-card px-2.5 text-[11px] font-bold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                  >
+                    <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden="true" />
+                    CSV
+                  </a>
+                </div>
               </div>
+              {p.favorable && p.favorable.validas > 0 && (
+                <span
+                  className={cn(
+                    "mt-2 inline-block rounded-full px-2.5 py-1 text-[11px] font-bold",
+                    p.favorable.porcentaje >= 85
+                      ? "bg-success/15 text-success"
+                      : p.favorable.porcentaje >= 70
+                        ? "bg-warning/18 text-warning-foreground"
+                        : "bg-destructive/10 text-destructive"
+                  )}
+                >
+                  Favorable: {p.favorable.porcentaje}% de {p.favorable.validas} válidas
+                </span>
+              )}
               {p.aciertos != null && (
                 <span
                   className="mt-2 inline-block rounded-full px-2.5 py-1 text-[11px] font-bold"

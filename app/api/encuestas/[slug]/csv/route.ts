@@ -8,8 +8,11 @@ import { leerConfig, type ValorRespuesta } from "@/lib/encuestas/tipos";
  * columna por pregunta, más encuestado, fecha, canal y puntaje. Es el
  * soporte documental que se anexa a un informe.
  */
-export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  // ?pregunta=<id>: solo esa pregunta, una fila por respuesta (para
+  // analizar una métrica aparte sin cargar toda la tabla).
+  const soloPregunta = new URL(request.url).searchParams.get("pregunta");
 
   const encuesta = await prisma.survey.findUnique({
     where: { slug },
@@ -38,7 +41,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     },
   });
 
-  const preguntas = encuesta.pages.flatMap((p) => p.questions);
+  const todas = encuesta.pages.flatMap((p) => p.questions);
+  const preguntas = soloPregunta ? todas.filter((q) => q.id === soloPregunta) : todas;
+  if (soloPregunta && preguntas.length === 0) {
+    return NextResponse.json({ error: "Pregunta no encontrada." }, { status: 404 });
+  }
 
   function legible(preguntaId: string, valor: ValorRespuesta | null, texto: string | null): string {
     if (texto) return texto;
@@ -87,7 +94,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   return new NextResponse(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${encuesta.code}-respuestas.csv"`,
+      "Content-Disposition": `attachment; filename="${encuesta.code}-${soloPregunta ? `pregunta-${preguntas[0].sortOrder}` : "respuestas"}.csv"`,
     },
   });
 }
