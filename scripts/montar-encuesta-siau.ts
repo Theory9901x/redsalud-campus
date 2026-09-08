@@ -31,6 +31,26 @@ const MUNICIPIOS = [
   "Trinidad", "Villanueva", "Otro",
 ];
 
+/** EPS y regímenes que atiende la red en Casanare. Siempre desplegable. */
+const EPS = [
+  "Nueva EPS",
+  "Capresoca EPS",
+  "EPS Sanitas",
+  "Salud Total EPS",
+  "Famisanar EPS",
+  "Coosalud EPS",
+  "Asmet Salud EPS",
+  "Compensar EPS",
+  "Aliansalud EPS",
+  "SOS EPS",
+  "Magisterio (FOMAG)",
+  "Fuerzas Militares / Policía Nacional",
+  "Ecopetrol",
+  "Universidad (régimen especial)",
+  "Particular / sin afiliación",
+  "Otra",
+];
+
 const SERVICIOS: OpcionPregunta[] = [
   { id: "urgencias", texto: "Urgencias", icono: "Siren" },
   { id: "hospitalizacion", texto: "Hospitalización", icono: "BedDouble" },
@@ -117,7 +137,12 @@ const BLOQUES: Bloque[] = [
         config: { estilo: "sexo", opciones: [{ id: "M", texto: "M" }, { id: "F", texto: "F" }] },
       },
       { type: "SHORT_TEXT", prompt: "Teléfono", isRequired: false, config: { rol: "telefono" } },
-      { type: "SHORT_TEXT", prompt: "EPS", isRequired: false, config: { rol: "eps" } },
+      {
+        type: "SINGLE_CHOICE",
+        prompt: "EPS",
+        isRequired: false,
+        config: { estilo: "selector", rol: "eps", opciones: EPS.map((e) => ({ id: idDe(e), texto: e })) },
+      },
       {
         type: "SINGLE_CHOICE",
         prompt: "Municipio",
