@@ -107,7 +107,7 @@ function Carita({
   // Cada carita parpadea a su ritmo: así el grupo no parece un reloj.
   const desfase = useMemo(() => 1.8 + Math.random() * 2.4, []);
 
-  const reposo = reducir || !viva ? {} : { y: [0, -2.5, 0], scale: [1, 1.02, 1] };
+  const reposo = reducir || !viva ? {} : { y: [0, -5, 0], scale: [1, 1.04, 1], rotate: [0, 2, 0, -2, 0] };
   const animacion = reducir
     ? {}
     : !activa
@@ -149,7 +149,7 @@ function Carita({
           ? { duration: 0.7, ease: "easeOut" }
           : { duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: desfase * 0.3 }
       }
-      whileHover={reducir ? undefined : { scale: 1.12, rotate: tono === "reg" ? -6 : tono === "bue" ? 4 : 0 }}
+      whileHover={reducir ? undefined : { scale: 1.18, rotate: tono === "reg" ? -10 : tono === "bue" ? 6 : tono === "exc" ? [0, -8, 8, 0] : 0, y: -6 }}
       className="shrink-0"
       style={{ transformOrigin: "center" }}
     >
@@ -227,7 +227,7 @@ function Tarjeta3D({
     const r = e.currentTarget.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width;
     const py = (e.clientY - r.top) / r.height;
-    setRot({ x: (0.5 - py) * 14, y: (px - 0.5) * 14, bx: px * 100, by: py * 100 });
+    setRot({ x: (0.5 - py) * 22, y: (px - 0.5) * 22, bx: px * 100, by: py * 100 });
   }
 
   return (
@@ -239,7 +239,7 @@ function Tarjeta3D({
       className={cn("relative [transform-style:preserve-3d]", className)}
       style={{
         ...style,
-        transform: `perspective(760px) rotateX(${rot.x}deg) rotateY(${rot.y}deg)`,
+        transform: `perspective(700px) rotateX(${rot.x}deg) rotateY(${rot.y}deg) ${rot.x || rot.y ? "scale(1.04)" : ""}`,
         transition: "transform 160ms ease-out, box-shadow 200ms",
       }}
     >

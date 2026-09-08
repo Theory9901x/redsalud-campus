@@ -1,4 +1,10 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+
+/**
+ * Enlaces antiguos que se renombraron: un QR ya impreso o un mensaje ya
+ * enviado no puede quedar roto. Misma encuesta, nueva dirección.
+ */
+const ALIAS: Record<string, string> = { "atencion-usuario": "encuesta-siau" };
 import { CalendarClock, Lock } from "lucide-react";
 import { auth } from "@/auth";
 import { getEncuestaPublica, estaAbierta } from "@/lib/encuestas/consultas";
@@ -70,6 +76,7 @@ export default async function EncuestaPublicaPage({
 }) {
   const { slug } = await params;
   const { modo } = await searchParams;
+  if (ALIAS[slug]) redirect(`/e/${ALIAS[slug]}${modo ? `?modo=${modo}` : ""}`);
   const encuesta = await getEncuestaPublica(slug);
   if (!encuesta || encuesta.isTemplate) notFound();
 
