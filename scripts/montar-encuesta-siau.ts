@@ -16,7 +16,7 @@ import type { SurveyQuestionType } from "@prisma/client";
  * preguntas EN SITIO por `sortOrder`, así las respuestas ya guardadas
  * siguen colgando de la misma pregunta.
  */
-const SLUG = "atencion-usuario";
+const SLUG = "encuesta-siau";
 const CODE = "PM-7-SIAU-PR-02";
 const VERSION = "V.1";
 
@@ -299,7 +299,8 @@ async function main() {
     thankYouMessage: "Gracias por su tiempo. Su opinión es la base de la mejora continua de Red Salud Casanare E.S.E.",
   };
 
-  let encuesta = await prisma.survey.findUnique({ where: { slug: SLUG }, select: { id: true } });
+  // Se busca por CÓDIGO (no por slug) para poder renombrar el enlace sin duplicar la encuesta.
+  let encuesta = await prisma.survey.findUnique({ where: { code: `${CODE} ${VERSION}` }, select: { id: true } });
   if (!encuesta) {
     encuesta = await prisma.survey.create({
       data: { ...datosEncuesta, code: `${CODE} ${VERSION}`, slug: SLUG, createdBy: admin.id, publishedAt: new Date() },
@@ -307,7 +308,7 @@ async function main() {
     });
     console.log("encuesta creada");
   } else {
-    await prisma.survey.update({ where: { id: encuesta.id }, data: datosEncuesta });
+    await prisma.survey.update({ where: { id: encuesta.id }, data: { ...datosEncuesta, slug: SLUG } });
     console.log("encuesta ya existía: datos refrescados");
   }
 

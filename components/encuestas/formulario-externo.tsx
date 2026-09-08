@@ -90,13 +90,29 @@ function textoElegido(pregunta: PreguntaFormulario | undefined, valor: ValorResp
  * asiente, Regular ladea la cabeza, Malo tiembla, Muy malo se descuelga con
  * una lágrima y No aplica parpadea en gris.
  */
-function Carita({ tono, activa, tamano = 56 }: { tono: TonoOpcion; activa: boolean; tamano?: number }) {
+function Carita({
+  tono,
+  activa,
+  tamano = 56,
+  viva = true,
+}: {
+  tono: TonoOpcion;
+  activa: boolean;
+  tamano?: number;
+  /** Parpadeo y respiración en reposo (se apaga en las caritas pequeñas de la matriz). */
+  viva?: boolean;
+}) {
   const reducir = useReducedMotion();
   const c = TONO[tono].color;
+  // Cada carita parpadea a su ritmo: así el grupo no parece un reloj.
+  const desfase = useMemo(() => 1.8 + Math.random() * 2.4, []);
 
-  const animacion = reducir || !activa
+  const reposo = reducir || !viva ? {} : { y: [0, -2.5, 0], scale: [1, 1.02, 1] };
+  const animacion = reducir
     ? {}
-    : tono === "exc"
+    : !activa
+      ? reposo
+      : tono === "exc"
       ? { y: [0, -10, 0, -4, 0], scale: [1, 1.08, 1] }
       : tono === "bue"
         ? { rotate: [0, 0, 0], y: [0, 3, 0, 3, 0] }
@@ -128,22 +144,34 @@ function Carita({ tono, activa, tamano = 56 }: { tono: TonoOpcion; activa: boole
       height={tamano}
       aria-hidden="true"
       animate={animacion}
-      transition={{ duration: 0.7, ease: "easeOut" }}
+      transition={
+        activa
+          ? { duration: 0.7, ease: "easeOut" }
+          : { duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: desfase * 0.3 }
+      }
+      whileHover={reducir ? undefined : { scale: 1.12, rotate: tono === "reg" ? -6 : tono === "bue" ? 4 : 0 }}
       className="shrink-0"
+      style={{ transformOrigin: "center" }}
     >
       <circle cx="28" cy="28" r="25" fill={activa ? c : TONO[tono].suave} stroke={c} strokeWidth="2.5" strokeDasharray={tono === "na" ? "4 3" : undefined} />
-      {/* ojos */}
-      {tono === "exc" ? (
-        <>
-          <path d="M17 24 Q21 19 25 24" stroke={activa ? "#fff" : c} strokeWidth="2.6" fill="none" strokeLinecap="round" />
-          <path d="M31 24 Q35 19 39 24" stroke={activa ? "#fff" : c} strokeWidth="2.6" fill="none" strokeLinecap="round" />
-        </>
-      ) : (
-        <>
-          <circle cx="21" cy="23" r="2.6" fill={activa ? "#fff" : c} />
-          <circle cx="35" cy="23" r="2.6" fill={activa ? "#fff" : c} />
-        </>
-      )}
+      {/* ojos: parpadean en reposo, cada carita a su ritmo */}
+      <motion.g
+        style={{ transformBox: "fill-box", transformOrigin: "center" }}
+        animate={reducir || !viva ? {} : { scaleY: [1, 1, 0.12, 1] }}
+        transition={{ duration: 0.32, times: [0, 0.6, 0.8, 1], repeat: Infinity, repeatDelay: desfase }}
+      >
+        {tono === "exc" ? (
+          <>
+            <path d="M17 24 Q21 19 25 24" stroke={activa ? "#fff" : c} strokeWidth="2.6" fill="none" strokeLinecap="round" />
+            <path d="M31 24 Q35 19 39 24" stroke={activa ? "#fff" : c} strokeWidth="2.6" fill="none" strokeLinecap="round" />
+          </>
+        ) : (
+          <>
+            <circle cx="21" cy="23" r="2.6" fill={activa ? "#fff" : c} />
+            <circle cx="35" cy="23" r="2.6" fill={activa ? "#fff" : c} />
+          </>
+        )}
+      </motion.g>
       {tono === "mal" || tono === "muymal" ? (
         <>
           <path d="M16 18 L25 21" stroke={activa ? "#fff" : c} strokeWidth="2.2" strokeLinecap="round" />
@@ -169,6 +197,69 @@ function Carita({ tono, activa, tamano = 56 }: { tono: TonoOpcion; activa: boole
         </>
       )}
     </motion.svg>
+  );
+}
+
+// ================================================================ tilt 3D
+
+/**
+ * Inclinación 3D que sigue el puntero: perspectiva + rotación suave, con
+ * un brillo que se desplaza. En pantallas táctiles no hay puntero que
+ * seguir, así que ahí solo queda la respuesta al toque.
+ */
+function Tarjeta3D({
+  children,
+  className,
+  style,
+  activa,
+  onClick,
+  ...resto
+}: Omit<React.ComponentProps<typeof motion.button>, "children" | "style"> & {
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+  activa?: boolean;
+}) {
+  const reducir = useReducedMotion();
+  const [rot, setRot] = useState({ x: 0, y: 0, bx: 50, by: 50 });
+
+  function mover(e: React.PointerEvent<HTMLButtonElement>) {
+    if (reducir || e.pointerType === "touch") return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width;
+    const py = (e.clientY - r.top) / r.height;
+    setRot({ x: (0.5 - py) * 14, y: (px - 0.5) * 14, bx: px * 100, by: py * 100 });
+  }
+
+  return (
+    <motion.button
+      {...resto}
+      onClick={onClick}
+      onPointerMove={mover}
+      onPointerLeave={() => setRot({ x: 0, y: 0, bx: 50, by: 50 })}
+      className={cn("relative [transform-style:preserve-3d]", className)}
+      style={{
+        ...style,
+        transform: `perspective(760px) rotateX(${rot.x}deg) rotateY(${rot.y}deg)`,
+        transition: "transform 160ms ease-out, box-shadow 200ms",
+      }}
+    >
+      {/* brillo que sigue al puntero */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+        style={{ background: `radial-gradient(240px circle at ${rot.bx}% ${rot.by}%, rgba(255,255,255,0.55), transparent 60%)` }}
+      />
+      {activa && !reducir && (
+        <motion.span
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-1 rounded-[inherit]"
+          style={{ boxShadow: "0 0 0 3px currentColor" }}
+          animate={{ opacity: [0.45, 0, 0.45], scale: [1, 1.04, 1] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        />
+      )}
+      <span className="relative flex h-full w-full flex-col items-center [transform:translateZ(18px)]">{children}</span>
+    </motion.button>
   );
 }
 
@@ -887,25 +978,33 @@ function PreguntaExterna({
               const activo = elegida === o.id;
               const Icono = ICONOS[o.icono ?? ""] ?? MoreHorizontal;
               return (
-                <motion.button
+                <Tarjeta3D
                   key={o.id}
                   type="button"
                   role="radio"
                   aria-checked={activo}
+                  activa={activo}
                   {...escalonado(i)}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => onResponder({ tipo: "opcion", opcionId: o.id })}
                   className={cn(
-                    "flex min-h-[96px] flex-col items-start justify-between rounded-2xl border p-3.5 text-left transition-all",
-                    activo ? "border-transparent bg-white shadow-lg" : "border-border/60 bg-white hover:-translate-y-0.5 hover:border-foreground/25 hover:shadow-md"
+                    "group min-h-[96px] rounded-2xl border bg-white p-3.5 text-left",
+                    activo ? "border-transparent shadow-lg" : "border-border/60 hover:border-foreground/25 hover:shadow-xl"
                   )}
-                  style={activo ? { boxShadow: `0 0 0 2px ${acento}, 0 16px 34px -18px ${acento}` } : undefined}
+                  style={{ color: acento, ...(activo ? { boxShadow: `0 0 0 2px ${acento}, 0 16px 34px -18px ${acento}` } : {}) }}
                 >
-                  <span className="grid h-10 w-10 place-items-center rounded-xl" style={{ backgroundColor: activo ? acento : `${acento}1a`, color: activo ? "#fff" : acento }}>
-                    <Icono className="h-5 w-5" aria-hidden="true" />
+                  <span className="flex w-full flex-1 flex-col items-start justify-between">
+                    <motion.span
+                      className="grid h-10 w-10 place-items-center rounded-xl"
+                      style={{ backgroundColor: activo ? acento : `${acento}1a`, color: activo ? "#fff" : acento }}
+                      animate={activo && !reducir ? { rotate: [0, -8, 8, 0], scale: [1, 1.15, 1] } : {}}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <Icono className="h-5 w-5" aria-hidden="true" />
+                    </motion.span>
+                    <span className={cn("mt-2 text-[13.5px] leading-snug", activo ? "font-bold text-foreground" : "font-semibold text-foreground/80")}>{o.texto}</span>
                   </span>
-                  <span className={cn("mt-2 text-[13.5px] leading-snug", activo ? "font-bold text-foreground" : "font-semibold text-foreground/80")}>{o.texto}</span>
-                </motion.button>
+                </Tarjeta3D>
               );
             })}
           </div>
@@ -922,18 +1021,18 @@ function PreguntaExterna({
               const tono = o.tono ?? "na";
               const t = TONO[tono];
               return (
-                <motion.button
+                <Tarjeta3D
                   key={o.id}
                   type="button"
                   role="radio"
                   aria-checked={activo}
                   aria-label={o.texto}
+                  activa={activo}
                   {...escalonado(i)}
-                  whileHover={reducir ? undefined : { y: -3 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileTap={{ scale: 0.96 }}
                   onClick={() => onResponder({ tipo: "opcion", opcionId: o.id })}
-                  className={cn("group flex flex-col items-center rounded-2xl border bg-white px-3 pb-4 pt-5 text-center transition-all", activo ? "border-transparent shadow-lg" : "border-border/60 hover:shadow-md")}
-                  style={activo ? { boxShadow: `0 0 0 2px ${t.color}, 0 18px 40px -20px ${t.color}`, backgroundColor: t.suave } : undefined}
+                  className={cn("group flex flex-col items-center rounded-2xl border bg-white px-3 pb-4 pt-5 text-center", activo ? "border-transparent shadow-lg" : "border-border/60 hover:shadow-xl")}
+                  style={{ color: t.color, ...(activo ? { boxShadow: `0 0 0 2px ${t.color}, 0 22px 44px -20px ${t.color}`, backgroundColor: t.suave } : {}) }}
                 >
                   <Carita tono={tono} activa={activo} />
                   <span className="mt-3 font-display text-[15px] font-extrabold" style={{ color: t.color }}>
@@ -941,7 +1040,7 @@ function PreguntaExterna({
                   </span>
                   <span className="mt-0.5 h-0.5 w-8 rounded-full transition-all group-hover:w-12" style={{ backgroundColor: t.color, opacity: activo ? 1 : 0.35 }} aria-hidden="true" />
                   {o.ayuda && <span className="mt-2 text-[11.5px] leading-snug text-muted-foreground">{o.ayuda}</span>}
-                </motion.button>
+                </Tarjeta3D>
               );
             })}
           </div>
@@ -1122,7 +1221,7 @@ function MatrizPersonal({
                 className={cn("flex flex-col items-center rounded-xl border px-1 py-1.5 transition-all", activo ? "border-transparent shadow-md" : "border-border/60 hover:border-foreground/25")}
                 style={activo ? { backgroundColor: t.suave, boxShadow: `0 0 0 2px ${t.color}` } : undefined}
               >
-                <Carita tono={o.tono ?? "na"} activa={activo} tamano={26} />
+                <Carita tono={o.tono ?? "na"} activa={activo} tamano={26} viva={false} />
                 <span className="mt-1 text-[10px] font-bold leading-none" style={{ color: t.color }}>
                   {o.id === "NA" ? "N/A" : o.texto}
                 </span>

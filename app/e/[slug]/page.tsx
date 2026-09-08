@@ -5,6 +5,48 @@ import { getEncuestaPublica, estaAbierta } from "@/lib/encuestas/consultas";
 import { esPresentacionExterna } from "@/lib/encuestas/tipos";
 import { prisma } from "@/lib/prisma";
 import { LanzadorFormulario } from "@/components/encuestas/lanzador-formulario";
+import type { Metadata } from "next";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+/**
+ * Vista previa del enlace al compartirlo (WhatsApp, correo, redes): el
+ * título y la descripción de LA ENCUESTA, con el logo institucional, no la
+ * ficha genérica del campus. Es lo primero que ve quien recibe el enlace.
+ */
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const encuesta = await prisma.survey.findUnique({
+    where: { slug },
+    select: { title: true, description: true, code: true, coverImageUrl: true },
+  });
+  if (!encuesta) return { title: "Encuesta" };
+  const ajustes = await prisma.institutionSettings.findUnique({
+    where: { id: "singleton" },
+    select: { institutionName: true, logoUrl: true },
+  });
+  const institucion = ajustes?.institutionName ?? "Red Salud Casanare E.S.E.";
+  const esSiau = /SIAU/i.test(encuesta.code);
+  const titulo = esSiau ? `SIAU · ${encuesta.title}` : encuesta.title;
+  const descripcion =
+    encuesta.description ??
+    `Responda la encuesta «${encuesta.title}» de ${institucion}. Le tomará pocos minutos y es confidencial.`;
+  const imagen = encuesta.coverImageUrl ?? ajustes?.logoUrl ?? null;
+  return {
+    title: `${titulo} · ${institucion}`,
+    description: descripcion,
+    openGraph: {
+      title: titulo,
+      description: descripcion,
+      siteName: institucion,
+      url: `${APP_URL}/e/${slug}`,
+      type: "website",
+      locale: "es_CO",
+      images: imagen ? [{ url: imagen.startsWith("http") ? imagen : `${APP_URL}${imagen}` }] : undefined,
+    },
+    twitter: { card: "summary", title: titulo, description: descripcion },
+  };
+}
 
 /**
  * ENLACE PÚBLICO de una encuesta: `/e/<slug>`.
