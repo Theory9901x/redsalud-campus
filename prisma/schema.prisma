@@ -162,6 +162,7 @@ model User {
   trainingAttendancesRegistered TrainingAttendance[] @relation("TrainingAttendanceRegisteredBy")
   callConnections     CallConnectionLog[]
   asistenciasSesion   AsistenciaSesion[]  @relation("AsistenciaSesionUser")
+  committeeMemberships CommitteeMember[] @relation("CommitteeMemberUser")
   surveysCreated  Survey[]         @relation("SurveyCreatedBy")
   surveyResponses SurveyResponse[] @relation("SurveyRespondedBy")
 
@@ -648,6 +649,49 @@ model NotificationRead {
 // Plan de capacitaciones (Etapa 1: cronograma y plan)
 // ------------------------------------------------------------------
 
+/**
+ * Un plan es de CAPACITACIÓN (lo normal) o un COMITÉ institucional
+ * (convivencia laboral, COPASST…): misma maquinaria de reuniones, salas,
+ * asistencia y conexiones, pero gestión y medición aparte.
+ */
+enum PlanKind {
+  CAPACITACION
+  COMITE
+}
+
+/** Rol de un integrante en el comité, según la resolución de conformación. */
+enum CommitteeRole {
+  PRINCIPAL_EMPLEADOR
+  SUPLENTE_EMPLEADOR
+  PRINCIPAL_TRABAJADORES
+  SUPLENTE_TRABAJADORES
+}
+
+/**
+ * Integrante de un comité: nombre y documento tal como los trae la
+ * resolución, con vínculo a la cuenta de la plataforma cuando existe (así
+ * la asistencia y las conexiones a la sala se cruzan con la nómina real).
+ */
+model CommitteeMember {
+  id     String       @id @default(cuid())
+  planId String
+  plan   TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  userId String?
+  user   User?        @relation("CommitteeMemberUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  fullName       String
+  documentNumber String
+  /** Zona Norte / Zona Centro / Zona Sur / Sede Administrativa. */
+  zone           String
+  position       String?
+  role           CommitteeRole
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+
+  @@unique([planId, documentNumber])
+  @@index([userId])
+}
+
 enum TrainingPlanStatus {
   DRAFT
   ACTIVE
@@ -674,6 +718,18 @@ model TrainingPlan {
   tutor            User               @relation("TrainingPlanTutor", fields: [tutorId], references: [id])
   status           TrainingPlanStatus @default(DRAFT)
 
+  // ---- Comités (solo aplica con kind = COMITE) ----
+  kind             PlanKind  @default(CAPACITACION)
+  resolutionNumber String?
+  resolutionDate   DateTime?
+  /** "2026-2028": vigencia del comité según la resolución. */
+  periodLabel      String?
+  /** Resumen de la conformación y el alcance, para la ficha de información general. */
+  summary          String?
+  /** Funciones con su plazo: [{ n, texto, plazo }]. */
+  functions        Json?
+  members          CommitteeMember[]
+
   // Acta de cierre: cuándo, quién y con qué observaciones. Las observaciones
   // son obligatorias al cerrar -el cierre de un plan institucional no es un
   // clic, es una decisión con constancia-.
@@ -691,6 +747,7 @@ model TrainingPlan {
 
   @@index([tutorId])
   @@index([targetDepartment])
+  @@index([kind])
 }
 
 enum TrainingActivityType {

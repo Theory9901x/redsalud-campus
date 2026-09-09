@@ -12,6 +12,7 @@ import {
   ScrollText,
   Settings,
   Users,
+  Gavel,
 } from "lucide-react";
 import { AppSidebar, type GrupoNav, type ItemNav } from "@/components/shell/app-sidebar";
 import type { AdminSection } from "@prisma/client";
@@ -46,6 +47,7 @@ const GRUPOS: { label: string | null; items: ItemAdmin[] }[] = [
         icon: CalendarRange,
         section: "PLANES_CAPACITACION",
       },
+      { href: "/admin/comites", label: "Comités", icon: Gavel, section: "PLANES_CAPACITACION" },
       // Módulo transversal: el enlace no vive bajo /admin, pero la gestión
       // es de admin y tutor (el estudiante ve solo sus respuestas).
       { href: "/encuestas", label: "Encuestas", icon: ClipboardList, section: "PLANES_CAPACITACION" },

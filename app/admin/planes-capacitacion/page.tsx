@@ -6,6 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { TrainingPlanList } from "@/components/training-plans/training-plan-list";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { cn } from "@/lib/utils";
+import { PestanasModulo } from "@/components/comites/pestanas-modulo";
 
 export default async function AdminPlanesCapacitacionPage() {
   const session = await requireTutorOrAdmin();
@@ -13,6 +14,7 @@ export default async function AdminPlanesCapacitacionPage() {
 
   return (
     <div className="space-y-6">
+      <PestanasModulo activa="planes" />
       <AdminPageHeader
         title="Planes de capacitación"
         description={`${plans.length} ${plans.length === 1 ? "plan" : "planes"} en toda la institución.`}

@@ -23,7 +23,8 @@ export function trainingPlanScopeWhere(role: Role, userId: string) {
 
 export async function getTrainingPlans(role: Role, userId: string) {
   return prisma.trainingPlan.findMany({
-    where: trainingPlanScopeWhere(role, userId),
+    // Los comités viven en su propio módulo (/admin/comites).
+    where: { kind: "CAPACITACION", ...trainingPlanScopeWhere(role, userId) },
     orderBy: [{ year: "desc" }, { createdAt: "desc" }],
     include: {
       tutor: { select: { fullName: true } },
@@ -73,6 +74,7 @@ export async function getTrainingPlansForStudent(userId: string) {
 
   return prisma.trainingPlan.findMany({
     where: {
+      kind: "CAPACITACION",
       OR: [
         { targetDepartment: null },
         ...(user.department ? [{ targetDepartment: { equals: user.department, mode: "insensitive" as const } }] : []),
