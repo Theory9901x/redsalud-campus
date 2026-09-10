@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
-import { ArrowLeft, ArrowUpRight, CalendarClock, ClipboardList, ExternalLink, FileText, Gavel, Info, MapPin, QrCode, ScrollText, Timer, Users2, Video } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, CalendarClock, ClipboardList, FileText, Gavel, Info, MapPin, QrCode, ScrollText, Timer, Users2, Video } from "lucide-react";
 import { requireSession } from "@/lib/auth-helpers";
 import { esIntegranteDe, getComiteDetalle, ROL_COMITE } from "@/lib/comites";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { etiquetaFecha, etiquetaHora, TRAINING_ACTIVITY_STATUS_LABELS } from "@/components/training-plans/labels";
 import { BotonCopiar } from "@/components/comites/formularios";
+import { DocumentosComite } from "@/components/comites/documentos-comite";
 import { cn } from "@/lib/utils";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -162,21 +163,7 @@ export default async function MiComitePage({ params }: { params: Promise<{ id: s
             </div>
             <div className="comite-tarjeta h-fit p-6">
               <h2 className="flex items-center gap-2 font-display text-[15px] font-bold text-foreground"><FileText className="h-4 w-4 text-primary" aria-hidden="true" />Resolución y documentos</h2>
-              {comite.documents.length === 0 ? (
-                <p className="mt-3 text-[13px] text-muted-foreground">Sin documentos.</p>
-              ) : (
-                <ul className="mt-3 space-y-2">
-                  {comite.documents.map((d) => (
-                    <li key={d.id}>
-                      <a href={d.fileUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl border border-border/50 bg-card/70 px-3 py-2.5 text-[13px] font-semibold text-foreground transition-colors hover:border-primary/40">
-                        <FileText className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                        <span className="min-w-0 flex-1 truncate">{d.fileName.replace(/^\d+-/, "").replace(/-/g, " ")}</span>
-                        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <div className="mt-4"><DocumentosComite documentos={comite.documents} /></div>
             </div>
           </div>
         </TabsContent>

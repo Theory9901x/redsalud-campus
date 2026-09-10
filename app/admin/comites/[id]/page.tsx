@@ -39,7 +39,7 @@ import {
   BotonQuitar,
   BotonCopiar,
 } from "@/components/comites/formularios";
-import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
+import { DocumentosComite } from "@/components/comites/documentos-comite";
 import { etiquetaFecha, etiquetaHora, TRAINING_ACTIVITY_STATUS_LABELS } from "@/components/training-plans/labels";
 import { cn } from "@/lib/utils";
 
@@ -214,8 +214,8 @@ export default async function ComiteDetallePage({ params }: { params: Promise<{ 
                   <FileText className="h-4 w-4 text-primary" aria-hidden="true" />
                   Resolución y documentos
                 </h2>
-                <div className="mt-3">
-                  <TrainingDocumentList documents={comite.documents} />
+                <div className="mt-4">
+                  <DocumentosComite documentos={comite.documents} vacio="Sin documentos todavía. Adjunta la resolución de conformación abajo." />
                 </div>
                 <div className="mt-4 border-t border-border/50 pt-4">
                   <FormularioDocumentoComite action={subirDocumento} />

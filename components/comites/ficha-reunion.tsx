@@ -4,6 +4,7 @@ import { CalendarClock, Check, ExternalLink, FileText, FileVideo, MapPin, PhoneC
 import type { getReunionComite } from "@/lib/comites-reunion";
 import { etiquetaFecha, etiquetaHora, TRAINING_ACTIVITY_STATUS_LABELS, TRAINING_MODALITY_LABELS } from "@/components/training-plans/labels";
 import { BotonCopiar } from "@/components/comites/formularios";
+import { DocumentosComite } from "@/components/comites/documentos-comite";
 import { cn } from "@/lib/utils";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -176,28 +177,7 @@ export async function FichaReunion({ reunion, acciones }: { reunion: Reunion; ac
           <FileVideo className="h-4 w-4 text-primary" aria-hidden="true" />
           Grabaciones y documentos de la sesión
         </h2>
-        {actividad.documents.length === 0 ? (
-          <p className="comite-tarjeta p-5 text-sm text-muted-foreground">
-            Sin grabaciones todavía. Desde la sala, el botón <b>Grabar jornada</b> guarda el video aquí automáticamente al terminar.
-          </p>
-        ) : (
-          <Tabla columnas={["Archivo", "Tipo", "Tamaño", "Subido", "Por", ""]}>
-            {actividad.documents.map((d) => (
-              <tr key={d.id}>
-                <td className="px-4 py-2.5 font-semibold text-foreground">{d.fileName.replace(/^\d+-/, "")}</td>
-                <td className="px-4 py-2.5 text-muted-foreground">{d.fileType.startsWith("video/") ? "Grabación" : "Documento"}</td>
-                <td className="px-4 py-2.5 tabular-nums text-muted-foreground">{Math.round(d.fileSize / 1024 / 1024 * 10) / 10} MB</td>
-                <td className="whitespace-nowrap px-4 py-2.5 text-muted-foreground">{etiquetaFecha(d.createdAt)} · {etiquetaHora(d.createdAt)}</td>
-                <td className="px-4 py-2.5 text-muted-foreground">{d.uploader.fullName}</td>
-                <td className="px-4 py-2.5 text-right">
-                  <a href={d.fileUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] font-bold text-primary hover:underline">
-                    Abrir <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                  </a>
-                </td>
-              </tr>
-            ))}
-          </Tabla>
-        )}
+        <DocumentosComite documentos={actividad.documents} vacio="Sin grabaciones todavía. Desde la sala, el botón «Grabar jornada» guarda el video aquí automáticamente al terminar." />
       </section>
 
       <p className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
