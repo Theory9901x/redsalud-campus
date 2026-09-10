@@ -217,7 +217,11 @@ export function SalaVirtual({
         width: "100%",
         height: "100%",
         userInfo: { displayName },
+        // Interfaz de Jitsi en español (pantalla previa "Unirse a la reunión",
+        // menús, avisos). Solo idioma: no cambia ninguna función.
+        lang: "es",
         configOverwrite: {
+          defaultLanguage: "es",
           subject,
           prejoinConfig: { enabled: true },
           disableDeepLinking: true,
