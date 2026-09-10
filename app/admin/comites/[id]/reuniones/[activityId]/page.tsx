@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowUpRight, FileText, Lock } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, CalendarClock, FileText, Lock } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getReunionComite } from "@/lib/comites-reunion";
-import { cerrarReunionAction, reabrirReunionAction } from "@/app/admin/comites/actions";
+import { cerrarReunionAction, reabrirReunionAction, fijarJornadaReunionAction } from "@/app/admin/comites/actions";
 import { FichaReunion } from "@/components/comites/ficha-reunion";
-import { BotonAccionReunion } from "@/components/comites/formularios";
+import { BotonAccionReunion, FormularioJornadaReunion } from "@/components/comites/formularios";
 
 /**
  * GESTIÓN DE UNA SESIÓN del comité (administrador): la ficha de la reunión
@@ -20,6 +20,21 @@ export default async function ReunionComiteAdminPage({ params }: { params: Promi
   const cerrada = reunion.actividad.status === "CLOSED";
 
   const acciones = (
+    <>
+    {!reunion.sesion && !cerrada && (
+      <div className="comite-tarjeta border-warning/40 p-5">
+        <h2 className="flex items-center gap-2 font-display text-[14px] font-bold uppercase tracking-wide text-foreground">
+          <CalendarClock className="h-4 w-4 text-warning-foreground" aria-hidden="true" />
+          Esta reunión no tiene fecha ni hora
+        </h2>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">
+          La sala, el enlace y el QR ya existen, pero sin fecha los integrantes no la ven como próxima reunión en su panel. Fíjala aquí.
+        </p>
+        <div className="mt-4">
+          <FormularioJornadaReunion action={fijarJornadaReunionAction.bind(null, id, activityId)} />
+        </div>
+      </div>
+    )}
     <div className="comite-tarjeta flex flex-wrap items-center justify-between gap-3 p-5">
       <div className="min-w-0">
         <h2 className="flex items-center gap-2 font-display text-[14px] font-bold uppercase tracking-wide text-foreground">
@@ -53,10 +68,11 @@ export default async function ReunionComiteAdminPage({ params }: { params: Promi
           </>
         )}
         <Link href={`/admin/planes-capacitacion/${id}/actividades/${activityId}`} className="inline-flex items-center gap-1 rounded-xl border border-border/60 bg-card/70 px-3 py-2 text-[12.5px] font-bold text-foreground transition-colors hover:border-primary/40">
-          Gestión completa <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+          Vista técnica (capacitación) <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
       </div>
     </div>
+    </>
   );
 
   return (

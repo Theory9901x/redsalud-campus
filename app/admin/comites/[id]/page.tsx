@@ -404,7 +404,7 @@ export default async function ComiteDetallePage({ params }: { params: Promise<{ 
                           <BotonCopiar texto={r.urlSala} etiqueta="Copiar enlace" />
                           <BotonCopiar texto={r.urlInvitados} etiqueta="Enlace invitados" />
                           <Link href={`/admin/planes-capacitacion/${id}/actividades/${r.id}`} className="inline-flex items-center gap-1 rounded-xl border border-border/60 bg-card/70 px-3 py-2 text-[12.5px] font-bold text-foreground transition-colors hover:border-primary/40">
-                            Gestión completa <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                            Vista técnica <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                           </Link>
                           <BotonQuitar onQuitar={eliminarReunionAction.bind(null, id, r.id)} etiqueta="Eliminar reunión" />
                         </div>

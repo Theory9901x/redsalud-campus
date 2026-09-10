@@ -215,3 +215,36 @@ export async function reabrirReunionAction(planId: string, activityId: string): 
   revalidatePath(`${BASE}/${planId}/reuniones/${activityId}`);
   return { error: null };
 }
+
+/**
+ * Fija la fecha y hora de una reunión que se creó sin jornada (por ejemplo
+ * desde la pantalla genérica de capacitación). Con jornada, la reunión
+ * aparece como "próxima" en el panel de los integrantes.
+ */
+export async function fijarJornadaReunionAction(planId: string, activityId: string, _prev: EstadoComite, fd: FormData): Promise<EstadoComite> {
+  await requireTutorOrAdmin();
+  const fecha = texto(fd, "date");
+  const hora = texto(fd, "startTime");
+  const fin = texto(fd, "endTime");
+  if (!fecha || !hora) return { error: "Indica la fecha y la hora de inicio." };
+  const startsAt = new Date(`${fecha}T${hora}:00`);
+  if (Number.isNaN(startsAt.getTime())) return { error: "Fecha u hora inválida." };
+  const actividad = await prisma.trainingActivity.findFirst({ where: { id: activityId, planId }, select: { id: true, modality: true } });
+  if (!actividad) return { error: "La reunión no existe." };
+  const modality = (texto(fd, "modality") || actividad.modality) as TrainingModality;
+  await prisma.trainingSession.create({
+    data: {
+      activityId,
+      startsAt,
+      endsAt: fin ? new Date(`${fecha}T${fin}:00`) : null,
+      modality,
+      location: texto(fd, "location") || null,
+      meetingUrl: modality === "PRESENCIAL" ? null : `${APP_URL}/sala/${activityId}`,
+      status: "OPEN",
+    },
+  });
+  await prisma.trainingActivity.update({ where: { id: activityId }, data: { startDate: new Date(`${fecha}T00:00:00`), modality } });
+  revalidatePath(`${BASE}/${planId}`);
+  revalidatePath(`${BASE}/${planId}/reuniones/${activityId}`);
+  return { error: null };
+}

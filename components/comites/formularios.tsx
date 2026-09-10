@@ -310,3 +310,30 @@ export function BotonAccionReunion({
     </button>
   );
 }
+
+// ------------------------------------------------------------ jornada faltante
+
+export function FormularioJornadaReunion({ action }: { action: Accion }) {
+  const [state, formAction, pendiente] = useActionState(action, INICIAL);
+  return (
+    <form action={formAction} className="flex flex-wrap items-end gap-3">
+      <div className="space-y-1.5">
+        <Label htmlFor="date">Fecha</Label>
+        <Input id="date" name="date" type="date" required className="w-44" />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="startTime">Inicio</Label>
+        <Input id="startTime" name="startTime" type="time" required className="w-32" />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="endTime">Fin (opcional)</Label>
+        <Input id="endTime" name="endTime" type="time" className="w-32" />
+      </div>
+      <Button type="submit" disabled={pendiente} className="gap-1.5 bg-gradient-to-r from-primary to-teal-400 text-white">
+        {pendiente ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarPlus className="h-4 w-4" />}
+        Fijar fecha y hora
+      </Button>
+      {state.error && <p className="w-full text-sm text-destructive">{state.error}</p>}
+    </form>
+  );
+}
