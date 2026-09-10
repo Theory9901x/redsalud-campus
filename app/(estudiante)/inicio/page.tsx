@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ComitesEnPanel } from "@/components/comites/comites-en-panel";
 import {
   Activity,
   ArrowRight,
@@ -159,6 +160,7 @@ export default async function InicioPage() {
           ))}
         </div>
 
+        <ComitesEnPanel userId={session.user.id} />
         {/* Recuento: panel de resumen con el desglose y el avance. */}
         <section className="surface-panel p-6 sm:p-8">
           <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[var(--accent)]/[0.08] blur-3xl" />

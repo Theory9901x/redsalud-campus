@@ -38,8 +38,9 @@ export async function listarComites() {
       resolutionDate: true,
       periodLabel: true,
       summary: true,
-      _count: { select: { members: true, activities: true } },
+      _count: { select: { members: true, activities: { where: { manuallyHidden: false } } } },
       activities: {
+        where: { manuallyHidden: false },
         orderBy: { startDate: "desc" },
         select: {
           id: true,
@@ -70,7 +71,7 @@ async function asistenciaPromedio(planId: string): Promise<number | null> {
   const [miembros, reuniones] = await Promise.all([
     prisma.committeeMember.findMany({ where: { planId, userId: { not: null } }, select: { userId: true } }),
     prisma.trainingActivity.findMany({
-      where: { planId },
+      where: { planId, manuallyHidden: false },
       select: { id: true, attendances: { where: { attended: true }, select: { userId: true } } },
     }),
   ]);
@@ -94,6 +95,8 @@ export async function getComiteDetalle(id: string) {
         include: { user: { select: { id: true, email: true, status: true, lastLoginAt: true, position: true } } },
       },
       activities: {
+        // Las reuniones ocultas (pruebas de plataforma) no cuentan ni se listan.
+        where: { manuallyHidden: false },
         orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
         include: {
           sessions: { orderBy: { startsAt: "asc" } },
@@ -139,7 +142,7 @@ export async function getAsistenciaComite(planId: string) {
       select: { id: true, userId: true, fullName: true, zone: true },
     }),
     prisma.trainingActivity.findMany({
-      where: { planId },
+      where: { planId, manuallyHidden: false },
       orderBy: [{ startDate: "asc" }, { createdAt: "asc" }],
       select: {
         id: true,
@@ -187,4 +190,46 @@ export async function getAsistenciaComite(planId: string) {
   const promedio = celebradas.length > 0 ? Math.round(celebradas.reduce((s, r) => s + r.porcentaje!, 0) / celebradas.length) : null;
 
   return { porReunion, matriz, promedio, integrantesConCuenta: ids.size, integrantes: miembros.length };
+}
+
+// ---------------------------------------------------------------- integrantes (vista de estudiante)
+
+/** Comités a los que pertenece una persona, con su rol y la próxima reunión. Solo lectura. */
+export async function listarComitesDeUsuario(userId: string) {
+  const membresias = await prisma.committeeMember.findMany({
+    where: { userId, plan: { kind: "COMITE" } },
+    select: {
+      zone: true,
+      role: true,
+      position: true,
+      plan: {
+        select: {
+          id: true,
+          title: true,
+          resolutionNumber: true,
+          periodLabel: true,
+          summary: true,
+          _count: { select: { members: true, activities: { where: { manuallyHidden: false } } } },
+          activities: {
+            where: { manuallyHidden: false },
+            select: { id: true, title: true, status: true, sessions: { orderBy: { startsAt: "asc" }, select: { startsAt: true, endsAt: true } } },
+          },
+        },
+      },
+    },
+  });
+  const ahora = Date.now();
+  return membresias.map((m) => {
+    const proximas = m.plan.activities
+      .flatMap((a) => a.sessions.map((s) => ({ actividad: a, inicio: s.startsAt, fin: s.endsAt })))
+      .filter((x) => (x.fin ?? new Date(x.inicio.getTime() + 4 * 3600e3)).getTime() >= ahora)
+      .sort((a, b) => a.inicio.getTime() - b.inicio.getTime());
+    return { ...m, proxima: proximas[0] ?? null };
+  });
+}
+
+/** ¿Es integrante de este comité? Puerta de la vista de solo lectura. */
+export async function esIntegranteDe(userId: string, planId: string) {
+  const m = await prisma.committeeMember.findFirst({ where: { userId, planId }, select: { id: true } });
+  return Boolean(m);
 }

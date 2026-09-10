@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { saveTrainingPlanDocument } from "@/lib/storage";
 import { registrarAuditoria } from "@/lib/audit";
+import { closeActivityAction, reopenActivityAction } from "@/app/admin/planes-capacitacion/actions";
 import type { CommitteeRole, TrainingModality } from "@prisma/client";
 
 export type EstadoComite = { error: string | null };
@@ -187,5 +188,30 @@ export async function eliminarReunionAction(planId: string, activityId: string):
   }
   await prisma.trainingActivity.delete({ where: { id: activityId } });
   revalidatePath(`${BASE}/${planId}`);
+  return { error: null };
+}
+
+/** Cierra la sesión: congela asistencia y conexiones y habilita el informe PDF. */
+export async function cerrarReunionAction(planId: string, activityId: string): Promise<{ error: string | null }> {
+  await requireTutorOrAdmin();
+  try {
+    await closeActivityAction(BASE, planId, activityId);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "No se pudo cerrar la sesión." };
+  }
+  revalidatePath(`${BASE}/${planId}`);
+  revalidatePath(`${BASE}/${planId}/reuniones/${activityId}`);
+  return { error: null };
+}
+
+export async function reabrirReunionAction(planId: string, activityId: string): Promise<{ error: string | null }> {
+  await requireAdmin();
+  try {
+    await reopenActivityAction(BASE, planId, activityId);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "No se pudo reabrir la sesión." };
+  }
+  revalidatePath(`${BASE}/${planId}`);
+  revalidatePath(`${BASE}/${planId}/reuniones/${activityId}`);
   return { error: null };
 }

@@ -314,6 +314,44 @@ export default async function ComiteDetallePage({ params }: { params: Promise<{ 
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
             <div className="space-y-4">
               {reuniones.length === 0 && <p className="comite-tarjeta p-6 text-sm text-muted-foreground">Sin reuniones todavía. Convoca la primera a la derecha.</p>}
+
+              {/* Registro de sesiones: cada reunión es una gestión aparte, con su ficha. */}
+              {reuniones.length > 0 && (
+                <div className="overflow-x-auto rounded-2xl border border-border/60 bg-card/70 shadow-sm backdrop-blur-sm">
+                  <table className="w-full min-w-[820px] border-collapse text-[13px]">
+                    <thead>
+                      <tr className="border-b border-border/60 bg-muted/40">
+                        {["#", "Sesión", "Fecha y hora", "Modalidad", "Estado", "Asistieron", "Conectados", "Tiempo", "Grab.", ""].map((c) => (
+                          <th key={c} className="whitespace-nowrap px-4 py-3 text-left text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">{c}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {reuniones.map((r, i) => {
+                        const s = r.sessions[0];
+                        return (
+                          <tr key={r.id} className="transition-colors hover:bg-primary/[0.04]">
+                            <td className="px-4 py-3 tabular-nums text-muted-foreground">{i + 1}</td>
+                            <td className="px-4 py-3">
+                              <Link href={`/admin/comites/${id}/reuniones/${r.id}`} className="font-semibold text-foreground hover:text-primary hover:underline">{r.title}</Link>
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3 tabular-nums">{s ? `${etiquetaFecha(s.startsAt)} · ${etiquetaHora(s.startsAt)}` : r.startDate ? etiquetaFecha(r.startDate) : "—"}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{s?.modality === "PRESENCIAL" ? "Presencial" : s?.modality === "MIXTA" ? "Mixta" : "Virtual"}</td>
+                            <td className="px-4 py-3"><span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-bold", r.status === "OPEN" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>{TRAINING_ACTIVITY_STATUS_LABELS[r.status]}</span></td>
+                            <td className="px-4 py-3 font-semibold tabular-nums">{r.stats ? `${r.stats.asistieron}/${r.stats.total}${r.stats.porcentaje !== null ? ` (${r.stats.porcentaje}%)` : ""}` : "—"}</td>
+                            <td className="px-4 py-3 tabular-nums">{r.stats?.conectados ?? 0}</td>
+                            <td className="px-4 py-3 tabular-nums">{r.stats?.minutosConectados ?? 0} min</td>
+                            <td className="px-4 py-3 tabular-nums">{r._count.documents}</td>
+                            <td className="px-4 py-3 text-right">
+                              <Link href={`/admin/comites/${id}/reuniones/${r.id}`} className="inline-flex items-center gap-1 text-[12px] font-bold text-primary hover:underline">Ficha <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" /></Link>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
               {reuniones.map((r) => {
                 const sesion = r.sessions[0];
                 const abierta = r.status === "OPEN";
@@ -322,7 +360,7 @@ export default async function ComiteDetallePage({ params }: { params: Promise<{ 
                     <div className="flex flex-col gap-5 md:flex-row">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-display text-[16px] font-extrabold text-foreground">{r.title}</h3>
+                          <Link href={`/admin/comites/${id}/reuniones/${r.id}`} className="font-display text-[16px] font-extrabold text-foreground hover:text-primary">{r.title}</Link>
                           <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-bold", abierta ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>
                             {TRAINING_ACTIVITY_STATUS_LABELS[r.status]}
                           </span>

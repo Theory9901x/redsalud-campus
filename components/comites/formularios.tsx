@@ -271,3 +271,42 @@ export function BotonCopiar({ texto, etiqueta = "Copiar enlace" }: { texto: stri
     </button>
   );
 }
+
+// ------------------------------------------------------------ acción con confirmación
+
+export function BotonAccionReunion({
+  accion,
+  etiqueta,
+  confirmar,
+  variante = "primaria",
+}: {
+  accion: () => Promise<{ error: string | null }>;
+  etiqueta: string;
+  confirmar?: string;
+  variante?: "primaria" | "secundaria";
+}) {
+  const [pendiente, iniciar] = useTransition();
+  return (
+    <button
+      type="button"
+      disabled={pendiente}
+      onClick={() => {
+        if (confirmar && !confirm(confirmar)) return;
+        iniciar(async () => {
+          const r = await accion();
+          if (r.error) toast.error(r.error);
+          else toast.success("Listo");
+        });
+      }}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold transition-all disabled:opacity-60",
+        variante === "primaria"
+          ? "bg-gradient-to-r from-primary to-teal-400 text-white shadow-md shadow-primary/25"
+          : "border border-border/60 bg-card/70 text-foreground hover:border-primary/40"
+      )}
+    >
+      {pendiente ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+      {etiqueta}
+    </button>
+  );
+}
