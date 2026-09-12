@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireTutorOrAdmin } from "@/lib/auth-helpers";
-import { saveTrainingPlanDocument } from "@/lib/storage";
+import { saveTrainingPlanDocument, saveTrainingActivityDocument } from "@/lib/storage";
 import { registrarAuditoria } from "@/lib/audit";
 import { closeActivityAction, reopenActivityAction } from "@/app/admin/planes-capacitacion/actions";
 import type { CommitteeRole, TrainingModality } from "@prisma/client";
@@ -244,6 +244,25 @@ export async function fijarJornadaReunionAction(planId: string, activityId: stri
     },
   });
   await prisma.trainingActivity.update({ where: { id: activityId }, data: { startDate: new Date(`${fecha}T00:00:00`), modality } });
+  revalidatePath(`${BASE}/${planId}`);
+  revalidatePath(`${BASE}/${planId}/reuniones/${activityId}`);
+  return { error: null };
+}
+
+/**
+ * ACTA DE LA SESIÓN: se adjunta a la reunión con el prefijo "ACTA" en el
+ * nombre para reconocerla y embeberla en la ficha (PDF). Una nueva acta
+ * reemplaza la visualización, pero las anteriores se conservan como
+ * documentos de la sesión.
+ */
+export async function subirActaAction(planId: string, activityId: string, _prev: EstadoComite, fd: FormData): Promise<EstadoComite> {
+  const sesion = await requireTutorOrAdmin();
+  const file = fd.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Selecciona el archivo del acta." };
+  const actividad = await prisma.trainingActivity.findFirst({ where: { id: activityId, planId }, select: { id: true } });
+  if (!actividad) return { error: "La reunión no existe." };
+  const renombrado = new File([await file.arrayBuffer()], `ACTA ${file.name}`, { type: file.type || "application/octet-stream" });
+  await saveTrainingActivityDocument(renombrado, activityId, sesion.user.id);
   revalidatePath(`${BASE}/${planId}`);
   revalidatePath(`${BASE}/${planId}/reuniones/${activityId}`);
   return { error: null };

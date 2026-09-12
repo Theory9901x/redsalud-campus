@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, CalendarClock, FileText, Lock } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getReunionComite } from "@/lib/comites-reunion";
-import { cerrarReunionAction, reabrirReunionAction, fijarJornadaReunionAction } from "@/app/admin/comites/actions";
+import { cerrarReunionAction, reabrirReunionAction, fijarJornadaReunionAction, subirActaAction } from "@/app/admin/comites/actions";
 import { FichaReunion } from "@/components/comites/ficha-reunion";
-import { BotonAccionReunion, FormularioJornadaReunion } from "@/components/comites/formularios";
+import { BotonAccionReunion, FormularioJornadaReunion, FormularioDocumentoComite } from "@/components/comites/formularios";
 
 /**
  * GESTIÓN DE UNA SESIÓN del comité (administrador): la ficha de la reunión
@@ -81,7 +81,7 @@ export default async function ReunionComiteAdminPage({ params }: { params: Promi
         <ArrowLeft className="h-4 w-4" />
         {reunion.actividad.plan.title}
       </Link>
-      <FichaReunion reunion={reunion} acciones={acciones} />
+      <FichaReunion reunion={reunion} acciones={acciones} formularioActa={<FormularioDocumentoComite action={subirActaAction.bind(null, id, activityId)} />} />
     </div>
   );
 }

@@ -321,7 +321,7 @@ export default async function ComiteDetallePage({ params }: { params: Promise<{ 
                   <table className="w-full min-w-[820px] border-collapse text-[13px]">
                     <thead>
                       <tr className="border-b border-border/60 bg-muted/40">
-                        {["#", "Sesión", "Fecha y hora", "Modalidad", "Estado", "Asistieron", "Conectados", "Tiempo", "Grab.", ""].map((c) => (
+                        {["#", "Sesión", "Fecha y hora", "Modalidad", "Estado", "Asistencia total", "Integrantes", "Permanencia", "Grab.", ""].map((c) => (
                           <th key={c} className="whitespace-nowrap px-4 py-3 text-left text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">{c}</th>
                         ))}
                       </tr>
@@ -338,8 +338,8 @@ export default async function ComiteDetallePage({ params }: { params: Promise<{ 
                             <td className="whitespace-nowrap px-4 py-3 tabular-nums">{s ? `${etiquetaFecha(s.startsAt)} · ${etiquetaHora(s.startsAt)}` : r.startDate ? etiquetaFecha(r.startDate) : "—"}</td>
                             <td className="px-4 py-3 text-muted-foreground">{s?.modality === "PRESENCIAL" ? "Presencial" : s?.modality === "MIXTA" ? "Mixta" : "Virtual"}</td>
                             <td className="px-4 py-3"><span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-bold", r.status === "OPEN" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>{TRAINING_ACTIVITY_STATUS_LABELS[r.status]}</span></td>
-                            <td className="px-4 py-3 font-semibold tabular-nums">{r.stats ? `${r.stats.asistieron}/${r.stats.total}${r.stats.porcentaje !== null ? ` (${r.stats.porcentaje}%)` : ""}` : "—"}</td>
-                            <td className="px-4 py-3 tabular-nums">{r.stats?.conectados ?? 0}</td>
+                            <td className="px-4 py-3 font-semibold tabular-nums">{r.stats?.asistenciaTotal ?? 0}</td>
+                            <td className="px-4 py-3 tabular-nums">{r.stats ? `${r.stats.asistieron}/${r.stats.total}${r.stats.porcentaje !== null ? ` (${r.stats.porcentaje}%)` : ""}` : "—"}</td>
                             <td className="px-4 py-3 tabular-nums">{r.stats?.minutosConectados ?? 0} min</td>
                             <td className="px-4 py-3 tabular-nums">{r._count.documents}</td>
                             <td className="px-4 py-3 text-right">
@@ -382,16 +382,16 @@ export default async function ComiteDetallePage({ params }: { params: Promise<{ 
                         {r.stats && (
                           <div className="mt-4 grid grid-cols-3 gap-2">
                             <div className="rounded-xl bg-card/70 p-3">
-                              <p className="font-display text-[1.3rem] font-extrabold leading-none tabular-nums text-foreground">{r.stats.porcentaje === null ? "—" : `${r.stats.porcentaje}%`}</p>
-                              <p className="mt-1 text-[11px] text-muted-foreground">Asistencia de integrantes</p>
+                              <p className="font-display text-[1.3rem] font-extrabold leading-none tabular-nums text-foreground">{r.stats.asistenciaTotal}</p>
+                              <p className="mt-1 text-[11px] text-muted-foreground">Asistencia total</p>
                             </div>
                             <div className="rounded-xl bg-card/70 p-3">
                               <p className="font-display text-[1.3rem] font-extrabold leading-none tabular-nums text-foreground">{r.stats.asistieron}<span className="text-[12px] text-muted-foreground">/{r.stats.total}</span></p>
-                              <p className="mt-1 text-[11px] text-muted-foreground">Asistieron</p>
+                              <p className="mt-1 text-[11px] text-muted-foreground">Integrantes{r.stats.porcentaje !== null ? ` · ${r.stats.porcentaje}%` : ""}</p>
                             </div>
                             <div className="rounded-xl bg-card/70 p-3">
                               <p className="font-display text-[1.3rem] font-extrabold leading-none tabular-nums text-foreground">{r.stats.conectados}</p>
-                              <p className="mt-1 text-[11px] text-muted-foreground">Conectados · {r.stats.minutosConectados} min</p>
+                              <p className="mt-1 text-[11px] text-muted-foreground">Con registro de salida · {r.stats.minutosConectados} min</p>
                             </div>
                           </div>
                         )}

@@ -364,8 +364,15 @@ export function SalaVirtual({
     }
 
     window.addEventListener("pagehide", reportarTramo);
+    // Corte periódico: cierra el tramo en curso y abre otro desde ahora.
+    const corte = setInterval(() => {
+      if (!joinedAtRef.current) return;
+      reportarTramo();
+      joinedAtRef.current = new Date();
+    }, 5 * 60 * 1000);
     return () => {
       cancelado = true;
+      clearInterval(corte);
       window.removeEventListener("pagehide", reportarTramo);
       reportarTramo();
       api?.dispose();

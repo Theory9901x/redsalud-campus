@@ -123,6 +123,8 @@ export type AsistenciaReunion = {
   fecha: Date | null;
   status: string;
   asistieron: number;
+  /** Asistencia en firme total (integrantes + otros asistentes): la cifra oficial. */
+  asistenciaTotal: number;
   conectados: number;
   total: number;
   porcentaje: number | null;
@@ -170,6 +172,7 @@ export async function getAsistenciaComite(planId: string) {
       fecha: r.sessions[0]?.startsAt ?? r.startDate,
       status: r.status,
       asistieron: asistieron.size,
+      asistenciaTotal: new Set(r.attendances.map((a) => a.userId)).size,
       conectados: conectados.size,
       total: ids.size,
       porcentaje: hayDatos && ids.size > 0 ? Math.round((asistieron.size / ids.size) * 100) : null,

@@ -13,7 +13,7 @@ export async function getReunionComite(planId: string, activityId: string) {
     include: {
       plan: { select: { id: true, title: true, kind: true, members: { orderBy: { sortOrder: "asc" }, select: { id: true, userId: true, fullName: true, zone: true, role: true, position: true } } } },
       sessions: { orderBy: { startsAt: "asc" } },
-      attendances: { where: { attended: true }, select: { userId: true, registeredAt: true, source: true } },
+      attendances: { where: { attended: true }, select: { userId: true, registeredAt: true, source: true, user: { select: { fullName: true } } } },
       callConnections: { orderBy: { joinedAt: "asc" }, select: { userId: true, externalParticipantId: true, displayName: true, joinedAt: true, leftAt: true, durationSeconds: true } },
       documents: { orderBy: { createdAt: "desc" }, include: { uploader: { select: { fullName: true } } } },
     },
@@ -60,23 +60,40 @@ export async function getReunionComite(planId: string, activityId: string) {
     };
   });
 
-  // Personas que entraron a la sala sin ser integrantes (invitados, otros funcionarios).
+  // OTROS ASISTENTES: funcionarios que no son integrantes (Talento Humano,
+  // invitados con cuenta) y externos. Se unen las dos fuentes -asistencia
+  // en firme y conexión a la sala- para que la cifra sea UNA sola: quien
+  // asistió aparece aunque su tramo de conexión no haya quedado escrito.
   const idsMiembros = new Set(miembros.map((m) => m.userId).filter(Boolean));
-  const otrosUsuarios = [...conexionPorUsuario.entries()].filter(([id]) => !idsMiembros.has(id));
-  const otrosIds = otrosUsuarios.map(([id]) => id);
-  const nombresOtros = otrosIds.length
-    ? new Map((await prisma.user.findMany({ where: { id: { in: otrosIds } }, select: { id: true, fullName: true } })).map((u) => [u.id, u.fullName]))
-    : new Map<string, string>();
+  const otrosMapa = new Map<string, { nombre: string; externo: boolean; asistio: boolean; horaAsistencia: Date | null; minutos: number; ingresos: number; primerIngreso: Date | null; ultimaSalida: Date | null }>();
+  for (const a of actividad.attendances) {
+    if (idsMiembros.has(a.userId)) continue;
+    otrosMapa.set(a.userId, { nombre: a.user.fullName, externo: false, asistio: true, horaAsistencia: a.registeredAt, minutos: 0, ingresos: 0, primerIngreso: null, ultimaSalida: null });
+  }
+  for (const [id, c] of conexionPorUsuario) {
+    if (idsMiembros.has(id)) continue;
+    const previo = otrosMapa.get(id);
+    const base = previo ?? { nombre: "", externo: false, asistio: false, horaAsistencia: null, minutos: 0, ingresos: 0, primerIngreso: null, ultimaSalida: null };
+    otrosMapa.set(id, { ...base, minutos: Math.round(c.segundos / 60), ingresos: c.ingresos, primerIngreso: c.primerIngreso, ultimaSalida: c.ultimaSalida });
+  }
+  const sinNombre = [...otrosMapa.entries()].filter(([, o]) => !o.nombre).map(([id]) => id);
+  if (sinNombre.length) {
+    const usuarios = await prisma.user.findMany({ where: { id: { in: sinNombre } }, select: { id: true, fullName: true } });
+    for (const u of usuarios) otrosMapa.get(u.id)!.nombre = u.fullName;
+  }
   const otros = [
-    ...otrosUsuarios.map(([id, c]) => ({ nombre: nombresOtros.get(id) ?? "Usuario", externo: false, minutos: Math.round(c.segundos / 60), ingresos: c.ingresos, primerIngreso: c.primerIngreso })),
-    ...[...externos.values()].map((c) => ({ nombre: c.nombre, externo: true, minutos: Math.round(c.segundos / 60), ingresos: c.ingresos, primerIngreso: c.primerIngreso })),
-  ];
+    ...[...otrosMapa.values()].map((o) => ({ ...o, nombre: o.nombre || "Usuario" })),
+    ...[...externos.values()].map((c) => ({ nombre: c.nombre, externo: true, asistio: true, horaAsistencia: c.primerIngreso, minutos: Math.round(c.segundos / 60), ingresos: c.ingresos, primerIngreso: c.primerIngreso, ultimaSalida: c.ultimaSalida })),
+  ].sort((a, b) => (a.horaAsistencia?.getTime() ?? a.primerIngreso?.getTime() ?? 0) - (b.horaAsistencia?.getTime() ?? b.primerIngreso?.getTime() ?? 0));
 
   const conCuenta = filas.filter((f) => f.conCuenta).length;
   const asistieron = filas.filter((f) => f.asistio).length;
   const conectados = filas.filter((f) => f.conectado).length;
-  const minutosTotales = filas.reduce((s, f) => s + f.minutos, 0);
+  const minutosTotales = filas.reduce((s, f) => s + f.minutos, 0) + otros.reduce((s, o) => s + o.minutos, 0);
   const quorum = conCuenta > 0 ? asistieron >= Math.floor(conCuenta / 2) + 1 : false;
+  // LA cifra oficial de asistencia de la sesión: integrantes + otros asistentes.
+  const otrosAsistieron = otros.filter((o) => o.asistio).length;
+  const asistenciaTotal = asistieron + otrosAsistieron;
 
   return {
     actividad,
@@ -87,6 +104,9 @@ export async function getReunionComite(planId: string, activityId: string) {
       integrantes: miembros.length,
       conCuenta,
       asistieron,
+      otrosAsistieron,
+      asistenciaTotal,
+      conectadosTotal: conexionPorUsuario.size + externos.size,
       conectados,
       porcentaje: conCuenta > 0 ? Math.round((asistieron / conCuenta) * 100) : null,
       minutosTotales,

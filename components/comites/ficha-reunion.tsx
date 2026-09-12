@@ -34,8 +34,20 @@ function Tabla({ columnas, children }: { columnas: string[]; children: React.Rea
  * por `acciones`) y el integrante (solo lectura, con el enlace visible y el
  * botón para entrar).
  */
-export async function FichaReunion({ reunion, acciones }: { reunion: Reunion; acciones?: React.ReactNode }) {
+export async function FichaReunion({
+  reunion,
+  acciones,
+  formularioActa,
+}: {
+  reunion: Reunion;
+  acciones?: React.ReactNode;
+  /** Formulario para subir el acta (solo administrador). */
+  formularioActa?: React.ReactNode;
+}) {
   const { actividad, sesion, filas, otros, resumen } = reunion;
+  // El acta es el documento de la sesión cuyo nombre empieza por "ACTA" (la más reciente).
+  const acta = actividad.documents.find((d) => /^\d+-acta/i.test(d.fileName)) ?? null;
+  const actaEsPdf = acta ? acta.fileType === "application/pdf" || /\.pdf$/i.test(acta.fileName) : false;
   const urlSala = `${APP_URL}/c/${actividad.id}/meet`;
   const urlInvitados = `${APP_URL}/invitado/${actividad.id}`;
   const qr = await QRCode.toDataURL(urlSala, { width: 320, margin: 1 });
@@ -43,10 +55,11 @@ export async function FichaReunion({ reunion, acciones }: { reunion: Reunion; ac
   const modalidad = sesion?.modality ?? actividad.modality;
 
   const kpis = [
-    { etiqueta: "Integrantes que asistieron", valor: `${resumen.asistieron}/${resumen.conCuenta}`, detalle: resumen.porcentaje === null ? "sin cuenta vinculada" : `${resumen.porcentaje}% · ${resumen.quorum ? "hay quórum" : "sin quórum"}`, Icono: Users2, color: resumen.quorum ? "text-success" : "text-warning-foreground" },
-    { etiqueta: "Conectados a la sala", valor: String(resumen.conectados), detalle: `${resumen.minutosTotales} min acumulados`, Icono: PhoneCall, color: "text-primary" },
+    { etiqueta: "Asistencia total de la sesión", valor: String(resumen.asistenciaTotal), detalle: `${resumen.asistieron} integrantes + ${resumen.otrosAsistieron} otros asistentes`, Icono: Users2, color: "text-white" },
+    { etiqueta: "Integrantes del comité", valor: `${resumen.asistieron}/${resumen.conCuenta}`, detalle: resumen.porcentaje === null ? "sin cuenta vinculada" : `${resumen.porcentaje}% · ${resumen.quorum ? "hay quórum" : "sin quórum"}`, Icono: Check, color: resumen.quorum ? "text-success" : "text-warning-foreground" },
+    { etiqueta: "Permanencia en la sala", valor: `${resumen.minutosTotales} min`, detalle: `${resumen.conectadosTotal} personas con registro de salida`, Icono: PhoneCall, color: "text-primary" },
     { etiqueta: "Grabaciones", valor: String(resumen.grabaciones), detalle: `${resumen.documentos} documentos en total`, Icono: FileVideo, color: "text-primary" },
-    { etiqueta: "Estado", valor: TRAINING_ACTIVITY_STATUS_LABELS[actividad.status], detalle: cerrada ? "informe disponible" : "se cierra al terminar", Icono: Check, color: cerrada ? "text-success" : "text-muted-foreground" },
+    { etiqueta: "Grabaciones y estado", valor: `${resumen.grabaciones} · ${TRAINING_ACTIVITY_STATUS_LABELS[actividad.status]}`, detalle: cerrada ? "informe disponible" : "se cierra al terminar", Icono: FileVideo, color: cerrada ? "text-success" : "text-muted-foreground" },
   ];
 
   return (
@@ -147,26 +160,62 @@ export async function FichaReunion({ reunion, acciones }: { reunion: Reunion; ac
                 )}
               </td>
               <td className="whitespace-nowrap px-4 py-3 tabular-nums">{f.horaAsistencia ? etiquetaHora(f.horaAsistencia) : "—"}</td>
-              <td className="whitespace-nowrap px-4 py-3 tabular-nums">{f.conectado && f.primerIngreso && f.ultimaSalida ? `${etiquetaHora(f.primerIngreso)} → ${etiquetaHora(f.ultimaSalida)} · ${f.ingresos} ${f.ingresos === 1 ? "ingreso" : "ingresos"}` : "—"}</td>
-              <td className="whitespace-nowrap px-4 py-3 font-semibold tabular-nums">{f.conectado ? `${f.minutos} min` : "—"}</td>
+              <td className="whitespace-nowrap px-4 py-3 tabular-nums">{f.conectado && f.primerIngreso && f.ultimaSalida ? `${etiquetaHora(f.primerIngreso)} → ${etiquetaHora(f.ultimaSalida)} · ${f.ingresos} ${f.ingresos === 1 ? "ingreso" : "ingresos"}` : f.asistio ? <span className="text-[11.5px] text-muted-foreground">entró · sin registro de salida</span> : "—"}</td>
+              <td className="whitespace-nowrap px-4 py-3 font-semibold tabular-nums">{f.conectado ? `${f.minutos} min` : f.asistio ? <span className="font-normal text-muted-foreground">n/d</span> : "—"}</td>
             </tr>
           ))}
         </Tabla>
         {otros.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-[13px] font-bold text-foreground">Otras personas conectadas ({otros.length})</h3>
-            <Tabla columnas={["#", "Persona", "Tipo", "Primer ingreso", "Ingresos", "Tiempo"]}>
+            <h3 className="text-[13px] font-bold text-foreground">Otros asistentes, no integrantes del comité ({otros.length})</h3>
+            <Tabla columnas={["#", "Persona", "Tipo", "Asistencia", "Hora", "Conexión a la sala", "Tiempo"]}>
               {otros.map((o, i) => (
                 <tr key={i}>
                   <td className="px-4 py-2.5 tabular-nums text-muted-foreground">{i + 1}</td>
                   <td className="px-4 py-2.5 font-semibold text-foreground">{o.nombre}</td>
                   <td className="px-4 py-2.5"><span className={cn("rounded-md px-2 py-0.5 text-[10.5px] font-bold", o.externo ? "bg-warning/15 text-warning-foreground" : "bg-primary/12 text-primary")}>{o.externo ? "Invitado externo" : "Funcionario"}</span></td>
-                  <td className="whitespace-nowrap px-4 py-2.5 tabular-nums">{etiquetaHora(o.primerIngreso)}</td>
-                  <td className="px-4 py-2.5 tabular-nums">{o.ingresos}</td>
-                  <td className="px-4 py-2.5 font-semibold tabular-nums">{o.minutos} min</td>
+                  <td className="px-4 py-2.5">{o.asistio ? <span className="inline-flex items-center gap-1 rounded-md bg-success/15 px-2 py-0.5 text-[11px] font-bold text-success"><Check className="h-3 w-3" strokeWidth={3} />Asistió</span> : <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">Solo conexión</span>}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 tabular-nums">{o.horaAsistencia ? etiquetaHora(o.horaAsistencia) : o.primerIngreso ? etiquetaHora(o.primerIngreso) : "—"}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 tabular-nums">{o.primerIngreso && o.ultimaSalida ? `${etiquetaHora(o.primerIngreso)} → ${etiquetaHora(o.ultimaSalida)} · ${o.ingresos} ${o.ingresos === 1 ? "ingreso" : "ingresos"}` : <span className="text-[11.5px] text-muted-foreground">entró · sin registro de salida</span>}</td>
+                  <td className="px-4 py-2.5 font-semibold tabular-nums">{o.ingresos > 0 ? `${o.minutos} min` : <span className="font-normal text-muted-foreground">n/d</span>}</td>
                 </tr>
               ))}
             </Tabla>
+          </div>
+        )}
+      </section>
+
+      {/* Acta de la sesión */}
+      <section className="space-y-3">
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight text-foreground">
+          <FileText className="h-4 w-4 text-primary" aria-hidden="true" />
+          Acta de la sesión
+        </h2>
+        {acta ? (
+          <div className="comite-tarjeta overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 px-5 py-3">
+              <p className="min-w-0 truncate text-[13.5px] font-bold text-foreground">{acta.fileName.replace(/^\d+-/, "").replace(/^ACTA[- ]*/i, "Acta · ").replace(/-/g, " ")}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-[11.5px] text-muted-foreground">{etiquetaFecha(acta.createdAt)} · {acta.uploader.fullName}</span>
+                <a href={acta.fileUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-teal-400 px-3.5 py-2 text-[12.5px] font-bold text-white shadow-md shadow-primary/25">
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                  Abrir
+                </a>
+              </div>
+            </div>
+            {actaEsPdf ? (
+              <iframe src={`${acta.fileUrl}#view=FitH`} title="Acta de la sesión" className="h-[720px] w-full bg-white" />
+            ) : (
+              <p className="px-5 py-6 text-[13px] text-muted-foreground">El acta no es un PDF: ábrela con el botón de arriba. Para verla embebida, súbela en PDF.</p>
+            )}
+          </div>
+        ) : (
+          <p className="comite-tarjeta p-5 text-sm text-muted-foreground">Acta pendiente. {formularioActa ? "Súbela aquí (PDF recomendado) y quedará embebida en esta sesión." : "Se publicará aquí cuando el comité la apruebe."}</p>
+        )}
+        {formularioActa && (
+          <div className="comite-tarjeta p-5">
+            <p className="mb-3 text-[12.5px] font-bold text-foreground">{acta ? "Reemplazar el acta (se conserva la anterior como documento)" : "Subir acta de la sesión"}</p>
+            {formularioActa}
           </div>
         )}
       </section>
@@ -180,9 +229,9 @@ export async function FichaReunion({ reunion, acciones }: { reunion: Reunion; ac
         <DocumentosComite documentos={actividad.documents} vacio="Sin grabaciones todavía. Desde la sala, el botón «Grabar jornada» guarda el video aquí automáticamente al terminar." />
       </section>
 
-      <p className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+      <p className="flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
         <Timer className="h-3.5 w-3.5" aria-hidden="true" />
-        La asistencia queda registrada automáticamente al entrar a la sala; las conexiones se escriben cuando cada persona sale.
+        <b>Asistencia</b> = quien entró a la sala (queda registrada al instante). <b>Permanencia</b> = tiempo entre entrar y salir; se escribe al salir, así que quien cerró la aplicación de golpe figura como «sin registro de salida» pero SÍ cuenta como asistente.
         <FileText className="ml-2 h-3.5 w-3.5" aria-hidden="true" />
         El informe PDF se habilita al cerrar la sesión.
       </p>
