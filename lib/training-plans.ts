@@ -1626,10 +1626,14 @@ export async function getActivityAttendanceCounts(activity: {
   targetAudience: CourseAudience;
   plan: PlanDeAudiencia;
 }) {
+  // En un comité el "X de Y" se lee sobre los integrantes de la resolución:
+  // un invitado que entró a la sala no cuenta como integrante que asistió
+  // (la ficha de la reunión sí muestra la asistencia total con invitados).
+  const soloAudiencia = activity.plan.kind === "COMITE" ? { user: audienciaDeActividad(activity) } : {};
   const [totalAudiencia, asistieron, registrados] = await Promise.all([
     contarAudiencia(activity),
-    prisma.trainingAttendance.count({ where: { activityId: activity.id, attended: true } }),
-    prisma.trainingAttendance.count({ where: { activityId: activity.id } }),
+    prisma.trainingAttendance.count({ where: { activityId: activity.id, attended: true, ...soloAudiencia } }),
+    prisma.trainingAttendance.count({ where: { activityId: activity.id, ...soloAudiencia } }),
   ]);
   return {
     totalAudiencia,
