@@ -68,6 +68,13 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
               Respuestas
             </Link>
             <a
+              href={`/api/encuestas/${encuesta.slug}/formato-docx`}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border/60 bg-card/70 px-4 py-2.5 text-[13px] font-bold text-foreground transition-colors hover:border-primary/40"
+            >
+              <FileText className="h-4 w-4" />
+              Formato (.docx)
+            </a>
+            <a
               href={`/api/encuestas/${encuesta.slug}/csv`}
               className="inline-flex items-center gap-1.5 rounded-xl border border-border/60 bg-card/70 px-4 py-2.5 text-[13px] font-bold text-foreground transition-colors hover:border-primary/40"
             >

@@ -142,6 +142,14 @@ export function Constructor({
               {encuesta.status !== "DRAFT" && (
                 <BotonEnlacePublico slug={encuesta.slug} titulo={encuesta.title} acento={acento} variante="boton" />
               )}
+              <a
+                href={`/api/encuestas/${encuesta.slug}/formato-docx`}
+                title="Descargar el formato oficial en Word, con caritas y casillas"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border/60 bg-card/70 px-3.5 text-[12.5px] font-bold text-foreground transition-colors hover:border-primary/40"
+              >
+                <FileText className="h-4 w-4" aria-hidden="true" />
+                Formato (.docx)
+              </a>
 
               <button
                 type="button"
