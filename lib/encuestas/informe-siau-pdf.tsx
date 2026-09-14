@@ -80,7 +80,7 @@ function Barra({ etiqueta, valor, cifra }: { etiqueta: string; valor: number | n
   );
 }
 
-function Distribucion({ p, caritas }: { p: MetricaPregunta; caritas: Caritas }) {
+function Distribucion({ p }: { p: MetricaPregunta }) {
   return (
     <View>
       <View style={[s.pista, { height: 9, marginTop: 3 }]}>
@@ -88,11 +88,12 @@ function Distribucion({ p, caritas }: { p: MetricaPregunta; caritas: Caritas }) 
           <View key={d.opcionId} style={{ width: `${d.pct}%`, height: 9, backgroundColor: TONO[d.tono ?? "na"] }} />
         ))}
       </View>
-      {/* Una carita por opción: lo que significa cada cifra, de un vistazo. */}
+      {/* Cifras sin carita (se confundían con los datos): solo un cuadrito
+          del color de la escala; la carita vive aparte, en la leyenda. */}
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
         {p.distribucion.map((d) => (
           <View key={d.opcionId} style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-            <Image src={caritas[d.tono ?? "na"]} style={{ width: 13, height: 13 }} />
+            <View style={{ width: 6, height: 6, borderRadius: 1, backgroundColor: TONO[d.tono ?? "na"] }} />
             <Text style={{ fontSize: 7.5, color: C.texto }}>{d.texto}: <Text style={{ fontWeight: "bold", color: TONO[d.tono ?? "na"] }}>{d.n} ({d.pct}%)</Text></Text>
           </View>
         ))}
@@ -101,17 +102,22 @@ function Distribucion({ p, caritas }: { p: MetricaPregunta; caritas: Caritas }) 
   );
 }
 
-/** Leyenda de la escala con caritas, al inicio de "Por pregunta". */
+/** Escala de calificación con caritas: bloque aparte, separado de las cifras. */
 function LeyendaCaritas({ caritas }: { caritas: Caritas }) {
   const items: [TonoOpcion, string, string][] = [["exc", "Excelente / Muy buena / Sí", "4"], ["bue", "Bueno / Buena", "3"], ["reg", "Regular", "2"], ["mal", "Malo / Mala", "1"], ["muymal", "Muy malo / No", "0"], ["na", "No aplica", "no se mide"]];
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, backgroundColor: C.fondo, borderRadius: 6, padding: 7, marginBottom: 6 }}>
-      {items.map(([t, et, v]) => (
-        <View key={t} style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-          <Image src={caritas[t]} style={{ width: 14, height: 14 }} />
-          <Text style={{ fontSize: 7.5 }}>{et} <Text style={{ color: C.suave }}>· valor {v}</Text></Text>
-        </View>
-      ))}
+    <View style={{ backgroundColor: C.fondo, borderRadius: 6, padding: 8, marginBottom: 10 }}>
+      <Text style={{ fontSize: 8, fontWeight: "bold", marginBottom: 5 }}>Escala de calificación (cómo leer los colores de las cifras)</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {items.map(([t, et, v]) => (
+          <View key={t} style={{ alignItems: "center", width: 74 }}>
+            <Image src={caritas[t]} style={{ width: 22, height: 22 }} />
+            <View style={{ width: 22, height: 3, borderRadius: 1, backgroundColor: TONO[t], marginTop: 2, marginBottom: 2 }} />
+            <Text style={{ fontSize: 7, textAlign: "center" }}>{et}</Text>
+            <Text style={{ fontSize: 6.5, color: C.suave }}>valor {v}</Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -242,7 +248,7 @@ function Doc({ inf, generadoPor, logo, temas, caritas }: { inf: InformeSiau; gen
               <Text style={{ fontSize: 7, color: C.suave, textTransform: "uppercase", marginBottom: 2 }}>Pregunta {p.numero} · {p.n} respuestas · {p.validas} válidas · {semTexto(p.adherencia)}{inf.variacionPorPregunta[p.clave] != null ? ` · ${inf.variacionPorPregunta[p.clave]! > 0 ? "+" : ""}${inf.variacionPorPregunta[p.clave]} pp vs anterior` : ""}</Text>
               <Text style={{ fontSize: 9.5, fontWeight: "bold", color: C.navy, marginBottom: 3 }}>{limpio(p.enunciado)}</Text>
               <Text style={{ fontSize: 8 }}>Adherencia <Text style={{ fontWeight: "bold", color: sem(p.adherencia) }}>{pct(p.adherencia)}</Text> · Puntaje {pct(p.puntaje)} · Promedio {p.promedio ?? "—"} / {p.maximo}</Text>
-              <Distribucion p={p} caritas={caritas} />
+              <Distribucion p={p} />
             </View>
           ))}
           <Text style={s.h3}>P2 · Trato del personal por perfil</Text>
