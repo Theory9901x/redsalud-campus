@@ -9,6 +9,10 @@ import { LineaTendencia, BarrasApiladasCaritas, BarrasRanking, COLOR_TONO } from
 import { etiquetaFecha } from "@/components/training-plans/labels";
 import { leerConfig } from "@/lib/encuestas/tipos";
 import { cn } from "@/lib/utils";
+import { ExportablesSiau } from "@/components/encuestas/exportables-siau";
+import { ultimasExportacionesSiau } from "@/lib/encuestas/registro-exportacion";
+import { TEMAS_SUGERENCIAS } from "@/lib/encuestas/temas";
+import { etiquetaHora } from "@/components/training-plans/labels";
 
 const CLASE_SEMAFORO = {
   success: "bg-success/15 text-success",
@@ -18,15 +22,7 @@ const CLASE_SEMAFORO = {
 } as const;
 const TEXTO_SEMAFORO = { success: "Cumple", warning: "Aceptable", destructive: "Crítico", muted: "Sin datos" } as const;
 
-/** Temas de las sugerencias, por palabras clave (P9). */
-const TEMAS: { tema: string; claves: RegExp }[] = [
-  { tema: "Trato y amabilidad", claves: /amab|trato|respet|grosero|mal genio|atenci[oó]n/i },
-  { tema: "Oportunidad y esperas", claves: /esper|demora|cita|turno|ficha|tiempo|tard|fila|agenda/i },
-  { tema: "Instalaciones y aseo", claves: /limpi|aseo|baño|instalac|silla|comod|infraestruct/i },
-  { tema: "Información y comunicación", claves: /inform|explic|comunic|duda|claridad/i },
-  { tema: "Medicamentos y farmacia", claves: /medicament|farmacia|droga|f[oó]rmula/i },
-  { tema: "Personal insuficiente", claves: /m[aá]s m[eé]dic|m[aá]s personal|falta.*(m[eé]dic|enfermer)|un solo/i },
-];
+const TEMAS = TEMAS_SUGERENCIAS;
 
 function Variacion({ v }: { v: number | null }) {
   if (v === null) return <span className="text-[11px] text-muted-foreground">sin periodo previo</span>;
@@ -55,7 +51,7 @@ export default async function CentroDatosSiauPage({ searchParams }: { searchPara
   const periodo = leerPeriodo(params) ?? periodoActual((sp.tipo as "mensual" | "trimestral" | "anual") || "mensual");
   const filtros = { sede: sp.sede || undefined, servicio: sp.servicio || undefined, sexo: sp.sexo || undefined, eps: sp.eps || undefined };
 
-  const [informe, estructura] = await Promise.all([getInformeSiau(periodo, filtros), getEstructuraSiau()]);
+  const [informe, estructura, exportaciones] = await Promise.all([getInformeSiau(periodo, filtros), getEstructuraSiau(), ultimasExportacionesSiau(8)]);
   if (!informe || !estructura) notFound();
   const { metricas: m, metricasPrevias: prev, rango, rangoPrevio } = informe;
   const encuesta = estructura.encuesta;
@@ -142,6 +138,21 @@ export default async function CentroDatosSiauPage({ searchParams }: { searchPara
         valores={{ tipo: periodo.tipo, anio: periodo.anio, mes: periodo.mes ?? 1, trimestre: periodo.trimestre ?? 1, sede: filtros.sede ?? "", servicio: filtros.servicio ?? "", sexo: filtros.sexo ?? "", eps: filtros.eps ?? "" }}
         opciones={{ sedes, servicios, eps: epss, anios: [anioActual - 2, anioActual - 1, anioActual, anioActual + 1] }}
       />
+
+      <ExportablesSiau inicial={{ tipo: periodo.tipo, anio: periodo.anio, mes: periodo.mes ?? new Date().getMonth() + 1, trimestre: periodo.trimestre ?? Math.floor(new Date().getMonth() / 3) + 1 }} filtros={filtros} />
+      {exportaciones.length > 0 && (
+        <details className="comite-tarjeta p-5">
+          <summary className="cursor-pointer text-[13px] font-bold text-foreground">Últimas exportaciones registradas ({exportaciones.length})</summary>
+          <ul className="mt-3 divide-y divide-border/40 text-[12.5px]">
+            {exportaciones.map((e) => (
+              <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span className="text-foreground">{e.description}</span>
+                <span className="text-muted-foreground">{e.user?.fullName ?? "—"} · {etiquetaFecha(e.createdAt)} {etiquetaHora(e.createdAt)}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       {m.total === 0 ? (
         <p className="comite-tarjeta p-8 text-center text-sm text-muted-foreground">No hay encuestas en este periodo con los filtros elegidos.</p>
