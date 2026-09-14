@@ -35,7 +35,7 @@ const s = StyleSheet.create({
   et: { width: 150, fontSize: 8, paddingRight: 6 },
   pista: { flex: 1, height: 8, backgroundColor: C.fondo, borderRadius: 4, flexDirection: "row", overflow: "hidden" },
   valor: { height: 8 },
-  cifra: { width: 74, fontSize: 7.5, color: C.suave, textAlign: "right" },
+  cifra: { width: 150, fontSize: 7.5, color: C.suave, textAlign: "right" },
   caja: { borderLeftWidth: 3, borderLeftColor: C.primario, backgroundColor: C.fondo, borderRadius: 6, padding: 9, marginBottom: 7 },
   nota: { fontSize: 7.5, color: C.suave, marginTop: 3 },
   tabla: { borderWidth: 0.5, borderColor: C.linea, borderRadius: 4, marginTop: 4 },
@@ -236,8 +236,13 @@ function Doc({ inf, generadoPor, logo, temas, caritas }: { inf: InformeSiau; gen
 
         <View style={s.seccion} break>
           <Text style={s.h2}>3. Por sede</Text>
-          {inf.porSede.map((x) => <Barra key={x.valor} etiqueta={x.valor} valor={x.adherencia} cifra={`${pct(x.adherencia)} · n${x.total}${x.adherencia !== null && m.adherenciaGeneral !== null ? ` (${x.adherencia - m.adherenciaGeneral >= 0 ? "+" : ""}${Math.round((x.adherencia - m.adherenciaGeneral) * 10) / 10})` : ""}`} />)}
-          <Text style={s.nota}>Entre paréntesis: diferencia en puntos frente al promedio institucional ({pct(m.adherenciaGeneral)}).</Text>
+          <View style={{ flexDirection: "row", marginBottom: 3 }}>
+            <Text style={[s.et, { fontSize: 6.5, color: C.suave, textTransform: "uppercase" }]}>Sede</Text>
+            <View style={{ flex: 1 }} />
+            <Text style={[s.cifra, { fontSize: 6.5, color: C.suave, textTransform: "uppercase" }]}>Adherencia · encuestas · frente al promedio</Text>
+          </View>
+          {inf.porSede.map((x) => <Barra key={x.valor} etiqueta={x.valor} valor={x.adherencia} cifra={`${pct(x.adherencia)} · ${x.total} ${x.total === 1 ? "encuesta" : "encuestas"}${x.adherencia !== null && m.adherenciaGeneral !== null ? ` · ${x.adherencia - m.adherenciaGeneral >= 0 ? "+" : ""}${Math.round((x.adherencia - m.adherenciaGeneral) * 10) / 10} pp` : ""}`} />)}
+          <Text style={s.nota}>Cada sede muestra su adherencia, el número de encuestas que la respaldan y la diferencia en puntos porcentuales (pp) frente al promedio institucional de {pct(m.adherenciaGeneral)}. Una sede con pocas encuestas puede variar mucho de un periodo a otro.</Text>
         </View>
 
         <View style={s.seccion} break>
@@ -252,7 +257,7 @@ function Doc({ inf, generadoPor, logo, temas, caritas }: { inf: InformeSiau; gen
             </View>
           ))}
           <Text style={s.h3}>P2 · Trato del personal por perfil</Text>
-          {m.porPerfil.map((p) => <Barra key={p.clave} etiqueta={p.perfil ?? ""} valor={p.adherencia} cifra={`${pct(p.adherencia)} · n${p.validas}`} />)}
+          {m.porPerfil.map((p) => <Barra key={p.clave} etiqueta={p.perfil ?? ""} valor={p.adherencia} cifra={`${pct(p.adherencia)} · ${p.validas} ${p.validas === 1 ? "respuesta" : "respuestas"}`} />)}
         </View>
 
         <View style={s.seccion} break>
