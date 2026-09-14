@@ -39,6 +39,12 @@ export function ExportablesSiau({ inicial, filtros }: { inicial: { tipo: string;
         <div>
           <h2 className="flex items-center gap-2 font-display text-[15px] font-bold text-foreground"><Download className="h-4 w-4 text-primary" aria-hidden="true" />Exportables por periodo</h2>
           <p className="mt-1 text-[12px] text-muted-foreground">Cada periodo se exporta por separado. Nombre del archivo: SIAU_&lt;tipo&gt;_&lt;periodo&gt;_&lt;fecha&gt;. Cada descarga queda registrada.</p>
+          {Object.values(filtros).some(Boolean) && (
+            <p className="mt-1.5 inline-flex flex-wrap items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-[11.5px] font-semibold text-primary">
+              Filtros activos que se aplican a los exportables:
+              {Object.entries(filtros).filter(([, v]) => v).map(([k, v]) => <span key={k} className="rounded-md bg-card px-1.5 py-0.5">{k}: {v}</span>)}
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-xl bg-muted/60 p-1">

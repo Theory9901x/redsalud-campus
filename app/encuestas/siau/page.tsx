@@ -61,7 +61,12 @@ export default async function CentroDatosSiauPage({ searchParams }: { searchPara
   const epss = leerConfig(opcionesDe("eps")?.config).opciones?.map((o) => o.texto) ?? [];
   const anioActual = new Date().getFullYear();
   const consulta = params.toString();
-  const urlExport = `tipo=${periodo.tipo}&anio=${periodo.anio}${periodo.mes ? `&mes=${periodo.mes}` : ""}${periodo.trimestre ? `&trimestre=${periodo.trimestre}` : ""}${filtros.sede ? `&sede=${encodeURIComponent(filtros.sede)}` : ""}`;
+  // Todos los filtros activos viajan a cada exportable: lo que se ve es lo que se descarga.
+  const qExport = new URLSearchParams({ tipo: periodo.tipo, anio: String(periodo.anio) });
+  if (periodo.mes) qExport.set("mes", String(periodo.mes));
+  if (periodo.trimestre) qExport.set("trimestre", String(periodo.trimestre));
+  for (const [k, v] of Object.entries(filtros)) if (v) qExport.set(k, v);
+  const urlExport = qExport.toString();
 
   const tonosEscala = [
     { clave: "exc", etiqueta: "Excelente / Muy buena / Sí", tono: "exc" as const },
@@ -111,6 +116,10 @@ export default async function CentroDatosSiauPage({ searchParams }: { searchPara
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <a href={`/api/encuestas/siau/informe?${urlExport}`} className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-[12.5px] font-bold text-[#0f2438] shadow-lg">
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              PDF de esta vista
+            </a>
             <a href={`/api/encuestas/siau/siho?${urlExport}`} className="comite-vidrio inline-flex items-center gap-1.5 px-3.5 py-2 text-[12.5px] font-bold text-white">
               <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
               Excel SIHO del periodo

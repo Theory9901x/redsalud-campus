@@ -40,6 +40,15 @@ const s = StyleSheet.create({
   tr: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: C.linea },
   th: { flex: 1, padding: 3.5, fontSize: 7, fontWeight: "bold", color: C.suave, backgroundColor: C.fondo, textTransform: "uppercase" },
   td: { flex: 1, padding: 3.5, fontSize: 7.5 },
+  resumen: { backgroundColor: "#EAF6FB", borderRadius: 6, padding: 10, borderLeftWidth: 3, borderLeftColor: C.primario },
+  vineta: { fontSize: 8.5, marginBottom: 2.5, paddingLeft: 4 },
+  leyenda: { flexDirection: "row", gap: 10, marginTop: 5 },
+  leyendaItem: { flexDirection: "row", alignItems: "center", gap: 3, fontSize: 7, color: C.suave },
+  punto: { width: 7, height: 7, borderRadius: 4 },
+  ficha: { backgroundColor: C.fondo, borderRadius: 6, padding: 10, marginTop: 8 },
+  fichaFila: { flexDirection: "row", marginBottom: 2.5 },
+  fichaEt: { width: 120, fontSize: 7.5, color: C.suave, textTransform: "uppercase" },
+  fichaVal: { flex: 1, fontSize: 8 },
   pie: { position: "absolute", bottom: 22, left: 34, right: 34, flexDirection: "row", justifyContent: "space-between", fontSize: 7, color: C.suave, borderTopWidth: 0.5, borderTopColor: C.linea, paddingTop: 6 },
 });
 
@@ -118,6 +127,18 @@ function Doc({ inf, generadoPor, logo, temas }: { inf: InformeSiau; generadoPor:
   const hoy = new Date().toLocaleString("es-CO", { dateStyle: "long", timeStyle: "short", timeZone: "America/Bogota" });
   const filtros = Object.entries(inf.filtros).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join(" · ");
   const variacion = inf.variacionGeneral;
+  const sedesConDatos = inf.porSede.filter((x) => x.valor !== "Sin dato" && x.adherencia !== null);
+  const mejorSede = sedesConDatos[0];
+  const peorSede = sedesConDatos[sedesConDatos.length - 1];
+  const resumen: string[] = [
+    `${m.total} encuestas completas en ${inf.rango.etiqueta}${prev ? ` (${prev.total} en el periodo anterior)` : ""}${filtros ? `, con filtros ${filtros}` : ""}.`,
+    m.adherenciaGeneral === null
+      ? "Sin respuestas de calificación suficientes para calcular la adherencia."
+      : `Adherencia general de ${m.adherenciaGeneral}% (${semTexto(m.adherenciaGeneral).toLowerCase()})${variacion !== null ? `, ${variacion > 0 ? "sube" : variacion < 0 ? "baja" : "se mantiene"} ${Math.abs(variacion)} puntos frente a ${inf.rangoPrevio.etiqueta}` : ""}; puntaje promedio ${pct(m.puntajeGeneral)}.`,
+    m.mejores[0] ? `Mejor evaluado: P${m.mejores[0].numero} (${pct(m.mejores[0].adherencia)}) · Mayor oportunidad de mejora: P${m.peores[0]?.numero} (${pct(m.peores[0]?.adherencia ?? null)}).` : "",
+    mejorSede && peorSede && mejorSede !== peorSede ? `Sede con mejor resultado: ${mejorSede.valor} (${pct(mejorSede.adherencia)}, n${mejorSede.total}) · sede a priorizar: ${peorSede.valor} (${pct(peorSede.adherencia)}, n${peorSede.total}).` : "",
+    `${sedesConDatos.filter((x) => x.semaforo === "success").length} de ${sedesConDatos.length} sedes en verde; ${sedesConDatos.filter((x) => x.semaforo === "destructive").length} en rojo. ${m.sugerencias.length} comentarios recibidos${temas[0] ? `, tema principal: ${temas[0].tema} (${temas[0].n})` : ""}.`,
+  ].filter(Boolean);
   return (
     <Document title={`Informe SIAU · ${inf.rango.etiqueta}`} author="RedSalud Te Forma">
       <Page size="A4" style={s.page}>
@@ -133,8 +154,19 @@ function Doc({ inf, generadoPor, logo, temas }: { inf: InformeSiau; generadoPor:
           </View>
         </View>
 
+        {/* Resumen ejecutivo: las conclusiones en cinco líneas. */}
+        <View style={[s.seccion, s.resumen]}>
+          <Text style={[s.h2, { marginBottom: 4 }]}>Resumen ejecutivo</Text>
+          {resumen.map((linea, i) => <Text key={i} style={s.vineta}>• {linea}</Text>)}
+          <View style={s.leyenda}>
+            {[["Cumple ≥ 85 %", C.exito], ["Aceptable 70–84,9 %", C.alerta], ["Crítico < 70 %", C.peligro]].map(([t, c]) => (
+              <View key={t as string} style={s.leyendaItem}><View style={[s.punto, { backgroundColor: c as string }]} /><Text>{t}</Text></View>
+            ))}
+          </View>
+        </View>
+
         <View style={s.seccion}>
-          <Text style={s.h2}>Vista general</Text>
+          <Text style={s.h2}>1. Vista general</Text>
           <View style={s.kpis}>
             <View style={s.kpi}><Text style={s.kpiValor}>{m.total}</Text><Text style={s.kpiEt}>Encuestas del periodo</Text><Text style={s.kpiDet}>{prev ? `${prev.total} en el periodo anterior` : ""}</Text></View>
             <View style={[s.kpi, { borderLeftWidth: 3, borderLeftColor: sem(m.adherenciaGeneral) }]}><Text style={[s.kpiValor, { color: sem(m.adherenciaGeneral) }]}>{pct(m.adherenciaGeneral)}</Text><Text style={s.kpiEt}>Adherencia general</Text><Text style={s.kpiDet}>{semTexto(m.adherenciaGeneral)}{variacion !== null ? ` · ${variacion > 0 ? "+" : ""}${variacion} pp vs anterior` : ""}</Text></View>
@@ -145,7 +177,7 @@ function Doc({ inf, generadoPor, logo, temas }: { inf: InformeSiau; generadoPor:
         </View>
 
         <View style={s.seccion}>
-          <Text style={s.h2}>Tendencia mensual de adherencia</Text>
+          <Text style={s.h2}>2. Tendencia mensual de adherencia</Text>
           <Tendencia datos={inf.tendencia} />
         </View>
 
@@ -160,14 +192,14 @@ function Doc({ inf, generadoPor, logo, temas }: { inf: InformeSiau; generadoPor:
           </View>
         </View>
 
-        <View style={s.seccion}>
-          <Text style={s.h2}>Por sede</Text>
+        <View style={s.seccion} break>
+          <Text style={s.h2}>3. Por sede</Text>
           {inf.porSede.map((x) => <Barra key={x.valor} etiqueta={x.valor} valor={x.adherencia} cifra={`${pct(x.adherencia)} · n${x.total}${x.adherencia !== null && m.adherenciaGeneral !== null ? ` (${x.adherencia - m.adherenciaGeneral >= 0 ? "+" : ""}${Math.round((x.adherencia - m.adherenciaGeneral) * 10) / 10})` : ""}`} />)}
           <Text style={s.nota}>Entre paréntesis: diferencia en puntos frente al promedio institucional ({pct(m.adherenciaGeneral)}).</Text>
         </View>
 
-        <View style={s.seccion}>
-          <Text style={s.h2}>Por pregunta</Text>
+        <View style={s.seccion} break>
+          <Text style={s.h2}>4. Por pregunta</Text>
           {m.porPregunta.map((p) => (
             <View key={p.clave} style={[s.caja, { borderLeftColor: sem(p.adherencia) }]} wrap={false}>
               <Text style={{ fontSize: 7, color: C.suave, textTransform: "uppercase", marginBottom: 2 }}>Pregunta {p.numero} · {p.n} respuestas · {p.validas} válidas · {semTexto(p.adherencia)}{inf.variacionPorPregunta[p.clave] != null ? ` · ${inf.variacionPorPregunta[p.clave]! > 0 ? "+" : ""}${inf.variacionPorPregunta[p.clave]} pp vs anterior` : ""}</Text>
@@ -180,21 +212,41 @@ function Doc({ inf, generadoPor, logo, temas }: { inf: InformeSiau; generadoPor:
           {m.porPerfil.map((p) => <Barra key={p.clave} etiqueta={p.perfil ?? ""} valor={p.adherencia} cifra={`${pct(p.adherencia)} · n${p.validas}`} />)}
         </View>
 
-        <View style={s.seccion}>
-          <Text style={s.h2}>Cruces por variable</Text>
+        <View style={s.seccion} break>
+          <Text style={s.h2}>5. Cruces por variable</Text>
+          <Text style={s.nota}>Adherencia general y por pregunta para cada valor de la variable; el color sigue el semáforo institucional.</Text>
           <Cruce titulo="Adherencia × servicio (P1)" filas={inf.porServicio} preguntas={m.porPregunta} />
           <Cruce titulo="Adherencia × sexo" filas={inf.porSexo} preguntas={m.porPregunta} />
           <Cruce titulo="Adherencia × EPS" filas={inf.porEps} preguntas={m.porPregunta} />
           <Cruce titulo="Adherencia × sede" filas={inf.porSede} preguntas={m.porPregunta} />
         </View>
 
-        <View style={s.seccion}>
-          <Text style={s.h2}>Sugerencias y comentarios (P9)</Text>
+        <View style={s.seccion} break>
+          <Text style={s.h2}>6. Sugerencias y comentarios (P9)</Text>
           <Text style={s.nota}>{m.sugerencias.length} comentarios. Temas: {temas.length ? temas.map((t) => `${t.tema} (${t.n})`).join(" · ") : "—"}</Text>
           {m.sugerencias.slice(0, 40).map((sug, i) => (
             <Text key={i} style={{ fontSize: 8, marginTop: 2.5, paddingLeft: 6 }}>· [{sug.sede ?? "—"}{sug.servicio ? ` · ${sug.servicio}` : ""}] {limpio(sug.texto.length > 220 ? `${sug.texto.slice(0, 220)}…` : sug.texto)}</Text>
           ))}
           {m.sugerencias.length > 40 && <Text style={s.nota}>… y {m.sugerencias.length - 40} más (ver datos crudos).</Text>}
+        </View>
+
+        <View style={s.seccion}>
+          <Text style={s.h2}>7. Ficha técnica</Text>
+          <View style={s.ficha}>
+            {[
+              ["Instrumento", "Encuesta de Atención al Usuario · PM-7-SIAU-PR-02 V.1 · Resolución 0256 de 2016"],
+              ["Periodo", `${inf.rango.etiqueta} (${inf.rango.desde.toLocaleDateString("es-CO", { timeZone: "America/Bogota" })} – ${new Date(inf.rango.hasta.getTime() - 1).toLocaleDateString("es-CO", { timeZone: "America/Bogota" })})`],
+              ["Comparativo", inf.rangoPrevio.etiqueta],
+              ["Filtros", filtros || "Ninguno (toda la institución)"],
+              ["Encuestas", `${m.total} completas en el periodo`],
+              ["Adherencia", "Respuestas favorables (Excelente, Bueno; Sí) sobre válidas × 100. No aplica no cuenta en el denominador."],
+              ["Puntaje", "Promedio del valor de la escala (Excelente 4 · Bueno 3 · Regular 2 · Malo 1 · Muy malo 0) sobre su máximo × 100."],
+              ["Adherencia general", "Promedio simple de la adherencia de P2 (consolidada), P3, P4, P5, P6, P7 y P8."],
+              ["Fuente", "RedSalud Te Forma · respuestas registradas en línea y en tótem"],
+            ].map(([k, v]) => (
+              <View key={k} style={s.fichaFila}><Text style={s.fichaEt}>{k}</Text><Text style={s.fichaVal}>{v}</Text></View>
+            ))}
+          </View>
         </View>
 
         <View style={s.pie} fixed>
