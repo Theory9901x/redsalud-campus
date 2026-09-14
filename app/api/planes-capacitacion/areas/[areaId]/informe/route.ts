@@ -33,7 +33,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ are
         orderBy: [{ quarters: "asc" }, { title: "asc" }],
         include: {
           course: { select: { title: true } },
-          plan: { select: { title: true, targetDepartment: true } },
+          plan: { select: { id: true, title: true, targetDepartment: true, kind: true } },
           sessions: { orderBy: { startsAt: "asc" }, take: 1, select: { startsAt: true, endsAt: true } },
           _count: { select: { sessions: true } },
         },
@@ -52,7 +52,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ are
         id: a.id,
         courseId: a.courseId,
         targetAudience: a.targetAudience,
-        plan: { targetDepartment: a.plan.targetDepartment },
+        plan: { id: a.plan.id, targetDepartment: a.plan.targetDepartment, kind: a.plan.kind },
       });
       return {
         title: a.title,

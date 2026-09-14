@@ -7,7 +7,7 @@ import {
   estadoPresaber,
   estadoPostsaber,
 } from "@/lib/presaber-postsaber";
-import type { Prisma, Role, CourseAudience, TrainingActivityStatus, AttendanceSource } from "@prisma/client";
+import type { Prisma, Role, CourseAudience, TrainingActivityStatus, AttendanceSource, PlanKind } from "@prisma/client";
 
 /**
  * ADMIN ve todos los planes. Un TUTOR ve los que responde y, además, aquellos
@@ -297,7 +297,7 @@ export async function getTrainingActivityDetail(activityId: string) {
   return prisma.trainingActivity.findUnique({
     where: { id: activityId },
     include: {
-      plan: { select: { id: true, title: true, tutorId: true, targetDepartment: true } },
+      plan: { select: { id: true, title: true, tutorId: true, targetDepartment: true, kind: true } },
       course: { select: { id: true, title: true, slug: true } },
       area: { select: { id: true, name: true } },
       responsibleUser: { select: { id: true, fullName: true, username: true } },
@@ -1243,7 +1243,7 @@ export async function ensureEnrollment(userId: string, activityId: string): Prom
       courseId: true,
       status: true,
       targetAudience: true,
-      plan: { select: { targetDepartment: true } },
+      plan: { select: { id: true, targetDepartment: true, kind: true } },
     },
   });
   if (!actividad) return { ok: false, motivo: "SIN_CONTENIDO", planId: "" };
@@ -1261,7 +1261,7 @@ export async function ensureEnrollment(userId: string, activityId: string): Prom
   const usuario = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
   if (usuario?.role === "STUDENT") {
     const encaja = await prisma.user.count({
-      where: { id: userId, ...targetAudienceUserWhere(actividad.plan.targetDepartment, actividad.targetAudience) },
+      where: { id: userId, ...audienciaDeActividad(actividad) },
     });
     if (encaja === 0) return { ok: false, motivo: "FUERA_DE_AUDIENCIA", planId };
   }
@@ -1310,7 +1310,7 @@ export type ActivityLiveMetrics = {
 export async function getActivityLiveMetrics(activityId: string): Promise<ActivityLiveMetrics | null> {
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
-    select: { id: true, targetAudience: true, plan: { select: { targetDepartment: true } } },
+    select: { id: true, targetAudience: true, plan: { select: { id: true, targetDepartment: true, kind: true } } },
   });
   if (!actividad) return null;
 
@@ -1521,6 +1521,28 @@ export function targetAudienceUserWhere(targetDepartment: string | null, targetA
   };
 }
 
+/**
+ * Plan al que pertenece una jornada, con lo mínimo para saber quién es su
+ * audiencia: en un COMITÉ son los integrantes de la resolución (no todo el
+ * personal del sistema); en un plan de capacitación, dependencia × tipo.
+ */
+export type PlanDeAudiencia = { id?: string; targetDepartment: string | null; kind?: PlanKind | null };
+
+export function audienciaDeActividad(activity: { targetAudience: CourseAudience; plan: PlanDeAudiencia }): Prisma.UserWhereInput {
+  if (activity.plan.kind === "COMITE" && activity.plan.id) {
+    return { committeeMemberships: { some: { planId: activity.plan.id } } };
+  }
+  return targetAudienceUserWhere(activity.plan.targetDepartment, activity.targetAudience);
+}
+
+/** Tamaño de la audiencia: integrantes de la resolución en un comité, personal objetivo en el resto. */
+export async function contarAudiencia(activity: { targetAudience: CourseAudience; plan: PlanDeAudiencia }) {
+  if (activity.plan.kind === "COMITE" && activity.plan.id) {
+    return prisma.committeeMember.count({ where: { planId: activity.plan.id } });
+  }
+  return prisma.user.count({ where: audienciaDeActividad(activity) });
+}
+
 export async function getTargetAudienceUserIds(targetDepartment: string | null, targetAudience: CourseAudience) {
   const users = await prisma.user.findMany({
     where: targetAudienceUserWhere(targetDepartment, targetAudience),
@@ -1558,7 +1580,7 @@ type ActivityForAdherence = {
   id: string;
   courseId: string | null;
   targetAudience: CourseAudience;
-  plan: { targetDepartment: string | null };
+  plan: PlanDeAudiencia;
 };
 
 /**
@@ -1573,10 +1595,10 @@ export async function getActivityAdherence(activity: ActivityForAdherence): Prom
   // por cada línea del PIC, así que ese trabajo se multiplicaba por 55 cada
   // vez que alguien abría el tablero. El criterio de audiencia es el mismo,
   // ahora expresado como filtro de relación y resuelto dentro de Postgres.
-  const audiencia = targetAudienceUserWhere(activity.plan.targetDepartment, activity.targetAudience);
+  const audiencia = audienciaDeActividad(activity);
 
   const [totalExpected, adherentCount] = await Promise.all([
-    prisma.user.count({ where: audiencia }),
+    contarAudiencia(activity),
     activity.courseId
       ? prisma.enrollment.count({
           where: { courseId: activity.courseId, status: "COMPLETED", user: audiencia },
@@ -1602,11 +1624,10 @@ export async function getActivityAdherence(activity: ActivityForAdherence): Prom
 export async function getActivityAttendanceCounts(activity: {
   id: string;
   targetAudience: CourseAudience;
-  plan: { targetDepartment: string | null };
+  plan: PlanDeAudiencia;
 }) {
-  const audiencia = targetAudienceUserWhere(activity.plan.targetDepartment, activity.targetAudience);
   const [totalAudiencia, asistieron, registrados] = await Promise.all([
-    prisma.user.count({ where: audiencia }),
+    contarAudiencia(activity),
     prisma.trainingAttendance.count({ where: { activityId: activity.id, attended: true } }),
     prisma.trainingAttendance.count({ where: { activityId: activity.id } }),
   ]);
@@ -1640,13 +1661,13 @@ export type FilaAsistencia = {
  * el único momento en que hace falta mirar más allá de los registrados.
  */
 export async function getActivityAttendancePage(
-  activity: { id: string; targetAudience: CourseAudience; plan: { targetDepartment: string | null } },
+  activity: { id: string; targetAudience: CourseAudience; plan: PlanDeAudiencia },
   opciones: { buscar?: string; pagina?: number; porPagina?: number } = {}
 ): Promise<{ filas: FilaAsistencia[]; total: number; pagina: number; porPagina: number }> {
   const buscar = opciones.buscar?.trim() ?? "";
   const porPagina = Math.min(Math.max(opciones.porPagina ?? 25, 5), 100);
   const pagina = Math.max(opciones.pagina ?? 1, 1);
-  const audiencia = targetAudienceUserWhere(activity.plan.targetDepartment, activity.targetAudience);
+  const audiencia = audienciaDeActividad(activity);
 
   const where = {
     ...audiencia,
