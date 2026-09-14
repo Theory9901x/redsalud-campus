@@ -67,6 +67,12 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
             >
               Respuestas
             </Link>
+            {encuesta.code.startsWith("PM-7-SIAU") && (
+              <Link href="/encuestas/siau" className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-teal-400 px-4 py-2.5 text-[13px] font-bold text-white shadow-md shadow-primary/25">
+                <BarChart3 className="h-4 w-4" />
+                Centro de datos SIAU
+              </Link>
+            )}
             <a
               href={`/api/encuestas/${encuesta.slug}/formato-docx`}
               className="inline-flex items-center gap-1.5 rounded-xl border border-border/60 bg-card/70 px-4 py-2.5 text-[13px] font-bold text-foreground transition-colors hover:border-primary/40"

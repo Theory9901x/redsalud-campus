@@ -51,6 +51,7 @@ const GRUPOS: { label: string | null; items: ItemAdmin[] }[] = [
       // Módulo transversal: el enlace no vive bajo /admin, pero la gestión
       // es de admin y tutor (el estudiante ve solo sus respuestas).
       { href: "/encuestas", label: "Encuestas", icon: ClipboardList, section: "PLANES_CAPACITACION" },
+      { href: "/encuestas/siau", label: "Centro de datos SIAU", icon: PieChart, section: "PLANES_CAPACITACION" },
       { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell, section: "NOTIFICACIONES" },
     ],
   },
