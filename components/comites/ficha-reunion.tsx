@@ -58,7 +58,6 @@ export async function FichaReunion({
     { etiqueta: "Asistencia total de la sesión", valor: String(resumen.asistenciaTotal), detalle: `${resumen.asistieron} integrantes + ${resumen.otrosAsistieron} otros asistentes`, Icono: Users2, color: "text-white" },
     { etiqueta: "Integrantes del comité", valor: `${resumen.asistieron}/${resumen.conCuenta}`, detalle: resumen.porcentaje === null ? "sin cuenta vinculada" : `${resumen.porcentaje}% · ${resumen.quorum ? "hay quórum" : "sin quórum"}`, Icono: Check, color: resumen.quorum ? "text-success" : "text-warning-foreground" },
     { etiqueta: "Permanencia en la sala", valor: `${resumen.minutosTotales} min`, detalle: `${resumen.conectadosTotal} personas con registro de salida`, Icono: PhoneCall, color: "text-primary" },
-    { etiqueta: "Grabaciones", valor: String(resumen.grabaciones), detalle: `${resumen.documentos} documentos en total`, Icono: FileVideo, color: "text-primary" },
     { etiqueta: "Grabaciones y estado", valor: `${resumen.grabaciones} · ${TRAINING_ACTIVITY_STATUS_LABELS[actividad.status]}`, detalle: cerrada ? "informe disponible" : "se cierra al terminar", Icono: FileVideo, color: cerrada ? "text-success" : "text-muted-foreground" },
   ];
 
