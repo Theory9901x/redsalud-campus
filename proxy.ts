@@ -74,6 +74,11 @@ export default auth((request) => {
     }
   }
 
+  // Administrador con la sección ENCUESTAS restringida: tampoco entra por /encuestas.
+  if (pathname.startsWith("/encuestas") && role === "ADMIN" && (session.user.restrictedAdminSections ?? []).includes("ENCUESTAS")) {
+    return NextResponse.redirect(new URL("/no-autorizado", request.url));
+  }
+
   if (pathname.startsWith(TUTOR_PREFIX) && role !== "ADMIN" && role !== "TUTOR") {
     return NextResponse.redirect(new URL("/no-autorizado", request.url));
   }

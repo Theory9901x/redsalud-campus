@@ -50,8 +50,8 @@ const GRUPOS: { label: string | null; items: ItemAdmin[] }[] = [
       { href: "/admin/comites", label: "Comités", icon: Gavel, section: "PLANES_CAPACITACION" },
       // Módulo transversal: el enlace no vive bajo /admin, pero la gestión
       // es de admin y tutor (el estudiante ve solo sus respuestas).
-      { href: "/encuestas", label: "Encuestas", icon: ClipboardList, section: "PLANES_CAPACITACION" },
-      { href: "/encuestas/siau", label: "Centro de datos SIAU", icon: PieChart, section: "PLANES_CAPACITACION" },
+      { href: "/encuestas", label: "Encuestas", icon: ClipboardList, section: "ENCUESTAS" },
+      { href: "/encuestas/siau", label: "Centro de datos SIAU", icon: PieChart, section: "ENCUESTAS" },
       { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell, section: "NOTIFICACIONES" },
     ],
   },

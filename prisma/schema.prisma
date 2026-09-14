@@ -49,6 +49,7 @@ enum PersonnelType {
 // no aplica: siempre es accesible para cualquier ADMIN.
 enum AdminSection {
   USUARIOS
+  ENCUESTAS
   CURSOS
   PLANES_CAPACITACION
   INSCRIPCIONES

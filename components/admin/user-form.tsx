@@ -34,6 +34,7 @@ const PERSONNEL_TYPES: { value: PersonnelType; label: string }[] = [
 
 const ADMIN_SECTION_LABELS: { value: AdminSection; label: string }[] = [
   { value: "USUARIOS", label: "Usuarios" },
+  { value: "ENCUESTAS", label: "Encuestas y centro de datos SIAU" },
   { value: "CURSOS", label: "Cursos" },
   { value: "PLANES_CAPACITACION", label: "Planes de capacitación" },
   { value: "INSCRIPCIONES", label: "Inscripciones" },

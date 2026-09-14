@@ -45,7 +45,7 @@ const TONO_COLOR: Record<TonoOpcion, { color: string; suave: string }> = {
 };
 
 /** Misma carita de la página, en SVG estático. */
-function svgCarita(tono: TonoOpcion): string {
+export function svgCarita(tono: TonoOpcion): string {
   const { color, suave } = TONO_COLOR[tono];
   const boca =
     tono === "exc" ? "M17 34 Q28 46 39 34" : tono === "bue" ? "M19 35 Q28 42 37 35" : tono === "reg" ? "M19 37 L37 37" : tono === "mal" ? "M19 40 Q28 33 37 40" : tono === "muymal" ? "M18 41 Q28 31 38 41" : "M20 37 L36 37";

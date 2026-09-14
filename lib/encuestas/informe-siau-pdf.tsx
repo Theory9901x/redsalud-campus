@@ -3,6 +3,8 @@ import { Document, Page, View, Text, Image, StyleSheet, renderToBuffer } from "@
 import { publicUploadDiskPath } from "@/lib/storage";
 import type { InformeSiau, MetricaPregunta } from "@/lib/encuestas/metrics";
 import type { TonoOpcion } from "@/lib/encuestas/tipos";
+import sharp from "sharp";
+import { svgCarita } from "@/lib/encuestas/formato-docx";
 
 /**
  * INFORME GENERAL SIAU EN PDF, por periodo: portada institucional, KPIs
@@ -52,6 +54,17 @@ const s = StyleSheet.create({
   pie: { position: "absolute", bottom: 22, left: 34, right: 34, flexDirection: "row", justifyContent: "space-between", fontSize: 7, color: C.suave, borderTopWidth: 0.5, borderTopColor: C.linea, paddingTop: 6 },
 });
 
+type Caritas = Record<TonoOpcion, string>;
+let caritasCache: Caritas | null = null;
+/** Las mismas caritas de la página y del Word, rasterizadas una sola vez. */
+async function cargarCaritas(): Promise<Caritas> {
+  if (caritasCache) return caritasCache;
+  const tonos: TonoOpcion[] = ["exc", "bue", "reg", "mal", "muymal", "na"];
+  const pares = await Promise.all(tonos.map(async (t) => [t, `data:image/png;base64,${(await sharp(Buffer.from(svgCarita(t))).resize(64, 64).png().toBuffer()).toString("base64")}`] as const));
+  caritasCache = Object.fromEntries(pares) as Caritas;
+  return caritasCache;
+}
+
 const sem = (v: number | null) => (v === null ? C.suave : v >= 85 ? C.exito : v >= 70 ? C.alerta : C.peligro);
 const pct = (v: number | null) => (v === null ? "—" : `${v}%`);
 const semTexto = (v: number | null) => (v === null ? "Sin datos" : v >= 85 ? "Cumple" : v >= 70 ? "Aceptable" : "Crítico");
@@ -67,7 +80,7 @@ function Barra({ etiqueta, valor, cifra }: { etiqueta: string; valor: number | n
   );
 }
 
-function Distribucion({ p }: { p: MetricaPregunta }) {
+function Distribucion({ p, caritas }: { p: MetricaPregunta; caritas: Caritas }) {
   return (
     <View>
       <View style={[s.pista, { height: 9, marginTop: 3 }]}>
@@ -75,7 +88,30 @@ function Distribucion({ p }: { p: MetricaPregunta }) {
           <View key={d.opcionId} style={{ width: `${d.pct}%`, height: 9, backgroundColor: TONO[d.tono ?? "na"] }} />
         ))}
       </View>
-      <Text style={s.nota}>{p.distribucion.map((d) => `${d.texto}: ${d.n} (${d.pct}%)`).join(" · ")}</Text>
+      {/* Una carita por opción: lo que significa cada cifra, de un vistazo. */}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+        {p.distribucion.map((d) => (
+          <View key={d.opcionId} style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+            <Image src={caritas[d.tono ?? "na"]} style={{ width: 13, height: 13 }} />
+            <Text style={{ fontSize: 7.5, color: C.texto }}>{d.texto}: <Text style={{ fontWeight: "bold", color: TONO[d.tono ?? "na"] }}>{d.n} ({d.pct}%)</Text></Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/** Leyenda de la escala con caritas, al inicio de "Por pregunta". */
+function LeyendaCaritas({ caritas }: { caritas: Caritas }) {
+  const items: [TonoOpcion, string, string][] = [["exc", "Excelente / Muy buena / Sí", "4"], ["bue", "Bueno / Buena", "3"], ["reg", "Regular", "2"], ["mal", "Malo / Mala", "1"], ["muymal", "Muy malo / No", "0"], ["na", "No aplica", "no se mide"]];
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, backgroundColor: C.fondo, borderRadius: 6, padding: 7, marginBottom: 6 }}>
+      {items.map(([t, et, v]) => (
+        <View key={t} style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+          <Image src={caritas[t]} style={{ width: 14, height: 14 }} />
+          <Text style={{ fontSize: 7.5 }}>{et} <Text style={{ color: C.suave }}>· valor {v}</Text></Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -121,7 +157,7 @@ function Cruce({ titulo, filas, preguntas }: { titulo: string; filas: InformeSia
   );
 }
 
-function Doc({ inf, generadoPor, logo, temas }: { inf: InformeSiau; generadoPor: string; logo: string | null; temas: { tema: string; n: number }[] }) {
+function Doc({ inf, generadoPor, logo, temas, caritas }: { inf: InformeSiau; generadoPor: string; logo: string | null; temas: { tema: string; n: number }[]; caritas: Caritas }) {
   const m = inf.metricas;
   const prev = inf.metricasPrevias;
   const hoy = new Date().toLocaleString("es-CO", { dateStyle: "long", timeStyle: "short", timeZone: "America/Bogota" });
@@ -200,12 +236,13 @@ function Doc({ inf, generadoPor, logo, temas }: { inf: InformeSiau; generadoPor:
 
         <View style={s.seccion} break>
           <Text style={s.h2}>4. Por pregunta</Text>
+          <LeyendaCaritas caritas={caritas} />
           {m.porPregunta.map((p) => (
             <View key={p.clave} style={[s.caja, { borderLeftColor: sem(p.adherencia) }]} wrap={false}>
               <Text style={{ fontSize: 7, color: C.suave, textTransform: "uppercase", marginBottom: 2 }}>Pregunta {p.numero} · {p.n} respuestas · {p.validas} válidas · {semTexto(p.adherencia)}{inf.variacionPorPregunta[p.clave] != null ? ` · ${inf.variacionPorPregunta[p.clave]! > 0 ? "+" : ""}${inf.variacionPorPregunta[p.clave]} pp vs anterior` : ""}</Text>
               <Text style={{ fontSize: 9.5, fontWeight: "bold", color: C.navy, marginBottom: 3 }}>{limpio(p.enunciado)}</Text>
               <Text style={{ fontSize: 8 }}>Adherencia <Text style={{ fontWeight: "bold", color: sem(p.adherencia) }}>{pct(p.adherencia)}</Text> · Puntaje {pct(p.puntaje)} · Promedio {p.promedio ?? "—"} / {p.maximo}</Text>
-              <Distribucion p={p} />
+              <Distribucion p={p} caritas={caritas} />
             </View>
           ))}
           <Text style={s.h3}>P2 · Trato del personal por perfil</Text>
@@ -268,5 +305,6 @@ export async function renderInformeSiauPdf(inf: InformeSiau, generadoPor: string
       /* sin logo */
     }
   }
-  return renderToBuffer(<Doc inf={inf} generadoPor={generadoPor} logo={logo} temas={temas} />);
+  const caritas = await cargarCaritas();
+  return renderToBuffer(<Doc inf={inf} generadoPor={generadoPor} logo={logo} temas={temas} caritas={caritas} />);
 }
