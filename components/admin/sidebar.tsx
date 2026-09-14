@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { AppSidebar, type GrupoNav, type ItemNav } from "@/components/shell/app-sidebar";
 import type { AdminSection } from "@prisma/client";
+import { soloEncuestas } from "@/lib/admin-sections";
 
 /**
  * La sección sirve para ocultarle a un administrador limitado lo que no le
@@ -81,7 +82,9 @@ export function AdminSidebar({
   // Un grupo que se queda sin ítems visibles no debe dejar su título huérfano.
   const grupos: GrupoNav[] = GRUPOS.map((g) => ({
     label: g.label,
-    items: g.items.filter((item) => !item.section || !restrictedSections.includes(item.section)),
+    items: g.items.filter((item) =>
+      item.section ? !restrictedSections.includes(item.section) : !soloEncuestas(restrictedSections),
+    ),
   })).filter((g) => g.items.length > 0);
 
   return (

@@ -214,7 +214,7 @@ export function UserForm({
               <Label>Secciones a las que tiene acceso</Label>
               <p className="text-xs text-muted-foreground">
                 Marca lo que <strong>SÍ</strong> puede ver este administrador. Déjalas todas marcadas para un
-                administrador principal, con acceso total. El Dashboard siempre es visible.
+                administrador principal, con acceso total. Si solo le dejas Encuestas, no verá el Dashboard de formación y entrará directo al módulo de encuestas.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">

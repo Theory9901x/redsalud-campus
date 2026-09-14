@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import type { AdminSection, Role } from "@prisma/client";
+import { soloEncuestas } from "@/lib/admin-sections";
 
 const ADMIN_PREFIX = "/admin";
 const TUTOR_PREFIX = "/tutor";
@@ -68,6 +69,11 @@ export default auth((request) => {
     }
 
     const restricted = session.user.restrictedAdminSections ?? [];
+    // Gestor de encuestas (sin ninguna sección del panel): el Dashboard no le
+    // aplica; su inicio es el módulo de encuestas.
+    if (soloEncuestas(restricted)) {
+      return NextResponse.redirect(new URL("/encuestas", request.url));
+    }
     const matchedSection = ADMIN_SECTION_PREFIXES.find(([prefix]) => pathname.startsWith(prefix))?.[1];
     if (matchedSection && restricted.includes(matchedSection)) {
       return NextResponse.redirect(new URL("/no-autorizado", request.url));
