@@ -78,8 +78,15 @@ function tieneValor(v: ValorRespuesta | undefined): boolean {
 }
 
 function textoElegido(pregunta: PreguntaFormulario | undefined, valor: ValorRespuesta | undefined): string | null {
-  if (!pregunta || valor?.tipo !== "opcion") return null;
-  return leerConfig(pregunta.config).opciones?.find((o) => o.id === valor.opcionId)?.texto ?? null;
+  return textosElegidos(pregunta, valor)[0] ?? null;
+}
+
+/** Textos de las opciones elegidas (una o varias). */
+function textosElegidos(pregunta: PreguntaFormulario | undefined, valor: ValorRespuesta | undefined): string[] {
+  if (!pregunta || !valor) return [];
+  const opciones = leerConfig(pregunta.config).opciones ?? [];
+  const ids = valor.tipo === "opcion" ? [valor.opcionId] : valor.tipo === "opciones" ? valor.opcionIds : [];
+  return ids.map((id) => opciones.find((o) => o.id === id)?.texto).filter((t): t is string => Boolean(t));
 }
 
 // ================================================================ carita
@@ -399,7 +406,7 @@ export function FormularioExterno({
     () => todasLasPreguntas.find((q) => leerConfig(q.config).estilo === "servicios"),
     [todasLasPreguntas]
   );
-  const servicioElegido = textoElegido(preguntaServicio, preguntaServicio ? respuestas[preguntaServicio.id] : undefined);
+  const serviciosElegidos = textosElegidos(preguntaServicio, preguntaServicio ? respuestas[preguntaServicio.id] : undefined);
   const preguntaNombre = todasLasPreguntas.find((q) => leerConfig(q.config).rol === "nombre");
 
   // Pasos que cuentan en el stepper: los que empiezan por "Pregunta".
@@ -711,7 +718,7 @@ export function FormularioExterno({
                   respuestas={respuestas}
                   onResponder={responder}
                   acento={acento}
-                  servicioElegido={servicioElegido}
+                  serviciosElegidos={serviciosElegidos}
                   faltantes={error ? faltantes : []}
                 />
               </div>
@@ -796,14 +803,14 @@ function CuerpoPagina({
   respuestas,
   onResponder,
   acento,
-  servicioElegido,
+  serviciosElegidos,
   faltantes,
 }: {
   pagina: PaginaFormulario | undefined;
   respuestas: Respuestas;
   onResponder: (q: PreguntaFormulario, v: ValorRespuesta) => void;
   acento: string;
-  servicioElegido: string | null;
+  serviciosElegidos: string[];
   faltantes: string[];
 }) {
   if (!pagina) return null;
@@ -826,7 +833,7 @@ function CuerpoPagina({
 
   // Matriz de personal (P2): filas reordenadas por el servicio elegido.
   if (configs.some((c) => c.estilo === "matriz")) {
-    return <MatrizPersonal preguntas={preguntas} respuestas={respuestas} onResponder={onResponder} servicioElegido={servicioElegido} acento={acento} />;
+    return <MatrizPersonal preguntas={preguntas} respuestas={respuestas} onResponder={onResponder} serviciosElegidos={serviciosElegidos} acento={acento} />;
   }
 
   return (
@@ -836,8 +843,8 @@ function CuerpoPagina({
         // "¿Cuál?" solo si en la pregunta anterior se eligió "Otro".
         if (c.rol === "otro") {
           const anterior = preguntas[i - 1];
-          const texto = textoElegido(anterior, anterior ? respuestas[anterior.id] : undefined);
-          if (!texto || !/^otro/i.test(texto)) return null;
+          const textos = textosElegidos(anterior, anterior ? respuestas[anterior.id] : undefined);
+          if (!textos.some((t) => /^otro/i.test(t))) return null;
         }
         return (
           <PreguntaExterna key={q.id} q={q} config={c} valor={respuestas[q.id]} onResponder={(v) => onResponder(q, v)} acento={acento} falta={faltantes.includes(q.id)} />
@@ -974,24 +981,29 @@ function PreguntaExterna({
         </div>
       );
 
-    case "servicios":
+    case "servicios": {
+      // Varios servicios a la vez: cada tarjeta se marca o desmarca.
+      const elegidos = valor?.tipo === "opciones" ? valor.opcionIds : valor?.tipo === "opcion" ? [valor.opcionId] : [];
+      const alternar = (id: string) =>
+        onResponder({ tipo: "opciones", opcionIds: elegidos.includes(id) ? elegidos.filter((x) => x !== id) : [...elegidos, id] });
       return (
         <div>
           {titulo}
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3" role="radiogroup" aria-label={enunciado}>
+          <p className="mt-1 text-[13px] text-slate-600">Puede marcar más de un servicio.</p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3" role="group" aria-label={enunciado}>
             {opciones.map((o, i) => {
-              const activo = elegida === o.id;
+              const activo = elegidos.includes(o.id);
               const Icono = ICONOS[o.icono ?? ""] ?? MoreHorizontal;
               return (
                 <Tarjeta3D
                   key={o.id}
                   type="button"
-                  role="radio"
+                  role="checkbox"
                   aria-checked={activo}
                   activa={activo}
                   {...escalonado(i)}
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => onResponder({ tipo: "opcion", opcionId: o.id })}
+                  onClick={() => alternar(o.id)}
                   className={cn(
                     "group min-h-[96px] rounded-2xl border bg-white p-3.5 text-left",
                     activo ? "border-transparent shadow-lg" : "border-slate-300 hover:border-slate-500 hover:shadow-xl"
@@ -1015,6 +1027,7 @@ function PreguntaExterna({
           </div>
         </div>
       );
+    }
 
     case "caritas":
       return (
@@ -1180,18 +1193,19 @@ function MatrizPersonal({
   preguntas,
   respuestas,
   onResponder,
-  servicioElegido,
+  serviciosElegidos,
   acento,
 }: {
   preguntas: PreguntaFormulario[];
   respuestas: Respuestas;
   onResponder: (q: PreguntaFormulario, v: ValorRespuesta) => void;
-  servicioElegido: string | null;
+  serviciosElegidos: string[];
   acento: string;
 }) {
+  const servicioElegido = serviciosElegidos.length > 0 ? serviciosElegidos.join(", ") : null;
   const [verOtros, setVerOtros] = useState(false);
   const filas = preguntas.map((q) => ({ q, c: leerConfig(q.config) }));
-  const delServicio = filas.filter((f) => servicioElegido && f.c.servicios?.includes(servicioElegido));
+  const delServicio = filas.filter((f) => f.c.servicios?.some((s) => serviciosElegidos.includes(s)));
   const transversales = filas.filter((f) => f.c.transversal);
   const resto = filas.filter((f) => !delServicio.includes(f) && !transversales.includes(f));
   // Sin servicio conocido, todas visibles en el orden del formato.

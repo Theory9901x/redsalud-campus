@@ -154,7 +154,7 @@ const BLOQUES: Bloque[] = [
   {
     title: "Pregunta 1",
     questions: [
-      { type: "SINGLE_CHOICE", prompt: "1: Servicio que utilizó hoy", isRequired: true, config: { estilo: "servicios", opciones: SERVICIOS } },
+      { type: "MULTIPLE_CHOICE", prompt: "1: Servicio que utilizó hoy", isRequired: true, config: { estilo: "servicios", opciones: SERVICIOS } },
       { type: "SHORT_TEXT", prompt: "¿Cuál?", isRequired: false, config: { rol: "otro" } },
     ],
   },

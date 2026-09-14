@@ -85,6 +85,8 @@ export type FilaSiau = {
   sexo: string | null;
   eps: string | null;
   sede: string | null;
+  /** Servicios utilizados (P1 admite varios). */
+  servicios: string[];
   servicio: string | null;
   servicioOtro: string | null;
   /** p3, p4, p5, p6, p7, p8 y p2:<perfil>. */
@@ -166,7 +168,7 @@ export async function getFilasSiau(filtros: FiltrosSiau = {}): Promise<{ filas: 
 
   const filas: FilaSiau[] = [];
   for (const r of respuestas) {
-    const fila: FilaSiau = { responseId: r.id, fecha: r.submittedAt ?? r.startedAt, canal: r.channel, sexo: null, eps: null, sede: null, servicio: null, servicioOtro: null, calificaciones: {}, sugerencia: null };
+    const fila: FilaSiau = { responseId: r.id, fecha: r.submittedAt ?? r.startedAt, canal: r.channel, sexo: null, eps: null, sede: null, servicios: [], servicio: null, servicioOtro: null, calificaciones: {}, sugerencia: null };
     for (const a of r.answers) {
       const q = porId.get(a.questionId);
       if (!q) continue;
@@ -175,7 +177,11 @@ export async function getFilasSiau(filtros: FiltrosSiau = {}): Promise<{ filas: 
       if (q.estiloRaw === "sexo") fila.sexo = opcion?.texto === "M" ? "Masculino" : opcion?.texto === "F" ? "Femenino" : (opcion?.texto ?? null);
       else if (q.rol === "eps") fila.eps = opcion?.texto ?? a.textValue ?? null;
       else if (q.rol === "municipio") fila.sede = opcion?.texto ?? null;
-      else if (q.estiloRaw === "servicios") fila.servicio = opcion?.texto ?? null;
+      else if (q.estiloRaw === "servicios") {
+        const ids = v?.tipo === "opciones" ? v.opcionIds : v?.tipo === "opcion" ? [v.opcionId] : [];
+        fila.servicios = ids.map((id) => q.opciones.find((o) => o.id === id)?.texto).filter((t): t is string => Boolean(t));
+        fila.servicio = fila.servicios[0] ?? null;
+      }
       else if (q.rol === "otro") fila.servicioOtro = a.textValue ?? null;
       else if (q.clave === "p9") fila.sugerencia = a.textValue?.trim() || null;
       else if (opcion && (q.clave.startsWith("p2:") || /^p[3-8]$/.test(q.clave))) {
@@ -184,7 +190,7 @@ export async function getFilasSiau(filtros: FiltrosSiau = {}): Promise<{ filas: 
       }
     }
     if (filtros.sede && fila.sede !== filtros.sede) continue;
-    if (filtros.servicio && fila.servicio !== filtros.servicio) continue;
+    if (filtros.servicio && !fila.servicios.includes(filtros.servicio)) continue;
     if (filtros.sexo && fila.sexo !== filtros.sexo) continue;
     if (filtros.eps && fila.eps !== filtros.eps) continue;
     filas.push(fila);
@@ -284,8 +290,8 @@ export type Cruce = { valor: string; total: number; adherencia: number | null; p
 export function cruzar(filas: FilaSiau[], preguntas: PreguntaSiau[], variable: "sede" | "servicio" | "sexo" | "eps"): Cruce[] {
   const grupos = new Map<string, FilaSiau[]>();
   for (const f of filas) {
-    const v = f[variable] ?? "Sin dato";
-    grupos.set(v, [...(grupos.get(v) ?? []), f]);
+    const valores = variable === "servicio" ? (f.servicios.length ? f.servicios : ["Sin dato"]) : [f[variable] ?? "Sin dato"];
+    for (const v of valores) grupos.set(v, [...(grupos.get(v) ?? []), f]);
   }
   return [...grupos.entries()]
     .map(([valor, lista]) => {

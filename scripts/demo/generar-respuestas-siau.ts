@@ -43,7 +43,11 @@ async function main() {
       else if (q.c.estilo === "sexo") answers.push({ questionId: q.id, value: { tipo: "opcion", opcionId: elige(["M", "F"], [45, 55]) } });
       else if (q.c.rol === "eps") answers.push({ questionId: q.id, value: { tipo: "opcion", opcionId: elige(epss.slice(0, 6)).id } });
       else if (q.c.rol === "municipio") answers.push({ questionId: q.id, value: { tipo: "opcion", opcionId: sede.id } });
-      else if (q.c.estilo === "servicios") answers.push({ questionId: q.id, value: { tipo: "opcion", opcionId: elige(servicios.slice(0, -1)).id } });
+      else if (q.c.estilo === "servicios") {
+        const n = Math.random() < 0.25 ? 2 : 1;
+        const ids = [...new Set(Array.from({ length: n }, () => elige(servicios.slice(0, -1)).id))];
+        answers.push({ questionId: q.id, value: { tipo: "opciones", opcionIds: ids } });
+      }
       else if (q.c.estilo === "matriz") { if (Math.random() < 0.45) answers.push({ questionId: q.id, value: { tipo: "opcion", opcionId: elige(ops, ops.map((o) => (o.tono === "exc" ? 50 * calidadSede : o.tono === "bue" ? 30 : o.tono === "reg" ? 10 : o.tono === "mal" ? 4 : 6))).id } }); }
       else if (ops.length && (q.c.estilo === "caritas" || q.c.estilo === "tarjetas" || q.c.estilo === "semaforo")) {
         const pesos = ops.map((o) => (o.tono === "exc" ? 55 * calidadSede : o.tono === "bue" ? 30 : o.tono === "reg" ? 10 : o.tono === "mal" ? 4 : o.tono === "muymal" ? 2 : 3));
