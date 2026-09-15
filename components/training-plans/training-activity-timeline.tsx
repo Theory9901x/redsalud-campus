@@ -103,9 +103,16 @@ function agruparPorArea(activities: TrainingActivityTimelineItem[]) {
  */
 function agruparPorTrimestre(activities: TrainingActivityTimelineItem[]) {
   const grupos = new Map<number, TrainingActivityTimelineItem[]>();
+  // Sin trimestre en el PIC pero con jornada o fecha: se deduce de la fecha,
+  // que es donde de verdad ocurre. Solo queda "sin trimestre" lo que no
+  // tiene ni lo uno ni lo otro.
+  const trimestresDe = (a: TrainingActivityTimelineItem): number[] => {
+    if (a.quarters.length > 0) return a.quarters;
+    const fecha = a.sessions?.[0]?.startsAt ?? a.startDate;
+    return fecha ? [Math.floor(fecha.getMonth() / 3) + 1] : [0];
+  };
   for (const a of activities) {
-    const ts = a.quarters.length > 0 ? a.quarters : [0];
-    for (const t of ts) grupos.set(t, [...(grupos.get(t) ?? []), a]);
+    for (const t of trimestresDe(a)) grupos.set(t, [...(grupos.get(t) ?? []), a]);
   }
   const porArea = (a: TrainingActivityTimelineItem, b: TrainingActivityTimelineItem) =>
     (a.area?.sortOrder ?? 99) - (b.area?.sortOrder ?? 99) || a.title.localeCompare(b.title, "es");
@@ -261,7 +268,7 @@ export function TrainingActivityTimeline({
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     {/* El trimestre, visible y comparable entre tarjetas; la
                         fecha concreta solo cuando ya hay jornada o fecha. */}
-                    <TrimestresChip quarters={activity.quarters} />
+                    <TrimestresChip quarters={activity.quarters.length > 0 ? activity.quarters : (() => { const f = activity.sessions?.[0]?.startsAt ?? activity.startDate; return f ? [Math.floor(f.getMonth() / 3) + 1] : []; })()} />
                     {(activity.sessions?.[0] || activity.startDate) && (
                       <span className="text-xs font-medium text-muted-foreground">{etiquetaProgramacion(activity)}</span>
                     )}

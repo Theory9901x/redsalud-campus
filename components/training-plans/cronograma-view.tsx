@@ -70,7 +70,11 @@ export function CronogramaView({
       .filter((a) => {
         if (area !== TODAS && (a.area?.name ?? "Sin área") !== area) return false;
         if (estado !== "TODAS" && a.status !== estado) return false;
-        if (trimestre !== 0 && !a.quarters.includes(trimestre)) return false;
+        if (trimestre !== 0) {
+          const f = a.sessions?.[0]?.startsAt ?? a.startDate;
+          const ts = a.quarters.length > 0 ? a.quarters : f ? [Math.floor(f.getMonth() / 3) + 1] : [];
+          if (!ts.includes(trimestre)) return false;
+        }
         if (texto) {
           const enTexto = `${a.title} ${a.programa ?? ""} ${a.responsibleLabel ?? ""}`.toLowerCase();
           if (!enTexto.includes(texto)) return false;
