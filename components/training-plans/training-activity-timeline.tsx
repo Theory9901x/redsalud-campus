@@ -13,6 +13,7 @@ import {
   TRAINING_MODALITY_LABELS,
   etiquetaProgramacion,
 } from "@/components/training-plans/labels";
+import { TrimestresChip, nombreTrimestre, trimestreEnCurso } from "@/components/training-plans/trimestres-chip";
 import type { TrainingActivityStatus, TrainingActivityType, CourseAudience, TrainingModality } from "@prisma/client";
 
 export type TrainingActivityTimelineItem = {
@@ -93,6 +94,32 @@ function agruparPorArea(activities: TrainingActivityTimelineItem[]) {
     .sort((a, b) => a.orden - b.orden);
 }
 
+/**
+ * Agrupa por TRIMESTRE del PIC: cada trimestre es un apartado propio, con
+ * el que está en curso marcado. Una capacitación programada en varios
+ * trimestres aparece en cada uno de ellos, que es como se mide: lo que
+ * toca en el trimestre, no una lista donde tres trimestres van revueltos
+ * en un solo lado.
+ */
+function agruparPorTrimestre(activities: TrainingActivityTimelineItem[]) {
+  const grupos = new Map<number, TrainingActivityTimelineItem[]>();
+  for (const a of activities) {
+    const ts = a.quarters.length > 0 ? a.quarters : [0];
+    for (const t of ts) grupos.set(t, [...(grupos.get(t) ?? []), a]);
+  }
+  const porArea = (a: TrainingActivityTimelineItem, b: TrainingActivityTimelineItem) =>
+    (a.area?.sortOrder ?? 99) - (b.area?.sortOrder ?? 99) || a.title.localeCompare(b.title, "es");
+  return [...grupos.entries()]
+    .sort(([a], [b]) => (a === 0 ? 5 : a) - (b === 0 ? 5 : b))
+    .map(([t, items]) => ({
+      key: `t${t}`,
+      label: t === 0 ? "Sin trimestre programado" : nombreTrimestre(t),
+      enCurso: t === trimestreEnCurso(),
+      orden: t,
+      items: [...items].sort(porArea),
+    }));
+}
+
 export function TrainingActivityTimeline({
   activities,
   basePath,
@@ -100,8 +127,11 @@ export function TrainingActivityTimeline({
   adherenceByActivity,
   puedeEliminar = false,
   areasGestionables = null,
+  agruparPor = "trimestre",
 }: {
   activities: TrainingActivityTimelineItem[];
+  /** Eje del cronograma: por trimestre (apartados separados) o por área responsable. */
+  agruparPor?: "area" | "trimestre";
   /** Solo el admin elimina jornadas. */
   /** "/admin/planes-capacitacion" o "/tutor/planes-capacitacion": el título enlaza al detalle de la actividad (documentos, Etapa 2). */
   basePath: string;
@@ -128,19 +158,23 @@ export function TrainingActivityTimeline({
     );
   }
 
-  const areas = agruparPorArea(activities);
+  const areas = agruparPor === "trimestre" ? agruparPorTrimestre(activities) : agruparPorArea(activities);
 
   return (
     <div className="space-y-6">
       {areas.map((grupo) => {
+        const enCurso = "enCurso" in grupo && grupo.enCurso === true;
         // Cuántas de sus capacitaciones ya tienen curso montado. Es la
         // pregunta que se le hace al área: qué falta por subir.
         const conContenido = grupo.items.filter((a) => a.course).length;
 
         return (
         <div key={grupo.key} className="space-y-3">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border/60 pb-2">
-            <p className="font-display text-sm font-bold uppercase tracking-wide text-foreground">{grupo.label}</p>
+          <div className={`flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 pb-2 ${enCurso ? "border-primary" : "border-border/60"}`}>
+            <p className={`font-display font-bold uppercase tracking-wide text-foreground ${agruparPor === "trimestre" ? "text-base" : "text-sm"}`}>{grupo.label}</p>
+            {enCurso && (
+              <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">En curso</span>
+            )}
             <p className="text-xs text-muted-foreground">
               {grupo.items.length} {grupo.items.length === 1 ? "capacitación" : "capacitaciones"}
               {" · "}
@@ -224,10 +258,13 @@ export function TrainingActivityTimeline({
                     </p>
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {etiquetaProgramacion(activity)}
-                    </span>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    {/* El trimestre, visible y comparable entre tarjetas; la
+                        fecha concreta solo cuando ya hay jornada o fecha. */}
+                    <TrimestresChip quarters={activity.quarters} />
+                    {(activity.sessions?.[0] || activity.startDate) && (
+                      <span className="text-xs font-medium text-muted-foreground">{etiquetaProgramacion(activity)}</span>
+                    )}
                     <Badge className={TRAINING_ACTIVITY_STATUS_CLASSES[activity.status]}>
                       {TRAINING_ACTIVITY_STATUS_LABELS[activity.status]}
                     </Badge>

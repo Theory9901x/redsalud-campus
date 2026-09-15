@@ -12,6 +12,7 @@ import {
   type TrainingActivityTimelineItem,
 } from "@/components/training-plans/training-activity-timeline";
 import { SessionsCalendar, type SesionCalendario } from "@/components/training-plans/sessions-calendar";
+import { TrimestresChip, nombreTrimestre, trimestreEnCurso } from "@/components/training-plans/trimestres-chip";
 import {
   TRAINING_ACTIVITY_STATUS_LABELS,
   TRAINING_ACTIVITY_STATUS_CLASSES,
@@ -53,6 +54,10 @@ export function CronogramaView({
   const [busqueda, setBusqueda] = useState("");
   const [area, setArea] = useState(TODAS);
   const [estado, setEstado] = useState<"TODAS" | TrainingActivityStatus>("TODAS");
+  // 0 = todos los trimestres (cada uno en su apartado).
+  const [trimestre, setTrimestre] = useState<number>(0);
+  const [agruparPor, setAgruparPor] = useState<"area" | "trimestre">("trimestre");
+  const enCurso = trimestreEnCurso();
 
   const areas = useMemo(() => {
     const nombres = new Set(activities.map((a) => a.area?.name ?? "Sin área"));
@@ -65,6 +70,7 @@ export function CronogramaView({
       .filter((a) => {
         if (area !== TODAS && (a.area?.name ?? "Sin área") !== area) return false;
         if (estado !== "TODAS" && a.status !== estado) return false;
+        if (trimestre !== 0 && !a.quarters.includes(trimestre)) return false;
         if (texto) {
           const enTexto = `${a.title} ${a.programa ?? ""} ${a.responsibleLabel ?? ""}`.toLowerCase();
           if (!enTexto.includes(texto)) return false;
@@ -80,7 +86,7 @@ export function CronogramaView({
           (a.programa ?? "").localeCompare(b.programa ?? "", "es") ||
           a.title.localeCompare(b.title, "es")
       );
-  }, [activities, area, estado, busqueda]);
+  }, [activities, area, estado, busqueda, trimestre]);
 
   return (
     <div className="space-y-4">
@@ -124,6 +130,36 @@ export function CronogramaView({
                 </option>
               ))}
             </select>
+
+            <select
+              value={trimestre}
+              onChange={(e) => setTrimestre(Number(e.target.value))}
+              className={`h-9 rounded-md border bg-background px-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-ring ${trimestre ? "border-primary text-primary" : "border-input"}`}
+              aria-label="Filtrar por trimestre"
+            >
+              <option value={0}>Todos los trimestres</option>
+              {[1, 2, 3, 4].map((t) => (
+                <option key={t} value={t}>
+                  {nombreTrimestre(t)}{t === enCurso ? " (en curso)" : ""}
+                </option>
+              ))}
+            </select>
+
+            {vista === "tarjetas" && (
+              <div className="flex items-center gap-1 rounded-md bg-muted p-0.5" role="group" aria-label="Agrupar por">
+                <span className="px-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Agrupar</span>
+                {([["trimestre", "Trimestre"], ["area", "Área"]] as const).map(([v, l]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setAgruparPor(v)}
+                    className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${agruparPor === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+            )}
           </>
         )}
 
@@ -164,7 +200,11 @@ export function CronogramaView({
       {vista !== "calendario" && (
         <p className="text-xs text-muted-foreground">
           {filtradas.length} de {activities.length} capacitaciones
-          {(area !== TODAS || estado !== "TODAS" || busqueda) && " · filtro activo"}
+          {(area !== TODAS || estado !== "TODAS" || busqueda || trimestre !== 0) && " · filtro activo"}
+          {" · "}
+          <span className="inline-flex items-center gap-1.5 align-middle">
+            <TrimestresChip quarters={[enCurso]} tamano="sm" /> hoy: {nombreTrimestre(enCurso)}
+          </span>
         </p>
       )}
 
@@ -176,6 +216,7 @@ export function CronogramaView({
           adherenceByActivity={adherenceByActivity}
           puedeEliminar={puedeEliminar}
           areasGestionables={areasGestionables}
+          agruparPor={agruparPor}
         />
       )}
       {vista === "ampliada" && (
