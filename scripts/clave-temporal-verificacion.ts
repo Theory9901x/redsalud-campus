@@ -25,7 +25,7 @@ async function main() {
     await prisma.user.update({ where: { id: usuario.id }, data: { passwordHash: await bcrypt.hash(clave, 10), mustChangePassword: false } });
     console.log(`clave temporal puesta a ${email}`);
   } else if (modo === "restaurar") {
-    const g = JSON.parse(readFileSync(archivo, "utf8")) as { hash: string | null; mustChangePassword: boolean };
+    const g = JSON.parse(readFileSync(archivo, "utf8")) as { hash: string; mustChangePassword: boolean };
     await prisma.user.update({ where: { id: usuario.id }, data: { passwordHash: g.hash, mustChangePassword: g.mustChangePassword } });
     unlinkSync(archivo);
     console.log(`clave original restaurada a ${email}`);
