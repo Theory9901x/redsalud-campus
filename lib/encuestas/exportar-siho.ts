@@ -173,8 +173,16 @@ export async function generarInformeSiho(periodo: Periodo, filtros: { sede?: str
   }
   const ipsOrden = [...IPS_OFICIALES, ...[...conteo.keys()].filter((k) => !IPS_OFICIALES.includes(k)).sort()];
   const filaIni = 5;
-  const favorables5 = opcionesP5.map((o, i) => ({ i, fav: o.tono === "exc" || o.tono === "bue" })).filter((x) => x.fav).map((x) => L(colIni5 + x.i));
-  const desfavorables5 = opcionesP5.map((o, i) => ({ i, fav: o.tono === "exc" || o.tono === "bue" })).filter((x) => !x.fav).map((x) => L(colIni5 + x.i));
+  // Mismo criterio que el centro de datos y el PDF: favorable = Buena + Muy
+  // buena sobre las respuestas VÁLIDAS. "No responde"/"No aplica" (tono na)
+  // se reporta en su columna y en el Total, pero no se mide: se resta del
+  // denominador y no cuenta como insatisfacción.
+  const esFav = (o: { tono?: string }) => o.tono === "exc" || o.tono === "bue";
+  const esNa = (o: { tono?: string }) => o.tono === "na";
+  const favorables5 = opcionesP5.map((o, i) => ({ i, o })).filter((x) => esFav(x.o)).map((x) => L(colIni5 + x.i));
+  const desfavorables5 = opcionesP5.map((o, i) => ({ i, o })).filter((x) => !esFav(x.o) && !esNa(x.o)).map((x) => L(colIni5 + x.i));
+  const noMedidas5 = opcionesP5.map((o, i) => ({ i, o })).filter((x) => esNa(x.o)).map((x) => L(colIni5 + x.i));
+  const validas5 = (r: number) => (noMedidas5.length === 0 ? `${L(colTot5)}${r}` : `(${L(colTot5)}${r}-${noMedidas5.map((l) => `${l}${r}`).join("-")})`);
   ipsOrden.forEach((ips, idx) => {
     const r = filaIni + idx;
     const c = conteo.get(ips)!;
@@ -183,8 +191,8 @@ export async function generarInformeSiho(periodo: Periodo, filtros: { sede?: str
     hoja.getCell(r, colTot5).value = { formula: c.p5.map((_, i) => `${L(colIni5 + i)}${r}`).join("+") };
     c.p6.forEach((n, i) => { hoja.getCell(r, colIni6 + i).value = n; });
     hoja.getCell(r, colTot6).value = { formula: c.p6.map((_, i) => `${L(colIni6 + i)}${r}`).join("+") };
-    hoja.getCell(r, colSat).value = { formula: `IFERROR((${favorables5.map((l) => `${l}${r}`).join("+")})/${L(colTot5)}${r},0)` };
-    hoja.getCell(r, colIns).value = { formula: `IFERROR((${desfavorables5.map((l) => `${l}${r}`).join("+")})/${L(colTot5)}${r},0)` };
+    hoja.getCell(r, colSat).value = { formula: `IFERROR((${favorables5.map((l) => `${l}${r}`).join("+")})/${validas5(r)},0)` };
+    hoja.getCell(r, colIns).value = { formula: `IFERROR((${desfavorables5.map((l) => `${l}${r}`).join("+")})/${validas5(r)},0)` };
     for (let col = 1; col <= colIns; col++) {
       const cel = hoja.getCell(r, col);
       cel.border = bordes;
@@ -200,8 +208,8 @@ export async function generarInformeSiho(periodo: Periodo, filtros: { sede?: str
     }
     hoja.getRow(r).height = 17;
     // Semáforo institucional en el % de satisfacción: verde ≥ 85, ámbar 70–84, rojo < 70.
-    const tot = c.p5.reduce((a, b) => a + b, 0);
-    const fav = opcionesP5.reduce((a, o, i) => a + ((o.tono === "exc" || o.tono === "bue") ? c.p5[i] : 0), 0);
+    const tot = opcionesP5.reduce((a, o, i) => a + (esNa(o) ? 0 : c.p5[i]), 0);
+    const fav = opcionesP5.reduce((a, o, i) => a + (esFav(o) ? c.p5[i] : 0), 0);
     const pctSat = tot > 0 ? fav / tot : null;
     const celSat = hoja.getCell(r, colSat);
     celSat.font = { size: 9, bold: true, color: { argb: pctSat === null ? "FF6B7C8F" : pctSat >= 0.85 ? "FF16A44E" : pctSat >= 0.7 ? "FFB7791F" : "FFD6483B" } };
@@ -210,8 +218,8 @@ export async function generarInformeSiho(periodo: Periodo, filtros: { sede?: str
   const filaTot = filaIni + ipsOrden.length;
   hoja.getCell(filaTot, 1).value = "Total general";
   for (let col = colIni5; col <= colTot6; col++) hoja.getCell(filaTot, col).value = { formula: `SUM(${L(col)}${filaIni}:${L(col)}${filaTot - 1})` };
-  hoja.getCell(filaTot, colSat).value = { formula: `IFERROR((${favorables5.map((l) => `${l}${filaTot}`).join("+")})/${L(colTot5)}${filaTot},0)` };
-  hoja.getCell(filaTot, colIns).value = { formula: `IFERROR((${desfavorables5.map((l) => `${l}${filaTot}`).join("+")})/${L(colTot5)}${filaTot},0)` };
+  hoja.getCell(filaTot, colSat).value = { formula: `IFERROR((${favorables5.map((l) => `${l}${filaTot}`).join("+")})/${validas5(filaTot)},0)` };
+  hoja.getCell(filaTot, colIns).value = { formula: `IFERROR((${desfavorables5.map((l) => `${l}${filaTot}`).join("+")})/${validas5(filaTot)},0)` };
   for (let col = 1; col <= colIns; col++) {
     const cel = hoja.getCell(filaTot, col);
     cel.font = { bold: true, size: 10 };
@@ -237,7 +245,7 @@ export async function generarInformeSiho(periodo: Periodo, filtros: { sede?: str
     if (r !== b) v.numFmt = "0%";
   }
   for (const r of [b, b + 1, b + 2]) hoja.getRow(r).height = 18;
-  hoja.getCell(b + 4, 1).value = "Semáforo institucional del % de satisfacción: verde ≥ 85 %, ámbar 70–84,9 %, rojo < 70 %. % satisfacción = (Buena + Muy Buena) / Total · % insatisfacción = (Regular + Mala + Muy mala) / Total.";
+  hoja.getCell(b + 4, 1).value = "Semáforo institucional del % de satisfacción: verde ≥ 85 %, ámbar 70–84,9 %, rojo < 70 %. % satisfacción = (Buena + Muy Buena) / respuestas válidas · % insatisfacción = (Regular + Mala + Muy mala) / respuestas válidas. Respuestas válidas = Total − No responde (no se mide).";
   hoja.getCell(b + 4, 1).font = { size: 8, color: { argb: "FF6B7C8F" } };
   hoja.getCell(b + 5, 1).value = `Generado por RedSalud Te Forma el ${new Date().toLocaleString("es-CO", { timeZone: "America/Bogota" })} · ${filas.length} encuestas · PM-7-SIAU-PR-02 V.1`;
   hoja.getCell(b + 5, 1).font = { italic: true, size: 8, color: { argb: "FF6B7C8F" } };
