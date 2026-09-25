@@ -85,6 +85,7 @@ export default async function TutorActividadDetallePage({
     courseId: activity.courseId,
     targetAudience: activity.targetAudience,
     plan: { id: activity.plan.id, targetDepartment: activity.plan.targetDepartment, kind: activity.plan.kind },
+    audienceCommitteePlanId: activity.audienceCommitteePlanId,
   };
   const isClosed = activity.status === "CLOSED";
 

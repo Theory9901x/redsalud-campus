@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { CircleDot, Square, Loader2, CheckCircle2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CircleDot, Square, Loader2, CheckCircle2, RotateCcw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Estado = "inactivo" | "grabando" | "subiendo" | "guardada" | "error";
@@ -21,6 +21,36 @@ export function GrabacionJornada({ activityId }: { activityId: string }) {
   const recorder = useRef<MediaRecorder | null>(null);
   const flujos = useRef<MediaStream[]>([]);
   const trozos = useRef<Blob[]>([]);
+  /*
+   * La grabación terminada se CONSERVA hasta que el servidor confirma que la
+   * guardó. Antes se descartaba antes de subirla y, si la subida fallaba,
+   * se perdía la jornada entera sin forma de recuperarla.
+   */
+  const pendiente = useRef<{ blob: Blob; nombre: string } | null>(null);
+
+  // Mientras se graba o hay una grabación sin guardar, avisar antes de cerrar la pestaña.
+  useEffect(() => {
+    if (estado !== "grabando" && estado !== "subiendo" && estado !== "error") return;
+    const avisar = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", avisar);
+    return () => window.removeEventListener("beforeunload", avisar);
+  }, [estado]);
+
+  function descargarCopia() {
+    const g = pendiente.current;
+    if (!g) return;
+    const url = URL.createObjectURL(g.blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = g.nombre;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
 
   async function iniciar() {
     setMensaje(null);
@@ -75,25 +105,32 @@ export function GrabacionJornada({ activityId }: { activityId: string }) {
     recorder.current?.stop();
   }
 
-  async function subir() {
-    setEstado("subiendo");
+  function subir() {
     for (const s of flujos.current) s.getTracks().forEach((t) => t.stop());
-    const blob = new Blob(trozos.current, { type: "video/webm" });
+    const fecha = new Date().toISOString().slice(0, 16).replace("T", " ").replace(":", "h");
+    pendiente.current = { blob: new Blob(trozos.current, { type: "video/webm" }), nombre: `Grabación jornada ${fecha}.webm` };
     trozos.current = [];
+    void enviar(true);
+  }
+
+  async function enviar(primerIntento = false) {
+    const g = pendiente.current;
+    if (!g) return;
+    setEstado("subiendo");
+    setMensaje(`Guardando la grabación (${Math.round(g.blob.size / 1_048_576)} MB)… no cierres esta pestaña.`);
     try {
-      const fecha = new Date().toISOString().slice(0, 16).replace("T", " ").replace(":", "h");
       const datos = new FormData();
-      datos.append("file", new File([blob], `Grabación jornada ${fecha}.webm`, { type: "video/webm" }));
-      const r = await fetch(`/api/planes-capacitacion/actividades/${activityId}/grabacion`, {
-        method: "POST",
-        body: datos,
-      });
+      datos.append("file", new File([g.blob], g.nombre, { type: "video/webm" }));
+      const r = await fetch(`/api/planes-capacitacion/actividades/${activityId}/grabacion`, { method: "POST", body: datos });
       if (!r.ok) throw new Error();
+      pendiente.current = null;
       setEstado("guardada");
       setMensaje("La grabación quedó guardada en los documentos de esta capacitación.");
     } catch {
       setEstado("error");
-      setMensaje("La grabación terminó pero no se pudo subir. Intenta de nuevo con una sesión más corta o mejor conexión.");
+      setMensaje("No se pudo guardar en la plataforma. La grabación NO se perdió: reintenta, o descarga la copia a este equipo. No cierres la pestaña.");
+      // Red de seguridad: en el primer fallo se descarga sola una copia al equipo.
+      if (primerIntento) descargarCopia();
     }
   }
 
@@ -119,6 +156,15 @@ export function GrabacionJornada({ activityId }: { activityId: string }) {
         <Button type="button" size="sm" disabled className="gap-1.5">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Guardando…
         </Button>
+      ) : estado === "error" && pendiente.current ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" size="sm" onClick={() => void enviar()} className="gap-1.5">
+            <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Reintentar guardar
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={descargarCopia} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" aria-hidden="true" /> Descargar copia
+          </Button>
+        </div>
       ) : estado === "guardada" ? (
         <span className="flex items-center gap-1.5 text-xs font-semibold text-success">
           <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Guardada

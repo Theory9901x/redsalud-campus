@@ -53,6 +53,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ are
         courseId: a.courseId,
         targetAudience: a.targetAudience,
         plan: { id: a.plan.id, targetDepartment: a.plan.targetDepartment, kind: a.plan.kind },
+        audienceCommitteePlanId: a.audienceCommitteePlanId,
       });
       return {
         title: a.title,

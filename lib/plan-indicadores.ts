@@ -105,6 +105,7 @@ export async function getPlanIndicators(planId: string, areaIds: string[] | null
       closedAt: true,
       courseId: true,
       targetAudience: true,
+      audienceCommitteePlanId: true,
       reportSnapshot: true,
       area: { select: { id: true, name: true } },
     },
@@ -129,6 +130,23 @@ export async function getPlanIndicators(planId: string, areaIds: string[] | null
           [a, await prisma.user.count({ where: targetAudienceUserWhere(plan.targetDepartment, a) })] as const
       )
     )
+  );
+
+  // Capacitaciones dirigidas a un comité: su audiencia son los integrantes.
+  const comites = [...new Set(actividades.map((a) => a.audienceCommitteePlanId).filter((x): x is string => !!x))];
+  const integrantesPorComite = new Map(
+    comites.length
+      ? (await prisma.committeeMember.groupBy({ by: ["planId"], where: { planId: { in: comites } }, _count: true })).map((r) => [r.planId, r._count])
+      : []
+  );
+  const asistenciaIntegrantes = new Map(
+    comites.length
+      ? await Promise.all(
+          actividades
+            .filter((a) => a.audienceCommitteePlanId)
+            .map(async (a) => [a.id, await prisma.trainingAttendance.count({ where: { activityId: a.id, attended: true, user: { committeeMemberships: { some: { planId: a.audienceCommitteePlanId! } } } } })] as const)
+        )
+      : []
   );
 
   const asistenciaPorActividad = new Map(
@@ -166,8 +184,8 @@ export async function getPlanIndicators(planId: string, areaIds: string[] | null
       quarters: a.quarters,
       cerrada: a.closedAt !== null,
       conContenido: a.courseId !== null,
-      audiencia: conteosAudiencia.get(a.targetAudience) ?? 0,
-      asistentes: asistenciaPorActividad.get(a.id) ?? 0,
+      audiencia: a.audienceCommitteePlanId ? (integrantesPorComite.get(a.audienceCommitteePlanId) ?? 0) : (conteosAudiencia.get(a.targetAudience) ?? 0),
+      asistentes: a.audienceCommitteePlanId ? (asistenciaIntegrantes.get(a.id) ?? 0) : (asistenciaPorActividad.get(a.id) ?? 0),
       variaciones,
     });
   }

@@ -1243,6 +1243,7 @@ export async function ensureEnrollment(userId: string, activityId: string): Prom
       courseId: true,
       status: true,
       targetAudience: true,
+      audienceCommitteePlanId: true,
       plan: { select: { id: true, targetDepartment: true, kind: true } },
     },
   });
@@ -1310,7 +1311,7 @@ export type ActivityLiveMetrics = {
 export async function getActivityLiveMetrics(activityId: string): Promise<ActivityLiveMetrics | null> {
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
-    select: { id: true, targetAudience: true, plan: { select: { id: true, targetDepartment: true, kind: true } } },
+    select: { id: true, targetAudience: true, audienceCommitteePlanId: true, plan: { select: { id: true, targetDepartment: true, kind: true } } },
   });
   if (!actividad) return null;
 
@@ -1528,18 +1529,29 @@ export function targetAudienceUserWhere(targetDepartment: string | null, targetA
  */
 export type PlanDeAudiencia = { id?: string; targetDepartment: string | null; kind?: PlanKind | null };
 
-export function audienciaDeActividad(activity: { targetAudience: CourseAudience; plan: PlanDeAudiencia }): Prisma.UserWhereInput {
-  if (activity.plan.kind === "COMITE" && activity.plan.id) {
-    return { committeeMemberships: { some: { planId: activity.plan.id } } };
-  }
+type ActividadDeAudiencia = { targetAudience: CourseAudience; plan: PlanDeAudiencia; audienceCommitteePlanId?: string | null };
+
+/**
+ * Plan-comité cuyos integrantes son la audiencia: el propio plan si es un
+ * comité, o el comité al que va dirigida una capacitación de otro plan
+ * (p. ej. la capacitación de convivencia laboral del PIC, para el CCL).
+ */
+export function comiteDeAudiencia(activity: ActividadDeAudiencia): string | null {
+  if (activity.audienceCommitteePlanId) return activity.audienceCommitteePlanId;
+  if (activity.plan.kind === "COMITE" && activity.plan.id) return activity.plan.id;
+  return null;
+}
+
+export function audienciaDeActividad(activity: ActividadDeAudiencia): Prisma.UserWhereInput {
+  const comite = comiteDeAudiencia(activity);
+  if (comite) return { committeeMemberships: { some: { planId: comite } } };
   return targetAudienceUserWhere(activity.plan.targetDepartment, activity.targetAudience);
 }
 
 /** Tamaño de la audiencia: integrantes de la resolución en un comité, personal objetivo en el resto. */
-export async function contarAudiencia(activity: { targetAudience: CourseAudience; plan: PlanDeAudiencia }) {
-  if (activity.plan.kind === "COMITE" && activity.plan.id) {
-    return prisma.committeeMember.count({ where: { planId: activity.plan.id } });
-  }
+export async function contarAudiencia(activity: ActividadDeAudiencia) {
+  const comite = comiteDeAudiencia(activity);
+  if (comite) return prisma.committeeMember.count({ where: { planId: comite } });
   return prisma.user.count({ where: audienciaDeActividad(activity) });
 }
 
@@ -1581,6 +1593,7 @@ type ActivityForAdherence = {
   courseId: string | null;
   targetAudience: CourseAudience;
   plan: PlanDeAudiencia;
+  audienceCommitteePlanId?: string | null;
 };
 
 /**
@@ -1625,21 +1638,27 @@ export async function getActivityAttendanceCounts(activity: {
   id: string;
   targetAudience: CourseAudience;
   plan: PlanDeAudiencia;
+  audienceCommitteePlanId?: string | null;
 }) {
-  // En un comité el "X de Y" se lee sobre los integrantes de la resolución:
-  // un invitado que entró a la sala no cuenta como integrante que asistió
-  // (la ficha de la reunión sí muestra la asistencia total con invitados).
-  const soloAudiencia = activity.plan.kind === "COMITE" ? { user: audienciaDeActividad(activity) } : {};
-  const [totalAudiencia, asistieron, registrados] = await Promise.all([
+  // Con audiencia de comité el "X de Y" se lee sobre los integrantes: quien
+  // asistió sin ser integrante no entra en la adherencia, pero se reporta
+  // aparte como "otros asistentes" -nunca se pierde-.
+  const deComite = comiteDeAudiencia(activity) !== null;
+  const soloAudiencia = deComite ? { user: audienciaDeActividad(activity) } : {};
+  const [totalAudiencia, asistieron, registrados, asistieronTodos] = await Promise.all([
     contarAudiencia(activity),
     prisma.trainingAttendance.count({ where: { activityId: activity.id, attended: true, ...soloAudiencia } }),
     prisma.trainingAttendance.count({ where: { activityId: activity.id, ...soloAudiencia } }),
+    deComite ? prisma.trainingAttendance.count({ where: { activityId: activity.id, attended: true } }) : Promise.resolve(0),
   ]);
   return {
     totalAudiencia,
     asistieron,
     registrados,
     porcentaje: totalAudiencia > 0 ? Math.round((asistieron / totalAudiencia) * 100) : 0,
+    /** Solo con audiencia de comité: asistentes que no son integrantes. */
+    otrosAsistieron: deComite ? asistieronTodos - asistieron : 0,
+    audienciaComite: deComite,
   };
 }
 
@@ -1665,13 +1684,16 @@ export type FilaAsistencia = {
  * el único momento en que hace falta mirar más allá de los registrados.
  */
 export async function getActivityAttendancePage(
-  activity: { id: string; targetAudience: CourseAudience; plan: PlanDeAudiencia },
+  activity: { id: string; targetAudience: CourseAudience; plan: PlanDeAudiencia; audienceCommitteePlanId?: string | null },
   opciones: { buscar?: string; pagina?: number; porPagina?: number } = {}
 ): Promise<{ filas: FilaAsistencia[]; total: number; pagina: number; porPagina: number }> {
   const buscar = opciones.buscar?.trim() ?? "";
   const porPagina = Math.min(Math.max(opciones.porPagina ?? 25, 5), 100);
   const pagina = Math.max(opciones.pagina ?? 1, 1);
-  const audiencia = audienciaDeActividad(activity);
+  // Con audiencia de comité, la lista nominal muestra a TODOS los que tienen
+  // registro (integrantes y otros asistentes): la adherencia se calcula sobre
+  // los integrantes, pero nadie que asistió desaparece de la lista.
+  const audiencia = comiteDeAudiencia(activity) ? {} : audienciaDeActividad(activity);
 
   const where = {
     ...audiencia,
@@ -1762,10 +1784,24 @@ export async function getPlanAdherenceSummary(plan: {
   targetDepartment: string | null;
   activities: { id: string; courseId: string | null; targetAudience: CourseAudience }[];
 }) {
+  // Las capacitaciones dirigidas a un comité miden sobre sus integrantes: se
+  // leen en una sola consulta en vez de exigirle el campo a cada llamador.
+  const dirigidasAComite = new Map(
+    (
+      await prisma.trainingActivity.findMany({
+        where: { id: { in: plan.activities.map((a) => a.id) }, audienceCommitteePlanId: { not: null } },
+        select: { id: true, audienceCommitteePlanId: true },
+      })
+    ).map((a) => [a.id, a.audienceCommitteePlanId])
+  );
   const perActivity = await Promise.all(
     plan.activities.map(async (activity) => ({
       activityId: activity.id,
-      ...(await getActivityAdherence({ ...activity, plan: { targetDepartment: plan.targetDepartment } })),
+      ...(await getActivityAdherence({
+        ...activity,
+        plan: { targetDepartment: plan.targetDepartment },
+        audienceCommitteePlanId: dirigidasAComite.get(activity.id) ?? null,
+      })),
     }))
   );
   const withAudience = perActivity.filter((a) => a.totalExpected > 0);

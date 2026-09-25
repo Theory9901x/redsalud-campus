@@ -33,7 +33,7 @@ export function AttendanceRoster({
 }: {
   activityId: string;
   roster: AttendanceRosterItem[];
-  conteos: { asistieron: number; totalAudiencia: number; porcentaje: number };
+  conteos: { asistieron: number; totalAudiencia: number; porcentaje: number; otrosAsistieron?: number; audienciaComite?: boolean };
   paginacion: { pagina: number; porPagina: number; total: number };
   buscar: string;
   /** La jornada cerró, la participación queda congelada — se oculta la acción de marcar asistencia. */
@@ -54,7 +54,12 @@ export function AttendanceRoster({
       <div className="surface flex flex-wrap items-center justify-between gap-3 p-4">
         <span className="font-display text-lg font-bold text-foreground">{conteos.porcentaje}%</span>
         <span className="text-sm text-muted-foreground">
-          {conteos.asistieron} de {conteos.totalAudiencia} asistieron
+          {conteos.asistieron} de {conteos.totalAudiencia} {conteos.audienciaComite ? "integrantes asistieron" : "asistieron"}
+          {conteos.audienciaComite && (conteos.otrosAsistieron ?? 0) > 0 && (
+            <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">
+              + {conteos.otrosAsistieron} otros asistentes (no integrantes)
+            </span>
+          )}
         </span>
       </div>
 

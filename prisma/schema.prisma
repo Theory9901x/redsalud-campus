@@ -897,6 +897,12 @@ model TrainingActivity {
   /** El usuario concreto, cuando se sepa quién es. Nunca se adivina desde el texto. */
   responsibleUserId String?
   responsibleUser   User?   @relation("TrainingActivityResponsible", fields: [responsibleUserId], references: [id])
+  /**
+   * Capacitación DIRIGIDA A LOS INTEGRANTES DE UN COMITÉ: id del plan-comité
+   * cuyos integrantes son la audiencia (denominador de la adherencia). Null =
+   * la audiencia normal del plan (dependencia × tipo de personal).
+   */
+  audienceCommitteePlanId String?
   /** "Seguimiento": evidencias que el PIC exige para dar la actividad por cumplida. */
   followUpEvidence  String[] @default([])
   /** Fila del Excel de origen. Permite rastrear cada actividad hasta el PIC firmado. */
