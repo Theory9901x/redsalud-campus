@@ -506,14 +506,17 @@ export function SalaVirtual({
           <div ref={contenedor} className="h-full w-full" />
 
           {/* Estado, sin tapar el video */}
-          <div className="pointer-events-none absolute bottom-3 left-3 flex items-center gap-2">
+          {/* En celular estos avisos quedaban ENCIMA de la barra nativa de
+              Jitsi y tapaban el botón del micrófono: solo se muestran en
+              escritorio, donde la barra es la de la plataforma. */}
+          <div className="pointer-events-none absolute bottom-3 left-3 hidden items-center gap-2 lg:flex">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-black/45 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
               <span className={cn("h-2 w-2 rounded-full", dentro ? "bg-success animate-pulse" : "bg-white/40")} />
               {dentro ? "Conectado" : "Sin conectar"}
             </span>
           </div>
           {dentro && (
-            <div className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
+            <div className="pointer-events-none absolute bottom-3 right-3 hidden items-center gap-1.5 rounded-full bg-black/45 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm lg:inline-flex">
               <Users className="h-3.5 w-3.5" aria-hidden="true" />
               {participantes.length}
               {compartiendo && <span className="ml-1 rounded bg-primary px-1.5 text-[10px] uppercase">Compartiendo</span>}
