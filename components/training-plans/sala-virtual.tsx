@@ -27,6 +27,7 @@ import {
   Maximize2,
   Minimize2,
   PanelRight,
+  Presentation,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { etiquetaHora } from "@/components/training-plans/labels";
@@ -137,6 +138,13 @@ export function SalaVirtual({
    */
   const escenarioRef = useRef<HTMLDivElement>(null);
   const [ampliado, setAmpliado] = useState(false);
+  /*
+   * "TODOS SIGUEN MI VISTA" (Follow me de Jitsi): el anfitrión impone su
+   * disposición -qué video está en grande, miniaturas visibles u ocultas,
+   * mosaico- a todos los participantes, sin que nadie tenga que recargar.
+   * Solo funciona para moderadores (anfitriones con token).
+   */
+  const [sigueme, setSigueme] = useState(false);
   useEffect(() => {
     const sincronizar = () => setAmpliado(document.fullscreenElement !== null && document.fullscreenElement === escenarioRef.current);
     document.addEventListener("fullscreenchange", sincronizar);
@@ -619,6 +627,12 @@ export function SalaVirtual({
         )}
         {menu === "config" && (
           <MenuFlotante titulo="Configuración de la sala" onCerrar={() => setMenu(null)}>
+            {esPresentador && (
+              <OpcionMenu onClick={() => { const v = !sigueme; comando("setFollowMe", v); setSigueme(v); }}>
+                <Presentation className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Todos siguen mi vista
+                {sigueme && <Check className="ml-auto h-3.5 w-3.5 text-success" aria-hidden="true" />}
+              </OpcionMenu>
+            )}
             <OpcionMenu onClick={() => { comando("toggleFilmStrip"); setMenu(null); }}>
               <PanelRight className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Mostrar u ocultar miniaturas
             </OpcionMenu>
