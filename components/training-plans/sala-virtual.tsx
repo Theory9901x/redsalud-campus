@@ -24,6 +24,9 @@ import {
   RotateCcw,
   SendHorizontal,
   X,
+  Maximize2,
+  Minimize2,
+  PanelRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { etiquetaHora } from "@/components/training-plans/labels";
@@ -126,6 +129,23 @@ export function SalaVirtual({
   const contenedor = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiApi | null>(null);
   const [cargando, setCargando] = useState(true);
+  /*
+   * PANTALLA COMPLETA tipo Meet: se amplía el escenario (video + controles)
+   * con la Fullscreen API del navegador. El iframe de la llamada NO se mueve
+   * ni se vuelve a montar -solo cambia el tamaño de su contenedor-, así que
+   * ampliar o reducir nunca corta ni reconecta la llamada. Esc también sale.
+   */
+  const escenarioRef = useRef<HTMLDivElement>(null);
+  const [ampliado, setAmpliado] = useState(false);
+  useEffect(() => {
+    const sincronizar = () => setAmpliado(document.fullscreenElement !== null && document.fullscreenElement === escenarioRef.current);
+    document.addEventListener("fullscreenchange", sincronizar);
+    return () => document.removeEventListener("fullscreenchange", sincronizar);
+  }, []);
+  const alternarAmpliado = () => {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    else void escenarioRef.current?.requestFullscreen().catch(() => {});
+  };
   const [error, setError] = useState(false);
   const [dentro, setDentro] = useState(false);
   const [salio, setSalio] = useState(false);
@@ -436,13 +456,13 @@ export function SalaVirtual({
 
   return (
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
-    <div className="min-w-0 space-y-5">
+    <div ref={escenarioRef} className={cn("min-w-0 space-y-5", ampliado && "overflow-y-auto bg-background p-4")}>
       {/* ---------------- Video ---------------- */}
       <section
         id="llamada"
         className="relative overflow-hidden rounded-3xl border border-border/40 bg-navy shadow-[0_24px_60px_-28px_rgba(0,0,0,0.6)] scroll-mt-24"
       >
-        <div className="relative h-[58vh] min-h-[420px]">
+        <div className={cn("relative", ampliado ? "h-[calc(100vh-128px)] min-h-[320px]" : "h-[58vh] min-h-[420px]")}>
           {cargando && (
             <div className="absolute inset-0 z-10 flex items-center justify-center gap-2 text-sm text-white/70">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -544,6 +564,12 @@ export function SalaVirtual({
             }}
           />
           <BotonControl
+            etiqueta={ampliado ? "Reducir" : "Pantalla completa"}
+            activo={ampliado}
+            icono={ampliado ? Minimize2 : Maximize2}
+            onClick={alternarAmpliado}
+          />
+          <BotonControl
             etiqueta="Configuración"
             activo={menu === "config"}
             icono={Settings}
@@ -593,6 +619,9 @@ export function SalaVirtual({
         )}
         {menu === "config" && (
           <MenuFlotante titulo="Configuración de la sala" onCerrar={() => setMenu(null)}>
+            <OpcionMenu onClick={() => { comando("toggleFilmStrip"); setMenu(null); }}>
+              <PanelRight className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Mostrar u ocultar miniaturas
+            </OpcionMenu>
             <OpcionMenu onClick={() => comando("toggleTileView")}>
               <LayoutGrid className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Vista en mosaico
               {mosaico && <Check className="ml-auto h-3.5 w-3.5 text-success" aria-hidden="true" />}
