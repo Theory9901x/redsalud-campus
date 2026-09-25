@@ -10,9 +10,12 @@ import type { Prisma } from "@prisma/client";
  * ocurre. Es una tabla de anexar (los tramos nunca se editan) que se agrega
  * al leer, no al escribir.
  *
- * No es la fuente de la asistencia -eso lo sigue siendo TrainingAttendance,
- * intacto-: es el dato interno que pidió Talento Humano para auditar cuánto
- * estuvo conectada de verdad cada persona, por plan de capacitación.
+ * ES LA FUENTE DE LA ASISTENCIA VIRTUAL: una persona con cuenta queda como
+ * "asistió" en el momento en que se registra su primer tramo real en la
+ * llamada (al salir, o en el control periódico cada 5 minutos), y su
+ * permanencia es la suma de sus tramos. Abrir la página de la sala sin
+ * llegar a conectarse ya no marca asistencia: no quedan registros sueltos.
+ * El anfitrión (quien dicta) no se cuenta como asistente.
  */
 
 const DURACION_MINIMA_S = 5; // reconexiones instantáneas / recargas: ruido, no un tramo real.
@@ -56,6 +59,39 @@ export async function registrarConexionLlamada(input: RegistrarConexionInput): P
 
   await prisma.callConnectionLog.create({
     data: { activityId, userId: userId ?? null, externalParticipantId: externalParticipantId ?? null, displayName, joinedAt, leftAt, durationSeconds },
+  });
+
+  if (userId) await marcarAsistenciaPorConexion(activityId, userId);
+}
+
+/**
+ * Quien responde por la capacitación: administración, tutor del área,
+ * responsable de la actividad o responsable del plan. Es el anfitrión de la
+ * sala -modera y graba- y no se cuenta como asistente.
+ */
+export async function esAnfitrionDeActividad(activityId: string, userId: string): Promise<boolean> {
+  const [usuario, actividad] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
+    prisma.trainingActivity.findUnique({
+      where: { id: activityId },
+      select: { responsibleUserId: true, area: { select: { tutorId: true } }, plan: { select: { tutorId: true } } },
+    }),
+  ]);
+  if (!usuario || !actividad) return false;
+  if (usuario.role === "ADMIN") return true;
+  if (usuario.role !== "TUTOR") return false;
+  return actividad.area?.tutorId === userId || actividad.responsibleUserId === userId || actividad.plan.tutorId === userId;
+}
+
+/** Asistencia = estuvo conectado a la llamada. Idempotente; no toca actividades cerradas ni al anfitrión. */
+async function marcarAsistenciaPorConexion(activityId: string, userId: string) {
+  const actividad = await prisma.trainingActivity.findUnique({ where: { id: activityId }, select: { status: true } });
+  if (!actividad || actividad.status === "CLOSED") return;
+  if (await esAnfitrionDeActividad(activityId, userId)) return;
+  await prisma.trainingAttendance.upsert({
+    where: { activityId_userId: { activityId, userId } },
+    update: { attended: true },
+    create: { activityId, userId, attended: true, source: "AUTOMATIC" },
   });
 }
 

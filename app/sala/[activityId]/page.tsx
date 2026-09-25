@@ -105,19 +105,8 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
     session.user.role === "ADMIN" ||
     (session.user.role === "TUTOR" &&
       (actividad.area?.tutorId === uid || actividad.responsibleUserId === uid || actividad.plan.tutorId === uid));
-  // Asistencia automática: entrar a la sala ES presentarse a la jornada.
-  // El anfitrión dicta la capacitación: no es un asistente y no se cuenta.
-  if (actividad.status !== "CLOSED" && !esPersonal) {
-    try {
-      await prisma.trainingAttendance.upsert({
-        where: { activityId_userId: { activityId, userId: session.user.id } },
-        update: { attended: true },
-        create: { activityId, userId: session.user.id, attended: true, source: "AUTOMATIC" },
-      });
-    } catch (error) {
-      console.error("No se pudo registrar la asistencia a la sala:", error);
-    }
-  }
+  // La asistencia NO se marca al abrir esta página: la marca el primer tramo
+  // real de conexión a la llamada (lib/call-connections), con su permanencia.
 
   const jitsiDomain = process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si";
   const tokenSala = esPersonal ? await firmarTokenJitsi(session.user.name ?? "Participante") : null;
