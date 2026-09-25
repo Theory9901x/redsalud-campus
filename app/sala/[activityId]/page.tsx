@@ -52,9 +52,10 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
       targetAudience: true,
       targetAudienceNote: true,
       responsibleLabel: true,
+      responsibleUserId: true,
       responsibleUser: { select: { fullName: true } },
-      area: { select: { name: true, tutor: { select: { fullName: true } } } },
-      plan: { select: { id: true, title: true } },
+      area: { select: { name: true, tutorId: true, tutor: { select: { fullName: true } } } },
+      plan: { select: { id: true, title: true, tutorId: true } },
       sessions: {
         where: { status: { not: "CLOSED" } },
         orderBy: { startsAt: "asc" },
@@ -103,9 +104,22 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
     }
   }
 
-  const esPersonal = session.user.role === "ADMIN" || session.user.role === "TUTOR";
+  /*
+   * ANFITRIÓN de la sala = quien responde por ESTA capacitación: la
+   * administración, el tutor del área que la genera, su responsable o el
+   * responsable del plan. Solo el anfitrión recibe el token de Jitsi
+   * (moderar, silenciar, expulsar, iniciar la sala) y los controles de
+   * grabación. Todos los demás -estudiantes y tutores de otras áreas-
+   * entran como participantes normales. Antes se firmaba token para
+   * cualquiera con cuenta, y eso volvía moderador a todo el auditorio.
+   */
+  const uid = session.user.id;
+  const esPersonal =
+    session.user.role === "ADMIN" ||
+    (session.user.role === "TUTOR" &&
+      (actividad.area?.tutorId === uid || actividad.responsibleUserId === uid || actividad.plan.tutorId === uid));
   const jitsiDomain = process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si";
-  const tokenSala = await firmarTokenJitsi(session.user.name ?? "Participante");
+  const tokenSala = esPersonal ? await firmarTokenJitsi(session.user.name ?? "Participante") : null;
   const proximaJornada = actividad.sessions[0] ? etiquetaJornada(actividad.sessions[0]) : null;
   const nombre = session.user.name ?? "Participante";
   const inicialesUsuario = nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
