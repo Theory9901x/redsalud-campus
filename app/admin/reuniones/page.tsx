@@ -71,7 +71,9 @@ export default async function ReunionesPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-              {r.activities.map((a) => {
+              {[...r.activities]
+                .sort((x, y) => (x.sessions[0]?.startsAt.getTime() ?? 0) - (y.sessions[0]?.startsAt.getTime() ?? 0))
+                .map((a) => {
                 const enlace = `${APP_URL}/invitado/${a.id}`;
                 const sesion = a.sessions[0];
                 const qr = qrs.get(a.id)!;
