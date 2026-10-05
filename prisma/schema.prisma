@@ -658,6 +658,8 @@ model NotificationRead {
 enum PlanKind {
   CAPACITACION
   COMITE
+  /** Reunión ABIERTA, fuera del PIC y de los comités: se entra solo con nombre completo y cargo. */
+  REUNION
 }
 
 /** Rol de un integrante en el comité, según la resolución de conformación. */

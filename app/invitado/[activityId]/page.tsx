@@ -53,7 +53,7 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
       postsaberOpenedAt: true,
       postsaberClosedAt: true,
       area: { select: { name: true, tutor: { select: { fullName: true } } } },
-      plan: { select: { title: true } },
+      plan: { select: { title: true, kind: true } },
       sessions: {
         where: { status: { not: "CLOSED" } },
         orderBy: { startsAt: "asc" },
@@ -77,7 +77,7 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
   if (!participante) {
     return (
       <main className="aula-canvas flex min-h-screen items-center justify-center px-4 py-10">
-        <RegistroInvitado action={registrar} titulo={actividad.title} />
+        <RegistroInvitado action={registrar} titulo={actividad.title} reunionAbierta={actividad.plan.kind === "REUNION"} />
       </main>
     );
   }
@@ -121,7 +121,7 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
       <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
-            {actividad.plan.title} · Invitado: <span className="font-semibold text-foreground">{participante.fullName}</span>{" "}
+            {actividad.plan.title} · {actividad.plan.kind === "REUNION" ? "Participante" : "Invitado"}: <span className="font-semibold text-foreground">{participante.fullName}</span>{" "}
             ({participante.company})
           </p>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-success/25 bg-success/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-success">

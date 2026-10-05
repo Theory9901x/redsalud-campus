@@ -338,6 +338,7 @@ export default async function TutorActividadDetallePage({
       {externos.length > 0 && (
         <ExternalParticipantsPanel
           externos={externos.map((e) => ({ ...e, registradoEtiqueta: DATETIME_FORMAT.format(e.registradoEl) }))}
+          etiquetaEntidad={activity.plan.kind === "REUNION" ? "Cargo" : undefined}
         />
       )}
 

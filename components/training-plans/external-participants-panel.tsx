@@ -15,7 +15,7 @@ export type ExternoFila = {
  * asistencia interna a propósito: son poblaciones distintas y el informe las
  * reporta por separado.
  */
-export function ExternalParticipantsPanel({ externos }: { externos: ExternoFila[] }) {
+export function ExternalParticipantsPanel({ externos, etiquetaEntidad = "Empresa / entidad" }: { externos: ExternoFila[]; etiquetaEntidad?: string }) {
   return (
     <div className="surface-panel space-y-3 p-6">
       <div>
@@ -32,7 +32,7 @@ export function ExternalParticipantsPanel({ externos }: { externos: ExternoFila[
         <TableHeader>
           <TableRow>
             <TableHead>Nombre</TableHead>
-            <TableHead>Empresa / entidad</TableHead>
+            <TableHead>{etiquetaEntidad}</TableHead>
             <TableHead>Registro</TableHead>
             <TableHead className="text-center">Presaber</TableHead>
             <TableHead className="text-center">Postsaber</TableHead>

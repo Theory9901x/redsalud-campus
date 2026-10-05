@@ -26,13 +26,17 @@ export async function registrarInvitadoAction(
   const fullName = String(formData.get("fullName") ?? "").trim();
   const company = String(formData.get("company") ?? "").trim();
 
-  if (fullName.length < 5) return { error: "Escribe tu nombre completo." };
-  if (company.length < 2) return { error: "Escribe la empresa o entidad de la que vienes." };
-
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
-    select: { id: true, status: true },
+    select: { id: true, status: true, plan: { select: { kind: true } } },
   });
+  // En una REUNIÓN ABIERTA el segundo dato es el CARGO (se guarda en el mismo
+  // campo): es lo único que se pide además del nombre para la asistencia.
+  const esReunion = actividad?.plan.kind === "REUNION";
+
+  if (fullName.length < 5) return { error: "Escribe tu nombre completo." };
+  if (company.length < 2) return { error: esReunion ? "Escribe tu cargo." : "Escribe la empresa o entidad de la que vienes." };
+
   if (!actividad) return { error: "Esta capacitación no existe." };
   if (actividad.status === "CLOSED") return { error: "Esta jornada ya fue cerrada por el área." };
 
