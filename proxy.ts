@@ -14,6 +14,8 @@ const ADMIN_SECTION_PREFIXES: [string, AdminSection][] = [
   ["/admin/usuarios", "USUARIOS"],
   ["/admin/cursos", "CURSOS"],
   ["/admin/planes-capacitacion", "PLANES_CAPACITACION"],
+  ["/admin/comites", "PLANES_CAPACITACION"],
+  ["/admin/reuniones", "PLANES_CAPACITACION"],
   ["/admin/inscripciones", "INSCRIPCIONES"],
   ["/admin/certificados", "CERTIFICADOS"],
   ["/admin/notificaciones", "NOTIFICACIONES"],

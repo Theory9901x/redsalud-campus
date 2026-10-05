@@ -1,15 +1,16 @@
 import Link from "next/link";
-import { CalendarRange, Gavel } from "lucide-react";
+import { CalendarRange, Gavel, Presentation } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Pestañas submodulares: Planes de capacitación · Comités. Son dos módulos
- * con gestión y medición aparte que comparten el mismo espacio del menú.
+ * Pestañas submodulares: Planes de capacitación · Comités · Reuniones. Son
+ * módulos con gestión y medición aparte que comparten el mismo espacio del menú.
  */
-export function PestanasModulo({ activa }: { activa: "planes" | "comites" }) {
+export function PestanasModulo({ activa }: { activa: "planes" | "comites" | "reuniones" }) {
   const pestanas = [
     { clave: "planes", href: "/admin/planes-capacitacion", etiqueta: "Planes de capacitación", Icono: CalendarRange },
     { clave: "comites", href: "/admin/comites", etiqueta: "Comités", Icono: Gavel },
+    { clave: "reuniones", href: "/admin/reuniones", etiqueta: "Reuniones", Icono: Presentation },
   ] as const;
 
   return (
