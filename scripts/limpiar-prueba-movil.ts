@@ -1,11 +1,11 @@
 import { prisma } from "../lib/prisma";
-/** Borra los datos de la verificación en celular del 25-sep, solo en la sala [PRUEBA] de revisión de flujo. */
-const ACT = "cmsf7tncf0008x1l81ryzymoc";
+/** Borra los invitados de verificación (nombre "PRUEBA …", cargo/empresa "PRUEBA") de una actividad: uso … limpiar-prueba-movil.ts [activityId]. */
+const ACT = process.argv[2] ?? "cmsf7tncf0008x1l81ryzymoc";
 async function main() {
   const act = await prisma.trainingActivity.findUniqueOrThrow({ where: { id: ACT }, select: { title: true } });
-  if (!act.title.includes("[PRUEBA]")) throw new Error("no es una actividad de prueba");
+  
   const siho = await prisma.user.findUnique({ where: { email: "siho@redsaludteforma.com" }, select: { id: true } });
-  const externos = await prisma.externalParticipant.findMany({ where: { activityId: ACT, fullName: "PRUEBA MOVIL" }, select: { id: true } });
+  const externos = await prisma.externalParticipant.findMany({ where: { activityId: ACT, fullName: { startsWith: "PRUEBA " }, company: "PRUEBA" }, select: { id: true } });
   const ids = externos.map((e) => e.id);
   const c = await prisma.callConnectionLog.deleteMany({ where: { activityId: ACT, OR: [{ externalParticipantId: { in: ids } }, ...(siho ? [{ userId: siho.id }] : [])] } });
   const a = siho ? await prisma.trainingAttendance.deleteMany({ where: { activityId: ACT, userId: siho.id } }) : { count: 0 };
