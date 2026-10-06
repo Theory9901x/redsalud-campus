@@ -157,7 +157,10 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
               grabacion={puedeGrabar ? <GrabacionJornada activityId={actividad.id} /> : undefined}
               panelDerecho={
                 <div className="space-y-4">
-            {/* Evaluaciones del ciclo */}
+            {/* Evaluaciones del ciclo: SOLO si la actividad tiene curso con
+                evaluación. Una reunión o un evento sin curso no tiene presaber
+                ni postsaber, y antes el recuadro salía igual ("Disponible"). */}
+            {actividad.courseId && (
             <section className="surface-glass space-y-3 p-5">
               <h2 className="font-display text-xs font-bold uppercase tracking-wide text-foreground">Tu evaluación</h2>
               {MOMENTOS.map((m) => (
@@ -189,6 +192,7 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
                 momento.
               </p>
             </section>
+            )}
 
             {/* Informe de la capacitación */}
             <section className="surface-glass space-y-3 p-5">
