@@ -72,7 +72,14 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
   // aquí mismo: es la misma sala. Los invitados reales nunca la ven.
   const sesionStaff = await auth();
   const puedeGrabar = sesionStaff?.user?.role === "ADMIN" || sesionStaff?.user?.role === "TUTOR";
-  const tokenStaff = puedeGrabar ? await firmarTokenJitsi(sesionStaff!.user!.name ?? "Personal") : null;
+  // REUNIÓN ABIERTA: cualquier participante puede iniciar la sala a la hora
+  // citada, sin esperar a un anfitrión con cuenta.
+  const reunionAbierta = actividad.plan.kind === "REUNION";
+  const tokenStaff = puedeGrabar
+    ? await firmarTokenJitsi(sesionStaff!.user!.name ?? "Personal")
+    : reunionAbierta && participante
+      ? await firmarTokenJitsi(`${participante.fullName} (${participante.company})`)
+      : null;
 
   if (!participante) {
     return (

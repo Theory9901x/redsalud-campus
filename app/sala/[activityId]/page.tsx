@@ -55,7 +55,7 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
       responsibleUserId: true,
       responsibleUser: { select: { fullName: true } },
       area: { select: { name: true, tutorId: true, tutor: { select: { fullName: true } } } },
-      plan: { select: { id: true, title: true, tutorId: true } },
+      plan: { select: { id: true, title: true, tutorId: true, kind: true } },
       sessions: {
         where: { status: { not: "CLOSED" } },
         orderBy: { startsAt: "asc" },
@@ -109,7 +109,8 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
   // real de conexión a la llamada (lib/call-connections), con su permanencia.
 
   const jitsiDomain = process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si";
-  const tokenSala = esPersonal ? await firmarTokenJitsi(session.user.name ?? "Participante") : null;
+  // En una REUNIÓN ABIERTA cualquiera inicia la sala; en el resto, solo el anfitrión.
+  const tokenSala = esPersonal || actividad.plan.kind === "REUNION" ? await firmarTokenJitsi(session.user.name ?? "Participante") : null;
   const proximaJornada = actividad.sessions[0] ? etiquetaJornada(actividad.sessions[0]) : null;
   const nombre = session.user.name ?? "Participante";
   const inicialesUsuario = nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
