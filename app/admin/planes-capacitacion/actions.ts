@@ -517,7 +517,7 @@ export async function updateTrainingPlanAction(
  * asistencia: eso es evidencia de capacitación y no debe desaparecer sin más.
  */
 export async function deleteTrainingPlanAction(basePath: string, planId: string): Promise<DeleteState> {
-  await requireTrainingPlanAccess(planId);
+  const sesion = await requireTrainingPlanAccess(planId);
 
   const plan = await prisma.trainingPlan.findUnique({
     where: { id: planId },
@@ -525,14 +525,23 @@ export async function deleteTrainingPlanAction(basePath: string, planId: string)
   });
   if (!plan) return { error: "El plan ya no existe." };
 
+  // Datos de DEMOSTRACIÓN o de PRUEBA (título marcado [DEMO]/[PRUEBA]): su
+  // "asistencia" no es evidencia de nada, así que la administración puede
+  // borrarlos completos. Los planes reales siguen protegidos.
+  const esDePrueba = /^\s*\[(DEMO|PRUEBA)\]/i.test(plan.title);
   const asistencias = plan.activities.reduce((s, a) => s + a._count.attendances, 0);
-  if (asistencias > 0) {
+  if (asistencias > 0 && !(esDePrueba && sesion.user.role === "ADMIN")) {
     return {
       error: `No se puede eliminar "${plan.title}": tiene ${asistencias} registro(s) de asistencia, que son la evidencia de la capacitación.`,
     };
   }
 
-  await prisma.trainingPlan.delete({ where: { id: planId } });
+  try {
+    await prisma.trainingPlan.delete({ where: { id: planId } });
+  } catch (error) {
+    console.error("No se pudo eliminar el plan", planId, error);
+    return { error: `No se pudo eliminar "${plan.title}": tiene registros vinculados que la base de datos protege. Avísale a soporte.` };
+  }
   revalidatePath(basePath);
   return { error: null };
 }

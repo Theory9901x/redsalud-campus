@@ -10,6 +10,7 @@ import {
   TRAINING_ACTIVITY_STATUS_LABELS,
   TRAINING_MODALITY_LABELS,
   etiquetaProgramacion,
+  tituloLegible,
 } from "@/components/training-plans/labels";
 import { TrimestresChip, nombreTrimestre, trimestreEnCurso } from "@/components/training-plans/trimestres-chip";
 import { PildoraEstado, escalon } from "@/components/training-plans/plan-visual";
@@ -228,10 +229,10 @@ export function TrainingActivityTimeline({
                           href={`${basePath}/${planId}/actividades/${activity.id}`}
                           className="font-display text-sm font-bold text-foreground hover:underline"
                         >
-                          {activity.title}
+                          {tituloLegible(activity.title)}
                         </Link>
                       ) : (
-                        <span className="font-display text-sm font-bold text-foreground">{activity.title}</span>
+                        <span className="font-display text-sm font-bold text-foreground">{tituloLegible(activity.title)}</span>
                       )}
                       {activity.programa && (
                         <span className="chip-dato chip-dato-primario">
@@ -294,7 +295,7 @@ export function TrainingActivityTimeline({
                     {puedeEliminar && (
                       <DeleteEntityButton
                         action={deleteTrainingActivityAction.bind(null, basePath, planId, activity.id)}
-                        nombre={activity.title}
+                        nombre={tituloLegible(activity.title)}
                         descripcion="Se elimina esta jornada del plan, con sus encuestas y documentos. No se puede deshacer."
                       />
                     )}

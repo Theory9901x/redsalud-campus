@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
+import { VistaActividad, SeccionActividad, type PestanaActividad } from "@/components/training-plans/vista-actividad";
+import { PanelDeslizable } from "@/components/training-plans/panel-deslizable";
+import { UsersRound, FileText, ScrollText, FileBarChart } from "lucide-react";
 import Link from "next/link";
-import { ArrowLeft, CalendarRange, Users2, ClipboardList, ClipboardCheck, TrendingUp, BookOpen, UserPlus, Plus } from "lucide-react";
+import { CalendarRange, Users2, ClipboardList, ClipboardCheck, TrendingUp, BookOpen, UserPlus, Plus } from "lucide-react";
 import { requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import {
   getTrainingActivityDetail,
@@ -29,7 +32,6 @@ import {
   openPostsaberAction,
   closePostsaberAction,
 } from "@/app/admin/planes-capacitacion/actions";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
@@ -55,8 +57,6 @@ import QRCode from "qrcode";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
 import {
   TRAINING_ACTIVITY_TYPE_LABELS,
-  TRAINING_ACTIVITY_STATUS_LABELS,
-  TRAINING_ACTIVITY_STATUS_CLASSES,
   etiquetaProgramacion,
   etiquetaJornada,
   etiquetaDiaMes,
@@ -221,219 +221,230 @@ export default async function AdminActividadDetallePage({
     },
   ];
 
-  return (
-    <div className="space-y-8">
-      <Link
-        href={`${BASE_PATH}/${id}`}
-        className="flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        {activity.plan.title}
-      </Link>
-
-      <header className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="max-w-3xl">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
-            {activity.area?.name ?? "Capacitación del plan"}
-            {activity.programa ? ` · ${activity.programa}` : ""}
-          </p>
-          <h1 className="mt-2 font-display text-[clamp(1.6rem,3.2vw,2.15rem)] font-extrabold leading-[1.12] tracking-tight text-foreground">
-            {activity.title}
-          </h1>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-[13px] font-medium text-muted-foreground backdrop-blur-sm">
-              <CalendarRange className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
-              {etiquetaProgramacion(activity)}
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-[13px] font-medium text-muted-foreground backdrop-blur-sm">
-              <Users2 className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
-              {COURSE_AUDIENCE_LABELS[activity.targetAudience]}
-            </span>
-            <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-[13px] font-medium text-muted-foreground backdrop-blur-sm">
-              <BookOpen className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
-              {activity.course ? (
-                <Link href={`/cursos/${activity.course.slug}`} target="_blank" className="truncate text-primary hover:underline">
-                  {activity.course.title}
-                </Link>
-              ) : (
-                <span className="truncate">
-                  {activity.type === "EXTERNAL_EVENT"
-                    ? TRAINING_ACTIVITY_TYPE_LABELS.EXTERNAL_EVENT
-                    : "Sin curso · gestión directa"}
-                </span>
-              )}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex shrink-0 flex-col items-end gap-2">
-            <Badge className={TRAINING_ACTIVITY_STATUS_CLASSES[activity.status]}>
-              {TRAINING_ACTIVITY_STATUS_LABELS[activity.status]}
-            </Badge>
-            <ActivityLifecycleActions
-              status={activity.status}
-              closedAtLabel={activity.closedAt ? DATETIME_FORMAT.format(activity.closedAt) : null}
-              puedeReabrir={session.user.role === "ADMIN"}
-              fichaCompleta={fichaCompletaParaPublicar(activity)}
-              onClose={closeAction}
-              onReopen={reopenAction}
-              onHide={hideAction}
-              onShow={showAction}
+  const pestanas: PestanaActividad[] = [
+    {
+      valor: "jornadas",
+      etiqueta: "Jornadas y acceso",
+      Icono: CalendarRange,
+      conteo: activity.sessions.length,
+      contenido: (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
+          <SeccionActividad
+            titulo="Jornadas agendadas"
+            bajada="El plan programa por trimestre; aquí se agenda el día y la hora exactos de cada jornada."
+            accion={
+              <PanelDeslizable
+                etiqueta="Agendar jornada"
+                icono="agendar"
+                titulo="Agendar jornada"
+                descripcion="Fecha, hora y modalidad. La sala integrada registra la asistencia sola."
+              >
+                <TrainingSessionForm action={createSessionAction} municipios={municipios} salaIntegradaUrl={`${baseUrl}/sala/${activityId}`} />
+              </PanelDeslizable>
+            }
+          >
+            <TrainingSessionList
+              sessions={activity.sessions.map((ses) => ({
+                ...ses,
+                etiqueta: etiquetaJornada(ses),
+                ficha: etiquetaDiaMes(ses.startsAt),
+                horario: `${etiquetaHora(ses.startsAt)}${ses.endsAt ? ` – ${etiquetaHora(ses.endsAt)}` : ""}`,
+              }))}
+              onEnable={enableSessionAction}
+              onClose={closeSessionAction}
+              onDelete={deleteSessionAction}
+              vivoBaseUrl={`/admin/planes-capacitacion/${id}/actividades/${activityId}/sesion`}
             />
-        </div>
-      </header>
-
-      {/* Cómo va la jornada, de un vistazo. */}
-      <section aria-label="Indicadores de la jornada" className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-        {kpis.map((k) => (
-          <div key={k.etiqueta} className="surface-lumen flex flex-col justify-between gap-3 p-5">
-            <span className={cn("relative flex h-9 w-9 items-center justify-center rounded-xl", k.chip)}>
-              <k.Icono className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              {k.destacar && (
-                <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-warning" aria-hidden="true" />
-              )}
-            </span>
-            <div className="min-w-0">
-              <p className="font-display text-[1.75rem] font-extrabold leading-none tracking-tight text-foreground">
-                {k.valor}
-              </p>
-              <p className="mt-1 text-[12px] font-semibold leading-tight text-foreground/80">{k.etiqueta}</p>
-              <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground" title={k.detalle}>
-                {k.detalle}
-              </p>
-            </div>
+          </SeccionActividad>
+          <div className="xl:sticky xl:top-6 xl:h-fit">
+            <ActivityQrPanel enlaces={enlacesQr} />
           </div>
-        ))}
-      </section>
-
-      <ActivityPlanCard activity={activity} responsibleUserName={activity.responsibleUser?.fullName ?? null} />
-
-      {activity.courseId && resumenCiclo && (
-        <PresaberPostsaberPanel
-          ventanas={activity}
-          resumen={resumenCiclo}
-          onOpenPresaber={openPresaber}
-          onClosePresaber={closePresaber}
-          etiquetas={etiquetasCiclo}
-          onOpenPostsaber={openPostsaber}
-          onClosePostsaber={closePostsaber}
-        />
-      )}
-
-      {resultadosCiclo && <CycleResults resultados={resultadosCiclo} activityId={activityId} />}
-
-      <ActivityReportPanel activityId={activityId} cerrada={isClosed} />
-
-      <ActivityQrPanel enlaces={enlacesQr} />
-
-      {externos.length > 0 && (
-        <ExternalParticipantsPanel
-          externos={externos.map((e) => ({ ...e, registradoEtiqueta: DATETIME_FORMAT.format(e.registradoEl) }))}
-          etiquetaEntidad={activity.plan.kind === "REUNION" ? "Cargo" : undefined}
-        />
-      )}
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* El formulario va PRIMERO (izquierda) y en vidrio: es la acción de
-            esta sección; la lista de jornadas la acompaña al lado. */}
-        <div className="surface-lumen h-fit space-y-3 p-6">
-          <h3 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">Agendar jornada</h3>
-          <TrainingSessionForm action={createSessionAction} municipios={municipios} salaIntegradaUrl={`${baseUrl}/sala/${activityId}`} />
         </div>
-        <div className="space-y-3 lg:col-span-2">
-          <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Jornadas agendadas</h2>
-          <TrainingSessionList
-            sessions={activity.sessions.map((ses) => ({
-              ...ses,
-              etiqueta: etiquetaJornada(ses),
-              ficha: etiquetaDiaMes(ses.startsAt),
-              horario: `${etiquetaHora(ses.startsAt)}${ses.endsAt ? ` – ${etiquetaHora(ses.endsAt)}` : ""}`,
-            }))}
-            onEnable={enableSessionAction}
-            onClose={closeSessionAction}
-            onDelete={deleteSessionAction}
-            vivoBaseUrl={`/admin/planes-capacitacion/${id}/actividades/${activityId}/sesion`}
-          />
-        </div>
-      </div>
-
-      <RegistroConexiones activityId={activityId} />
-
-      <div className="space-y-3">
-        <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Adherencia y cumplimiento</h2>
-        {activity.courseId ? (
-          <div className="space-y-4">
-            <ActivityAdherencePanel adherence={adherence} />
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-foreground">Quién ya entró a la evaluación</h3>
-              <AutomaticAttendanceList asistencias={asistenciasAutomaticas} />
-            </div>
-          </div>
-        ) : (
-          <AttendanceRoster
-            activityId={activity.id}
-            roster={roster!.filas}
-            conteos={conteosAsistencia}
-            paginacion={{ pagina: roster!.pagina, porPagina: roster!.porPagina, total: roster!.total }}
-            buscar={buscarAsistencia}
-            locked={isClosed}
-          />
-        )}
-        {isClosed && <NonAdherentList users={nonAdherentUsers} />}
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Contenido del curso</h2>
-          {activity.course && (
-            <DeleteEntityButton
-              action={unlinkCourseAction}
-              nombre="El vínculo con el curso"
-              descripcion="La capacitación vuelve a quedar «sin contenido todavía». El curso en sí no se toca."
-              etiquetaBoton="Desvincular"
-              size="sm"
+      ),
+    },
+    {
+      valor: "asistencia",
+      etiqueta: "Asistencia",
+      Icono: UsersRound,
+      conteo: conteosAsistencia.asistieron,
+      contenido: (
+        <>
+          <SeccionActividad
+            titulo="Adherencia y cumplimiento"
+            bajada={activity.courseId ? "Se calcula sola con quienes completan el curso vinculado." : "Se marca con la conexión real a la sala; también puedes marcar a alguien a mano."}
+          >
+            {activity.courseId ? (
+              <div className="space-y-4">
+                <ActivityAdherencePanel adherence={adherence} />
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-foreground">Quién ya entró a la evaluación</h3>
+                  <AutomaticAttendanceList asistencias={asistenciasAutomaticas} />
+                </div>
+              </div>
+            ) : (
+              <AttendanceRoster
+                activityId={activity.id}
+                roster={roster!.filas}
+                conteos={conteosAsistencia}
+                paginacion={{ pagina: roster!.pagina, porPagina: roster!.porPagina, total: roster!.total }}
+                buscar={buscarAsistencia}
+                locked={isClosed}
+              />
+            )}
+            {isClosed && <NonAdherentList users={nonAdherentUsers} />}
+          </SeccionActividad>
+          <RegistroConexiones activityId={activityId} />
+          {externos.length > 0 && (
+            <ExternalParticipantsPanel
+              externos={externos.map((e) => ({ ...e, registradoEtiqueta: DATETIME_FORMAT.format(e.registradoEl) }))}
+              etiquetaEntidad={activity.plan.kind === "REUNION" ? "Cargo" : undefined}
             />
           )}
-        </div>
-        {activity.course ? (
-          <p className="surface-lumen p-5 text-sm text-muted-foreground">
-            Esta capacitación se desarrolla con{" "}
-            <Link href={`/cursos/${activity.course.slug}`} target="_blank" className="font-medium text-primary hover:underline">
-              {activity.course.title}
-            </Link>
-            .
-          </p>
-        ) : (
-          <div className="surface-lumen p-5">
-            <LinkCourseForm action={linkCourseAction} courses={linkableCourses} />
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-3">
-        <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Documentos de la actividad</h2>
-        <TrainingDocumentList documents={activity.documents} />
-        <div className="surface-lumen p-5">
-          <TrainingDocumentUploadForm action={uploadDocumentAction} />
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-4 w-4 text-primary" />
-            <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Encuestas de esta actividad</h2>
-          </div>
-          <Link
-            href={`${BASE_PATH}/${id}/encuestas/nueva?actividad=${activityId}`}
-            className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
+        </>
+      ),
+    },
+    ...(activity.courseId && resumenCiclo
+      ? [
+          {
+            valor: "evaluacion",
+            etiqueta: "Evaluación",
+            Icono: ClipboardCheck,
+            contenido: (
+              <>
+                <PresaberPostsaberPanel
+                  ventanas={activity}
+                  resumen={resumenCiclo}
+                  onOpenPresaber={openPresaber}
+                  onClosePresaber={closePresaber}
+                  etiquetas={etiquetasCiclo}
+                  onOpenPostsaber={openPostsaber}
+                  onClosePostsaber={closePostsaber}
+                />
+                {resultadosCiclo && <CycleResults resultados={resultadosCiclo} activityId={activityId} />}
+              </>
+            ),
+          } satisfies PestanaActividad,
+        ]
+      : []),
+    {
+      valor: "contenido",
+      etiqueta: "Contenido y documentos",
+      Icono: FileText,
+      conteo: activity.documents.length,
+      contenido: (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <SeccionActividad
+            titulo="Contenido del curso"
+            bajada="Vincular un curso activa el cálculo automático de adherencia y el ciclo presaber/postsaber."
+            accion={
+              activity.course ? (
+                <DeleteEntityButton
+                  action={unlinkCourseAction}
+                  nombre="El vínculo con el curso"
+                  descripcion="La capacitación vuelve a quedar «sin contenido todavía». El curso en sí no se toca."
+                  etiquetaBoton="Desvincular"
+                  size="sm"
+                />
+              ) : undefined
+            }
           >
-            <Plus className="h-4 w-4" />
-            Nueva encuesta
-          </Link>
+            {activity.course ? (
+              <p className="barra-modulo p-5 text-sm text-muted-foreground">
+                Esta capacitación se desarrolla con{" "}
+                <Link href={`/cursos/${activity.course.slug}`} target="_blank" className="font-semibold text-primary hover:underline">
+                  {activity.course.title}
+                </Link>
+                .
+              </p>
+            ) : (
+              <div className="barra-modulo form-premium p-5">
+                <LinkCourseForm action={linkCourseAction} courses={linkableCourses} />
+              </div>
+            )}
+          </SeccionActividad>
+          <SeccionActividad titulo="Documentos de la actividad" bajada="Presentaciones, listas firmadas, grabaciones y evidencias.">
+            <TrainingDocumentList documents={activity.documents} />
+            <div className="barra-modulo form-premium p-5">
+              <TrainingDocumentUploadForm action={uploadDocumentAction} />
+            </div>
+          </SeccionActividad>
         </div>
-        <SurveyList surveys={surveys} basePath={BASE_PATH} planId={id} showActivityScope={false} />
-      </div>
-    </div>
+      ),
+    },
+    {
+      valor: "encuestas",
+      etiqueta: "Encuestas",
+      Icono: ClipboardList,
+      conteo: surveys.length,
+      contenido: (
+        <SeccionActividad
+          titulo="Encuestas de esta actividad"
+          bajada="Satisfacción y evaluación de la jornada."
+          accion={
+            <Link
+              href={`${BASE_PATH}/${id}/encuestas/nueva?actividad=${activityId}`}
+              className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
+            >
+              <Plus className="h-4 w-4" />
+              Nueva encuesta
+            </Link>
+          }
+        >
+          <SurveyList surveys={surveys} basePath={BASE_PATH} planId={id} showActivityScope={false} />
+        </SeccionActividad>
+      ),
+    },
+    {
+      valor: "ficha",
+      etiqueta: "Ficha del plan",
+      Icono: ScrollText,
+      contenido: (
+        <ActivityPlanCard activity={activity} responsibleUserName={activity.responsibleUser?.fullName ?? null} />
+      ),
+    },
+    {
+      valor: "informe",
+      etiqueta: "Informe",
+      Icono: FileBarChart,
+      contenido: <ActivityReportPanel activityId={activityId} cerrada={isClosed} />,
+    },
+  ];
+
+  return (
+    <VistaActividad
+      volver={{ href: `${BASE_PATH}/${id}`, etiqueta: activity.plan.title }}
+      eyebrow={`${activity.area?.name ?? "Capacitación del plan"}${activity.programa ? ` · ${activity.programa}` : ""}`}
+      titulo={activity.title}
+      chips={[
+        { Icono: CalendarRange, contenido: etiquetaProgramacion(activity) },
+        { Icono: Users2, contenido: COURSE_AUDIENCE_LABELS[activity.targetAudience] },
+        {
+          Icono: BookOpen,
+          contenido: activity.course
+            ? activity.course.title
+            : activity.type === "EXTERNAL_EVENT"
+              ? TRAINING_ACTIVITY_TYPE_LABELS.EXTERNAL_EVENT
+              : "Sin curso · gestión directa",
+        },
+      ]}
+      estado={activity.status}
+      acciones={
+        <>
+          <ActivityLifecycleActions
+            status={activity.status}
+            closedAtLabel={activity.closedAt ? DATETIME_FORMAT.format(activity.closedAt) : null}
+            puedeReabrir={session.user.role === "ADMIN"}
+            fichaCompleta={fichaCompletaParaPublicar(activity)}
+            onClose={closeAction}
+            onReopen={reopenAction}
+            onHide={hideAction}
+            onShow={showAction}
+          />
+        </>
+      }
+      kpis={kpis.map((k) => ({ valor: k.valor, etiqueta: k.etiqueta, detalle: k.detalle }))}
+      pestanas={pestanas}
+      pestanaInicial={buscarAsistencia || paginaParam ? "asistencia" : "jornadas"}
+    />
   );
 }

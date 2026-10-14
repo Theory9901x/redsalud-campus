@@ -192,3 +192,16 @@ export function trimestreParaListar(quarters: number[], hoy: Date = new Date()):
   const vigentes = quarters.filter((q) => q >= enCurso).sort((a, b) => a - b);
   return vigentes[0] ?? Math.max(...quarters);
 }
+
+/**
+ * Títulos que llegan del PIC en MAYÚSCULAS SOSTENIDAS se muestran en tipo
+ * oración ("Capacitacion en el programa…"): se leen mucho mejor y dejan de
+ * "gritar" en el cronograma. Solo es presentación -el dato guardado no
+ * cambia- y solo aplica si el título entero está en mayúsculas.
+ */
+export function tituloLegible(titulo: string): string {
+  const letras = titulo.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ]/g, "");
+  if (letras.length < 6 || letras !== letras.toUpperCase()) return titulo;
+  const minus = titulo.toLocaleLowerCase("es-CO");
+  return minus.charAt(0).toLocaleUpperCase("es-CO") + minus.slice(1);
+}

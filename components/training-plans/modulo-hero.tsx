@@ -20,6 +20,7 @@ export function ModuloHero({
   acciones,
   pie,
   lateral,
+  columnasCifras = 4,
   className,
 }: {
   eyebrow: string;
@@ -29,7 +30,9 @@ export function ModuloHero({
   acento?: string;
   descripcion?: ReactNode;
   marca?: string | number;
-  cifras?: { valor: ReactNode; etiqueta: string }[];
+  cifras?: { valor: ReactNode; etiqueta: string; detalle?: string }[];
+  /** Cuántas cifras por fila en escritorio (4 por defecto; 6 para la vista de una actividad). */
+  columnasCifras?: 4 | 6;
   acciones?: ReactNode;
   pie?: ReactNode;
   /** Bloque a la derecha del título (p. ej. el anillo de cumplimiento). */
@@ -64,11 +67,12 @@ export function ModuloHero({
       </div>
 
       {cifras.length > 0 && (
-        <div className="relative z-[1] mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className={cn("relative z-[1] mt-7 grid grid-cols-2 gap-3", columnasCifras === 6 ? "sm:grid-cols-3 xl:grid-cols-6" : "sm:grid-cols-4")}>
           {cifras.map((c) => (
             <div key={c.etiqueta} className="kpi-vidrio">
               <p className="valor">{typeof c.valor === "number" ? <Cifra valor={c.valor} /> : c.valor}</p>
               <p className="etiqueta">{c.etiqueta}</p>
+              {c.detalle && <p className="mt-1 truncate text-[11px] text-white/45" title={c.detalle}>{c.detalle}</p>}
             </div>
           ))}
         </div>

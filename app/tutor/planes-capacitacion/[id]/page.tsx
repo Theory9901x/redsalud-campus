@@ -24,6 +24,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlanHero } from "@/components/training-plans/plan-hero";
+import { PanelDeslizable } from "@/components/training-plans/panel-deslizable";
 import { CronogramaView } from "@/components/training-plans/cronograma-view";
 import { ClosePlanPanel } from "@/components/training-plans/close-plan-panel";
 import { PlanAttendanceTab } from "@/components/training-plans/plan-attendance-tab";
@@ -153,10 +154,26 @@ export default async function TutorPlanCapacitacionDetallePage({
           <TabsTrigger value="metricas"><BarChart3 aria-hidden="true" />Métricas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="cronograma" className="space-y-6 pt-4">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className={puedeEditarPlan ? "space-y-3 lg:col-span-2" : "space-y-3 lg:col-span-3"}>
-              <CronogramaView
+        <TabsContent value="cronograma" className="space-y-5 pt-5">
+          {puedeEditarPlan && plan.status !== "CLOSED" && (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-display text-[1.05rem] font-bold tracking-tight text-foreground">Cronograma del plan</h2>
+                <p className="mt-0.5 text-[12.5px] text-muted-foreground">Cada línea del PIC con su trimestre, estado y adherencia. Entra a una para agendar jornadas y tomar asistencia.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <ImportScheduleDialog action={importScheduleAction} />
+                <PanelDeslizable
+                  etiqueta="Nueva actividad"
+                  titulo="Nueva actividad del cronograma"
+                  descripcion="Una línea nueva del plan. Para cargar el PIC completo usa «Importar desde Excel»."
+                >
+                  <TrainingActivityForm action={addActivityAction} courses={courses} />
+                </PanelDeslizable>
+              </div>
+            </div>
+          )}
+          <CronogramaView
                 activities={actividadesVisibles}
                 sessions={(areasGestionables
                   ? sessions.filter((x) => x.activity.area && areasGestionables.includes(x.activity.area.id))
@@ -167,23 +184,6 @@ export default async function TutorPlanCapacitacionDetallePage({
                 adherenceByActivity={adherenceByActivity}
                 areasGestionables={areasGestionables}
               />
-            </div>
-
-            {puedeEditarPlan && plan.status !== "CLOSED" && (
-              <div className="surface-panel form-premium h-fit space-y-5 p-6 lg:sticky lg:top-6">
-                <div className="panel-lateral-cabecera">
-                  <span className="panel-lateral-icono"><Plus className="h-5 w-5" aria-hidden="true" /></span>
-                  <div className="min-w-0 flex-1">
-                    <h2 className="font-display text-[1.05rem] font-extrabold leading-tight text-foreground">Agregar actividad</h2>
-                    <p className="mt-0.5 text-[12.5px] text-muted-foreground">Una línea nueva del cronograma. También puedes importar el PIC completo.</p>
-                  </div>
-                </div>
-                <ImportScheduleDialog action={importScheduleAction} />
-                <div className="h-px bg-gradient-to-r from-border via-border to-transparent" />
-                <TrainingActivityForm action={addActivityAction} courses={courses} />
-              </div>
-            )}
-          </div>
         </TabsContent>
 
         <TabsContent value="informacion" className="space-y-4 pt-4">
