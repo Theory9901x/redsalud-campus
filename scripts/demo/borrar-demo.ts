@@ -33,6 +33,11 @@ async function main() {
     where: { OR: [{ courseId: { in: idsCursos } }, { userId: { in: idsUsuarios } }] },
     select: { id: true, certificateCode: true, user: { select: { fullName: true, department: true } } },
   });
+  // Archivos subidos por usuarios DEMO: pueden estar enlazados por URL desde
+  // contenido, así que NO se borran; se reasigna su autoría a la cuenta de
+  // administración principal para que dejen de bloquear el borrado.
+  const archivosDemo = await prisma.media.findMany({ where: { uploadedBy: { in: idsUsuarios } }, select: { id: true, folder: true, fileName: true } });
+  const admin = await prisma.user.findFirst({ where: { email: "redsaludteforma@gmail.com" }, select: { id: true } });
   const certificadosDePersonasReales = certificados.filter((c) => c.user.department !== DEPENDENCIA && !c.user.fullName.startsWith(MARCA));
 
   console.log(aplicar ? "SE BORRA:" : "SE BORRARÍA (solo lectura; agrega --aplicar para borrar):");
@@ -43,6 +48,8 @@ async function main() {
   encuestas.forEach((e) => console.log(`   encuesta  ${e.title}`));
   console.log(`   certificados: ${certificados.length} (de personas reales en cursos DEMO: ${certificadosDePersonasReales.length})`);
   certificadosDePersonasReales.forEach((c) => console.log(`      · ${c.certificateCode} · ${c.user.fullName}`));
+  console.log(`   archivos subidos por usuarios DEMO (se conservan, autoría → administración): ${archivosDemo.length}`);
+  archivosDemo.slice(0, 10).forEach((m) => console.log(`      · ${m.folder ?? "—"} / ${m.fileName}`));
 
   const nada = planes.length + cursos.length + usuarios.length + areas.length + encuestas.length === 0;
   if (nada) {
@@ -50,9 +57,11 @@ async function main() {
     return;
   }
   if (!aplicar) return;
+  if (archivosDemo.length > 0 && !admin) throw new Error("No se encontró la cuenta de administración para reasignar archivos.");
 
   // Orden: lo que cuelga de otras cosas primero, luego los contenedores.
   await prisma.$transaction([
+    prisma.media.updateMany({ where: { id: { in: archivosDemo.map((m) => m.id) } }, data: { uploadedBy: admin?.id ?? "" } }),
     prisma.certificate.deleteMany({ where: { id: { in: certificados.map((c) => c.id) } } }),
     prisma.survey.deleteMany({ where: { id: { in: encuestas.map((e) => e.id) } } }),
     prisma.trainingPlan.deleteMany({ where: { id: { in: planes.map((p) => p.id) } } }),
