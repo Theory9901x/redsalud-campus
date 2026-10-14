@@ -274,7 +274,7 @@ function LecturaRapida({ data, ctx }: { data: ActivityReportData; ctx: ContextoI
   if (cob && cob.convocados > 0) {
     hallazgos.push({
       tono: cob.porcentaje >= 70 ? "bien" : cob.porcentaje >= 40 ? "neutro" : "alerta",
-      texto: `Asistió el ${cob.porcentaje}% de ${cob.audienciaComite ? "los integrantes" : "la población objetivo"} (${cob.asistieron} de ${cob.convocados}).${cob.otrosAsistieron > 0 ? ` Además participaron ${cob.otrosAsistieron} personas fuera de esa población.` : ""}`,
+      texto: `Asistió el ${cob.porcentaje}% de ${cob.audienciaComite ? "los integrantes" : "la población objetivo"} (${cob.asistieron} de ${cob.convocados}).${cob.otrosAsistieron > 0 ? ` Además asistieron ${cob.otrosAsistieron} ${cob.otrosAsistieron === 1 ? "persona" : "personas"} que no hacen parte de esa población: figuran en la lista de asistencia, pero no cuentan para la cobertura ni la adherencia.` : ""}`,
     });
   }
   if (perm.length > 0) {

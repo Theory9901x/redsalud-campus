@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { publicUploadDiskPath } from "@/lib/storage";
-import { getActivityAdherence, getActivityAttendanceCounts } from "@/lib/training-plans";
+import { audienciaDeActividad, getActivityAdherence, getActivityAttendanceCounts } from "@/lib/training-plans";
 
 /**
  * CONTEXTO DEL INFORME DE JORNADA: lo que el informe congelado no trae y
@@ -44,9 +44,14 @@ export async function getContextoInforme(activityId: string): Promise<ContextoIn
   });
   if (!actividad) return null;
 
-  const [adherencia, conteos, grupos, ajustes] = await Promise.all([
+  const [adherencia, conteos, asistieronDeLaPoblacion, asistieronTodos, grupos, ajustes] = await Promise.all([
     getActivityAdherence(actividad),
     getActivityAttendanceCounts(actividad),
+    // Cobertura = asistentes DENTRO de la población objetivo, el mismo
+    // universo de la adherencia: si no, el informe decía "7% asistió" y "0%
+    // de adherencia" a la vez porque los asistentes eran de fuera.
+    prisma.trainingAttendance.count({ where: { activityId, attended: true, user: audienciaDeActividad(actividad) } }),
+    prisma.trainingAttendance.count({ where: { activityId, attended: true } }),
     prisma.callConnectionLog.groupBy({
       by: ["userId", "externalParticipantId", "displayName"],
       where: { activityId },
@@ -86,9 +91,9 @@ export async function getContextoInforme(activityId: string): Promise<ContextoIn
     logo,
     cobertura: {
       convocados: conteos.totalAudiencia,
-      asistieron: conteos.asistieron,
-      porcentaje: conteos.porcentaje,
-      otrosAsistieron: conteos.otrosAsistieron,
+      asistieron: asistieronDeLaPoblacion,
+      porcentaje: conteos.totalAudiencia > 0 ? Math.round((asistieronDeLaPoblacion / conteos.totalAudiencia) * 100) : 0,
+      otrosAsistieron: asistieronTodos - asistieronDeLaPoblacion,
       audienciaComite: conteos.audienciaComite,
     },
     adherencia: {
