@@ -132,7 +132,7 @@ export default async function CursoDetallePage({
           href="/login"
           className={cn(
             buttonVariants({ size: "lg" }),
-            "glow-brand w-full gap-1.5 bg-gradient-to-r from-primary to-[var(--accent)] text-white hover:opacity-90"
+            "glow-brand w-full gap-1.5 bg-gradient-to-r from-primary to-[color-mix(in_oklch,var(--primary)_55%,var(--success))] font-bold text-white hover:opacity-90"
           )}
         >
           Inicia sesión para inscribirte
@@ -144,7 +144,7 @@ export default async function CursoDetallePage({
           href={`/aula/${course.id}`}
           className={cn(
             buttonVariants({ size: "lg" }),
-            "glow-brand w-full gap-1.5 bg-gradient-to-r from-primary to-[var(--accent)] text-white hover:opacity-90"
+            "glow-brand w-full gap-1.5 bg-gradient-to-r from-primary to-[color-mix(in_oklch,var(--primary)_55%,var(--success))] font-bold text-white hover:opacity-90"
           )}
         >
           {enrollment.status === "COMPLETED"
