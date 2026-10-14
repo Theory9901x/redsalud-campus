@@ -2037,15 +2037,15 @@
   .riel { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; }
   .riel-celda { position: relative; display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
   .riel-barra {
-    position: relative; height: 6px; border-radius: 2px; overflow: hidden;
+    position: relative; height: 5px; border-radius: 999px; overflow: hidden;
     background: color-mix(in oklch, var(--foreground) 8%, transparent);
   }
   .riel-barra > span {
     position: absolute; inset: 0 auto 0 0;
-    background: color-mix(in oklch, var(--primary) 85%, var(--foreground));
-    /* segmentos: la barra se lee como un medidor, no como un bloque */
-    -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 7px);
-    mask-image: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 7px);
+    border-radius: inherit;
+    /* Barra continua con degradado y punta luminosa (antes: segmentos en cuadros). */
+    background: linear-gradient(90deg, color-mix(in oklch, var(--primary) 45%, transparent), var(--primary));
+    box-shadow: 0 0 10px -2px color-mix(in oklch, var(--primary) 70%, transparent);
     transform-origin: left; animation: riel-llenar 1s var(--ease-signature) both;
   }
   @keyframes riel-llenar { from { transform: scaleX(0); } }
@@ -2062,7 +2062,7 @@
   .riel-etiqueta b { font-weight: 600; font-size: 0.78rem; letter-spacing: 0; color: var(--foreground); font-variant-numeric: tabular-nums; }
   .riel-celda[data-actual="true"] .riel-etiqueta { color: var(--primary); }
   .riel-oscuro .riel-barra { background: color-mix(in oklch, white 10%, transparent); }
-  .riel-oscuro .riel-barra > span { background: color-mix(in oklch, var(--primary) 55%, white); }
+  .riel-oscuro .riel-barra > span { background: linear-gradient(90deg, color-mix(in oklch, var(--primary) 30%, transparent), color-mix(in oklch, var(--primary) 70%, white)); }
   .riel-oscuro .riel-celda[data-actual="true"] .riel-barra > span { background: color-mix(in oklch, var(--primary) 80%, white); }
   .riel-oscuro .riel-etiqueta { color: color-mix(in oklch, white 50%, transparent); }
   .riel-oscuro .riel-etiqueta b { color: #fff; }
@@ -2144,11 +2144,11 @@
   .dato-mini span { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-foreground); }
 
   /* Medidor de avance segmentado (cerradas / total). */
-  .medidor { position: relative; height: 6px; border-radius: 2px; background: color-mix(in oklch, var(--foreground) 8%, transparent); overflow: hidden; }
+  .medidor { position: relative; height: 5px; border-radius: 999px; background: color-mix(in oklch, var(--foreground) 8%, transparent); overflow: hidden; }
   .medidor > span {
-    position: absolute; inset: 0 auto 0 0; background: var(--primary);
-    -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 7px);
-    mask-image: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 7px);
+    position: absolute; inset: 0 auto 0 0; border-radius: inherit;
+    background: linear-gradient(90deg, color-mix(in oklch, var(--primary) 45%, transparent), var(--primary));
+    box-shadow: 0 0 10px -2px color-mix(in oklch, var(--primary) 70%, transparent);
     transform-origin: left; animation: riel-llenar 1.1s var(--ease-signature) both;
   }
 
@@ -2480,4 +2480,160 @@
    Los títulos (Sora, --font-display) conservan su propio tracking. */
 @layer base {
   body { letter-spacing: 0.012em; font-feature-settings: "ss01", "cv11"; }
+}
+
+/* ── Tarjeta-instancia de plan, v2 (oct-2026): profundidad de panel de
+   producto (referencias: paneles de Vercel/Linear/Stripe). Superficie con
+   degradado sutil, luz en el canto superior, borde que se enciende y foco
+   que sigue al cursor; gráfico de columnas en lugar de barras de cuadros. ── */
+@layer components {
+  .plan-instancia {
+    border-radius: 20px;
+    border: 1px solid color-mix(in oklch, var(--foreground) 9%, transparent);
+    background:
+      radial-gradient(120% 60% at 100% 0%, color-mix(in oklch, var(--primary) 7%, transparent), transparent 55%),
+      linear-gradient(180deg, var(--card), color-mix(in oklch, var(--primary) 2.5%, var(--card)));
+    box-shadow:
+      inset 0 1px 0 0 color-mix(in oklch, var(--tint) 80%, transparent),
+      0 1px 2px 0 color-mix(in oklch, var(--shade) 6%, transparent),
+      0 12px 32px -18px color-mix(in oklch, var(--shade) 28%, transparent);
+  }
+  .plan-instancia:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in oklch, var(--primary) 45%, transparent);
+    box-shadow:
+      inset 0 1px 0 0 color-mix(in oklch, var(--tint) 80%, transparent),
+      0 0 0 4px color-mix(in oklch, var(--primary) 8%, transparent),
+      0 24px 48px -22px color-mix(in oklch, var(--primary) 50%, transparent);
+  }
+  /* Canto superior luminoso según el estado (señal, no decoración). */
+  .plan-instancia::before {
+    left: 1.25rem; right: 1.25rem; height: 1px; top: 0;
+  }
+  .plan-instancia[data-estado="ACTIVE"] { --estado: linear-gradient(90deg, transparent, var(--primary) 30%, color-mix(in oklch, var(--success) 70%, var(--primary)) 70%, transparent); }
+  .plan-instancia[data-estado="DRAFT"] { --estado: linear-gradient(90deg, transparent, var(--warning), transparent); }
+  .plan-instancia[data-estado="CLOSED"] { --estado: linear-gradient(90deg, transparent, var(--muted-foreground), transparent); }
+  .plan-instancia:hover .flecha { background: var(--primary); color: var(--primary-foreground); border-color: transparent; transform: none; box-shadow: 0 8px 20px -10px var(--primary); }
+
+  /* Minigráfico de columnas T1–T4. */
+  .grafico-trimestres { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.6rem; align-items: end; }
+  .grafico-trimestres .columna { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; min-width: 0; }
+  .grafico-trimestres .cifra { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; color: var(--foreground); font-variant-numeric: tabular-nums; }
+  .grafico-trimestres .pista {
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.25rem;
+    width: 100%; height: calc(var(--alto, 64px) + 1.1rem); border-radius: 7px;
+    background: repeating-linear-gradient(0deg, color-mix(in oklch, var(--foreground) 5%, transparent) 0 1px, transparent 1px 16px);
+  }
+  .grafico-trimestres .barra {
+    width: 62%; border-radius: 6px 6px 3px 3px;
+    background: linear-gradient(180deg, color-mix(in oklch, var(--primary) 55%, transparent), color-mix(in oklch, var(--primary) 18%, transparent));
+    border: 1px solid color-mix(in oklch, var(--primary) 35%, transparent); border-bottom: 0;
+    transform-origin: bottom; animation: columna-crecer 900ms var(--ease-signature) both;
+  }
+  .grafico-trimestres .columna[data-actual="true"] .barra {
+    background: linear-gradient(180deg, var(--primary), color-mix(in oklch, var(--primary) 45%, transparent));
+    border-color: var(--primary);
+    box-shadow: 0 0 18px -4px var(--primary);
+  }
+  .grafico-trimestres .etiqueta { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.1em; color: var(--muted-foreground); }
+  .grafico-trimestres .columna[data-actual="true"] .etiqueta { color: var(--primary); font-weight: 600; }
+  @keyframes columna-crecer { from { transform: scaleY(0); } }
+
+  /* Panel interior de cifras con divisores, como un tablero. */
+  .panel-cifras {
+    border-radius: 14px;
+    border: 1px solid color-mix(in oklch, var(--foreground) 8%, transparent);
+    background: color-mix(in oklch, var(--foreground) 2.5%, var(--card));
+    box-shadow: inset 0 1px 2px color-mix(in oklch, var(--shade) 5%, transparent);
+  }
+  .panel-cifras > .dato-mini { padding: 0.75rem 0.85rem; }
+  .panel-cifras > .dato-mini + .dato-mini { border-left: 1px solid color-mix(in oklch, var(--foreground) 8%, transparent); }
+
+  @media (prefers-reduced-motion: reduce) { .grafico-trimestres .barra { animation: none; } }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ *  AULA — cabecera con aurora, progreso como instrumento y carril limpio
+ * ════════════════════════════════════════════════════════════════════════ */
+@layer components {
+  .aula-hero {
+    color: #fff;
+    background:
+      radial-gradient(900px 380px at 85% 0%, color-mix(in oklch, var(--primary) 38%, transparent), transparent 60%),
+      linear-gradient(160deg, #081a2e, #0f2a46 55%, #0a1f36);
+    border-bottom: 1px solid color-mix(in oklch, var(--primary) 28%, transparent);
+  }
+  .aula-hero::after {
+    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: linear-gradient(90deg, color-mix(in oklch, #061424 72%, transparent), transparent 70%);
+  }
+
+  /* Tarjeta de progreso del carril: instrumento sobre navy. */
+  .aula-progreso {
+    position: relative; overflow: hidden; color: #fff;
+    border-radius: 20px; padding: 1.1rem;
+    background:
+      radial-gradient(260px 160px at 100% 0%, color-mix(in oklch, var(--primary) 38%, transparent), transparent 70%),
+      linear-gradient(160deg, #0b2036, #12314f);
+    border: 1px solid color-mix(in oklch, var(--primary) 30%, transparent);
+    box-shadow: 0 18px 40px -24px color-mix(in oklch, var(--navy) 90%, transparent);
+  }
+
+  /* Panel de módulos del carril. */
+  .aula-modulos {
+    border-radius: 18px; border: 1px solid var(--clay-border);
+    background: color-mix(in oklch, var(--card) 92%, transparent);
+    box-shadow: var(--shadow-1);
+  }
+  .modulo-cabecera:hover { background: color-mix(in oklch, var(--primary) 5%, transparent); }
+  .modulo-cabecera[aria-expanded="true"] { background: color-mix(in oklch, var(--primary) 6%, transparent); }
+  .modulo-sello {
+    display: grid; place-items: center; flex-shrink: 0; width: 2.4rem; height: 2.4rem; border-radius: 10px;
+    font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600;
+    color: var(--primary);
+    background: var(--card);
+    border: 1px solid color-mix(in oklch, var(--primary) 35%, transparent);
+  }
+  .modulo-cabecera[data-completo="true"] .modulo-sello {
+    color: var(--success); border-color: color-mix(in oklch, var(--success) 45%, transparent);
+    box-shadow: 0 0 14px -6px var(--success);
+  }
+
+  /* Carril continuo (no punteado) con nodos de estado. */
+  .carril-lecciones {
+    gap: 0.15rem; margin-left: 1.15rem; padding-left: 1.1rem;
+    border-left: 0;
+  }
+  .carril-lecciones::before {
+    content: ""; position: absolute; left: 0; top: 0.6rem; bottom: 0.6rem; width: 2px; border-radius: 2px;
+    background: linear-gradient(180deg, color-mix(in oklch, var(--primary) 55%, transparent), color-mix(in oklch, var(--foreground) 12%, transparent));
+  }
+  .carril-lecciones .leccion {
+    border-color: transparent; background: transparent; box-shadow: none;
+    border-radius: 11px; padding: 0.55rem 0.65rem;
+  }
+  .carril-lecciones .leccion:not([data-estado="bloqueada"]):hover {
+    background: color-mix(in oklch, var(--primary) 6%, var(--card));
+    border-color: color-mix(in oklch, var(--primary) 22%, transparent);
+    transform: translateX(2px);
+  }
+  .carril-lecciones .leccion::before {
+    left: -1.42rem; width: 10px; height: 10px;
+    background: var(--card); border: 2px solid color-mix(in oklch, var(--foreground) 25%, transparent);
+    box-shadow: 0 0 0 3px var(--card);
+  }
+  .carril-lecciones .leccion[data-estado="completada"]::before {
+    background: var(--success); border-color: var(--success);
+    box-shadow: 0 0 0 3px var(--card), 0 0 10px -2px var(--success);
+  }
+  .carril-lecciones .leccion[data-estado="en-curso"] {
+    background: linear-gradient(90deg, color-mix(in oklch, var(--primary) 12%, var(--card)), var(--card));
+    border-color: color-mix(in oklch, var(--primary) 40%, transparent);
+    box-shadow: inset 2px 0 0 var(--primary), 0 8px 20px -14px var(--primary);
+  }
+  .carril-lecciones .leccion[data-estado="en-curso"]::before {
+    background: var(--primary); border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--card), 0 0 0 6px color-mix(in oklch, var(--primary) 25%, transparent), 0 0 14px var(--primary);
+  }
+  .carril-lecciones .leccion[data-estado="bloqueada"] { opacity: 0.6; }
 }

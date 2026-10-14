@@ -9,10 +9,11 @@ import {
   ClipboardList,
   CheckCircle2,
   CalendarClock,
-  FileQuestion,
-  ClipboardCheck,
-  TrendingUp,
+  FileText,
+  GraduationCap,
 } from "lucide-react";
+import { ModuloHero } from "@/components/training-plans/modulo-hero";
+import { AnilloPorcentaje, PildoraEstado, RielTrimestres, conteoPorTrimestre } from "@/components/training-plans/plan-visual";
 import {
   getTrainingPlanDetailForStudent,
   getStudentCourseProgress,
@@ -21,7 +22,6 @@ import {
 } from "@/lib/training-plans";
 import { getSurveysForUser } from "@/lib/surveys";
 import { estadoPresaber, estadoPostsaber, cicloEsAutomatico } from "@/lib/presaber-postsaber";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
 import {
@@ -33,11 +33,9 @@ import { CronogramaEstudianteCompleto } from "@/components/training-plans/cronog
 import { entrarACapacitacionAction } from "@/app/(estudiante)/mis-capacitaciones/actions";
 import { EmptyState } from "@/components/brand/empty-state";
 import { StaggerSections } from "@/components/brand/stagger-sections";
-import { cn } from "@/lib/utils";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import {
   TRAINING_PLAN_STATUS_LABELS,
-  TRAINING_PLAN_STATUS_CLASSES,
   TRAINING_MODALITY_LABELS,
   etiquetaProgramacion,
   etiquetaJornada,
@@ -262,110 +260,57 @@ export default async function MiCapacitacionDetallePage({
           </div>
         )}
 
-        {/* Encabezado del plan: identidad primero, metadatos como fichas
-            sueltas -no apretados en una línea- y el estado a la derecha. */}
-        <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Plan institucional</p>
-            <h1 className="mt-2 font-display text-[clamp(1.9rem,4vw,2.35rem)] font-extrabold leading-[1.1] tracking-tight text-foreground">
-              {plan.title}
-            </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {metaPlan.map((m) => (
-                <span
-                  key={m.texto}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-[13px] font-medium text-muted-foreground backdrop-blur-sm"
-                >
-                  <m.Icono className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+        {/* Cabecera de mando: lo mismo que ve la gestión, contado desde
+            ESTA persona -su progreso, sus evaluaciones disponibles, sus
+            jornadas-. Antes eran tarjetas de vidrio casi blanco que sobre
+            el lienzo claro no se distinguían. */}
+        <ModuloHero
+          eyebrow={`Mi plan de formación · ${plan.year}`}
+          Icono={GraduationCap}
+          titulo={plan.title}
+          descripcion={
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <PildoraEstado estado={plan.status}>{TRAINING_PLAN_STATUS_LABELS[plan.status]}</PildoraEstado>
+              {metaPlan.slice(1).map((m) => (
+                <span key={m.texto} className="inline-flex items-center gap-1.5 text-white/80">
+                  <m.Icono className="h-4 w-4" aria-hidden="true" />
                   {m.texto}
                 </span>
               ))}
             </div>
-          </div>
-          <Badge className={cn("w-fit shrink-0", TRAINING_PLAN_STATUS_CLASSES[plan.status])}>
-            {TRAINING_PLAN_STATUS_LABELS[plan.status]}
-          </Badge>
-        </header>
+          }
+          lateral={<AnilloPorcentaje valor={progresoGeneral} tamano={112} grosor={10} oscuro etiqueta="Mi progreso" />}
+          cifras={[
+            { valor: filas.length, etiqueta: "Asignadas", detalle: `${completadas} completadas` },
+            { valor: presaberesDisponibles, etiqueta: "Presaber disponible", detalle: presaberesDisponibles ? "listo para presentar" : "nada pendiente" },
+            { valor: postsaberesDisponibles, etiqueta: "Postsaber disponible", detalle: postsaberesDisponibles ? "listo para presentar" : "nada pendiente" },
+            { valor: proximasJornadas.length, etiqueta: "Próximas jornadas", detalle: "en los próximos 30 días" },
+          ]}
+          pie={
+            aplicables.length > 0 ? (
+              <div className="space-y-2">
+                <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-white/55">Mis capacitaciones por trimestre</p>
+                <RielTrimestres conteos={conteoPorTrimestre(aplicables)} oscuro conMeses />
+              </div>
+            ) : undefined
+          }
+        />
 
-        {/* Indicadores en vidrio de tres capas (surface-vivo: borde en
-            degradado + blur/saturación + brillo superior), no el vidrio
-            lumen casi blanco de antes -sobre el lienzo claro del estudiante
-            se perdía por completo, borde y fondo casi del mismo tono-. El
-            progreso manda -ocupa el doble y lleva su barra- y el resto
-            acompaña; lo que pide acción se enciende con un halo. */}
-        <section aria-label="Resumen del plan" className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-          <div className="surface-vivo col-span-2">
-            <div className="flex h-full flex-col justify-between gap-4 p-5">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
-                  <TrendingUp className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                </span>
-                <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                  Progreso general
-                </span>
-              </div>
-              <div>
-                <p className="font-display text-[2.5rem] font-black leading-none tracking-tight text-foreground">
-                  {progresoGeneral}<span className="text-2xl">%</span>
-                </p>
-                <div
-                  className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted"
-                  role="progressbar"
-                  aria-valuenow={progresoGeneral}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label={`Progreso general del plan: ${progresoGeneral}%`}
-                >
-                  <div className="h-full rounded-full bg-success transition-[width] duration-500" style={{ width: `${progresoGeneral}%` }} />
-                </div>
-                <p className="mt-2 text-[12px] text-muted-foreground">
-                  {completadas} de {filas.length} capacitaciones completadas
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {[
-            { label: "Asignadas", value: filas.length, icon: ClipboardList, chip: "bg-primary/12 text-primary", destacar: false, glow: "" },
-            { label: "Presaberes", value: presaberesDisponibles, icon: FileQuestion, chip: "bg-warning/18 text-warning-foreground", destacar: presaberesDisponibles > 0, glow: "glow-alerta" },
-            { label: "Postsaberes", value: postsaberesDisponibles, icon: ClipboardCheck, chip: "bg-primary/12 text-primary", destacar: postsaberesDisponibles > 0, glow: "glow-exito" },
-            { label: "Próximas jornadas", value: proximasJornadas.length, icon: CalendarClock, chip: "bg-success/15 text-success", destacar: false, glow: "" },
-          ].map((k) => (
-            <div key={k.label} className={cn("surface-vivo", k.destacar && k.glow)}>
-              <div className="flex h-full flex-col justify-between gap-3 p-5">
-                <span className={cn("relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", k.chip)}>
-                  <k.icon className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                  {k.destacar && (
-                    <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-warning" aria-hidden="true" />
-                  )}
-                </span>
-                <div className="min-w-0">
-                  <p className="font-display text-[1.75rem] font-extrabold leading-none tracking-tight text-foreground">
-                    {k.value}
-                  </p>
-                  <p className="mt-1.5 text-[12px] leading-tight text-muted-foreground">{k.label}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </section>
 
         <Tabs defaultValue="cronograma">
           {/* Control segmentado, igual que el selector de vistas del propio
               cronograma: dos filas de pestañas con estilos distintos hacían
               parecer que una era del sistema y la otra del contenido. */}
-          <TabsList className="h-auto gap-1 rounded-full border border-border/60 bg-card/80 p-1 backdrop-blur-sm">
+          <TabsList className="plan-tabs">
             {[
-              { valor: "cronograma", etiqueta: "Cronograma" },
-              { valor: "documentos", etiqueta: "Documentos" },
-              { valor: "encuestas", etiqueta: "Evaluaciones" },
+              { valor: "cronograma", etiqueta: "Cronograma", Icono: CalendarRange, conteo: filas.length },
+              { valor: "documentos", etiqueta: "Documentos", Icono: FileText, conteo: plan.documents.length },
+              { valor: "encuestas", etiqueta: "Evaluaciones", Icono: ClipboardList, conteo: pending.length },
             ].map((t) => (
-              <TabsTrigger
-                key={t.valor}
-                value={t.valor}
-                className="rounded-full px-4 py-2 text-xs font-semibold text-muted-foreground transition-colors data-active:bg-primary data-active:text-primary-foreground data-active:shadow-sm"
-              >
+              <TabsTrigger key={t.valor} value={t.valor}>
+                <t.Icono aria-hidden="true" />
                 {t.etiqueta}
+                <span className="conteo">{t.conteo}</span>
               </TabsTrigger>
             ))}
           </TabsList>
@@ -388,7 +333,7 @@ export default async function MiCapacitacionDetallePage({
 
           <TabsContent value="encuestas" className="space-y-6 pt-4">
             <div className="space-y-3">
-              <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">Pendientes</h2>
+              <h2 className="mono-label">Pendientes</h2>
               {pending.length === 0 ? (
                 <EmptyState
                   icon={ClipboardList}
@@ -402,7 +347,7 @@ export default async function MiCapacitacionDetallePage({
                     <Link
                       key={survey.id}
                       href={`/evaluaciones/${survey.id}`}
-                      className="surface surface-hover flex items-center gap-3 p-4"
+                      className="actividad-item flex items-center gap-3 p-4 pl-5"
                     >
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                         <ClipboardList className="h-5 w-5" />
@@ -420,7 +365,7 @@ export default async function MiCapacitacionDetallePage({
             </div>
 
             <div className="space-y-3">
-              <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">Respondidas</h2>
+              <h2 className="mono-label">Respondidas</h2>
               {answered.length === 0 ? (
                 <EmptyState
                   icon={CheckCircle2}

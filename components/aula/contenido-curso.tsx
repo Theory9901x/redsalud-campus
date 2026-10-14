@@ -116,7 +116,7 @@ export function ContenidoCurso({
 
   return (
     <div className="space-y-3">
-      <label className="surface-inset flex items-center gap-2.5 px-3 py-2.5">
+      <label className="barra-modulo flex items-center gap-2.5 px-3 py-2.5 focus-within:border-primary/60 focus-within:shadow-[0_0_0_3px_color-mix(in_oklch,var(--primary)_16%,transparent)]">
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <input
           type="search"
@@ -133,7 +133,7 @@ export function ContenidoCurso({
           Nada coincide con «{busqueda}». Prueba con otra palabra del título.
         </p>
       ) : (
-        <div className="surface-glass space-y-2 p-3">
+        <div className="aula-modulos space-y-1 p-2">
           {filtrados.map((modulo) => {
             const abierto = estaAbierto(modulo.id);
             return (
@@ -142,10 +142,11 @@ export function ContenidoCurso({
                   type="button"
                   onClick={(e) => alternar(modulo.id, e.currentTarget)}
                   aria-expanded={abierto}
-                  className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-muted/50"
+                  className="modulo-cabecera flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors"
+                  data-completo={modulo.total > 0 && modulo.completadas === modulo.total}
                 >
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[color-mix(in_oklch,var(--accent)_14%,transparent)] text-[var(--accent)]">
-                    <span className="text-xs font-bold tabular-nums">
+                  <span className="modulo-sello">
+                    <span className="tabular-nums">
                       {modulo.completadas}/{modulo.total}
                     </span>
                   </span>
@@ -153,8 +154,11 @@ export function ContenidoCurso({
                     <span className="block truncate text-sm font-bold text-foreground">
                       <Resaltado texto={modulo.title} termino={termino} />
                     </span>
-                    <span className="block text-[11px] text-muted-foreground">
-                      {modulo.completadas} de {modulo.total} completadas
+                    <span className="mt-1 flex items-center gap-2">
+                      <span className="h-1 w-16 overflow-hidden rounded-full bg-foreground/10">
+                        <span className="block h-full rounded-full bg-gradient-to-r from-primary/60 to-primary" style={{ width: `${modulo.total ? Math.round((modulo.completadas / modulo.total) * 100) : 0}%` }} />
+                      </span>
+                      <span className="font-mono text-[10px] text-muted-foreground">{modulo.completadas} de {modulo.total}</span>
                     </span>
                   </span>
                   <ChevronDown

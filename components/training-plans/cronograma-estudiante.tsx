@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { tituloLegible } from "@/components/training-plans/labels";
+import { trimestreEnCurso } from "@/components/training-plans/trimestres-chip";
 
 /**
  * Fila del cronograma del estudiante, ya resuelta en el servidor: aquí no se
@@ -65,8 +67,6 @@ const CHIPS = [
 ] as const;
 type Chip = (typeof CHIPS)[number];
 
-/** Acento de cada trimestre: categóricos del sistema, nunca hex sueltos. */
-const TRIMESTRE_VAR: Record<number, string> = { 1: "--data-2", 2: "--data-1", 3: "--data-3", 4: "--data-5" };
 const ROMANO = ["I", "II", "III", "IV"];
 
 /*
@@ -200,7 +200,7 @@ export function CronogramaEstudiante({
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
       <div className="min-w-0 space-y-4">
         {/* Búsqueda y filtros */}
-        <div className="surface-lumen flex flex-wrap items-center gap-3 p-4">
+        <div className="barra-modulo form-premium flex flex-wrap items-center gap-3 p-4">
           <div className="relative min-w-[200px] flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -266,28 +266,31 @@ export function CronogramaEstudiante({
         {[1, 2, 3, 4].map((t) => {
           const items = porTrimestre.get(t) ?? [];
           const abierto = abiertos.has(t);
-          const acento = `var(${TRIMESTRE_VAR[t]})`;
           return (
-            <section key={t} className="surface-lumen overflow-hidden p-0">
+            <section key={t} className="barra-modulo overflow-hidden p-0">
               <button
                 type="button"
                 onClick={() => alternar(t)}
                 aria-expanded={abierto}
-                className="flex w-full items-center gap-3.5 px-5 py-4 text-left"
-                style={{ backgroundImage: `linear-gradient(90deg, color-mix(in oklch, ${acento} 14%, transparent), transparent 70%)` }}
+                className="grupo-cabecera w-full px-5 py-4 text-left transition-colors hover:bg-foreground/[0.02]"
+                data-en-curso={t === trimestreEnCurso()}
               >
-                <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: acento }} aria-hidden="true" />
+                <span className="grupo-sello" aria-hidden="true">T{t}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-display text-[15px] font-bold text-foreground">Trimestre {ROMANO[t - 1]}</span>
+                  <span className="flex items-center gap-2 font-display text-[15px] font-bold text-foreground">
+                    Trimestre {ROMANO[t - 1]}
+                    {t === trimestreEnCurso() && (
+                      <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/8 px-1.5 py-0.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-primary">
+                        <span className="punto-vivo" aria-hidden="true" />En curso
+                      </span>
+                    )}
+                  </span>
                   <span className="block text-xs text-muted-foreground">
                     Capacitaciones programadas para el {["primer", "segundo", "tercer", "cuarto"][t - 1]} trimestre
                   </span>
                 </span>
-                <span
-                  className="rounded-full px-3 py-1 text-[11px] font-bold"
-                  style={{ backgroundColor: `color-mix(in oklch, ${acento} 15%, transparent)`, color: acento }}
-                >
-                  {items.length} {items.length === 1 ? "plan" : "planes"}
+                <span className="rounded-md border border-border px-2 py-1 font-mono text-[10.5px] font-semibold text-muted-foreground">
+                  {items.length} {items.length === 1 ? "capacitación" : "capacitaciones"}
                 </span>
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/60 bg-card/70">
                   <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", abierto && "rotate-180")} />
@@ -300,23 +303,23 @@ export function CronogramaEstudiante({
                   className={cn(REJILLA_FILA, "hidden border-t border-border/60 bg-foreground/[0.02] py-2.5 lg:grid")}
                   aria-hidden="true"
                 >
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Capacitación</span>
-                  <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Modalidad</span>
-                  <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Dirigido a</span>
-                  <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Presaber</span>
-                  <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Postsaber</span>
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Estado</span>
+                  <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Capacitación</span>
+                  <span className="text-center font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Modalidad</span>
+                  <span className="text-center font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Dirigido a</span>
+                  <span className="text-center font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Presaber</span>
+                  <span className="text-center font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Postsaber</span>
+                  <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Estado</span>
                   <span />
                 </div>
                 <ul className="divide-y divide-border/60 border-t border-border/60">
                   {items.map((f) => (
                     <li key={f.id} className={cn(REJILLA_FILA, "py-3.5 transition-colors hover:bg-foreground/[0.02]")}>
                       <div className="min-w-0">
-                        <p className="text-[13px] font-bold leading-snug text-foreground">{f.titulo}</p>
+                        <p className="text-[13.5px] font-semibold leading-snug text-foreground">{tituloLegible(f.titulo)}</p>
                         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
                           <span>{f.area}</span>
                           {f.programa && (
-                            <span className="rounded-full bg-primary/10 px-1.5 py-px font-semibold text-primary">{f.programa}</span>
+                            <span className="chip-dato chip-dato-primario">{f.programa}</span>
                           )}
                         </p>
                       </div>
@@ -379,8 +382,8 @@ export function CronogramaEstudiante({
 
       {/* Panel derecho */}
       <aside className="space-y-5">
-        <section className="surface-glass space-y-2.5 p-5">
-          <h2 className="font-display text-xs font-bold uppercase tracking-wide text-foreground">Accesos rápidos</h2>
+        <section className="barra-modulo space-y-2.5 p-5">
+          <h2 className="mono-label">Accesos rápidos</h2>
           {[
             { icono: BookOpen, titulo: "Mis cursos", detalle: "Continúa donde ibas", href: "/mi-aula", chip: "bg-primary/15 text-primary" },
             { icono: Award, titulo: "Mis certificados", detalle: "Descárgalos en PDF", href: "/mis-certificados", chip: "bg-[var(--accent)]/15 text-[var(--accent)]" },
@@ -399,15 +402,15 @@ export function CronogramaEstudiante({
           ))}
         </section>
 
-        <section className="surface-glass space-y-3 p-5">
-          <h2 className="font-display text-xs font-bold uppercase tracking-wide text-foreground">Próximas acciones</h2>
+        <section className="barra-modulo space-y-3 p-5">
+          <h2 className="mono-label">Próximas acciones</h2>
           {acciones.length === 0 ? (
             <p className="text-xs text-muted-foreground">Nada pendiente por ahora. Cuando se habilite una evaluación o se agende una jornada, aparece aquí.</p>
           ) : (
             acciones.map((a, i) => (
               <div key={i} className="surface-clay p-3">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-primary">{a.tipo}</p>
-                <p className="mt-0.5 text-[13px] font-semibold leading-snug text-foreground">{a.titulo}</p>
+                <p className="mt-0.5 text-[13px] font-semibold leading-snug text-foreground">{tituloLegible(a.titulo)}</p>
                 <p className="text-[11px] text-muted-foreground">{a.detalle}</p>
                 {a.activityId && (
                   <BotonEntrar etiqueta="Ir ahora" activityId={a.activityId} onEntrar={onEntrar} className="mt-1.5" />
@@ -417,8 +420,8 @@ export function CronogramaEstudiante({
           )}
         </section>
 
-        <section className="surface-glass space-y-3 p-5">
-          <h2 className="flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wide text-foreground">
+        <section className="barra-modulo space-y-3 p-5">
+          <h2 className="mono-label flex items-center gap-1.5">
             <Video className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
             Sesiones virtuales
           </h2>

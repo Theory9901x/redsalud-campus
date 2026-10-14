@@ -9,6 +9,7 @@ import { trimestreEnCurso } from "@/components/training-plans/trimestres-chip";
  */
 
 const MESES = ["ene–mar", "abr–jun", "jul–sep", "oct–dic"] as const;
+const redondear = (n: number) => Math.round(n * 100) / 100;
 
 /** Cuántas actividades cubre cada trimestre (una línea en T1 y T3 cuenta en ambos). */
 export function conteoPorTrimestre(actividades: { quarters: number[] }[]): [number, number, number, number] {
@@ -94,10 +95,12 @@ export function AnilloPorcentaje({
           return (
             <line
               key={i}
-              x1={centro + r0 * Math.cos(ang)}
-              y1={centro + r0 * Math.sin(ang)}
-              x2={centro + r1 * Math.cos(ang)}
-              y2={centro + r1 * Math.sin(ang)}
+              // Redondeo a 2 decimales: servidor y navegador formatean los
+              // flotantes distinto y eso rompía la hidratación del SVG.
+              x1={redondear(centro + r0 * Math.cos(ang))}
+              y1={redondear(centro + r0 * Math.sin(ang))}
+              x2={redondear(centro + r1 * Math.cos(ang))}
+              y2={redondear(centro + r1 * Math.sin(ang))}
               strokeWidth={1}
               stroke={activa ? "var(--primary)" : oscuro ? "rgba(255,255,255,0.18)" : "color-mix(in oklch, var(--foreground) 16%, transparent)"}
             />
@@ -113,8 +116,8 @@ export function AnilloPorcentaje({
             strokeWidth={grosor}
             strokeLinecap="butt"
             stroke="var(--primary)"
-            strokeDasharray={2 * Math.PI * (r - 6)}
-            strokeDashoffset={2 * Math.PI * (r - 6) * (1 - v / 100)}
+            strokeDasharray={redondear(2 * Math.PI * (r - 6))}
+            strokeDashoffset={redondear(2 * Math.PI * (r - 6) * (1 - v / 100))}
             style={{ filter: "drop-shadow(0 0 6px var(--primary))", transition: "stroke-dashoffset 1.1s var(--ease-signature)" }}
           />
         </g>
@@ -163,4 +166,31 @@ export function AvatarIniciales({ nombre, className }: { nombre: string; classNa
 /** Índice para la entrada escalonada (.revelar). */
 export function escalon(i: number): CSSProperties {
   return { ["--i" as string]: i } as CSSProperties;
+}
+
+/**
+ * Minigráfico de COLUMNAS T1–T4 (tarjetas de plan): cuántas capacitaciones
+ * programa cada trimestre, con el trimestre en curso iluminado. Columnas
+ * redondeadas con degradado; la cifra encima y la etiqueta debajo.
+ */
+export function GraficoTrimestres({ conteos, alto = 64 }: { conteos: [number, number, number, number]; alto?: number }) {
+  const actual = trimestreEnCurso();
+  const max = Math.max(1, ...conteos);
+  return (
+    <div className="grafico-trimestres" role="img" aria-label={`Capacitaciones por trimestre: ${conteos.map((n, i) => `T${i + 1} ${n}`).join(", ")}`}>
+      {conteos.map((n, i) => {
+        const t = i + 1;
+        const h = n === 0 ? 3 : Math.max(8, Math.round((n / max) * alto));
+        return (
+          <div key={t} className="columna" data-actual={t === actual} style={{ ["--alto" as string]: `${alto}px` } as CSSProperties}>
+            <span className="pista">
+              <span className="cifra">{n}</span>
+              <span className="barra" style={{ height: h, animationDelay: `${i * 80}ms` }} />
+            </span>
+            <span className="etiqueta">T{t}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ListTree, X } from "lucide-react";
 import { SIGNATURE_DURATION, SIGNATURE_EASE } from "@/lib/motion";
-import { AnilloProgreso } from "@/components/aula/anillo-progreso";
+import { AnilloPorcentaje } from "@/components/training-plans/plan-visual";
 import { ContenidoCurso } from "@/components/aula/contenido-curso";
 import { HerramientasAdmin } from "@/components/aula/herramientas-admin";
 import { COURSE_TYPE_LABELS } from "@/components/cursos/labels";
@@ -52,32 +52,38 @@ export function AulaSidebar({
   const leccionActualId =
     partes[1] === courseId && partes[2] && partes[2] !== "quiz" ? partes[2] : null;
 
+  // Tarjeta de progreso como INSTRUMENTO sobre navy: contrasta con el
+  // carril claro y se lee de un vistazo (anillo + cifras), en vez del vidrio
+  // casi blanco que se confundía con el fondo.
   const cabecera = (
-    <div className="surface-glass flex items-center gap-4 p-5">
-      <AnilloProgreso porcentaje={progreso.porcentaje} />
-      <div className="min-w-0 flex-1">
-        <h2 className="font-display text-base font-bold leading-tight text-foreground">{courseTitle}</h2>
-        <p className="text-xs text-muted-foreground">{COURSE_TYPE_LABELS[courseType]}</p>
-        <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-[color-mix(in_oklch,var(--accent)_14%,transparent)]">
-          <div
-            className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-500"
-            style={{ width: `${progreso.porcentaje}%` }}
-          />
+    <div className="aula-progreso">
+      <div className="flex items-center gap-4">
+        <AnilloPorcentaje valor={progreso.porcentaje} tamano={84} grosor={6} oscuro etiqueta="Avance" />
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-[color-mix(in_oklch,var(--primary)_70%,white)]">
+            {COURSE_TYPE_LABELS[courseType]}
+          </p>
+          <h2 className="mt-1 line-clamp-2 font-display text-[0.98rem] font-bold leading-tight text-white">{courseTitle}</h2>
         </div>
-        <p className="mt-1.5 text-[11px] text-muted-foreground">
-          {progreso.completadasRequeridas} de {progreso.totalRequeridas} lecciones completadas
-          {/* Se dice explícitamente que faltan cuestionarios: si no, alguien
-              con el 100 % de lecciones y sin certificado no entiende por qué. */}
-          {progreso.porcentaje === 100 && progreso.cuestionariosPendientes > 0 && (
-            <>
-              {" · "}
-              <span className="font-semibold text-warning">
-                falta {progreso.cuestionariosPendientes === 1 ? "la evaluación" : "las evaluaciones"}
-              </span>
-            </>
-          )}
-        </p>
       </div>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="instrumento !py-2">
+          <b className="!text-[1.05rem]">
+            {progreso.completadasRequeridas}
+            <span className="!mt-0 !inline !text-[0.75rem] !tracking-normal !normal-case text-white/50"> / {progreso.totalRequeridas}</span>
+          </b>
+          <span>Lecciones</span>
+        </div>
+        <div className="instrumento !py-2">
+          <b className="!text-[1.05rem]">{progreso.cuestionariosPendientes}</b>
+          <span>Evaluaciones pend.</span>
+        </div>
+      </div>
+      {progreso.porcentaje === 100 && progreso.cuestionariosPendientes > 0 && (
+        <p className="mt-3 rounded-lg border border-warning/40 bg-warning/10 px-2.5 py-1.5 text-[11.5px] font-semibold text-[color-mix(in_oklch,var(--warning)_70%,white)]">
+          Lecciones completas: falta {progreso.cuestionariosPendientes === 1 ? "la evaluación" : "las evaluaciones"} para certificarte.
+        </p>
+      )}
     </div>
   );
 

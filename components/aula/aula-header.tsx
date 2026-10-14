@@ -1,27 +1,23 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { ArrowLeft, Award, BookOpen, Clock, Layers } from "lucide-react";
-import { DotPattern } from "@/components/brand/dot-pattern";
-import { COURSE_TYPE_COLORS, COURSE_TYPE_ICONS, COURSE_TYPE_LABELS } from "@/components/cursos/labels";
-import { coursePhotoTransitionName } from "@/lib/view-transition-names";
+import { ArrowLeft, Award } from "lucide-react";
+import { COURSE_TYPE_LABELS } from "@/components/cursos/labels";
+import { AuroraWebGL } from "@/components/cursos/aurora-webgl";
+import { Cifra } from "@/components/training-plans/plan-dinamico";
 import type { CourseType } from "@prisma/client";
 
 /**
- * Momento signature 3: la tarjeta de curso en el dashboard "se expande" en
- * este encabezado -mismo view-transition-name que CoursePosterCard cuando
- * enlaza a /aula/[courseId] (ver lib/view-transition-names.ts)-, así que el
- * navegador anima una continuidad visual real en vez de un salto entre
- * vistas. El texto entra en coreografía (badge -> título -> meta), no todo
- * de golpe. Sobre el degradado de marca van orbes de luz desenfocados +
- * grano sutil (.noise-overlay), y los metadatos viven en chips glass.
+ * Cabecera del AULA, mismo lenguaje que la página pública del curso: aurora
+ * WebGL de fondo (en vez de la portada estirada, que dejaba letras gigantes
+ * cortadas detrás del título), etiqueta en monoespaciada, título de display e
+ * instrumentos de vidrio con las cifras del curso.
+ *
+ * `imageUrl` se conserva en la firma por compatibilidad con el layout; la
+ * portada se sigue mostrando en el catálogo y en las tarjetas del panel.
  */
 export function AulaHeader({
-  courseId,
   title,
-  imageUrl,
   courseType,
   durationHours,
   moduleCount,
@@ -35,112 +31,46 @@ export function AulaHeader({
   moduleCount: number;
   lessonCount: number;
 }) {
-  const TypeIcon = COURSE_TYPE_ICONS[courseType];
-  const colors = COURSE_TYPE_COLORS[courseType];
-  const isObligatorio = courseType === "OBLIGATORIO";
+  const instrumentos = [
+    { valor: durationHours, sufijo: "h", etiqueta: "Intensidad" },
+    { valor: moduleCount, sufijo: "", etiqueta: moduleCount === 1 ? "Módulo" : "Módulos" },
+    { valor: lessonCount, sufijo: "", etiqueta: lessonCount === 1 ? "Lección" : "Lecciones" },
+  ].filter((x) => x.valor > 0);
 
   return (
-    <header className="noise-overlay relative isolate overflow-hidden border-b border-border">
-      <div className="absolute inset-0">
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={title}
-            fill
-            sizes="100vw"
-            priority
-            className="object-cover"
-            style={{ viewTransitionName: coursePhotoTransitionName(`/aula/${courseId}`) }}
-          />
-        ) : (
-          <div className={`relative h-full w-full bg-gradient-to-br ${colors.gradient}`}>
-            <DotPattern className="text-white/20" />
-          </div>
-        )}
-        {/* Scrim navy + mesh de marca encima: el mesh aporta variación de color,
-            el scrim garantiza contraste del texto sobre cualquier foto. */}
-        <div className="absolute inset-0 bg-gradient-to-t from-navy/95 via-navy/70 to-navy/30" />
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 12% 10%, color-mix(in oklch, var(--primary) 26%, transparent), transparent 50%), radial-gradient(circle at 90% 85%, color-mix(in oklch, var(--success) 18%, transparent), transparent 45%)",
-          }}
-        />
-        {/* Orbes de luz difuminados detrás del título (blur 80px+), parientes
-            de las tarjetas flotantes del login. */}
-        <div className="absolute -left-16 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-primary/35 blur-[90px]" />
-        <div className="absolute right-[15%] -top-20 h-56 w-56 rounded-full bg-success/25 blur-[100px]" />
-        <div className="absolute bottom-0 right-0 h-40 w-40 rounded-full bg-white/15 blur-[80px]" />
-      </div>
-
-      <div className="relative flex flex-col gap-6 px-4 py-6 sm:px-8 sm:py-9">
-        <Link
-          href="/inicio"
-          className="flex w-fit items-center gap-2 rounded-lg text-sm text-white/70 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/60"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Mi panel
-        </Link>
-
-        <div className="max-w-3xl">
-          <motion.span
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white backdrop-blur-md"
-            style={
-              isObligatorio
-                ? { boxShadow: "0 0 18px color-mix(in oklch, var(--destructive) 45%, transparent)" }
-                : undefined
-            }
+    <header className="aula-hero relative isolate overflow-hidden">
+      <AuroraWebGL />
+      <div className="contenido relative z-[1] flex flex-col gap-5 px-4 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 max-w-3xl">
+          <Link
+            href="/inicio"
+            className="flex w-fit items-center gap-2 rounded-lg text-[13px] font-semibold text-white/70 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/60"
           >
-            <TypeIcon className={`h-3.5 w-3.5 ${isObligatorio ? "text-red-300" : ""}`} />
-            {COURSE_TYPE_LABELS[courseType]}
-          </motion.span>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.08 }}
-            className="text-display-lg mt-3 font-display font-extrabold text-white text-balance"
-          >
+            <ArrowLeft className="h-4 w-4" />
+            Mi panel
+          </Link>
+          <p className="curso-eyebrow mt-4">Aula · {COURSE_TYPE_LABELS[courseType]}</p>
+          <h1 className="mt-2 font-display text-[clamp(1.6rem,1.2rem+1.6vw,2.4rem)] font-bold leading-[1.08] tracking-[-0.025em] text-white [text-wrap:balance]">
             {title}
-          </motion.h1>
+          </h1>
+        </div>
 
-          {/* Fila de chips glass: metadatos rápidos del curso. */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.16 }}
-            className="mt-4 flex flex-wrap items-center gap-2"
-          >
-            {/* durationHours = 0 significa "sin definir todavía", no "cero
-                horas": la intensidad solo se conoce al terminar de montar el
-                curso, y un 0 se leería como un curso vacío. */}
-            {durationHours > 0 && (
-              <span className="chip-glass">
-                <Clock className="h-3.5 w-3.5 text-primary" />
-                {durationHours}h de intensidad
-              </span>
-            )}
-            <span className="chip-glass">
-              <Layers className="h-3.5 w-3.5 text-primary" />
-              {moduleCount} {moduleCount === 1 ? "módulo" : "módulos"}
-            </span>
-            <span className="chip-glass">
-              <BookOpen className="h-3.5 w-3.5 text-primary" />
-              {lessonCount} {lessonCount === 1 ? "lección" : "lecciones"}
-            </span>
-            <span className="chip-glass">
-              <Award className="h-3.5 w-3.5 text-success" />
-              Certificado al finalizar
-            </span>
-          </motion.div>
-
-          {/* El progreso NO se repite aquí: vive en la cabecera del carril
-              izquierdo, junto al anillo y al contador de lecciones. Tenerlo en
-              los dos sitios obligaba a mirar dos veces el mismo número. */}
+        <div className="flex flex-wrap items-stretch gap-2">
+          {instrumentos.map((x) => (
+            <div key={x.etiqueta} className="instrumento min-w-[92px]">
+              <b>
+                <Cifra valor={x.valor} sufijo={x.sufijo} />
+              </b>
+              <span>{x.etiqueta}</span>
+            </div>
+          ))}
+          <div className="instrumento flex min-w-[120px] items-center gap-2">
+            <Award className="h-5 w-5 shrink-0 text-[color-mix(in_oklch,var(--success)_70%,white)]" aria-hidden="true" />
+            <div>
+              <b className="!text-[0.95rem]">Certificado</b>
+              <span className="mt-0.5 block font-mono text-[0.6rem] uppercase tracking-[0.16em] text-white/55">al finalizar</span>
+            </div>
+          </div>
         </div>
       </div>
     </header>
