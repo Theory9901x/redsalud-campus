@@ -241,7 +241,7 @@ function FranjaMetricas({ data, ctx }: { data: ActivityReportData; ctx: Contexto
   const perm = ctx?.permanencia ?? [];
   const totalMin = perm.reduce((a, p) => a + p.minutos, 0);
   const celdas: [string, string][] = [
-    ["Adherencia", ctx ? `${ctx.adherencia.porcentaje}%` : "—"],
+    [ctx?.adherencia.automatica ? "Completó curso" : "Adherencia", ctx ? `${ctx.adherencia.porcentaje}%` : "—"],
     ["Asistentes", String(ind.asistentes)],
     ["En la sala", String(perm.length)],
     ["Tiempo", totalMin >= 60 ? `${Math.floor(totalMin / 60)}h ${totalMin % 60}m` : `${totalMin}m`],
@@ -275,6 +275,12 @@ function LecturaRapida({ data, ctx }: { data: ActivityReportData; ctx: ContextoI
     hallazgos.push({
       tono: cob.porcentaje >= 70 ? "bien" : cob.porcentaje >= 40 ? "neutro" : "alerta",
       texto: `Asistió el ${cob.porcentaje}% de ${cob.audienciaComite ? "los integrantes" : "la población objetivo"} (${cob.asistieron} de ${cob.convocados}).${cob.otrosAsistieron > 0 ? ` Además asistieron ${cob.otrosAsistieron} ${cob.otrosAsistieron === 1 ? "persona" : "personas"} que no hacen parte de esa población: figuran en la lista de asistencia, pero no cuentan para la cobertura ni la adherencia.` : ""}`,
+    });
+  }
+  if (ctx?.adherencia.automatica && ctx.adherencia.esperados > 0) {
+    hallazgos.push({
+      tono: ctx.adherencia.porcentaje >= 70 ? "bien" : ctx.adherencia.porcentaje >= 40 ? "neutro" : "alerta",
+      texto: `Adherencia del curso vinculado: ${ctx.adherencia.porcentaje}% (${ctx.adherencia.adherentes} de ${ctx.adherencia.esperados} completaron el curso). En capacitaciones con curso, la adherencia se mide por curso completado, no por asistencia.`,
     });
   }
   if (perm.length > 0) {
