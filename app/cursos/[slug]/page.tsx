@@ -8,7 +8,6 @@ import { htmlSeguro } from "@/lib/html-seguro";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { StaggerSections } from "@/components/brand/stagger-sections";
-import { DotPattern } from "@/components/brand/dot-pattern";
 import { EnrollButton } from "@/components/cursos/enroll-button";
 import { PanelInscripcion } from "@/components/cursos/panel-inscripcion";
 import { AuroraWebGL } from "@/components/cursos/aurora-webgl";
@@ -16,12 +15,7 @@ import { Cifra } from "@/components/training-plans/plan-dinamico";
 import { CourseLessonAccordion } from "@/components/cursos/course-lesson-accordion";
 import { PublicCoursesShell } from "@/components/cursos/public-courses-shell";
 import { ShareCourseButton } from "@/components/cursos/share-course-button";
-import { coursePhotoTransitionName } from "@/lib/view-transition-names";
-import {
-  COURSE_TYPE_LABELS,
-  COURSE_TYPE_ICONS,
-  COURSE_TYPE_COLORS,
-} from "@/components/cursos/labels";
+import { COURSE_TYPE_LABELS } from "@/components/cursos/labels";
 
 /** Encabezado de sección numerado ("01 · Acerca de este curso ------ extra"). */
 function SeccionCurso({ indice, titulo, extra, children }: { indice: string; titulo: string; extra?: string; children: React.ReactNode }) {
@@ -110,8 +104,6 @@ export default async function CursoDetallePage({
       )
     : new Set<string>();
 
-  const TypeIcon = COURSE_TYPE_ICONS[course.courseType];
-  const colors = COURSE_TYPE_COLORS[course.courseType];
   // Cada quien ve los módulos de su grupo poblacional (AMBOS = todos). Sin
   // sesión se muestra el temario completo: es la vitrina del curso.
   // ADMIN y TUTOR ven el temario completo; el filtro es solo para estudiantes.
@@ -195,8 +187,8 @@ export default async function CursoDetallePage({
         {/* ── Cabecera con aurora WebGL ── */}
         <section className="curso-hero revelar">
           <AuroraWebGL />
-          <div className="contenido grid grid-cols-1 items-center gap-10 p-6 sm:p-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-            <div className="min-w-0">
+          <div className="contenido p-6 sm:p-10 lg:px-12 lg:py-12">
+            <div className="min-w-0 max-w-4xl">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="curso-eyebrow">
                   {[course.category?.name, COURSE_TYPE_LABELS[course.courseType]].filter(Boolean).join(" · ")}
@@ -252,27 +244,6 @@ export default async function CursoDetallePage({
               </div>
             </div>
 
-            {/* Portada en marco holográfico */}
-            <div className="marco-holo">
-              <div className="lamina aspect-[16/10]">
-                {course.imageUrl ? (
-                  <Image
-                    src={course.imageUrl}
-                    alt={course.title}
-                    fill
-                    sizes="(min-width: 1024px) 520px, 100vw"
-                    className="object-cover"
-                    style={{ viewTransitionName: coursePhotoTransitionName(`/cursos/${slug}`) }}
-                    priority
-                  />
-                ) : (
-                  <div className={cn("flex h-full w-full items-center justify-center bg-gradient-to-br", colors.gradient)}>
-                    <DotPattern className="text-white/15" />
-                    <TypeIcon className="h-16 w-16 text-white/40" strokeWidth={1.5} />
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </section>
 
