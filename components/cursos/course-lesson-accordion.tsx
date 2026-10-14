@@ -50,11 +50,11 @@ export function CourseLessonAccordion({
         <AccordionItem
           key={module_.id}
           value={`module-${index}`}
-          className="surface surface-hover overflow-hidden border-none px-4"
+          className="surface surface-hover overflow-visible border-none px-4"
         >
           <AccordionTrigger className="py-4 hover:no-underline">
             <div className="flex items-center gap-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
+              <span className="-ml-[1.55rem] flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-primary/40 bg-card font-mono text-[12px] font-semibold text-primary shadow-[0_0_0_4px_var(--card)]">
                 {index + 1}
               </span>
               <span className="font-display text-base font-bold text-foreground">{module_.title}</span>
