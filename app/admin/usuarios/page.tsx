@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil, Plus, Users, MapPin } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -11,15 +11,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RoleBadge } from "@/components/admin/role-badge";
-import { StatusBadge } from "@/components/admin/status-badge";
+import { ModuloHero } from "@/components/training-plans/modulo-hero";
+import { AvatarIniciales, PildoraEstado, escalon } from "@/components/training-plans/plan-visual";
+import { nombrePropio } from "@/components/training-plans/labels";
 import { DeleteUserButton } from "@/components/admin/delete-user-button";
 import { ToggleStatusButton } from "@/components/admin/toggle-status-button";
 import { StaggerSections } from "@/components/brand/stagger-sections";
-import { AdminPageHeader } from "@/components/admin/page-header";
 import { TablePagination } from "@/components/admin/table-pagination";
 import { parsePageSize } from "@/lib/pagination";
-import { MarcaPlanta, VINCULACION_LABELS, VINCULACION_LABELS_CORTAS } from "@/components/admin/marca-planta";
+import { MarcaPlanta, VINCULACION_LABELS, VINCULACION_LABELS_CORTAS, esPlanta } from "@/components/admin/marca-planta";
 import { AutoSearchInput, AutoFilterSelect } from "@/components/admin/auto-search-input";
 import { PERSONNEL_TYPE_LABELS } from "@/lib/personnel-labels";
 import type { PersonnelType, Prisma, Role, TipoVinculacion, UserStatus } from "@prisma/client";
@@ -29,6 +29,9 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: "TUTOR", label: "Tutor" },
   { value: "STUDENT", label: "Estudiante" },
 ];
+
+const ROLE_LABEL: Record<Role, string> = { ADMIN: "Admin", TUTOR: "Tutor", STUDENT: "Estudiante" };
+const STATUS_LABEL: Record<UserStatus, string> = { ACTIVE: "Activo", INACTIVE: "Inactivo", BLOCKED: "Bloqueado" };
 
 const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
   { value: "ACTIVE", label: "Activo" },
@@ -102,7 +105,7 @@ export default async function UsuariosPage({
   const pageSize = parsePageSize(pageSizeParam);
   const page = Math.max(1, Number(pageParam) || 1);
 
-  const [total, users, municipios] = await Promise.all([
+  const [total, users, municipios, porEstado, porVinculacion, sinAcceso] = await Promise.all([
     prisma.user.count({ where }),
     prisma.user.findMany({
       where,
@@ -125,28 +128,55 @@ export default async function UsuariosPage({
       },
     }),
     prisma.municipio.findMany({ where: { isActive: true }, orderBy: { nombre: "asc" }, select: { id: true, nombre: true } }),
+    // Cifras del directorio completo (no del filtro): cuántas personas hay,
+    // cuántas activas, de planta, contratistas y sin credencial de acceso.
+    prisma.user.groupBy({ by: ["status"], _count: { _all: true } }),
+    prisma.user.groupBy({ by: ["tipoVinculacion"], _count: { _all: true } }),
+    prisma.user.count({ where: { email: null, username: null } }),
   ]);
+  const directorio = porEstado.reduce((a, g) => a + g._count._all, 0);
+  const activos = porEstado.find((g) => g.status === "ACTIVE")?._count._all ?? 0;
+  const planta = porVinculacion.filter((g) => esPlanta(g.tipoVinculacion)).reduce((a, g) => a + g._count._all, 0);
+  const contratistas = porVinculacion.find((g) => g.tipoVinculacion === "CONTRATO_PRESTACION")?._count._all ?? 0;
+  const hayFiltro = Boolean(q || role || status || personnelType || municipio || vinculacion);
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader
-        title="Usuarios"
-        description={`${total} ${total === 1 ? "usuario encontrado" : "usuarios encontrados"}`}
-        action={
-          <Link
-            href="/admin/usuarios/nuevo"
-            className={cn(buttonVariants(), "gap-1.5 bg-gradient-to-r from-primary to-teal-400 text-white hover:opacity-90")}
-          >
-            <Plus className="h-4 w-4" />
+      <ModuloHero
+        eyebrow="Personas · Directorio institucional"
+        Icono={Users}
+        titulo="Directorio de"
+        acento="usuarios"
+        descripcion={
+          hayFiltro
+            ? `${total} ${total === 1 ? "persona coincide" : "personas coinciden"} con los filtros aplicados.`
+            : "Todo el personal con acceso a la plataforma: planta y contratistas, por municipio, vinculación y rol."
+        }
+        acciones={
+          <Link href="/admin/usuarios/nuevo" className="boton-hero">
+            <Plus className="h-4 w-4" aria-hidden="true" />
             Nuevo usuario
           </Link>
+        }
+        cifras={[
+          { valor: directorio, etiqueta: "En el directorio" },
+          { valor: activos, etiqueta: "Activos" },
+          { valor: planta, etiqueta: "De planta" },
+          { valor: contratistas, etiqueta: "Contratistas" },
+        ]}
+        pie={
+          sinAcceso > 0 ? (
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-white/55">
+              {sinAcceso} {sinAcceso === 1 ? "persona" : "personas"} sin correo ni usuario: no pueden iniciar sesión
+            </p>
+          ) : undefined
         }
       />
 
       <StaggerSections className="space-y-6">
       {/* Filtros automáticos: se aplican al escribir o elegir, sin botón. */}
-      <div className="surface-panel flex flex-wrap items-end gap-3 p-4">
-        <AutoSearchInput label="Buscar por nombre, cédula, correo o cargo" placeholder="Ej. María Gutiérrez, 1015469107, Enfermera Jefe..." />
+      <div className="barra-modulo form-premium filtros-rejilla p-4">
+        <AutoSearchInput label="Buscar" placeholder="Nombre, cédula, correo o cargo…" />
         <AutoFilterSelect
           paramName="personnelType"
           label="Tipo de personal"
@@ -166,78 +196,84 @@ export default async function UsuariosPage({
         />
       </div>
 
-      <div className="surface-glass overflow-hidden">
+      <div className="tabla-modulo">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nombre</TableHead>
+              <TableHead>Persona</TableHead>
               <TableHead>Documento</TableHead>
-              <TableHead>Correo</TableHead>
               <TableHead>Cargo</TableHead>
-              <TableHead>Personal</TableHead>
-              <TableHead>Municipio</TableHead>
-              <TableHead>Vinculación</TableHead>
+              <TableHead>Ubicación</TableHead>
               <TableHead>Rol</TableHead>
-              <TableHead>Estado</TableHead>
+              <TableHead className="w-[118px]">Estado</TableHead>
               <TableHead className="col-fijada text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={10} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
                   No se encontraron usuarios con esos filtros.
                 </TableCell>
               </TableRow>
             )}
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="max-w-[190px] font-medium text-foreground">
-                  <Link
-                    href={`/admin/usuarios/${user.id}`}
-                    className="flex items-center gap-1.5 hover:underline"
-                    title={user.fullName}
-                  >
-                    <MarcaPlanta tipo={user.tipoVinculacion} />
-                    <span className="truncate">{user.fullName}</span>
+            {users.map((user, i) => (
+              <TableRow key={user.id} className="revelar" style={escalon(Math.min(i, 14))}>
+                <TableCell className="max-w-[250px]">
+                  <Link href={`/admin/usuarios/${user.id}`} className="group flex items-center gap-3" title={user.fullName}>
+                    <AvatarIniciales nombre={user.fullName} className="!h-8 !w-8" />
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-[13.5px] font-semibold text-foreground group-hover:text-primary">{nombrePropio(user.fullName)}</span>
+                        <MarcaPlanta tipo={user.tipoVinculacion} />
+                      </span>
+                      <span
+                        className="block truncate font-mono text-[11px] text-muted-foreground"
+                        title={user.email ?? (user.username ? `usuario: ${user.username}` : "sin credencial de acceso")}
+                      >
+                        {user.email ?? (user.username ? `@${user.username}` : <span className="text-destructive">sin acceso</span>)}
+                      </span>
+                    </span>
                   </Link>
                 </TableCell>
                 {/* Solo el número: el tipo de documento es CC en la práctica
-                    totalidad de los registros y repetirlo 290 veces cuesta una
-                    columna entera. Queda en el título para consultarlo. */}
-                <TableCell className="text-muted-foreground" title={`${user.documentType} ${user.documentNumber}`}>
+                    totalidad de los registros; queda en el título. */}
+                <TableCell className="max-w-[150px] truncate font-mono text-[12px] text-foreground/80" title={`${user.documentType} ${user.documentNumber}`}>
                   {user.documentNumber}
                 </TableCell>
-                <TableCell
-                  className="max-w-[120px] truncate text-muted-foreground"
-                  title={user.email ?? (user.username ? `usuario: ${user.username}` : "sin credencial de acceso")}
-                >
-                  {user.email ?? (user.username ? `@${user.username}` : <span className="text-destructive">Sin acceso</span>)}
+                <TableCell className="max-w-[180px]">
+                  <span className="block truncate text-[13px] text-foreground" title={user.position ?? ""}>
+                    {user.position ? nombrePropio(user.position) : "—"}
+                  </span>
+                  <span className="mt-0.5 block font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground">
+                    {PERSONNEL_TYPE_LABELS[user.personnelType]}
+                  </span>
                 </TableCell>
-                <TableCell className="max-w-[120px] truncate text-muted-foreground" title={user.position ?? ""}>
-                  {user.position || "—"}
-                </TableCell>
-                <TableCell className="text-muted-foreground">{PERSONNEL_TYPE_LABELS[user.personnelType]}</TableCell>
-                <TableCell className="text-muted-foreground">{user.municipio?.nombre ?? "—"}</TableCell>
-                <TableCell className="max-w-[105px] truncate text-muted-foreground" title={VINCULACION_LABELS[user.tipoVinculacion]}>
-                  {VINCULACION_LABELS_CORTAS[user.tipoVinculacion] ?? "—"}
+                <TableCell className="max-w-[150px]">
+                  <span className="flex items-center gap-1.5 text-[13px] text-foreground">
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-primary/70" aria-hidden="true" />
+                    {user.municipio?.nombre ?? "—"}
+                  </span>
+                  <span className="mt-0.5 block truncate font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground" title={VINCULACION_LABELS[user.tipoVinculacion]}>
+                    {VINCULACION_LABELS_CORTAS[user.tipoVinculacion] ?? "—"}
+                  </span>
                 </TableCell>
                 <TableCell>
-                  <RoleBadge role={user.role} />
+                  <span className="rol-chip" data-rol={user.role}>{ROLE_LABEL[user.role]}</span>
                 </TableCell>
-                <TableCell>
-                  <StatusBadge status={user.status} />
+                <TableCell className="w-[118px]">
+                  <PildoraEstado estado={user.status === "ACTIVE" ? "ACTIVE" : user.status}>{STATUS_LABEL[user.status]}</PildoraEstado>
                 </TableCell>
                 <TableCell className="col-fijada">
-                  <div className="flex justify-end gap-1.5">
-                  <Link
-                    href={`/admin/usuarios/${user.id}`}
-                    className={cn(buttonVariants({ variant: "outline", size: "icon-sm" }))}
-                    title="Editar usuario"
-                    aria-label="Editar usuario"
-                  >
-                    <Pencil />
-                  </Link>
+                  <div className="acciones-fila flex justify-end gap-1.5">
+                    <Link
+                      href={`/admin/usuarios/${user.id}`}
+                      className={cn(buttonVariants({ variant: "outline", size: "icon-sm" }))}
+                      title="Editar usuario"
+                      aria-label="Editar usuario"
+                    >
+                      <Pencil />
+                    </Link>
                     <ToggleStatusButton userId={user.id} status={user.status} />
                     <DeleteUserButton userId={user.id} userName={user.fullName} />
                   </div>

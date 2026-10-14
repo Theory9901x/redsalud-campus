@@ -205,3 +205,19 @@ export function tituloLegible(titulo: string): string {
   const minus = titulo.toLocaleLowerCase("es-CO");
   return minus.charAt(0).toLocaleUpperCase("es-CO") + minus.slice(1);
 }
+
+/**
+ * Nombres de persona capturados en MAYÚSCULAS ("GLORIBETH CORREDOR ROBALLO")
+ * se muestran como nombre propio ("Gloribeth Corredor Roballo"); partículas
+ * en minúscula. Solo presentación: el dato guardado no cambia.
+ */
+export function nombrePropio(nombre: string): string {
+  const letras = nombre.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ]/g, "");
+  if (letras.length < 3 || letras !== letras.toUpperCase()) return nombre;
+  const PARTICULAS = new Set(["de", "del", "la", "las", "los", "y", "e"]);
+  return nombre
+    .toLocaleLowerCase("es-CO")
+    .split(/(\s+)/)
+    .map((p, i) => (i > 0 && PARTICULAS.has(p) ? p : p.charAt(0).toLocaleUpperCase("es-CO") + p.slice(1)))
+    .join("");
+}

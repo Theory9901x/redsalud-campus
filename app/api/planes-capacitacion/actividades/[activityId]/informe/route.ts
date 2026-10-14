@@ -3,6 +3,8 @@ import { requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import { getActivityReportData } from "@/lib/training-plans";
 import { renderActivityReportPdf } from "@/lib/activity-report-pdf";
 import { getActivityEvidence } from "@/lib/activity-evidence";
+import { getContextoInforme } from "@/lib/activity-report-contexto";
+import { tituloLegible } from "@/components/training-plans/labels";
 
 /**
  * PDF del informe de la jornada: se habilita SOLO cuando la capacitación está
@@ -35,12 +37,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ act
 
   // Las evidencias se leen en vivo: la grabación se sube DESPUÉS de
   // cerrar la jornada, así que no puede venir del informe congelado.
-  const evidencia = await getActivityEvidence(activityId);
-  const pdf = await renderActivityReportPdf(data, generatedBy, evidencia);
+  // El contexto (cobertura, permanencia por persona, jornadas, logo) también
+  // es en vivo, por la misma razón.
+  const [evidencia, contexto] = await Promise.all([getActivityEvidence(activityId), getContextoInforme(activityId)]);
+  const pdf = await renderActivityReportPdf(data, generatedBy, evidencia, contexto);
+  const nombre = tituloLegible(data.titulo).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="informe-jornada.pdf"`,
+      "Content-Disposition": `attachment; filename="Informe-${contexto?.codigo ?? "jornada"}-${nombre}.pdf"`,
     },
   });
 }

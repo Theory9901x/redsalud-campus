@@ -144,7 +144,10 @@ export function PildoraEstado({ estado, children, className }: { estado: string;
 
 /** Avatar de iniciales para responsables (sin foto: es un dato institucional). */
 export function AvatarIniciales({ nombre, className }: { nombre: string; className?: string }) {
+  // Sin prefijos entre corchetes ("[DEMO] Ana…") ni signos: solo palabras.
   const ini = nombre
+    .replace(/\[[^\]]*\]/g, " ")
+    .replace(/[^\p{L}\s]/gu, " ")
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
