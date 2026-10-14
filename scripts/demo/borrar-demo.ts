@@ -65,7 +65,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error("FALLÓ (no se borró nada: la transacción se revirtió):", e instanceof Error ? e.message.slice(0, 400) : e);
+    console.error("FALLÓ (no se borró nada: la transacción se revirtió):", e instanceof Error ? e.message.slice(-600) : e);
     process.exitCode = 1;
   })
   .finally(() => prisma.$disconnect());
