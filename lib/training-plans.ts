@@ -29,6 +29,9 @@ export async function getTrainingPlans(role: Role, userId: string) {
     include: {
       tutor: { select: { fullName: true } },
       _count: { select: { activities: true } },
+      // Para la tarjeta-instancia: riel de trimestres y avance. Solo tres
+      // escalares por actividad, sin relaciones.
+      activities: { select: { quarters: true, status: true, courseId: true } },
     },
   });
 }

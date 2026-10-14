@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { CalendarRange, Lock, MapPin, MonitorPlay } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
 import { deleteTrainingActivityAction } from "@/app/admin/planes-capacitacion/actions";
 import { EmptyState } from "@/components/brand/empty-state";
@@ -9,11 +8,11 @@ import {
   TRAINING_ACTIVITY_TYPE_LABELS,
   TRAINING_ACTIVITY_TYPE_ICONS,
   TRAINING_ACTIVITY_STATUS_LABELS,
-  TRAINING_ACTIVITY_STATUS_CLASSES,
   TRAINING_MODALITY_LABELS,
   etiquetaProgramacion,
 } from "@/components/training-plans/labels";
 import { TrimestresChip, nombreTrimestre, trimestreEnCurso } from "@/components/training-plans/trimestres-chip";
+import { PildoraEstado, escalon } from "@/components/training-plans/plan-visual";
 import type { TrainingActivityStatus, TrainingActivityType, CourseAudience, TrainingModality } from "@prisma/client";
 
 export type TrainingActivityTimelineItem = {
@@ -177,34 +176,48 @@ export function TrainingActivityTimeline({
 
         return (
         <div key={grupo.key} className="space-y-3">
-          <div className={`flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 pb-2 ${enCurso ? "border-primary" : "border-border/60"}`}>
-            <p className={`font-display font-bold uppercase tracking-wide text-foreground ${agruparPor === "trimestre" ? "text-base" : "text-sm"}`}>{grupo.label}</p>
-            {enCurso && (
-              <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">En curso</span>
-            )}
+          <div className="grupo-cabecera pt-1" data-en-curso={enCurso}>
+            <span className="grupo-sello" aria-hidden="true">
+              {agruparPor === "trimestre"
+                ? grupo.key === "t0" ? "—" : `T${grupo.key.slice(1)}`
+                : grupo.label.slice(0, 2).toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="flex flex-wrap items-center gap-2 font-display text-[0.98rem] font-bold leading-tight text-foreground">
+                {grupo.label}
+                {enCurso && (
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/8 px-1.5 py-0.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-primary">
+                    <span className="punto-vivo" aria-hidden="true" />En curso
+                  </span>
+                )}
+              </p>
             <p className="text-xs text-muted-foreground">
               {grupo.items.length} {grupo.items.length === 1 ? "capacitación" : "capacitaciones"}
               {" · "}
               {conContenido === 0 ? (
-                <span className="text-warning">sin contenido todavía</span>
+                <span className="font-semibold text-amber-700 dark:text-amber-400">sin contenido todavía</span>
               ) : conContenido === grupo.items.length ? (
                 <span className="text-success">todas con contenido</span>
               ) : (
                 <span>{conContenido} con contenido</span>
               )}
             </p>
+            </div>
+            <span className="grupo-linea" aria-hidden="true" />
           </div>
           <div className="space-y-2.5">
-            {grupo.items.map((activity) => {
+            {grupo.items.map((activity, idx) => {
               const TypeIcon = TRAINING_ACTIVITY_TYPE_ICONS[activity.type];
               const gestionable =
                 areasGestionables === null || (activity.area !== null && areasGestionables.includes(activity.area.id));
               return (
                 <div
                   key={activity.id}
-                  className="surface surface-hover flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4"
+                  data-estado={activity.status}
+                  style={escalon(Math.min(idx, 12))}
+                  className="actividad-item revelar flex flex-col gap-3 p-4 pl-5 sm:flex-row sm:items-center sm:gap-4"
                 >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <span className="actividad-icono">
                     <TypeIcon className="h-5 w-5" />
                   </span>
 
@@ -221,12 +234,12 @@ export function TrainingActivityTimeline({
                         <span className="font-display text-sm font-bold text-foreground">{activity.title}</span>
                       )}
                       {activity.programa && (
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                        <span className="chip-dato chip-dato-primario">
                           {activity.programa}
                         </span>
                       )}
                       {/* FASE 10: la modalidad siempre visible, con su ícono. */}
-                      <span className="flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-accent-foreground">
+                      <span className="chip-dato">
                         {activity.modality === "PRESENCIAL" ? (
                           <MapPin className="h-3 w-3" />
                         ) : (
@@ -235,7 +248,7 @@ export function TrainingActivityTimeline({
                         {TRAINING_MODALITY_LABELS[activity.modality]}
                       </span>
                       {activity.isRequired && (
-                        <span className="flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
+                        <span className="chip-dato chip-dato-alerta">
                           <Lock className="h-3 w-3" />
                           Obligatoria
                         </span>
@@ -252,7 +265,7 @@ export function TrainingActivityTimeline({
                       ) : activity.type === "EXTERNAL_EVENT" ? (
                         TRAINING_ACTIVITY_TYPE_LABELS.EXTERNAL_EVENT
                       ) : (
-                        <span className="text-warning">Sin contenido todavía</span>
+                        <span className="font-semibold text-amber-700 dark:text-amber-400">Sin contenido todavía</span>
                       )}
                       {" · "}
                       {COURSE_AUDIENCE_LABELS[activity.targetAudience]}
@@ -272,12 +285,10 @@ export function TrainingActivityTimeline({
                     {(activity.sessions?.[0] || activity.startDate) && (
                       <span className="text-xs font-medium text-muted-foreground">{etiquetaProgramacion(activity)}</span>
                     )}
-                    <Badge className={TRAINING_ACTIVITY_STATUS_CLASSES[activity.status]}>
-                      {TRAINING_ACTIVITY_STATUS_LABELS[activity.status]}
-                    </Badge>
+                    <PildoraEstado estado={activity.status}>{TRAINING_ACTIVITY_STATUS_LABELS[activity.status]}</PildoraEstado>
                     {adherenceByActivity?.[activity.id] !== undefined && (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                        {adherenceByActivity[activity.id]}% adherencia
+                      <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/8 px-2 py-0.5 text-[11px] font-bold tabular-nums text-primary">
+                        {adherenceByActivity[activity.id]}%<span className="font-semibold text-primary/70">adherencia</span>
                       </span>
                     )}
                     {puedeEliminar && (

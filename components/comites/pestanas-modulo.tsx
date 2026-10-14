@@ -14,7 +14,7 @@ export function PestanasModulo({ activa }: { activa: "planes" | "comites" | "reu
   ] as const;
 
   return (
-    <nav aria-label="Submódulos" className="inline-flex rounded-2xl border border-border/60 bg-card/60 p-1 backdrop-blur-sm">
+    <nav aria-label="Submódulos" className="inline-flex rounded-[14px] border border-border/70 bg-card/80 p-1 shadow-[var(--shadow-1)]">
       {pestanas.map((p) => {
         const activo = p.clave === activa;
         return (
@@ -23,10 +23,10 @@ export function PestanasModulo({ activa }: { activa: "planes" | "comites" | "reu
             href={p.href}
             aria-current={activo ? "page" : undefined}
             className={cn(
-              "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-bold transition-all",
+              "inline-flex items-center gap-2 rounded-[10px] px-4 py-2 text-[13px] font-semibold transition-all duration-200",
               activo
-                ? "bg-gradient-to-r from-primary to-teal-400 text-white shadow-md shadow-primary/25"
-                : "text-muted-foreground hover:bg-card hover:text-foreground"
+                ? "bg-[color-mix(in_oklch,var(--navy)_88%,var(--primary))] text-white shadow-[inset_0_-2px_0_var(--primary)] [&_svg]:text-[color-mix(in_oklch,var(--primary)_70%,white)]"
+                : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
             )}
           >
             <p.Icono className="h-4 w-4" aria-hidden="true" />

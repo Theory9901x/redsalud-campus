@@ -94,7 +94,7 @@ export function CronogramaView({
 
   return (
     <div className="space-y-4">
-      <div className="surface flex flex-wrap items-center gap-3 p-3">
+      <div className="barra-modulo form-premium flex flex-wrap items-center gap-3 p-3">
         {vista !== "calendario" && (
           <>
             <div className="relative min-w-[200px] flex-1">

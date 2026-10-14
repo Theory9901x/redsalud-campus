@@ -30,10 +30,12 @@ export function TrimestresChip({ quarters, className, tamano = "md" }: { quarter
           <span
             key={t}
             className={cn(
-              "grid place-items-center rounded-md font-bold tabular-nums transition-colors",
-              tamano === "sm" ? "h-5 w-6 text-[10px]" : "h-6 w-7 text-[11px]",
-              activo ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground/60",
-              t === actual && "ring-2 ring-accent ring-offset-1 ring-offset-background"
+              "grid place-items-center rounded-[5px] border font-mono font-semibold tabular-nums transition-colors",
+              tamano === "sm" ? "h-5 w-6 text-[9.5px]" : "h-6 w-7 text-[10px]",
+              activo
+                ? "border-primary/45 bg-primary/12 text-primary"
+                : "border-border bg-transparent text-muted-foreground/45",
+              t === actual && (activo ? "border-primary bg-primary text-primary-foreground shadow-[0_0_12px_-2px_var(--primary)]" : "border-primary/60 border-dashed")
             )}
           >
             T{t}

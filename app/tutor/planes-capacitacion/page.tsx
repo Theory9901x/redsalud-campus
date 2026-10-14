@@ -1,37 +1,52 @@
 import Link from "next/link";
-import { Plus, LayoutDashboard } from "lucide-react";
+import { Plus, LayoutDashboard, GraduationCap } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getTrainingPlans } from "@/lib/training-plans";
-import { buttonVariants } from "@/components/ui/button";
 import { TrainingPlanList } from "@/components/training-plans/training-plan-list";
-import { cn } from "@/lib/utils";
+import { ModuloHero } from "@/components/training-plans/modulo-hero";
+import { RielTrimestres, conteoPorTrimestre } from "@/components/training-plans/plan-visual";
+import { nombreTrimestre, trimestreEnCurso } from "@/components/training-plans/trimestres-chip";
 
 export default async function TutorPlanesCapacitacionPage() {
   const session = await requireTutorOrAdmin();
   const plans = await getTrainingPlans(session.user.role, session.user.id);
 
+  const actividades = plans.flatMap((p) => p.activities);
+  const enCurso = trimestreEnCurso();
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold text-foreground">Mis planes de capacitación</h1>
-          <p className="text-sm text-muted-foreground">
-            {plans.length} {plans.length === 1 ? "plan" : "planes"} a tu cargo.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/tutor/planes-capacitacion/dashboard" className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>
-            <LayoutDashboard className="h-4 w-4" />
-            Dashboard
-          </Link>
-          {session.user.role === "ADMIN" && (
-            <Link href="/tutor/planes-capacitacion/nuevo" className={cn(buttonVariants(), "gap-1.5")}>
-              <Plus className="h-4 w-4" />
-              Nuevo plan
+      <ModuloHero
+        eyebrow="Tu espacio de tutor"
+        Icono={GraduationCap}
+        titulo="Mis planes de"
+        acento="capacitación"
+        descripcion={`${plans.length} ${plans.length === 1 ? "plan" : "planes"} a tu cargo. Entra a uno para gestionar el cronograma, la asistencia y las métricas de tus capacitaciones.`}
+        acciones={
+          <>
+            {session.user.role === "ADMIN" && (
+              <Link
+                href="/tutor/planes-capacitacion/nuevo"
+                className="boton-hero"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Nuevo plan
+              </Link>
+            )}
+            <Link href="/tutor/planes-capacitacion/dashboard" className="enlace-hero">
+              <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
+              Dashboard
             </Link>
-          )}
-        </div>
-      </div>
+          </>
+        }
+        cifras={[
+          { valor: plans.length, etiqueta: "Planes" },
+          { valor: actividades.length, etiqueta: "Capacitaciones" },
+          { valor: actividades.filter((a) => a.status === "OPEN").length, etiqueta: "Abiertas hoy" },
+          { valor: actividades.filter((a) => a.quarters.includes(enCurso)).length, etiqueta: `En el ${nombreTrimestre(enCurso, false).toLowerCase()}` },
+        ]}
+        pie={actividades.length > 0 ? <RielTrimestres conteos={conteoPorTrimestre(actividades)} oscuro conMeses /> : undefined}
+      />
 
       <TrainingPlanList plans={plans} basePath="/tutor/planes-capacitacion" showTutorColumn={false} />
     </div>

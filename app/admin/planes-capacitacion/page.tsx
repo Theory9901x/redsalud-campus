@@ -1,38 +1,58 @@
 import Link from "next/link";
-import { Plus, LayoutDashboard } from "lucide-react";
+import { Plus, LayoutDashboard, GraduationCap } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getTrainingPlans } from "@/lib/training-plans";
-import { buttonVariants } from "@/components/ui/button";
 import { TrainingPlanList } from "@/components/training-plans/training-plan-list";
-import { AdminPageHeader } from "@/components/admin/page-header";
-import { cn } from "@/lib/utils";
 import { PestanasModulo } from "@/components/comites/pestanas-modulo";
+import { ModuloHero } from "@/components/training-plans/modulo-hero";
+import { RielTrimestres, conteoPorTrimestre } from "@/components/training-plans/plan-visual";
+import { nombreTrimestre, trimestreEnCurso } from "@/components/training-plans/trimestres-chip";
 
 export default async function AdminPlanesCapacitacionPage() {
   const session = await requireTutorOrAdmin();
   const plans = await getTrainingPlans(session.user.role, session.user.id);
 
+  const actividades = plans.flatMap((p) => p.activities);
+  const enCurso = trimestreEnCurso();
+  const delTrimestre = actividades.filter((a) => a.quarters.includes(enCurso)).length;
+
   return (
     <div className="space-y-6">
       <PestanasModulo activa="planes" />
-      <AdminPageHeader
-        title="Planes de capacitación"
-        description={`${plans.length} ${plans.length === 1 ? "plan" : "planes"} en toda la institución.`}
-        action={
+
+      <ModuloHero
+        eyebrow="Formación · Talento Humano"
+        Icono={GraduationCap}
+        titulo="Planes de"
+        acento="capacitación"
+        descripcion={
           <>
-            <Link href="/admin/planes-capacitacion/dashboard" className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>
-              <LayoutDashboard className="h-4 w-4" />
-              Dashboard
-            </Link>
+            {plans.length} {plans.length === 1 ? "plan" : "planes"} en toda la institución. Cada plan organiza sus capacitaciones
+            por trimestre, área y responsable; entra a uno para gestionar su cronograma, asistencia y métricas.
+          </>
+        }
+        acciones={
+          <>
             <Link
               href="/admin/planes-capacitacion/nuevo"
-              className={cn(buttonVariants(), "gap-1.5 bg-gradient-to-r from-primary to-teal-400 text-white hover:opacity-90")}
+              className="boton-hero"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4" aria-hidden="true" />
               Nuevo plan
+            </Link>
+            <Link href="/admin/planes-capacitacion/dashboard" className="enlace-hero">
+              <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
+              Dashboard del módulo
             </Link>
           </>
         }
+        cifras={[
+          { valor: plans.filter((p) => p.status === "ACTIVE").length, etiqueta: "Planes activos" },
+          { valor: actividades.length, etiqueta: "Capacitaciones" },
+          { valor: actividades.filter((a) => a.status === "OPEN").length, etiqueta: "Abiertas hoy" },
+          { valor: delTrimestre, etiqueta: `En el ${nombreTrimestre(enCurso, false).toLowerCase()}` },
+        ]}
+        pie={actividades.length > 0 ? <RielTrimestres conteos={conteoPorTrimestre(actividades)} oscuro conMeses /> : undefined}
       />
 
       <TrainingPlanList plans={plans} basePath="/admin/planes-capacitacion" showTutorColumn puedeEliminar />

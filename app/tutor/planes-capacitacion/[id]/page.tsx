@@ -1,17 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  CalendarRange,
-  Building2,
-  User,
-  FileText,
-  Gauge,
-  ClipboardList,
-  Plus,
-  Info,
-  PhoneCall,
-} from "lucide-react";
+import { CalendarRange, User, FileText, ClipboardList, Plus, Info, UsersRound, BarChart3 } from "lucide-react";
 import { requireTrainingPlanRead } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import {
@@ -31,10 +20,10 @@ import {
   reopenTrainingPlanAction,
   getPlanCloseBlockers,
 } from "@/app/admin/planes-capacitacion/actions";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlanHero } from "@/components/training-plans/plan-hero";
 import { CronogramaView } from "@/components/training-plans/cronograma-view";
 import { ClosePlanPanel } from "@/components/training-plans/close-plan-panel";
 import { PlanAttendanceTab } from "@/components/training-plans/plan-attendance-tab";
@@ -44,7 +33,7 @@ import { TrainingDocumentList } from "@/components/training-plans/training-docum
 import { TrainingDocumentUploadForm } from "@/components/training-plans/training-document-upload-form";
 import { SurveyList } from "@/components/training-plans/survey-list";
 import { PlanMetricsView } from "@/components/training-plans/plan-metrics-view";
-import { TRAINING_PLAN_STATUS_LABELS, TRAINING_PLAN_STATUS_CLASSES } from "@/components/training-plans/labels";
+import { TRAINING_PLAN_STATUS_LABELS } from "@/components/training-plans/labels";
 
 const FORMATO_HORA_SESION = new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit" });
 
@@ -130,53 +119,7 @@ export default async function TutorPlanCapacitacionDetallePage({
 
   return (
     <div className="space-y-6">
-      <Link
-        href={BASE_PATH}
-        className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Planes de capacitación
-      </Link>
-
-      <div className="surface surface-accent-top p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <h1 className="font-display text-2xl font-extrabold text-foreground">{plan.title}</h1>
-          <Badge className={TRAINING_PLAN_STATUS_CLASSES[plan.status]}>
-            {TRAINING_PLAN_STATUS_LABELS[plan.status]}
-          </Badge>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <CalendarRange className="h-4 w-4 text-primary" />
-            {plan.year}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Building2 className="h-4 w-4 text-primary" />
-            {plan.targetDepartment ?? "Todo el personal"}
-          </span>
-          <Link
-            href={`${BASE_PATH}/${id}/indicadores`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold text-primary transition-colors hover:bg-primary/15"
-          >
-            <Gauge className="h-3.5 w-3.5" aria-hidden="true" />
-            Ver indicadores
-          </Link>
-          <Link
-            href={`${BASE_PATH}/${id}/conexiones`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold text-primary transition-colors hover:bg-primary/15"
-          >
-            <PhoneCall className="h-3.5 w-3.5" aria-hidden="true" />
-            Conexiones a llamada
-          </Link>
-          <span className="flex items-center gap-1.5">
-            <Gauge className="h-4 w-4 text-primary" />
-            {adherenceSummary.overallPercentage !== null
-              ? `${adherenceSummary.overallPercentage}% de cumplimiento`
-              : "Sin datos de cumplimiento aún"}
-          </span>
-        </div>
-      </div>
+      <PlanHero basePath={BASE_PATH} plan={plan} cumplimiento={adherenceSummary.overallPercentage} />
 
       {puedeEditarPlan && (
         <ClosePlanPanel
@@ -201,13 +144,13 @@ export default async function TutorPlanCapacitacionDetallePage({
       )}
 
       <Tabs defaultValue="cronograma">
-        <TabsList>
-          <TabsTrigger value="cronograma">Cronograma</TabsTrigger>
-          <TabsTrigger value="informacion">Información</TabsTrigger>
-          <TabsTrigger value="documentos">Documentos</TabsTrigger>
-          <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
-          <TabsTrigger value="encuestas">Encuestas</TabsTrigger>
-          <TabsTrigger value="metricas">Métricas</TabsTrigger>
+        <TabsList className="plan-tabs">
+          <TabsTrigger value="cronograma"><CalendarRange aria-hidden="true" />Cronograma<span className="conteo">{plan.activities.length}</span></TabsTrigger>
+          <TabsTrigger value="informacion"><Info aria-hidden="true" />Información</TabsTrigger>
+          <TabsTrigger value="documentos"><FileText aria-hidden="true" />Documentos<span className="conteo">{plan.documents.length}</span></TabsTrigger>
+          <TabsTrigger value="asistencia"><UsersRound aria-hidden="true" />Asistencia</TabsTrigger>
+          <TabsTrigger value="encuestas"><ClipboardList aria-hidden="true" />Encuestas</TabsTrigger>
+          <TabsTrigger value="metricas"><BarChart3 aria-hidden="true" />Métricas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="cronograma" className="space-y-6 pt-4">
@@ -227,13 +170,16 @@ export default async function TutorPlanCapacitacionDetallePage({
             </div>
 
             {puedeEditarPlan && plan.status !== "CLOSED" && (
-              <div className="surface h-fit space-y-4 p-5 lg:sticky lg:top-6">
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
-                    Agregar actividad
-                  </h2>
-                  <ImportScheduleDialog action={importScheduleAction} />
+              <div className="surface-panel form-premium h-fit space-y-5 p-6 lg:sticky lg:top-6">
+                <div className="panel-lateral-cabecera">
+                  <span className="panel-lateral-icono"><Plus className="h-5 w-5" aria-hidden="true" /></span>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="font-display text-[1.05rem] font-extrabold leading-tight text-foreground">Agregar actividad</h2>
+                    <p className="mt-0.5 text-[12.5px] text-muted-foreground">Una línea nueva del cronograma. También puedes importar el PIC completo.</p>
+                  </div>
                 </div>
+                <ImportScheduleDialog action={importScheduleAction} />
+                <div className="h-px bg-gradient-to-r from-border via-border to-transparent" />
                 <TrainingActivityForm action={addActivityAction} courses={courses} />
               </div>
             )}
