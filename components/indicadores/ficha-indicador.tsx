@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Activity, BookOpenText, ClipboardList, FileSpreadsheet, Lock, MessageSquareText, Target } from "lucide-react";
+import { Activity, BookOpenText, ClipboardList, FileSpreadsheet, GraduationCap, Lock, MessageSquareText, Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ContextoFormulario, IndicadorGestion, Medicion } from "@/lib/indicadores-gestion";
 import { UMBRAL_VERDE } from "@/lib/semaforo-indicadores";
@@ -9,9 +10,10 @@ import { CATALOGO, ROMANO, VEREDICTO, formatearValor, rangosSemaforo, type Codig
 import { AnilloSemaforo, SenalSemaforo, Sparkline } from "@/components/indicadores/graficos-svg";
 import { GraficoTendencia } from "@/components/indicadores/grafico-tendencia";
 import { FormAnalisis } from "@/components/indicadores/form-analisis";
-import { FormPlanMejora } from "@/components/indicadores/form-plan-mejora";
+import { FormPlanMejora, type PrecargaMejora } from "@/components/indicadores/form-plan-mejora";
 import { ListaPlanesMejora } from "@/components/indicadores/planes-mejora";
 import { PanelLateral } from "@/components/indicadores/panel-lateral";
+import { CapacitacionesMedidas } from "@/components/indicadores/capacitaciones-medidas";
 import { cn } from "@/lib/utils";
 
 export type Escritura = {
@@ -27,8 +29,11 @@ const PERIODO: Record<Medicion["periodo"], string> = { cerrado: "Cerrado", "en-c
 /**
  * FICHA DE UN INDICADOR, con la organización de Almera (Seguimiento · Ficha
  * técnica · Análisis · Mediciones · Planes de mejora) sobre una cabecera KPI
- * de vidrio. Todo lo numérico viene calculado por la plataforma; lo que se
- * escribe aquí es el análisis del responsable y la gestión de la mejora.
+ * de vidrio. La unidad de medida es la CAPACITACIÓN: la sección "Por
+ * capacitación" manda en Seguimiento y en Mediciones, y el número del área o
+ * institucional se presenta siempre como CONSOLIDADO de esas mediciones.
+ * Todo lo numérico viene calculado por la plataforma; lo que se escribe
+ * aquí es el análisis del responsable y la gestión de la mejora.
  */
 export function FichaIndicador({
   datos,
@@ -45,6 +50,11 @@ export function FichaIndicador({
 }) {
   const f = CATALOGO[datos.codigo];
   const actual = datos.trimestres[datos.trimestreActual - 1];
+  // Plan de mejora que nace de UNA capacitación (acción rápida de su fila).
+  const [precarga, setPrecarga] = useState<PrecargaMejora | null>(null);
+  const medidas = datos.capacitaciones.filter((c) => c.valor !== null).length;
+  const preliminares = datos.capacitaciones.filter((c) => c.preliminar).length;
+  const puedeMejora = escritura.puede && contexto !== null;
   const brecha = datos.anual.valor === null ? null : Math.round((datos.anual.valor - UMBRAL_VERDE) * 10) / 10;
   const analisisEscritura = datos.analisis.filter((a) => a.areaId === escritura.areaId);
   const sufijo = areaQuery ? `?area=${areaQuery}` : "";
@@ -72,9 +82,12 @@ export function FichaIndicador({
 
             <div className="ind-kpis">
               <div>
-                <span className="mono-label">Acumulado {datos.anio}</span>
+                <span className="mono-label">Consolidado {datos.anio}</span>
                 <b data-sem={datos.anual.sem}>{formatearValor(datos.codigo, datos.anual.valor)}</b>
-                <small>{VEREDICTO[datos.anual.sem]}</small>
+                <small>
+                  {VEREDICTO[datos.anual.sem]} · {medidas} de {datos.capacitaciones.length} capacitaciones medidas
+                  {preliminares > 0 && ` (${preliminares} preliminar${preliminares === 1 ? "" : "es"})`}
+                </small>
               </div>
               <div>
                 <span className="mono-label">Trimestre {ROMANO[datos.trimestreActual - 1]} · vigente</span>
@@ -100,7 +113,7 @@ export function FichaIndicador({
           </div>
 
           <div className="ind-hero-lateral">
-            <AnilloSemaforo valor={datos.anual.valor} sem={datos.anual.sem} texto={formatearValor(datos.codigo, datos.anual.valor)} tamano={150} grosor={12} etiqueta={VEREDICTO[datos.anual.sem]} />
+            <AnilloSemaforo valor={datos.anual.valor} sem={datos.anual.sem} texto={formatearValor(datos.codigo, datos.anual.valor)} tamano={150} grosor={12} etiqueta={`Consolidado · ${VEREDICTO[datos.anual.sem]}`} />
             <div className="ind-tira">
               {datos.trimestres.map((t) => (
                 <span key={t.trimestre ?? 0} data-sem={t.sem} data-actual={t.trimestre === datos.trimestreActual || undefined} data-periodo={t.periodo} title={`${t.etiqueta} · ${PERIODO[t.periodo]}`}>
@@ -141,8 +154,17 @@ export function FichaIndicador({
 
         {/* ── Seguimiento ── */}
         <TabsContent value="seguimiento" className="space-y-5 pt-5">
+          <section className="ind-panel ind-panel-caps p-5">
+            <Encabezado
+              icono={<GraduationCap className="h-4 w-4" aria-hidden="true" />}
+              titulo={`Por capacitación · ${alcanceTexto}`}
+              detalle={`Cada capacitación del PIC se mide por separado: ${fuenteCorta(datos.codigo)}. Lo peor primero. ${medidas === 0 ? vacioTexto(datos.codigo) : "El consolidado de abajo es solo el agregado de estas filas."}`}
+            />
+            <CapacitacionesMedidas codigo={datos.codigo} capacitaciones={datos.capacitaciones} rutaBase={rutaBase} anio={datos.anio} modo="lista" puedeMejora={puedeMejora} alPlanMejora={setPrecarga} />
+          </section>
+
           <section className="ind-panel p-5">
-            <Encabezado titulo={`Tendencia por trimestre · ${datos.anio}`} detalle="Cada punto toma el color de su semáforo; la banda verde es la zona de cumplimiento y la línea discontinua, la meta. Un trimestre sin dato deja hueco: no se interpola." />
+            <Encabezado titulo={`Consolidado por trimestre · ${datos.anio}`} detalle="Agregado de las capacitaciones programadas en cada trimestre. Cada punto toma el color de su semáforo; la banda verde es la zona de cumplimiento y la línea discontinua, la meta. Un trimestre sin dato deja hueco: no se interpola." />
             <div className="mt-4">
               <GraficoTendencia codigo={datos.codigo} trimestres={datos.trimestres} actual={datos.trimestreActual} anio={datos.anio} />
             </div>
@@ -150,7 +172,7 @@ export function FichaIndicador({
 
           {datos.porArea.length > 1 && (
             <section className="ind-panel p-5">
-              <Encabezado titulo="Por área" detalle="La misma fórmula aplicada al universo de cada área. Toca una para abrir su ficha." />
+              <Encabezado titulo="Consolidado por área" detalle="El agregado de las capacitaciones de cada área, con cuántas ya tienen dato. Toca una para abrir su ficha y ver sus capacitaciones." />
               <ul className="ind-areas">
                 {datos.porArea.map((a) => (
                   <li key={a.areaId}>
@@ -158,7 +180,7 @@ export function FichaIndicador({
                       <div className="min-w-0 flex-1">
                         <b className="block truncate">{a.areaNombre}</b>
                         <small>
-                          {f.columnas[1]} {a.anual.variables[1]} / {a.anual.variables[0]}
+                          {a.medidas} de {a.programadas} capacitaciones medidas · {f.columnas[1].toLowerCase()} {a.anual.variables[1]}
                           {a.planesAbiertos > 0 && ` · ${a.planesAbiertos} plan${a.planesAbiertos === 1 ? "" : "es"} de mejora`}
                         </small>
                       </div>
@@ -325,9 +347,22 @@ export function FichaIndicador({
 
         {/* ── Mediciones ── */}
         <TabsContent value="mediciones" className="space-y-5 pt-5">
+          <section className="ind-panel ind-panel-caps overflow-hidden">
+            <div className="p-5 pb-0">
+              <Encabezado
+                icono={<GraduationCap className="h-4 w-4" aria-hidden="true" />}
+                titulo={`Mediciones por capacitación · ${alcanceTexto}`}
+                detalle={`La unidad del indicador. ${f.formula} ${medidas === 0 ? vacioTexto(datos.codigo) : ""}`}
+              />
+            </div>
+            <div className="px-5 pb-5">
+              <CapacitacionesMedidas codigo={datos.codigo} capacitaciones={datos.capacitaciones} rutaBase={rutaBase} anio={datos.anio} modo="tabla" puedeMejora={puedeMejora} alPlanMejora={setPrecarga} />
+            </div>
+          </section>
+
           <section className="ind-panel overflow-hidden">
             <div className="p-5 pb-3">
-              <Encabezado titulo={`Mediciones por periodo · ${alcanceTexto}`} detalle="Generadas por la plataforma en tiempo real; nadie registra el valor a mano. El acumulado es la misma fórmula sobre todo el año." />
+              <Encabezado titulo={`Consolidado por periodo · ${alcanceTexto}`} detalle="Agregado de las mediciones por capacitación de cada corte; generado por la plataforma en tiempo real, nadie registra el valor a mano. El consolidado del año es la misma fórmula sobre todas las capacitaciones." />
             </div>
             <div className="overflow-x-auto">
               <table className="ind-tabla">
@@ -357,7 +392,7 @@ export function FichaIndicador({
                       <td>
                         <SenalSemaforo sem={m.sem}>{VEREDICTO[m.sem]}</SenalSemaforo>
                       </td>
-                      <td className="text-muted-foreground">{m.trimestre === null ? "Acumulado" : PERIODO[m.periodo]}</td>
+                      <td className="text-muted-foreground">{m.trimestre === null ? "Consolidado" : PERIODO[m.periodo]}</td>
                       <td className="max-w-[260px] whitespace-normal text-[12px] text-muted-foreground">{fuenteCorta(datos.codigo)}</td>
                       <td className="text-[12px] text-muted-foreground">{m.generado}</td>
                     </tr>
@@ -370,7 +405,7 @@ export function FichaIndicador({
           {datos.porArea.length > 1 && (
             <section className="ind-panel overflow-hidden">
               <div className="p-5 pb-3">
-                <Encabezado titulo="Mediciones por área y trimestre" detalle={`Valor y semáforo de cada área en cada corte. Entre paréntesis, ${f.columnas[1].toLowerCase()} / ${f.columnas[0].toLowerCase()}.`} />
+                <Encabezado titulo="Consolidado por área y trimestre" detalle={`Agregado de las capacitaciones de cada área en cada corte. Entre paréntesis, ${f.columnas[1].toLowerCase()} / ${f.columnas[0].toLowerCase()}; a la derecha, capacitaciones con dato / programadas.`} />
               </div>
               <div className="overflow-x-auto">
                 <table className="ind-tabla">
@@ -382,7 +417,8 @@ export function FichaIndicador({
                           T{r}
                         </th>
                       ))}
-                      <th scope="col" className="text-right">Acumulado</th>
+                      <th scope="col" className="text-right">Consolidado</th>
+                      <th scope="col" className="text-right">Medidas</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -400,6 +436,9 @@ export function FichaIndicador({
                         ))}
                         <td className="text-right">
                           <CeldaValor codigo={datos.codigo} m={a.anual} />
+                        </td>
+                        <td className="text-right font-mono text-[12px] text-muted-foreground">
+                          {a.medidas}/{a.programadas}
                         </td>
                       </tr>
                     ))}
@@ -457,6 +496,27 @@ export function FichaIndicador({
         </TabsContent>
       </Tabs>
 
+      {/* Plan de mejora desde UNA capacitación: el panel ya viene con el área, la capacitación y el hallazgo. */}
+      {puedeMejora && contexto && (
+        <PanelLateral abierto={precarga !== null} alCambiar={(v) => !v && setPrecarga(null)} titulo={`Plan de mejora · ${f.corto}`} descripcion={precarga ? `Nace de la capacitación «${precarga.activityTitulo}».` : undefined}>
+          {(cerrar) =>
+            precarga && (
+              <FormPlanMejora
+                key={precarga.activityId}
+                planId={datos.planId}
+                codigo={datos.codigo}
+                contexto={contexto}
+                trimestres={datos.trimestres}
+                trimestreInicial={datos.trimestreActual}
+                areaFija={escritura.areaId ? { id: escritura.areaId, nombre: escritura.areaNombre ?? "Área" } : null}
+                precarga={precarga}
+                alCrear={cerrar}
+              />
+            )
+          }
+        </PanelLateral>
+      )}
+
       {/* Pie: navegación entre los tres indicadores sin volver atrás. */}
       <nav className="ind-saltos" aria-label="Otros indicadores">
         {(Object.keys(CATALOGO) as CodigoIndicador[]).map((c) => (
@@ -470,10 +530,13 @@ export function FichaIndicador({
   );
 }
 
-function Encabezado({ titulo, detalle }: { titulo: string; detalle?: string }) {
+function Encabezado({ titulo, detalle, icono }: { titulo: string; detalle?: string; icono?: ReactNode }) {
   return (
     <div>
-      <h2 className="font-display text-[1rem] font-bold tracking-tight text-foreground">{titulo}</h2>
+      <h2 className="flex items-center gap-1.5 font-display text-[1rem] font-bold tracking-tight text-foreground">
+        {icono}
+        {titulo}
+      </h2>
       {detalle && <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted-foreground">{detalle}</p>}
     </div>
   );
@@ -493,10 +556,22 @@ function CeldaValor({ codigo, m }: { codigo: CodigoIndicador; m: Medicion }) {
 function fuenteCorta(codigo: CodigoIndicador) {
   switch (codigo) {
     case "PIC-ADH-01":
-      return "Intentos presaber/postsaber de jornadas cerradas (informe congelado)";
+      return "mejora pre → post de quienes completaron el ciclo en esa jornada (preliminar mientras siga abierta; definitiva al cerrarla, desde el acta)";
     case "PIC-COB-02":
-      return "Vínculo actividad → curso";
+      return "tiene curso vinculado (con contenido) o no";
     case "PIC-ASI-03":
-      return "Registro de asistencia por trimestre";
+      return "personas con asistencia registrada sobre la audiencia objetivo de esa capacitación";
+  }
+}
+
+/** Qué hace falta para que aparezca el primer dato, cuando ninguna capacitación lo tiene todavía. */
+function vacioTexto(codigo: CodigoIndicador) {
+  switch (codigo) {
+    case "PIC-ADH-01":
+      return "Todavía sin dato: la adherencia aparece en cuanto alguien completa presaber y postsaber en una capacitación, con la jornada abierta (preliminar) o cerrada (definitivo).";
+    case "PIC-COB-02":
+      return "Todavía no hay capacitaciones programadas en este alcance.";
+    case "PIC-ASI-03":
+      return "Todavía sin dato: aparece con la primera asistencia registrada sobre una audiencia objetivo definida.";
   }
 }

@@ -3727,4 +3727,130 @@ a.st-opcion:hover { border-color: color-mix(in oklch, var(--primary) 45%, var(--
 .ind-saltos a:hover { border-color: color-mix(in oklch, var(--primary) 45%, var(--border)); transform: translateY(-1px); }
 .ind-saltos a[data-actual] { border-color: color-mix(in oklch, var(--primary) 50%, var(--border)); background: color-mix(in oklch, var(--primary) 6%, var(--card)); }
 @media (max-width: 640px) { .ind-saltos { grid-template-columns: 1fr; } .ind-hero { padding: 1.15rem 1.1rem; } .ind-analisis-medida { flex-basis: 100%; } }
-@media (prefers-reduced-motion: reduce) { .ind-aurora, .ind-titulo { animation: none !important; } }
+
+/* Por capacitación: la unidad de medida (lista en Seguimiento, tabla en Mediciones) */
+.ind-panel-caps { border-color: color-mix(in oklch, var(--ind-a) 35%, var(--border)); box-shadow: 0 0 0 1px color-mix(in oklch, var(--ind-a) 10%, transparent), var(--shadow-1); }
+.ind-caps-filtros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.6rem 1rem; margin-top: 0.9rem; }
+.ind-caps-filtros label { display: grid; gap: 0.2rem; }
+.ind-caps-filtros label span { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-foreground); }
+.ind-caps-filtros select { min-height: 2.2rem; max-width: 100%; padding: 0.3rem 0.6rem; border-radius: 10px; font-size: 12.5px; font-weight: 600; color: var(--foreground); border: 1px solid var(--border); background: var(--card); }
+.ind-caps-resumen { margin-left: auto; font-size: 12px; color: var(--muted-foreground); }
+.ind-caps-resumen b { font-family: var(--font-mono); color: var(--foreground); }
+.ind-caps-resumen em { font-style: normal; color: color-mix(in oklch, var(--warning) 55%, var(--foreground)); }
+.ind-caps { display: grid; gap: 0.5rem; margin-top: 0.9rem; list-style: none; padding: 0; }
+.ind-cap { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; padding: 0.7rem 0.9rem; border-radius: 14px; border: 1px solid color-mix(in oklch, var(--sem) 26%, var(--border)); border-left: 3px solid var(--sem); background: color-mix(in oklch, var(--card) 85%, transparent); transition: border-color .15s, box-shadow .15s; }
+.ind-cap:hover { border-color: color-mix(in oklch, var(--sem) 50%, var(--border)); box-shadow: 0 12px 24px -20px var(--sem); }
+.ind-cap[data-prelim] { background: repeating-linear-gradient(135deg, transparent 0 14px, color-mix(in oklch, var(--warning) 4%, transparent) 14px 16px), color-mix(in oklch, var(--card) 85%, transparent); }
+.ind-cap-valor { display: grid; justify-items: start; gap: 0.3rem; flex: 0 0 7.2rem; }
+.ind-cap-valor b { font-family: var(--font-mono); font-size: 1.45rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1; color: var(--sem-texto); font-variant-numeric: tabular-nums; }
+.ind-cap-titulo { display: block; font-size: 13.5px; font-weight: 700; color: var(--foreground); text-decoration: none; line-height: 1.3; }
+.ind-cap-titulo:hover { color: var(--primary); }
+.ind-cap-detalle { margin-top: 0.15rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted-foreground); }
+.ind-cap-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.45rem; }
+.ind-cap-chips > span { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.12rem 0.5rem; border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--muted-foreground); border: 1px solid var(--border); background: color-mix(in oklch, var(--card) 70%, transparent); }
+.ind-cap-planes { color: var(--primary) !important; border-color: color-mix(in oklch, var(--primary) 35%, transparent) !important; }
+.ind-cap-estado { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.12rem 0.5rem; border-radius: 999px; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-foreground); border: 1px solid var(--border); white-space: nowrap; }
+.ind-cap-estado[data-estado-cap="cerrada"] { color: color-mix(in oklch, var(--success) 70%, var(--foreground)); border-color: color-mix(in oklch, var(--success) 40%, transparent); background: color-mix(in oklch, var(--success) 7%, transparent); }
+.ind-cap-estado[data-estado-cap="abierta"] { color: color-mix(in oklch, var(--primary) 80%, var(--foreground)); border-color: color-mix(in oklch, var(--primary) 40%, transparent); background: color-mix(in oklch, var(--primary) 6%, transparent); }
+.ind-cap-estado-prelim { color: color-mix(in oklch, var(--warning) 50%, var(--foreground)) !important; border-color: color-mix(in oklch, var(--warning) 50%, transparent) !important; background: color-mix(in oklch, var(--warning) 10%, transparent) !important; }
+.ind-cap-estado-prelim svg { color: var(--warning); animation: ind-latido 1.8s ease-in-out infinite; }
+@keyframes ind-latido { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.ind-cap-acciones { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-left: auto; }
+.ind-cap-acciones .ind-boton-secundario { padding: 0.4rem 0.7rem; font-size: 12px; }
+.ind-cap-mejora { border-color: color-mix(in oklch, var(--primary) 40%, var(--border)); color: var(--primary); }
+.ind-tabla tbody tr[data-prelim] td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
+.ind-cap-badge { display: inline-flex; align-items: center; gap: 0.3rem; max-width: 100%; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 11.5px; font-weight: 700; color: var(--primary); border: 1px solid color-mix(in oklch, var(--primary) 40%, transparent); background: color-mix(in oklch, var(--primary) 7%, transparent); }
+.ind-cap-badge svg { flex: none; }
+.ind-medidas { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.75rem; font-size: 12px; color: var(--muted-foreground); }
+.ind-medidas svg { color: var(--ind-a); }
+.ind-medidas b { font-family: var(--font-mono); color: var(--foreground); }
+
+/* Matriz: filas de área desplegables, una subfila por capacitación */
+.ind-desplegar { display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 8px; color: var(--muted-foreground); border: 1px solid var(--border); background: var(--card); transition: border-color .15s, color .15s; }
+.ind-desplegar:hover:not(:disabled) { color: var(--primary); border-color: color-mix(in oklch, var(--primary) 45%, var(--border)); }
+.ind-desplegar:disabled { opacity: 0.4; }
+.ind-matriz tbody tr[data-abierta] th, .ind-matriz tbody tr[data-abierta] td { background: color-mix(in oklch, var(--primary) 5%, transparent); }
+.ind-matriz-programadas { display: block; margin-top: 0.1rem; font-family: var(--font-mono); font-size: 0.6rem; font-weight: 500; letter-spacing: 0.06em; color: var(--muted-foreground); white-space: normal; }
+.ind-matriz tbody tr.ind-subfila th { padding-left: 1.5rem; font-size: 12.5px; font-weight: 600; white-space: normal; max-width: 320px; }
+.ind-matriz tbody tr.ind-subfila th::before { content: "↳ "; color: var(--muted-foreground); }
+.ind-matriz tbody tr.ind-subfila { background: color-mix(in oklch, var(--foreground) 2%, transparent); }
+.ind-celda-cap { cursor: default; }
+.ind-celda-cap small { white-space: normal; max-width: 180px; }
+.ind-prelim-mini { display: inline-flex; align-items: center; gap: 0.2rem; margin-left: 0.4rem; font-style: normal; color: color-mix(in oklch, var(--warning) 50%, var(--foreground)); }
+@media (max-width: 640px) {
+  .ind-cap { gap: 0.6rem; }
+  .ind-cap-valor { flex-basis: 100%; grid-auto-flow: column; justify-content: start; align-items: center; gap: 0.6rem; }
+  .ind-cap-acciones { margin-left: 0; width: 100%; }
+  .ind-cap-acciones > * { flex: 1; justify-content: center; }
+  .ind-caps-resumen { margin-left: 0; flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .ind-aurora, .ind-titulo, .ind-cap-estado-prelim svg { animation: none !important; } }
+
+/* ── Registro documental (prefijo .doc-) ────────────────────────────────────
+   Archivos de planes, capacitaciones, comités y sesiones como tabla de base
+   de datos: logo del formato, tipo documental, descripción, fecha y autor. */
+.doc-icono {
+  --doc-c: #64748b; position: relative; display: grid; place-items: center; flex: none;
+  border-radius: 10px; color: var(--doc-c); background: color-mix(in oklch, var(--doc-c) 12%, var(--card));
+  border: 1px solid color-mix(in oklch, var(--doc-c) 28%, transparent);
+}
+.doc-icono-md { width: 2.6rem; height: 3rem; }
+.doc-icono-md svg { width: 1.3rem; height: 1.3rem; }
+.doc-icono-sm { width: 2rem; height: 2.3rem; }
+.doc-icono-sm svg { width: 1rem; height: 1rem; }
+.doc-icono-lg { width: 3.4rem; height: 4rem; }
+.doc-icono-lg svg { width: 1.7rem; height: 1.7rem; }
+.doc-icono b {
+  position: absolute; bottom: -0.45rem; padding: 0.05rem 0.35rem; border-radius: 5px;
+  font-family: var(--font-datos), ui-monospace, monospace; font-size: 0.55rem; font-weight: 800; letter-spacing: 0.08em;
+  color: #fff; background: var(--doc-c);
+}
+.doc-icono-sm b { font-size: 0.48rem; }
+.doc-icono[data-formato="pdf"] { --doc-c: #d64545; }
+.doc-icono[data-formato="word"] { --doc-c: #2b6cb0; }
+.doc-icono[data-formato="excel"] { --doc-c: #1f9d5a; }
+.doc-icono[data-formato="powerpoint"] { --doc-c: #d97706; }
+.doc-icono[data-formato="video"] { --doc-c: #2f80c2; }
+.doc-icono[data-formato="imagen"] { --doc-c: #0e9f8e; }
+.doc-icono[data-formato="audio"] { --doc-c: #7c3aed; }
+.doc-icono[data-formato="zip"] { --doc-c: #8a6d3b; }
+.doc-icono[data-formato="texto"] { --doc-c: #475569; }
+
+.doc-registro { container-type: inline-size; overflow: hidden; border-radius: 18px; border: 1px solid var(--border); background: color-mix(in oklch, var(--card) 92%, transparent); backdrop-filter: blur(10px); }
+.doc-registro-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); background: color-mix(in oklch, var(--foreground) 2.5%, var(--card)); }
+.doc-chip { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.15rem 0.5rem; border-radius: 999px; border: 1px solid var(--border); font-size: 11px; color: var(--muted-foreground); background: var(--card); }
+.doc-chip b { font-family: var(--font-datos), ui-monospace, monospace; color: var(--foreground); }
+.doc-tabla { width: 100%; border-collapse: collapse; }
+.doc-tabla th { padding: 0.55rem 0.9rem; text-align: left; font-family: var(--font-datos), ui-monospace, monospace; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-foreground); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.doc-tabla td { padding: 0.7rem 0.9rem; vertical-align: middle; border-bottom: 1px solid color-mix(in oklch, var(--border) 70%, transparent); font-size: 13px; color: var(--foreground); }
+.doc-tabla tbody tr:last-child td { border-bottom: 0; }
+.doc-tabla tbody tr:hover td { background: color-mix(in oklch, var(--primary) 4%, transparent); }
+.doc-nombre { font-family: var(--font-titulo), system-ui, sans-serif; font-weight: 700; font-size: 13.5px; line-height: 1.25; overflow-wrap: anywhere; }
+.doc-desc { margin-top: 0.15rem; font-size: 11.5px; color: var(--muted-foreground); line-height: 1.35; }
+.doc-tipo { display: inline-flex; align-items: center; padding: 0.2rem 0.55rem; border-radius: 8px; font-size: 11.5px; font-weight: 600; white-space: nowrap; background: color-mix(in oklch, var(--primary) 10%, var(--card)); color: var(--primary); border: 1px solid color-mix(in oklch, var(--primary) 25%, transparent); }
+.doc-tipo[data-tipo="ACTA"], .doc-tipo[data-tipo="RESOLUCION"] { background: oklch(0.95 0.04 300); color: oklch(0.45 0.16 300); border-color: oklch(0.8 0.1 300 / 0.5); }
+.doc-tipo[data-tipo="LISTA_ASISTENCIA"], .doc-tipo[data-tipo="EVIDENCIA"] { background: oklch(0.95 0.05 160); color: oklch(0.4 0.12 160); border-color: oklch(0.8 0.1 160 / 0.5); }
+.doc-tipo[data-tipo="GRABACION"] { background: oklch(0.95 0.04 250); color: oklch(0.42 0.14 250); border-color: oklch(0.8 0.1 250 / 0.5); }
+.doc-tipo[data-tipo="INFORME"] { background: oklch(0.96 0.05 70); color: oklch(0.45 0.13 60); border-color: oklch(0.82 0.11 70 / 0.5); }
+.doc-inferido { display: block; margin-top: 0.2rem; font-family: var(--font-datos), ui-monospace, monospace; font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-foreground); }
+.doc-accion { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.6rem; border-radius: 9px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--foreground); background: var(--card); white-space: nowrap; transition: all .15s; }
+.doc-accion:hover { border-color: color-mix(in oklch, var(--primary) 40%, var(--border)); color: var(--primary); }
+.doc-accion-primaria { color: #fff; background: var(--primary); border-color: var(--primary); }
+.doc-accion-primaria:hover { color: #fff; filter: brightness(1.08); }
+.doc-vacio { padding: 1.2rem 1rem; border-radius: 16px; border: 1px dashed var(--border); text-align: center; font-size: 13px; color: var(--muted-foreground); background: color-mix(in oklch, var(--card) 60%, transparent); }
+.doc-grabaciones { padding: 1rem 1.1rem; border-radius: 18px; border: 1px solid var(--border); background: color-mix(in oklch, var(--card) 92%, transparent); display: grid; gap: 0.75rem; }
+/* Columna angosta (p. ej. junto al contenido del curso): la tabla pasa a fichas. */
+@container (max-width: 760px) {
+  .doc-tabla thead { display: none; }
+  .doc-tabla, .doc-tabla tbody, .doc-tabla tr, .doc-tabla td { display: block; width: 100%; }
+  .doc-tabla tr { padding: 0.75rem 0.9rem; border-bottom: 1px solid var(--border); }
+  .doc-tabla tbody tr:hover td { background: transparent; }
+  .doc-tabla td { padding: 0.2rem 0; border: 0; }
+  .doc-tabla td:nth-child(3), .doc-tabla td:nth-child(4), .doc-tabla td:nth-child(5) { display: inline-block; width: auto; margin-right: 0.9rem; font-size: 12px; color: var(--muted-foreground); }
+  .doc-tabla td:nth-child(3) span, .doc-tabla td:nth-child(4) span { display: inline; margin-left: 0.3rem; }
+  .doc-tabla td:nth-child(3)::before { content: "Formato "; font-family: var(--font-datos), ui-monospace, monospace; font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .doc-tabla td:nth-child(5)::before { content: "Cargó "; font-family: var(--font-datos), ui-monospace, monospace; font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .doc-tabla td:last-child > div { justify-content: flex-start; margin-top: 0.45rem; }
+  .doc-inferido { display: inline; margin-left: 0.4rem; }
+}
+.doc-nombre { white-space: normal; }

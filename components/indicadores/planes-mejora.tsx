@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { Building2, CalendarCheck2, CheckCircle2, ChevronDown, ClipboardList, GraduationCap, History, RotateCcw, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { agregarSeguimientoAction, cambiarEstadoPlanMejoraAction, type EstadoAccion } from "@/app/admin/planes-capacitacion/[id]/indicadores/actions";
@@ -10,32 +10,70 @@ import { cn } from "@/lib/utils";
 
 const inicial: EstadoAccion = { error: null };
 
+const SIN_CAP = "__sin__";
+
 /**
  * LISTA de planes de mejora del indicador. Cada tarjeta muestra a qué está
- * asignado (vigencia/trimestre, área, capacitación), quién responde, la
- * fecha de compromiso y el avance; se despliega para ver hallazgo,
- * acciones, la bitácora de seguimientos y las acciones de gestión.
+ * asignado (vigencia/trimestre, área y, en primer plano, la CAPACITACIÓN),
+ * quién responde, la fecha de compromiso y el avance; se despliega para ver
+ * hallazgo, acciones, la bitácora de seguimientos y las acciones de
+ * gestión. Se puede filtrar por capacitación.
  */
 export function ListaPlanesMejora({ planes, puedeEscribir }: { planes: PlanMejoraVista[]; puedeEscribir: boolean }) {
+  const [filtro, setFiltro] = useState("");
+  const capacitaciones = useMemo(
+    () =>
+      [...new Map(planes.filter((p) => p.activityId).map((p) => [p.activityId!, p.activityTitulo ?? "Capacitación"])).entries()]
+        .map(([id, titulo]) => ({ id, titulo }))
+        .sort((a, b) => a.titulo.localeCompare(b.titulo, "es")),
+    [planes]
+  );
+  const visibles = planes.filter((p) => !filtro || (filtro === SIN_CAP ? !p.activityId : p.activityId === filtro));
+
   if (planes.length === 0) {
     return (
       <div className="ind-vacio">
         <ClipboardList className="h-5 w-5" aria-hidden="true" />
         <div>
           <b>Sin planes de mejora para este indicador.</b>
-          <p>Cuando una medición quede en alerta o en crítico, créalo aquí y asígnalo a la vigencia, el área y la capacitación que corresponda.</p>
+          <p>Cuando una capacitación quede en alerta o en crítico, créalo desde su fila en «Por capacitación» (nace ya asignado a ella) o aquí, eligiendo vigencia, área y capacitación.</p>
         </div>
       </div>
     );
   }
   return (
-    <ul className="grid gap-3">
-      {planes.map((p) => (
-        <li key={p.id}>
-          <TarjetaPlanMejora p={p} puedeEscribir={puedeEscribir} />
-        </li>
-      ))}
-    </ul>
+    <div className="grid gap-3">
+      {capacitaciones.length > 0 && (
+        <div className="ind-caps-filtros">
+          <label>
+            <span>Capacitación</span>
+            <select value={filtro} onChange={(e) => setFiltro(e.target.value)}>
+              <option value="">Todas · {planes.length}</option>
+              {capacitaciones.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.titulo}
+                </option>
+              ))}
+              <option value={SIN_CAP}>Sin capacitación puntual</option>
+            </select>
+          </label>
+          <p className="ind-caps-resumen">
+            <b>{visibles.length}</b> de <b>{planes.length}</b> planes
+          </p>
+        </div>
+      )}
+      {visibles.length === 0 ? (
+        <p className="text-[13px] text-muted-foreground">Ningún plan de mejora con ese filtro.</p>
+      ) : (
+        <ul className="grid gap-3">
+          {visibles.map((p) => (
+            <li key={p.id}>
+              <TarjetaPlanMejora p={p} puedeEscribir={puedeEscribir} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -54,6 +92,12 @@ function TarjetaPlanMejora({ p, puedeEscribir }: { p: PlanMejoraVista; puedeEscr
               {p.anio}
               {p.trimestre ? ` · T${ROMANO[p.trimestre - 1]}` : " · toda la vigencia"}
             </span>
+            {p.activityTitulo && (
+              <span className="ind-cap-badge" title={p.activityTitulo}>
+                <GraduationCap className="h-3 w-3" aria-hidden="true" />
+                {p.activityTitulo}
+              </span>
+            )}
           </div>
           <h3 className="mt-1.5 font-display text-[15px] font-bold leading-snug tracking-tight text-foreground">{p.titulo}</h3>
           <dl className="ind-mejora-datos">
@@ -64,17 +108,15 @@ function TarjetaPlanMejora({ p, puedeEscribir }: { p: PlanMejoraVista; puedeEscr
               </dt>
               <dd>{p.areaNombre ?? "Institucional"}</dd>
             </div>
-            {p.activityTitulo && (
-              <div>
-                <dt>
-                  <GraduationCap className="h-3 w-3" aria-hidden="true" />
-                  Capacitación
-                </dt>
-                <dd className="truncate" title={p.activityTitulo}>
-                  {p.activityTitulo}
-                </dd>
-              </div>
-            )}
+            <div>
+              <dt>
+                <GraduationCap className="h-3 w-3" aria-hidden="true" />
+                Capacitación
+              </dt>
+              <dd className="truncate" title={p.activityTitulo ?? undefined}>
+                {p.activityTitulo ?? "Sin capacitación puntual"}
+              </dd>
+            </div>
             <div>
               <dt>
                 <UserRound className="h-3 w-3" aria-hidden="true" />

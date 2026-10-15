@@ -33,7 +33,7 @@ export function GraficoTendencia({ codigo, trimestres, actual, anio }: { codigo:
           <b>Todavía no hay mediciones con dato en {anio}.</b>
           <p>
             {codigo === "PIC-ADH-01"
-              ? "La adherencia aparece cuando un área CIERRA una jornada con personas que presentaron presaber y postsaber. Hasta entonces no hay línea base."
+              ? "La adherencia aparece en cuanto alguien completa presaber y postsaber en una capacitación: preliminar mientras la jornada siga abierta, definitiva al cerrarla. Hasta entonces no hay línea base."
               : "El indicador se poblará solo a medida que la plataforma registre datos del periodo."}
           </p>
         </div>

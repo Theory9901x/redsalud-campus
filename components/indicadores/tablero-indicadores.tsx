@@ -1,16 +1,18 @@
 import Link from "next/link";
-import { ArrowUpRight, ClipboardList, Building2 } from "lucide-react";
-import type { ResumenIndicadores, Medicion } from "@/lib/indicadores-gestion";
-import { CATALOGO, CODIGOS, ROMANO, VEREDICTO, formatearValor, type CodigoIndicador } from "@/components/indicadores/catalogo";
+import { ArrowUpRight, ClipboardList, Building2, GraduationCap } from "lucide-react";
+import type { ResumenIndicadores } from "@/lib/indicadores-gestion";
+import { CATALOGO, CODIGOS, ROMANO, VEREDICTO, formatearValor } from "@/components/indicadores/catalogo";
 import { AnilloSemaforo, SenalSemaforo, Sparkline } from "@/components/indicadores/graficos-svg";
+import { FilaArea } from "@/components/indicadores/fila-area";
 import { escalon } from "@/components/training-plans/plan-visual";
 import { cn } from "@/lib/utils";
 
 /**
  * VISTA GENERAL de los indicadores del plan: una tarjeta de vidrio por
- * indicador (anillo de semáforo, valor del trimestre vigente, tendencia y
- * planes de mejora abiertos) y debajo la matriz área × indicador, que es
- * desde donde se entra a la ficha de cada área.
+ * indicador (anillo de semáforo del CONSOLIDADO, cuántas capacitaciones ya
+ * tienen dato, valor del trimestre vigente, tendencia y planes de mejora
+ * abiertos) y debajo la matriz área × indicador, cuyas filas se despliegan
+ * para ver cada capacitación del área con su semáforo.
  */
 export function TableroIndicadores({ datos, rutaBase, areaQuery }: { datos: ResumenIndicadores; rutaBase: string; areaQuery?: string }) {
   const sufijo = areaQuery ? `?area=${areaQuery}` : "";
@@ -36,8 +38,13 @@ export function TableroIndicadores({ datos, rutaBase, areaQuery }: { datos: Resu
                   <h2 className="ind-titulo">{f.nombre}</h2>
                   <p className="mt-1 text-[12.5px] leading-snug text-muted-foreground">{f.resumen}</p>
                 </div>
-                <AnilloSemaforo valor={ind.anual.valor} sem={ind.anual.sem} texto={formatearValor(ind.codigo, ind.anual.valor)} tamano={92} grosor={8} etiqueta={`Acum. ${datos.anio}`} className="shrink-0" />
+                <AnilloSemaforo valor={ind.anual.valor} sem={ind.anual.sem} texto={formatearValor(ind.codigo, ind.anual.valor)} tamano={92} grosor={8} etiqueta="Consolidado" className="shrink-0" />
               </div>
+
+              <p className="ind-medidas relative">
+                <GraduationCap className="h-3.5 w-3.5" aria-hidden="true" />
+                <b>{ind.medidas}</b> de <b>{ind.programadas}</b> capacitaciones medidas
+              </p>
 
               <div className="ind-periodo relative">
                 <div>
@@ -83,8 +90,8 @@ export function TableroIndicadores({ datos, rutaBase, areaQuery }: { datos: Resu
                 <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
                 Trazabilidad por área
               </p>
-              <h2 className="mt-1 font-display text-[1.05rem] font-bold tracking-tight text-foreground">Semáforo área × indicador · acumulado {datos.anio}</h2>
-              <p className="mt-0.5 text-[12.5px] text-muted-foreground">Las mismas tres fórmulas aplicadas al universo de cada área. Toca una celda para abrir la ficha de esa área.</p>
+              <h2 className="mt-1 font-display text-[1.05rem] font-bold tracking-tight text-foreground">Semáforo área × indicador · consolidado {datos.anio}</h2>
+              <p className="mt-0.5 text-[12.5px] text-muted-foreground">Cada celda consolida las capacitaciones del área (con dato / programadas). Despliega la fila para ver cada capacitación con su semáforo; toca una celda para abrir la ficha del área.</p>
             </div>
             <ul className="ind-leyenda" aria-label="Leyenda del semáforo">
               <li data-sem="verde">Cumple ≥ 85</li>
@@ -96,7 +103,11 @@ export function TableroIndicadores({ datos, rutaBase, areaQuery }: { datos: Resu
             <table className="ind-matriz">
               <thead>
                 <tr>
-                  <th scope="col">Área / proceso</th>
+                  <th scope="col" className="w-10" />
+                  <th scope="col">
+                    Área / proceso
+                    <small>capacitaciones</small>
+                  </th>
                   {CODIGOS.map((c) => (
                     <th key={c} scope="col">
                       <span className="block">{CATALOGO[c].corto}</span>
@@ -111,21 +122,7 @@ export function TableroIndicadores({ datos, rutaBase, areaQuery }: { datos: Resu
               </thead>
               <tbody>
                 {datos.matriz.map((fila) => (
-                  <tr key={fila.areaId}>
-                    <th scope="row">
-                      <Link href={`${rutaBase}/indicadores/PIC-ADH-01?area=${fila.areaId}`} className="ind-area-enlace">
-                        {fila.areaNombre}
-                      </Link>
-                    </th>
-                    {CODIGOS.map((c) => (
-                      <td key={c}>
-                        <CeldaMatriz codigo={c} m={fila.celdas[c]} href={`${rutaBase}/indicadores/${c}?area=${fila.areaId}`} />
-                      </td>
-                    ))}
-                    <td className="text-right">
-                      <span className={cn("ind-contador", fila.planesAbiertos > 0 && "ind-contador-activo")}>{fila.planesAbiertos}</span>
-                    </td>
-                  </tr>
+                  <FilaArea key={fila.areaId} fila={fila} rutaBase={rutaBase} />
                 ))}
               </tbody>
             </table>
@@ -136,15 +133,3 @@ export function TableroIndicadores({ datos, rutaBase, areaQuery }: { datos: Resu
   );
 }
 
-function CeldaMatriz({ codigo, m, href }: { codigo: CodigoIndicador; m: Medicion; href: string }) {
-  const f = CATALOGO[codigo];
-  return (
-    <Link href={href} className="ind-celda" data-sem={m.sem} title={`${f.columnas[0]}: ${m.variables[0]} · ${f.columnas[1]}: ${m.variables[1]}`}>
-      <i aria-hidden="true" />
-      <b>{formatearValor(codigo, m.valor)}</b>
-      <small>
-        {m.variables[1]}/{m.variables[0]}
-      </small>
-    </Link>
-  );
-}

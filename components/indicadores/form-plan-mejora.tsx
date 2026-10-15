@@ -11,10 +11,25 @@ const inicial: EstadoAccion = { error: null };
 const OTRO = "__otro__";
 
 /**
+ * Precarga cuando el plan nace de UNA capacitación (acción rápida de la
+ * fila "Por capacitación"): área, capacitación, trimestre y el hallazgo ya
+ * redactado con la medición de esa jornada.
+ */
+export type PrecargaMejora = {
+  areaId: string | null;
+  areaNombre: string | null;
+  activityId: string;
+  activityTitulo: string;
+  trimestre: number | null;
+  hallazgo: string;
+};
+
+/**
  * NUEVO PLAN DE MEJORA. Se asigna a algo concreto: vigencia y trimestre, área
  * o proceso, capacitación del PIC (filtrada por el área elegida) y
  * responsable (usuario de la plataforma o cargo). El hallazgo se precarga
- * con la medición del trimestre elegido para que el plan nazca del dato.
+ * con la medición del trimestre elegido para que el plan nazca del dato; si
+ * viene `precarga`, con la de ESA capacitación.
  */
 export function FormPlanMejora({
   planId,
@@ -23,6 +38,7 @@ export function FormPlanMejora({
   trimestres,
   trimestreInicial,
   areaFija,
+  precarga = null,
   alCrear,
 }: {
   planId: string;
@@ -32,21 +48,26 @@ export function FormPlanMejora({
   trimestreInicial: number;
   /** Área impuesta por el alcance (tutor de área o ?area=): no se puede cambiar. */
   areaFija: { id: string; nombre: string } | null;
+  precarga?: PrecargaMejora | null;
   alCrear: () => void;
 }) {
   const ficha = CATALOGO[codigo];
   const [state, accion, pendiente] = useActionState(crearPlanMejoraAction, inicial);
-  const [trimestre, setTrimestre] = useState<string>(String(trimestreInicial));
-  const [areaId, setAreaId] = useState<string>(areaFija?.id ?? "");
+  const [trimestre, setTrimestre] = useState<string>(precarga ? (precarga.trimestre ? String(precarga.trimestre) : "") : String(trimestreInicial));
+  const [areaId, setAreaId] = useState<string>(areaFija?.id ?? precarga?.areaId ?? "");
+  const [activityId, setActivityId] = useState<string>(precarga?.activityId ?? "");
   const [responsable, setResponsable] = useState<string>("");
 
   const actividades = useMemo(() => contexto.actividades.filter((a) => !areaId || a.areaId === areaId), [contexto.actividades, areaId]);
+  // Al cambiar de área, la capacitación elegida deja de valer si no es de esa área.
+  const activityValida = actividades.some((a) => a.id === activityId) ? activityId : "";
 
   const hallazgoSugerido = useMemo(() => {
+    if (precarga) return precarga.hallazgo;
     const t = trimestre ? trimestres[Number(trimestre) - 1] : null;
     if (!t) return "";
     return `${t.etiqueta}: ${ficha.corto} en ${formatearValor(codigo, t.valor)} (${ficha.columnas[1].toLowerCase()} ${t.variables[1]} sobre ${ficha.columnas[0].toLowerCase()} ${t.variables[0]}). Meta: ${ficha.meta}`;
-  }, [trimestre, trimestres, codigo, ficha]);
+  }, [precarga, trimestre, trimestres, codigo, ficha]);
 
   useEffect(() => {
     if (state.ok) {
@@ -66,6 +87,12 @@ export function FormPlanMejora({
         <b>
           {codigo} · {ficha.nombre}
         </b>
+        {precarga && (
+          <small className="mt-1 block text-[12px] text-muted-foreground">
+            Nace de la capacitación <b className="inline text-foreground">{precarga.activityTitulo}</b>
+            {precarga.areaNombre ? ` · ${precarga.areaNombre}` : ""}
+          </small>
+        )}
       </div>
 
       <label className="grid gap-1">
@@ -112,7 +139,7 @@ export function FormPlanMejora({
         </label>
         <label className="grid gap-1">
           <span>Capacitación del PIC (opcional)</span>
-          <select name="activityId" defaultValue="">
+          <select name="activityId" value={activityValida} onChange={(e) => setActivityId(e.target.value)}>
             <option value="">Sin capacitación puntual</option>
             {actividades.map((a) => (
               <option key={a.id} value={a.id}>

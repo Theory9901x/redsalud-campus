@@ -1,6 +1,6 @@
 import type { PlanMejoraEstado } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getPlanIndicators, type Indicadores, type PlanIndicadores } from "@/lib/plan-indicadores";
+import { getPlanIndicators, type Indicadores, type MedicionActividad, type PlanIndicadores } from "@/lib/plan-indicadores";
 import { semaforo, type Semaforo } from "@/lib/semaforo-indicadores";
 import { trimestreActual } from "@/lib/training-plans";
 import { CATALOGO, CODIGOS, MESES_TRIMESTRE, ROMANO, type CodigoIndicador, type EstadoMejoraVisible } from "@/components/indicadores/catalogo";
@@ -10,10 +10,10 @@ import { CATALOGO, CODIGOS, MESES_TRIMESTRE, ROMANO, type CodigoIndicador, type 
  * SEPARADO -como una ficha de Almera, pero alimentada sola-.
  *
  * No duplica ninguna fórmula: las mediciones salen de getPlanIndicators
- * (lib/plan-indicadores.ts) y aquí solo se reorganizan por indicador, por
- * periodo y por área, y se les pega lo que la plataforma no puede calcular:
- * el análisis cualitativo que escribe el responsable y los planes de mejora
- * con su trazabilidad.
+ * (lib/plan-indicadores.ts) y aquí solo se reorganizan por indicador, POR
+ * CAPACITACIÓN (la unidad de medida), por periodo y por área, y se les pega
+ * lo que la plataforma no puede calcular: el análisis cualitativo que
+ * escribe el responsable y los planes de mejora con su trazabilidad.
  *
  * Todas las fechas salen ya formateadas (es-CO, hora de Colombia): el
  * cliente no vuelve a formatear nada y la hidratación no se desajusta.
@@ -79,12 +79,49 @@ export type PlanMejoraVista = {
 
 export type ConteosMejora = { abiertos: number; enCurso: number; vencidos: number; cerrados: number };
 
+/** Valor de un indicador en UNA capacitación, en un corte. */
+export type ValorCapacitacion = {
+  valor: number | null;
+  sem: Semaforo;
+  /** Numerador y denominador de la fórmula en esa capacitación. */
+  numerador: number;
+  denominador: number;
+  /** Las variables en palabras: "Pre 62,5 → Post 81 · 12 personas", "34 de 120 convocados"… */
+  detalle: string;
+};
+
+/**
+ * UNA CAPACITACIÓN medida con el indicador: la fila principal de toda
+ * ficha. Lo institucional y lo de área son el consolidado de estas.
+ */
+export type CapacitacionMedida = ValorCapacitacion & {
+  activityId: string;
+  titulo: string;
+  areaId: string;
+  areaNombre: string;
+  programa: string | null;
+  trimestres: number[];
+  /** Trimestre con el que se abre la capacitación (?t=): el vigente si está programado, si no el último ya pasado. */
+  trimestreEnlace: number;
+  jornada: string | null;
+  estado: "borrador" | "abierta" | "cerrada";
+  cerradaEl: string | null;
+  /** Solo adherencia: la jornada sigue abierta y el dato se mueve con cada intento. */
+  preliminar: boolean;
+  /** La misma medición acotada a cada trimestre. */
+  porTrimestre: Record<number, ValorCapacitacion>;
+  planesAbiertos: number;
+};
+
 export type IndicadorArea = {
   areaId: string;
   areaNombre: string;
   anual: Medicion;
   trimestres: Medicion[];
   planesAbiertos: number;
+  /** Capacitaciones con dato / programadas en el área. */
+  medidas: number;
+  programadas: number;
 };
 
 export type IndicadorGestion = {
@@ -100,6 +137,8 @@ export type IndicadorGestion = {
   planesMejora: PlanMejoraVista[];
   conteos: ConteosMejora;
   porArea: IndicadorArea[];
+  /** Todas las capacitaciones del alcance, cada una con su medición: la unidad del indicador. Lo peor primero. */
+  capacitaciones: CapacitacionMedida[];
 };
 
 export type ResumenIndicador = {
@@ -109,6 +148,21 @@ export type ResumenIndicador = {
   trimestres: Medicion[];
   planesAbiertos: number;
   planesVencidos: number;
+  /** Capacitaciones con dato / programadas en el alcance. */
+  medidas: number;
+  programadas: number;
+};
+
+/** Una capacitación dentro de la fila de su área en la matriz: su semáforo en los tres indicadores. */
+export type CapacitacionMatriz = {
+  activityId: string;
+  titulo: string;
+  programa: string | null;
+  trimestres: number[];
+  trimestreEnlace: number;
+  estado: "borrador" | "abierta" | "cerrada";
+  preliminar: boolean;
+  celdas: Record<CodigoIndicador, ValorCapacitacion>;
 };
 
 export type FilaMatriz = {
@@ -116,6 +170,9 @@ export type FilaMatriz = {
   areaNombre: string;
   celdas: Record<CodigoIndicador, Medicion>;
   planesAbiertos: number;
+  programadas: number;
+  medidas: Record<CodigoIndicador, number>;
+  capacitaciones: CapacitacionMatriz[];
 };
 
 export type ResumenIndicadores = {
@@ -152,7 +209,7 @@ export const fechaCorta = (d: Date) => limpiar(FECHA.format(d));
 export const fechaHora = (d: Date) => limpiar(FECHA_HORA.format(d));
 
 export function etiquetaTrimestre(t: number | null, anio: number) {
-  return t === null ? `Acumulado ${anio}` : `Trimestre ${ROMANO[t - 1]} · ${MESES_TRIMESTRE[t - 1]}`;
+  return t === null ? `Consolidado ${anio}` : `Trimestre ${ROMANO[t - 1]} · ${MESES_TRIMESTRE[t - 1]}`;
 }
 
 /**
@@ -180,7 +237,7 @@ function medir(codigo: CodigoIndicador, ind: Indicadores, t: number | null, anio
   switch (codigo) {
     case "PIC-ADH-01":
       valor = ind.adherencia.valor;
-      variables = [ind.adherencia.actividadesCerradas, ind.adherencia.personas];
+      variables = [ind.adherencia.actividadesMedidas, ind.adherencia.personas];
       break;
     case "PIC-COB-02":
       valor = ind.cobertura.total > 0 ? ind.cobertura.valor : null;
@@ -206,6 +263,84 @@ function medir(codigo: CodigoIndicador, ind: Indicadores, t: number | null, anio
 function medirSerie(codigo: CodigoIndicador, serie: { trimestre: number; indicadores: Indicadores }[], anio: number) {
   return serie.map((s) => medir(codigo, s.indicadores, s.trimestre, anio));
 }
+
+// ---------------------------------------------------------------- por capacitación
+
+const nota = (x: number) => String(Math.round(x * 10) / 10).replace(".", ",");
+const plural = (n: number, s: string, p: string) => `${n} ${n === 1 ? s : p}`;
+
+/**
+ * El indicador aplicado a UNA capacitación, en el año (`t` null) o en un
+ * trimestre. Adherencia: (promedio post − promedio pre) ÷ promedio pre × 100
+ * sobre quienes tienen ambos intentos en ESA capacitación. Cobertura: tiene
+ * curso (1/1) o no (0/1). Asistencia: personas con asistencia ÷ audiencia.
+ */
+export function medirCapacitacion(codigo: CodigoIndicador, m: MedicionActividad, t: number | null): ValorCapacitacion {
+  switch (codigo) {
+    case "PIC-ADH-01": {
+      const c = t ? m.cicloPorTrimestre[t] : m.ciclo;
+      if (!c || c.personas === 0) {
+        const detalle = !m.conContenido ? "Sin curso vinculado: no hay evaluación" : m.estado === "borrador" ? "Jornada sin abrir" : "Nadie ha completado presaber y postsaber";
+        return { valor: null, sem: "sin-datos", numerador: 0, denominador: 0, detalle };
+      }
+      const valor = Math.round(((c.promedioPost - c.promedioPre) / c.promedioPre) * 100);
+      return {
+        valor,
+        sem: semaforo(valor),
+        numerador: Math.round((c.promedioPost - c.promedioPre) * 10) / 10,
+        denominador: Math.round(c.promedioPre * 10) / 10,
+        detalle: `Pre ${nota(c.promedioPre)} → Post ${nota(c.promedioPost)} · ${plural(c.personas, "persona", "personas")}`,
+      };
+    }
+    case "PIC-COB-02":
+      return m.conContenido
+        ? { valor: 100, sem: "verde", numerador: 1, denominador: 1, detalle: "Con contenido" }
+        : { valor: 0, sem: "rojo", numerador: 0, denominador: 1, detalle: "Sin contenido" };
+    case "PIC-ASI-03": {
+      const asistentes = t ? (m.asistentesPorTrimestre[t] ?? 0) : m.asistentes;
+      if (m.audiencia === 0) return { valor: null, sem: "sin-datos", numerador: asistentes, denominador: 0, detalle: "Sin audiencia objetivo definida" };
+      const valor = Math.round((asistentes / m.audiencia) * 100);
+      return { valor, sem: semaforo(valor), numerador: asistentes, denominador: m.audiencia, detalle: `${asistentes} de ${m.audiencia} convocados` };
+    }
+  }
+}
+
+/** Trimestre con el que se abre la capacitación: el vigente si está programado; si no, el último ya pasado; si no, el primero. */
+function trimestreEnlace(quarters: number[], vigente: number) {
+  const q = [...quarters].filter((x) => x >= 1 && x <= 4).sort((a, b) => a - b);
+  if (q.length === 0) return vigente;
+  if (q.includes(vigente)) return vigente;
+  return [...q].reverse().find((x) => x < vigente) ?? q[0];
+}
+
+function aCapacitacion(codigo: CodigoIndicador, m: MedicionActividad, vigente: number, planesAbiertos: number): CapacitacionMedida {
+  const anual = medirCapacitacion(codigo, m, null);
+  const porTrimestre = Object.fromEntries([1, 2, 3, 4].map((t) => [t, medirCapacitacion(codigo, m, t)])) as Record<number, ValorCapacitacion>;
+  return {
+    ...anual,
+    activityId: m.activityId,
+    titulo: m.titulo,
+    areaId: m.areaId,
+    areaNombre: m.areaNombre,
+    programa: m.programa,
+    trimestres: m.quarters,
+    trimestreEnlace: trimestreEnlace(m.quarters, vigente),
+    jornada: m.jornada ? fechaCorta(m.jornada) : null,
+    estado: m.estado,
+    cerradaEl: m.cerradaEl ? fechaCorta(m.cerradaEl) : null,
+    preliminar: codigo === "PIC-ADH-01" && anual.valor !== null && m.preliminar,
+    porTrimestre,
+    planesAbiertos,
+  };
+}
+
+/** Orden de gestión: lo peor primero (rojo, amarillo, verde) y lo que no tiene dato al final. */
+const PESO_SEM: Record<Semaforo, number> = { rojo: 0, amarillo: 1, verde: 2, "sin-datos": 3 };
+export function ordenarPeorPrimero<T extends { sem: Semaforo; valor: number | null; titulo: string }>(xs: T[]) {
+  return [...xs].sort((a, b) => PESO_SEM[a.sem] - PESO_SEM[b.sem] || (a.valor ?? 0) - (b.valor ?? 0) || a.titulo.localeCompare(b.titulo, "es"));
+}
+
+const conDato = (codigo: CodigoIndicador, xs: MedicionActividad[]) => xs.filter((m) => medirCapacitacion(codigo, m, null).valor !== null).length;
 
 // ---------------------------------------------------------------- planes de mejora
 
@@ -316,15 +451,34 @@ export async function getResumenIndicadores(planId: string, areaIds: string[] | 
       trimestres,
       planesAbiertos: suyos.filter(sinCerrar).length,
       planesVencidos: suyos.filter((p) => p.estado === "VENCIDO").length,
+      medidas: conDato(codigo, datos.actividades),
+      programadas: datos.actividades.length,
     };
   });
 
-  const matriz: FilaMatriz[] = datos.porArea.map((a) => ({
-    areaId: a.areaId,
-    areaNombre: a.areaNombre,
-    celdas: Object.fromEntries(CODIGOS.map((c) => [c, medir(c, a, null, anio)])) as Record<CodigoIndicador, Medicion>,
-    planesAbiertos: planes.filter((p) => p.areaId === a.areaId && sinCerrar(p)).length,
-  }));
+  const matriz: FilaMatriz[] = datos.porArea.map((a) => {
+    const suyas = datos.actividades.filter((m) => m.areaId === a.areaId);
+    const capacitaciones: CapacitacionMatriz[] = suyas.map((m) => ({
+      activityId: m.activityId,
+      titulo: m.titulo,
+      programa: m.programa,
+      trimestres: m.quarters,
+      trimestreEnlace: trimestreEnlace(m.quarters, tv),
+      estado: m.estado,
+      preliminar: m.preliminar && m.ciclo !== null,
+      celdas: Object.fromEntries(CODIGOS.map((c) => [c, medirCapacitacion(c, m, null)])) as Record<CodigoIndicador, ValorCapacitacion>,
+    }));
+    return {
+      areaId: a.areaId,
+      areaNombre: a.areaNombre,
+      celdas: Object.fromEntries(CODIGOS.map((c) => [c, medir(c, a, null, anio)])) as Record<CodigoIndicador, Medicion>,
+      planesAbiertos: planes.filter((p) => p.areaId === a.areaId && sinCerrar(p)).length,
+      programadas: suyas.length,
+      medidas: Object.fromEntries(CODIGOS.map((c) => [c, conDato(c, suyas)])) as Record<CodigoIndicador, number>,
+      // Lo peor primero (por la adherencia, el principal): la fila se despliega para ver qué capacitación arrastra el área.
+      capacitaciones: capacitaciones.sort((x, y) => PESO_SEM[x.celdas["PIC-ADH-01"].sem] - PESO_SEM[y.celdas["PIC-ADH-01"].sem] || x.titulo.localeCompare(y.titulo, "es")),
+    };
+  });
 
   return {
     planId,
@@ -377,20 +531,31 @@ export async function getIndicadorGestion(
   ]);
   const planes = planesCrudos.map(aVista);
 
-  const porArea: IndicadorArea[] = datos.porArea.map((a) => ({
-    areaId: a.areaId,
-    areaNombre: a.areaNombre,
-    anual: medir(codigo, a, null, anio),
-    trimestres: medirSerie(codigo, a.porTrimestre, anio),
-    planesAbiertos: planes.filter((p) => p.areaId === a.areaId && sinCerrar(p)).length,
-  }));
+  const porArea: IndicadorArea[] = datos.porArea.map((a) => {
+    const suyas = datos.actividades.filter((m) => m.areaId === a.areaId);
+    return {
+      areaId: a.areaId,
+      areaNombre: a.areaNombre,
+      anual: medir(codigo, a, null, anio),
+      trimestres: medirSerie(codigo, a.porTrimestre, anio),
+      planesAbiertos: planes.filter((p) => p.areaId === a.areaId && sinCerrar(p)).length,
+      medidas: conDato(codigo, suyas),
+      programadas: suyas.length,
+    };
+  });
+
+  const tv = trimestreVigente(anio);
+  const universo = areaId ? datos.actividades.filter((m) => m.areaId === areaId) : datos.actividades;
+  const capacitaciones = ordenarPeorPrimero(
+    universo.map((m) => aCapacitacion(codigo, m, tv, planes.filter((p) => p.activityId === m.activityId && sinCerrar(p)).length))
+  );
 
   return {
     codigo,
     planId,
     planTitulo: datos.planTitulo,
     anio,
-    trimestreActual: trimestreVigente(anio),
+    trimestreActual: tv,
     alcance: describirAlcance(datos, areaIds, areaId),
     anual: medir(codigo, base, null, anio),
     trimestres: medirSerie(codigo, serie, anio),
@@ -407,6 +572,7 @@ export async function getIndicadorGestion(
     planesMejora: planes,
     conteos: contar(planes),
     porArea,
+    capacitaciones,
   };
 }
 
