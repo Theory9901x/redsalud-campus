@@ -65,6 +65,15 @@ const fecha = (d: Date | null | undefined) => (d ? FMT_FECHA.format(d) : "—");
 const pctDe = (v: number, sobre: number) => (sobre > 0 ? Math.round((v / sobre) * 100) : null);
 const signo = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 const normal = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+/** Semáforo institucional: ≥85 cumple · 70–84.9 en alerta · <70 crítico (igual que los indicadores del plan). */
+const semaforo = (v: number | null) => (v === null ? null : v >= 85 ? { t: "CUMPLE", c: "#7EE2A0" } : v >= 70 ? { t: "EN ALERTA", c: "#FFD37E" } : { t: "CRÍTICO", c: "#FF9B9B" });
+const prom = (xs: (number | null)[]) => {
+  const v = xs.filter((x): x is number => x !== null);
+  return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null;
+};
+const ROMANO = ["I", "II", "III", "IV"];
+const MODALIDAD: Record<string, string> = { VIRTUAL: "Virtual", PRESENCIAL: "Presencial", MIXTA: "Mixta" };
+const TIPO: Record<string, string> = { COURSE: "Curso", EXTERNAL_EVENT: "Evento / jornada", WORKSHOP: "Taller", OTHER: "Otra" };
 
 /* ───────────────────────── piezas gráficas ───────────────────────── */
 
@@ -139,7 +148,7 @@ function Membrete({ data, ctx, generadoPor }: { data: ActivityReportData; ctx: C
           <Text style={{ fontFamily: "Courier", fontSize: 7.5, color: "#8FC9E8", letterSpacing: 1 }}>{ctx?.codigo ?? "INF"}</Text>
           <View style={{ marginTop: 4, borderWidth: 1, borderColor: "#3E6585", borderRadius: 3, paddingHorizontal: 5, paddingVertical: 2 }}>
             <Text style={{ fontFamily: "Courier", fontSize: 6.8, color: C.blanco, letterSpacing: 1.2 }}>
-              {data.status === "CLOSED" ? "JORNADA CERRADA" : "EN CURSO"}
+              {data.status === "CLOSED" ? "INFORME DEFINITIVO · JORNADA CERRADA" : "INFORME PRELIMINAR · JORNADA EN CURSO"}
             </Text>
           </View>
         </View>
@@ -155,6 +164,8 @@ function Membrete({ data, ctx, generadoPor }: { data: ActivityReportData; ctx: C
           ["Plan", data.plan],
           ["Responsable", data.responsable ?? "—"],
           ["Dirigido a", data.dirigidoA ?? "—"],
+          ["Programación", data.ficha ? `${data.ficha.trimestres.length ? `Trimestre ${data.ficha.trimestres.map((t) => ROMANO[t - 1] ?? t).join(", ")}` : "Sin trimestre"} · ${MODALIDAD[data.ficha.modalidad] ?? data.ficha.modalidad}` : "—"],
+          ["Jornadas", ctx?.jornadas.length ? `${ctx.jornadas.length} · ${fecha(ctx.jornadas[0].inicio)}${ctx.jornadas.length > 1 ? ` – ${fecha(ctx.jornadas[ctx.jornadas.length - 1].inicio)}` : ""}` : "—"],
           ["Cierre", fecha(data.cerradaEl)],
           ["Generado", `${fecha(new Date())} · ${generadoPor}`],
         ].map(([k, v]) => (
@@ -193,6 +204,9 @@ function IndicadoresPrincipales({ data, ctx }: { data: ActivityReportData; ctx: 
             <Text style={{ fontSize: 7, color: "#9FB6C9", marginTop: 1 }}>
               {cob?.audienciaComite ? "integrantes" : "personal objetivo"}
             </Text>
+            {cob && semaforo(cob.porcentaje) && (
+              <Text style={{ fontFamily: "Courier", fontSize: 6, letterSpacing: 1, marginTop: 3, color: semaforo(cob.porcentaje)!.c }}>{semaforo(cob.porcentaje)!.t}</Text>
+            )}
           </View>
         </View>
         {/* Permanencia */}
@@ -224,11 +238,26 @@ function IndicadoresPrincipales({ data, ctx }: { data: ActivityReportData; ctx: 
             </>
           )}
         </View>
-        {/* Externos */}
+        {/* Aprobación postsaber */}
         <View style={tarjeta}>
-          <Text style={etiqueta}>Externos</Text>
-          <Text style={{ fontSize: 18, fontWeight: 700, color: C.blanco, marginTop: 2 }}>{data.externos.length}</Text>
-          <Text style={{ fontSize: 7, color: "#9FB6C9", marginTop: 1 }}>invitados sin cuenta</Text>
+          <Text style={etiqueta}>Aprobó postsaber</Text>
+          {ind.evaluadosPost > 0 ? (
+            <>
+              <Text style={{ fontSize: 18, fontWeight: 700, color: C.blanco, marginTop: 2 }}>
+                {pctDe(ind.adherentesPost, ind.evaluadosPost)}
+                <Text style={{ fontSize: 9, color: "#9FB6C9" }}>%</Text>
+              </Text>
+              <Text style={{ fontSize: 7, color: "#9FB6C9", marginTop: 1 }}>{ind.adherentesPost} de {ind.evaluadosPost} · mínimo {data.passingScore}%</Text>
+              {semaforo(pctDe(ind.adherentesPost, ind.evaluadosPost)) && (
+                <Text style={{ fontFamily: "Courier", fontSize: 6, letterSpacing: 1, marginTop: 3, color: semaforo(pctDe(ind.adherentesPost, ind.evaluadosPost))!.c }}>{semaforo(pctDe(ind.adherentesPost, ind.evaluadosPost))!.t}</Text>
+              )}
+            </>
+          ) : (
+            <>
+              <Text style={{ fontSize: 18, fontWeight: 700, color: C.blanco, marginTop: 2 }}>—</Text>
+              <Text style={{ fontSize: 7, color: "#9FB6C9", marginTop: 1 }}>nadie ha presentado el postsaber</Text>
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -247,8 +276,9 @@ function FranjaMetricas({ data, ctx }: { data: ActivityReportData; ctx: Contexto
     ["Tiempo", totalMin >= 60 ? `${Math.floor(totalMin / 60)}h ${totalMin % 60}m` : `${totalMin}m`],
     ["Jornadas", String(ctx?.jornadas.length ?? 0)],
     ["Pre y post", String(ind.completaronCiclo)],
-    ["Aprobó post", ind.evaluadosPost ? `${pctDe(ind.adherentesPost, ind.evaluadosPost)}%` : "—"],
     ["Mejoraron", ind.completaronCiclo ? `${pctDe(ind.mejoraron, ind.completaronCiclo)}%` : "—"],
+    ["Externos", String(data.externos.length)],
+    ["Satisfacción", (() => { const f = prom(data.encuestas.map((e) => e.satisfaccion?.favorable ?? null)); return f === null ? "—" : `${f}%`; })()],
   ];
   return (
     <View style={[s.cuerpo, { marginTop: 14 }]}>
@@ -309,7 +339,23 @@ function LecturaRapida({ data, ctx }: { data: ActivityReportData; ctx: ContextoI
       texto: `${aprob}% aprobó el postsaber (mínimo ${data.passingScore}%): ${ind.adherentesPost} de ${ind.evaluadosPost}.`,
     });
   }
-  if (data.externos.length > 0) hallazgos.push({ tono: "neutro", texto: `${data.externos.length} participantes externos se registraron por el enlace de invitados.` });
+  if (data.externos.length > 0) {
+    const pre = prom(data.externos.map((e) => e.presaber));
+    const post = prom(data.externos.map((e) => e.postsaber));
+    hallazgos.push({
+      tono: pre !== null && post !== null ? (post > pre ? "bien" : "neutro") : "neutro",
+      texto: `${data.externos.length} participantes externos se registraron por el enlace de invitados${pre !== null && post !== null ? `: su conocimiento pasó de ${pre}% a ${post}% (${signo(post - pre)} pp)` : ""}.`,
+    });
+  }
+  for (const e of data.encuestas) {
+    if (!e.satisfaccion || e.respuestas === 0) continue;
+    const f = e.satisfaccion.favorable;
+    const esc = e.satisfaccion.promedioEscala;
+    hallazgos.push({
+      tono: f === null ? "neutro" : f >= 85 ? "bien" : f >= 70 ? "neutro" : "alerta",
+      texto: `Satisfacción (${e.respuestas} ${e.respuestas === 1 ? "respuesta" : "respuestas"}): ${f !== null ? `${f}% calificó la jornada como buena o excelente` : "sin pregunta de calificación general"}${esc !== null ? `; promedio ${esc} de ${e.satisfaccion.escalaMax ?? 5} en las preguntas de escala` : ""}.`,
+    });
+  }
 
   const color = { bien: C.verde, alerta: C.rojo, neutro: C.cian };
   return (
@@ -397,13 +443,80 @@ function Graficos({ data, ctx }: { data: ActivityReportData; ctx: ContextoInform
   );
 }
 
+/** Lo programado en el PIC: objetivo, metodología y seguimiento. */
+function FichaPic({ data }: { data: ActivityReportData }) {
+  const f = data.ficha;
+  if (!f) return null;
+  const filas: [string, string][] = [
+    ["Objetivo", f.objetivo ?? "—"],
+    ["Metodología", f.metodologia ?? "—"],
+    ["Dirigido a", data.dirigidoA ?? "—"],
+    ["Personas a capacitar", f.convocados !== null ? `${f.convocados}${f.convocadosNota ? ` · ${f.convocadosNota}` : ""}` : f.convocadosNota ?? "—"],
+    ["Tipo y modalidad", `${TIPO[f.tipo] ?? f.tipo} · ${MODALIDAD[f.modalidad] ?? f.modalidad}`],
+    ["Seguimiento (PIC)", f.seguimiento.length ? f.seguimiento.map((x, i) => `${i + 1}. ${x}`).join("  ") : "—"],
+  ];
+  return (
+    <Seccion n="03" titulo="Ficha de la capacitación · PIC">
+      <View style={{ borderWidth: 1, borderColor: C.borde, borderRadius: 6 }}>
+        {filas.map(([k, v], i) => (
+          <View key={k} style={{ flexDirection: "row", paddingVertical: 5, paddingHorizontal: 8, borderTopWidth: i ? 1 : 0, borderTopColor: C.borde, backgroundColor: i % 2 ? C.fondo : C.blanco }}>
+            <Text style={[s.etiquetaMono, { width: 112, fontSize: 6.5, marginTop: 1 }]}>{k}</Text>
+            <Text style={{ flex: 1, fontSize: 8.4, lineHeight: 1.4 }}>{v}</Text>
+          </View>
+        ))}
+      </View>
+    </Seccion>
+  );
+}
+
+/** Acciones que se desprenden de los datos: lo que el área debería hacer después. */
+function PlanDeAccion({ data, ctx }: { data: ActivityReportData; ctx: ContextoInforme | null }) {
+  const ind = data.indicadores;
+  const acciones: string[] = [];
+  const cob = ctx?.cobertura;
+  if (cob && cob.convocados > 0 && cob.porcentaje < 70) {
+    acciones.push(`Reconvocar al ${100 - cob.porcentaje}% del personal objetivo que no asistió (${cob.convocados - cob.asistieron} personas): programar una jornada de refuerzo o compartir la grabación con control de visualización.`);
+  }
+  const dificiles = data.porPregunta.filter((q) => q.postsaber !== null && q.postsaber < 60);
+  if (dificiles.length) {
+    acciones.push(`Reforzar en la siguiente jornada los ${dificiles.length} temas con menos de 60% de acierto en el postsaber: ${dificiles.map((q) => `«${q.statement.length > 70 ? q.statement.slice(0, 67) + "…" : q.statement}»`).join("; ")}.`);
+  }
+  const sinPost = ind.evaluadosPre - ind.completaronCiclo;
+  if (sinPost > 0) acciones.push(`Gestionar el postsaber de ${sinPost} ${sinPost === 1 ? "persona que presentó" : "personas que presentaron"} el presaber y aún no cierran su ciclo (el postsaber ya está habilitado para ellas).`);
+  if (ind.evaluadosPost > 0 && ind.adherentesPost < ind.evaluadosPost) {
+    acciones.push(`Acompañar a ${ind.evaluadosPost - ind.adherentesPost} ${ind.evaluadosPost - ind.adherentesPost === 1 ? "persona que no alcanzó" : "personas que no alcanzaron"} el mínimo del ${data.passingScore}% en el postsaber: tienen intentos disponibles en el curso.`);
+  }
+  if (ctx?.adherencia.automatica && ctx.adherencia.esperados > 0 && ctx.adherencia.porcentaje < 85) {
+    acciones.push(`Llevar la adherencia del curso del ${ctx.adherencia.porcentaje}% al 85% (meta institucional): faltan ${Math.max(0, Math.ceil(ctx.adherencia.esperados * 0.85) - ctx.adherencia.adherentes)} personas por completar el curso.`);
+  }
+  const perm = ctx?.permanencia ?? [];
+  const cortos = perm.filter((p) => p.minutos < 10).length;
+  if (perm.length && cortos > perm.length / 3) acciones.push(`Revisar la conectividad y la convocatoria: ${cortos} de ${perm.length} personas estuvieron menos de 10 minutos en la sala.`);
+  for (const e of data.encuestas) {
+    if (e.satisfaccion?.comentarios.length) acciones.push(`Atender las sugerencias de la encuesta «${e.titulo}»: ${e.satisfaccion.comentarios.slice(0, 3).map((c) => `«${c}»`).join("; ")}.`);
+  }
+  if (data.status !== "CLOSED") acciones.push("Cerrar la jornada cuando termine el ciclo: el informe queda congelado como evidencia definitiva y el personal no adherente se registra nominalmente.");
+  if (!acciones.length) acciones.push("Sin acciones pendientes: la jornada cumplió cobertura, aprobación y adherencia. Archivar el informe como evidencia del PIC.");
+  return (
+    <Seccion n="04" titulo="Plan de acción sugerido">
+      {acciones.map((a, i) => (
+        <View key={i} style={{ flexDirection: "row", gap: 7, marginBottom: 5, alignItems: "flex-start" }} wrap={false}>
+          <Text style={{ fontFamily: "Courier", fontSize: 8, color: C.cian, fontWeight: 700, width: 16 }}>{String(i + 1).padStart(2, "0")}</Text>
+          <Text style={{ flex: 1, fontSize: 8.6, lineHeight: 1.4 }}>{a}</Text>
+        </View>
+      ))}
+      <Text style={{ fontSize: 7, color: C.muted, marginTop: 4 }}>Generado automáticamente a partir de los datos de la jornada; el área lo valida y lo convierte en plan de mejora si aplica.</Text>
+    </Seccion>
+  );
+}
+
 /* ───────────────────────── anexos ───────────────────────── */
 
 function Asistencia({ data, ctx }: { data: ActivityReportData; ctx: ContextoInforme | null }) {
   const minutosPorNombre = new Map<string, PermanenciaPersona>();
   for (const p of ctx?.permanencia ?? []) if (!p.externo) minutosPorNombre.set(normal(p.nombre), p);
   return (
-    <Seccion n="04" titulo={`Lista de asistencia · ${data.asistencia.length}`}>
+    <Seccion n="06" titulo={`Lista de asistencia · ${data.asistencia.length}`}>
       {data.asistencia.length === 0 ? (
         <Text style={s.vacio}>Sin asistencias registradas.</Text>
       ) : (
@@ -450,7 +563,7 @@ function Asistencia({ data, ctx }: { data: ActivityReportData; ctx: ContextoInfo
 function Personas({ data }: { data: ActivityReportData }) {
   if (data.personas.length === 0 && data.indicadores.evaluadosPre + data.indicadores.evaluadosPost === 0) return null;
   return (
-    <Seccion n="05" titulo="Resultados por persona · mejor intento de cada momento">
+    <Seccion n="07" titulo="Resultados por persona · mejor intento de cada momento">
       {data.personas.length === 0 ? (
         <Text style={s.vacio}>Nadie presentó la evaluación.</Text>
       ) : (
@@ -488,7 +601,7 @@ function Personas({ data }: { data: ActivityReportData }) {
 function PorPregunta({ data }: { data: ActivityReportData }) {
   if (data.porPregunta.length === 0) return null;
   return (
-    <Seccion n="06" titulo="Acierto por pregunta">
+    <Seccion n="08" titulo="Acierto por pregunta">
       <View style={s.tabla}>
         <View style={[s.tr, { backgroundColor: C.pista }]} fixed>
           <Text style={[s.th, { width: 22 }]}>#</Text>
@@ -519,7 +632,7 @@ function Jornadas({ ctx }: { ctx: ContextoInforme | null }) {
   const MOD: Record<string, string> = { VIRTUAL: "Virtual", PRESENCIAL: "Presencial", MIXTA: "Mixta" };
   const EST: Record<string, string> = { DRAFT: "Borrador", OPEN: "Abierta", CLOSED: "Cerrada" };
   return (
-    <Seccion n="03" titulo={`Jornadas dictadas · ${ctx.jornadas.length}`}>
+    <Seccion n="05" titulo={`Jornadas dictadas · ${ctx.jornadas.length}`}>
       <View style={s.tabla}>
         <View style={[s.tr, { backgroundColor: C.pista }]}>
           <Text style={[s.th, { flex: 1.4 }]}>Fecha</Text>
@@ -547,7 +660,7 @@ function Externos({ data, ctx }: { data: ActivityReportData; ctx: ContextoInform
   if (data.externos.length === 0) return null;
   const minutos = new Map((ctx?.permanencia ?? []).filter((p) => p.externo).map((p) => [normal(p.nombre), p.minutos]));
   return (
-    <Seccion n="07" titulo={`Participantes externos · ${data.externos.length}`}>
+    <Seccion n="09" titulo={`Participantes externos · ${data.externos.length}`}>
       <View style={s.tabla}>
         <View style={[s.tr, { backgroundColor: C.pista }]} fixed>
           <Text style={[s.th, { flex: 2.2 }]}>Nombre</Text>
@@ -576,13 +689,34 @@ function Externos({ data, ctx }: { data: ActivityReportData; ctx: ContextoInform
 function EncuestasYEvidencias({ data, evidencia }: { data: ActivityReportData; evidencia?: EvidenciaJornada }) {
   const docs = evidencia?.documentos ?? [];
   return (
-    <Seccion n="08" titulo="Encuestas y evidencias">
+    <Seccion n="10" titulo="Encuestas y evidencias">
       {data.encuestas.length > 0 && (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+        <View style={{ gap: 8, marginBottom: 10 }}>
           {data.encuestas.map((e, i) => (
-            <View key={i} style={{ borderWidth: 1, borderColor: C.borde, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 9 }}>
-              <Text style={{ fontFamily: "Courier", fontSize: 12, fontWeight: 700 }}>{e.respuestas}</Text>
-              <Text style={{ fontSize: 7.5, color: C.muted, marginTop: 1 }}>{e.titulo}</Text>
+            <View key={i} style={{ borderWidth: 1, borderColor: C.borde, borderRadius: 6, padding: 9 }} wrap={false}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 9, fontWeight: 700 }}>{e.titulo}</Text>
+                  <Text style={{ fontSize: 7.5, color: C.muted, marginTop: 1 }}>{e.respuestas} {e.respuestas === 1 ? "respuesta" : "respuestas"}</Text>
+                </View>
+                {[
+                  ["Favorable", e.satisfaccion?.favorable !== null && e.satisfaccion?.favorable !== undefined ? `${e.satisfaccion.favorable}%` : "—"],
+                  ["Escala", e.satisfaccion?.promedioEscala !== null && e.satisfaccion?.promedioEscala !== undefined ? `${e.satisfaccion.promedioEscala} / ${e.satisfaccion.escalaMax ?? 5}` : "—"],
+                ].map(([k, v]) => (
+                  <View key={k} style={{ alignItems: "flex-end" }}>
+                    <Text style={{ fontFamily: "Courier", fontSize: 12, fontWeight: 700 }}>{v}</Text>
+                    <Text style={[s.etiquetaMono, { fontSize: 5.8 }]}>{k}</Text>
+                  </View>
+                ))}
+              </View>
+              {!!e.satisfaccion?.comentarios.length && (
+                <View style={{ marginTop: 6, borderTopWidth: 1, borderTopColor: C.borde, paddingTop: 5 }}>
+                  <Text style={[s.etiquetaMono, { fontSize: 6 }]}>Comentarios</Text>
+                  {e.satisfaccion.comentarios.map((c, j) => (
+                    <Text key={j} style={{ fontSize: 7.8, color: C.ink, marginTop: 2 }}>· {c}</Text>
+                  ))}
+                </View>
+              )}
             </View>
           ))}
         </View>
@@ -642,14 +776,14 @@ function ActivityReportDocument({
         <FranjaMetricas data={data} ctx={contexto} />
         <LecturaRapida data={data} ctx={contexto} />
         <Graficos data={data} ctx={contexto} />
-        <View style={s.cuerpo}>
-          <Jornadas ctx={contexto} />
-        </View>
         <Pie ctx={contexto} />
       </Page>
       <Page size="A4" style={[s.page, { paddingTop: 28 }]}>
         <View style={s.cuerpo}>
-          <Text style={[s.etiquetaMono, { color: C.cian }]}>Anexos de detalle · {tituloLegible(data.titulo)}</Text>
+          <Text style={[s.etiquetaMono, { color: C.cian }]}>Ficha, plan de acción y anexos · {tituloLegible(data.titulo)}</Text>
+          <FichaPic data={data} />
+          <PlanDeAccion data={data} ctx={contexto} />
+          <Jornadas ctx={contexto} />
           <Asistencia data={data} ctx={contexto} />
           <Personas data={data} />
           <PorPregunta data={data} />

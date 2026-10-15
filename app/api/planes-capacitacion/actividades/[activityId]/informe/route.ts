@@ -8,9 +8,9 @@ import { getContextoInforme } from "@/lib/activity-report-contexto";
 import { tituloLegible } from "@/components/training-plans/labels";
 
 /**
- * PDF del informe de la jornada: se habilita SOLO cuando la capacitación está
- * CERRADA. Antes del cierre las cifras siguen moviéndose -gente presentando,
- * ventanas abiertas- y un informe a medias circularía como si fuera el final.
+ * PDF del informe de la jornada. Con la capacitación abierta sale como
+ * PRELIMINAR (en vivo, las cifras siguen cambiando); al cerrarla queda el
+ * informe definitivo, congelado.
  *
  * Mismo permiso adscrito que la ficha: el admin, o el tutor del área dueña.
  */
@@ -38,12 +38,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ acti
   if (!data) {
     return NextResponse.json({ error: "Esta capacitación no tiene contenido vinculado todavía." }, { status: 404 });
   }
-  if (data.status !== "CLOSED" && !(filtro && filtro.hasta <= new Date())) {
-    return NextResponse.json(
-      { error: "El informe se habilita al cerrar la jornada: hasta entonces las cifras siguen cambiando." },
-      { status: 409 }
-    );
-  }
+  // Jornada abierta: el informe sale igual, marcado PRELIMINAR (las cifras
+  // siguen moviéndose). Al cerrar, el informe queda congelado y definitivo.
 
   // Las evidencias se leen en vivo: la grabación se sube DESPUÉS de
   // cerrar la jornada, así que no puede venir del informe congelado.
@@ -55,7 +51,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ acti
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="Informe-${contexto?.codigo ?? "jornada"}-${nombre}.pdf"`,
+      "Content-Disposition": `attachment; filename="Informe${data.status === "CLOSED" ? "" : "-PRELIMINAR"}-${contexto?.codigo ?? "jornada"}-${nombre}.pdf"`,
     },
   });
 }

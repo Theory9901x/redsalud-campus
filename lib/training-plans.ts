@@ -1028,8 +1028,24 @@ export type ActivityReportData = {
   personas: { fullName: string; documentNumber: string; presaber: number | null; postsaber: number | null; diferencia: number | null }[];
   porPregunta: { statement: string; presaber: number | null; postsaber: number | null }[];
   asistencia: { fullName: string; documentNumber: string; fecha: Date; source: AttendanceSource }[];
-  encuestas: { titulo: string; respuestas: number }[];
+  encuestas: {
+    titulo: string;
+    respuestas: number;
+    /** Lectura de satisfacción calculada de las respuestas (escalas y opciones con tono). */
+    satisfaccion?: { promedioEscala: number | null; escalaMax: number | null; favorable: number | null; comentarios: string[] };
+  }[];
   externos: { fullName: string; company: string; registradoEl: Date; presaber: number | null; postsaber: number | null }[];
+  /** Ficha del PIC: lo que se programó, para leer el informe sin salir de él. */
+  ficha?: {
+    objetivo: string | null;
+    metodologia: string | null;
+    modalidad: string;
+    tipo: string;
+    trimestres: number[];
+    convocados: number | null;
+    convocadosNota: string | null;
+    seguimiento: string[];
+  };
 };
 
 /**
@@ -1082,6 +1098,47 @@ export async function getActivityReportData(activityId: string, filtro?: FiltroT
   return computeActivityReportData(activityId);
 }
 
+/**
+ * Satisfacción a partir de las respuestas de una encuesta de la jornada:
+ * promedio de las preguntas de escala (sobre su máximo), % favorable de las
+ * opciones con tono (excelente/bueno sobre válidas) y los comentarios libres.
+ */
+function leerSatisfaccion(e: {
+  pages: { questions: { id: string; type: string; config: unknown }[] }[];
+  responses: { answers: { questionId: string; value: unknown; textValue: string | null }[] }[];
+}): ActivityReportData["encuestas"][number]["satisfaccion"] {
+  const preguntas = new Map(e.pages.flatMap((p) => p.questions).map((q) => [q.id, q]));
+  const escalas: number[] = [];
+  let escalaMax: number | null = null;
+  let validas = 0;
+  let favorables = 0;
+  const comentarios: string[] = [];
+  for (const r of e.responses) {
+    for (const a of r.answers) {
+      const q = preguntas.get(a.questionId);
+      if (!q) continue;
+      const v = a.value as { tipo?: string; valor?: number; opcionId?: string } | null;
+      const cfg = (q.config ?? {}) as { escalaMax?: number; opciones?: { id: string; tono?: string }[] };
+      if (q.type === "SCALE" && v?.tipo === "escala" && typeof v.valor === "number") {
+        escalas.push(v.valor);
+        escalaMax = Math.max(escalaMax ?? 0, cfg.escalaMax ?? 5);
+      } else if (v?.tipo === "opcion" && cfg.opciones?.some((o) => o.tono)) {
+        const tono = cfg.opciones.find((o) => o.id === v.opcionId)?.tono;
+        if (tono && tono !== "na") validas++;
+        if (tono === "exc" || tono === "bue") favorables++;
+      } else if (a.textValue?.trim()) {
+        comentarios.push(a.textValue.trim());
+      }
+    }
+  }
+  return {
+    promedioEscala: escalas.length ? Math.round((escalas.reduce((x, y) => x + y, 0) / escalas.length) * 10) / 10 : null,
+    escalaMax,
+    favorable: validas ? Math.round((favorables / validas) * 100) : null,
+    comentarios: comentarios.slice(0, 6),
+  };
+}
+
 async function computeActivityReportData(activityId: string, filtro?: FiltroTrimestre | null): Promise<ActivityReportData | null> {
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
@@ -1093,6 +1150,13 @@ async function computeActivityReportData(activityId: string, filtro?: FiltroTrim
       programa: true,
       quarters: true,
       targetAudienceNote: true,
+      objective: true,
+      methodology: true,
+      modality: true,
+      type: true,
+      expectedAttendees: true,
+      expectedAttendeesNote: true,
+      followUpEvidence: true,
       area: { select: { name: true, tutor: { select: { fullName: true } } } },
       plan: { select: { title: true } },
     },
@@ -1114,7 +1178,12 @@ async function computeActivityReportData(activityId: string, filtro?: FiltroTrim
     }),
     prisma.survey.findMany({
       where: { trainingActivityId: activityId },
-      select: { title: true, _count: { select: { responses: true } } },
+      select: {
+        title: true,
+        _count: { select: { responses: true } },
+        pages: { select: { questions: { select: { id: true, type: true, config: true } } } },
+        responses: { where: { completed: true }, select: { answers: { select: { questionId: true, value: true, textValue: true } } } },
+      },
     }),
     getExternosDeActividad(activityId, filtro),
   ]);
@@ -1165,7 +1234,17 @@ async function computeActivityReportData(activityId: string, filtro?: FiltroTrim
       fecha: a.registeredAt,
       source: a.source,
     })),
-    encuestas: encuestas.map((e) => ({ titulo: e.title, respuestas: e._count.responses })),
+    encuestas: encuestas.map((e) => ({ titulo: e.title, respuestas: e._count.responses, satisfaccion: leerSatisfaccion(e) })),
+    ficha: {
+      objetivo: actividad.objective,
+      metodologia: actividad.methodology,
+      modalidad: actividad.modality,
+      tipo: actividad.type,
+      trimestres: actividad.quarters,
+      convocados: actividad.expectedAttendees,
+      convocadosNota: actividad.expectedAttendeesNote,
+      seguimiento: actividad.followUpEvidence,
+    },
     externos,
   };
 }

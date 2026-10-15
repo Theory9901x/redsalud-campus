@@ -20,7 +20,9 @@ export function ActivityReportPanel({
   trimestre?: number;
   trimestreTerminado?: boolean;
 }) {
-  const disponible = cerrada || (trimestre !== undefined && trimestreTerminado);
+  // Siempre descargable: preliminar mientras la jornada está abierta, definitivo al cerrarla.
+  const disponible = true;
+  void trimestreTerminado;
   return (
     <div className="surface flex flex-wrap items-center justify-between gap-3 p-5">
       <div className="min-w-0">
@@ -39,7 +41,7 @@ export function ActivityReportPanel({
           className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
         >
           <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-          Descargar PDF
+          {cerrada ? "Descargar informe definitivo (PDF)" : "Descargar informe preliminar (PDF)"}
         </a>
       ) : (
         <span className="flex items-center gap-1.5 rounded-md bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
