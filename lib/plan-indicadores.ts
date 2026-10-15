@@ -35,7 +35,12 @@ export type Indicadores = {
   asistencia: { valor: number; asistentes: number; audiencia: number };
 };
 
-export type IndicadoresPorArea = Indicadores & { areaId: string; areaNombre: string };
+export type IndicadoresPorArea = Indicadores & {
+  areaId: string;
+  areaNombre: string;
+  /** La misma desagregación por trimestre, pero del universo del área: para la ficha de cada área. */
+  porTrimestre: { trimestre: number; indicadores: Indicadores }[];
+};
 
 export type PlanIndicadores = {
   planTitulo: string;
@@ -193,7 +198,15 @@ export async function getPlanIndicators(planId: string, areaIds: string[] | null
   const porArea = [...new Map(metricas.map((m) => [m.areaId, m])).keys()]
     .map((areaId) => {
       const suyas = metricas.filter((m) => m.areaId === areaId);
-      return { areaId, areaNombre: suyas[0].areaNombre, ...agregar(suyas) };
+      return {
+        areaId,
+        areaNombre: suyas[0].areaNombre,
+        ...agregar(suyas),
+        porTrimestre: [1, 2, 3, 4].map((t) => ({
+          trimestre: t,
+          indicadores: agregar(suyas.filter((m) => m.quarters.includes(t))),
+        })),
+      };
     })
     .sort((a, b) => a.areaNombre.localeCompare(b.areaNombre, "es"));
 

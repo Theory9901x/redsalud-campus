@@ -173,6 +173,10 @@ model User {
   notificationsTargeted Notification[]     @relation("NotificationTargetUser")
   notificationReads     NotificationRead[] @relation("NotificationReadBy")
   passwordResets        PasswordResetToken[]
+  indicadorAnalisisEscritos IndicadorAnalisis[]     @relation("IndicadorAnalisisAutor")
+  planesMejoraResponsable   PlanMejora[]            @relation("PlanMejoraResponsable")
+  planesMejoraCreados       PlanMejora[]            @relation("PlanMejoraCreadoPor")
+  seguimientosMejora        PlanMejoraSeguimiento[] @relation("PlanMejoraSeguimientoAutor")
 
   @@index([role, status])
   @@index([department])
@@ -749,6 +753,8 @@ model TrainingPlan {
   activities TrainingActivity[]
   documents  Media[]
   surveys    Survey[]
+  indicadorAnalisis IndicadorAnalisis[]
+  planesMejora      PlanMejora[]
 
   @@index([tutorId])
   @@index([targetDepartment])
@@ -799,6 +805,8 @@ model TrainingArea {
   tutor   User?   @relation("TrainingAreaTutor", fields: [tutorId], references: [id])
 
   activities TrainingActivity[]
+  indicadorAnalisis IndicadorAnalisis[]
+  planesMejora      PlanMejora[]
 
   @@index([isActive])
   @@index([tutorId])
@@ -939,6 +947,7 @@ model TrainingActivity {
   sessions    TrainingSession[]
   externalParticipants ExternalParticipant[]
   callConnections      CallConnectionLog[]
+  planesMejora         PlanMejora[]
 
   @@index([planId])
   @@index([courseId])
@@ -1406,4 +1415,122 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+
+// ------------------------------------------------------------------
+// Gestión de indicadores del PIC: análisis por periodo y planes de mejora
+// ------------------------------------------------------------------
+
+/**
+ * ANÁLISIS CUALITATIVO de un indicador en un periodo.
+ *
+ * La medición la hace la plataforma sola (lib/plan-indicadores.ts); lo que
+ * no puede hacer sola es explicar el porqué. Este texto lo escribe el
+ * responsable —Talento Humano para lo institucional, el tutor del área para
+ * la suya— y es lo que la entidad reporta junto al número. Una fila por
+ * (plan, indicador, año, trimestre, área); areaId null = institucional.
+ */
+model IndicadorAnalisis {
+  id        String       @id @default(cuid())
+  planId    String
+  plan      TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  /** Código del indicador: PIC-ADH-01, PIC-COB-02, PIC-ASI-03. */
+  codigo    String
+  anio      Int
+  /** 1–4. */
+  trimestre Int
+  areaId    String?
+  area      TrainingArea? @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  /** Análisis cualitativo y cuantitativo del periodo, redactado por el responsable. */
+  texto     String
+  autorId   String?
+  autor     User?        @relation("IndicadorAnalisisAutor", fields: [autorId], references: [id], onDelete: SetNull)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([planId, codigo, anio, trimestre, areaId])
+  @@index([planId, codigo])
+  @@index([areaId])
+}
+
+/**
+ * Estado del plan de mejora. "Vencido" no es un estado guardado: se deduce
+ * al leer (abierto o en curso con la fecha de compromiso ya pasada), para
+ * que nadie tenga que acordarse de marcarlo.
+ */
+enum PlanMejoraEstado {
+  ABIERTO
+  EN_CURSO
+  CERRADO
+}
+
+/**
+ * PLAN DE MEJORA asociado a un indicador.
+ *
+ * Nace de un hallazgo sobre una medición (un trimestre en rojo, un área sin
+ * contenido) y se ASIGNA a algo concreto: la vigencia y el trimestre, el
+ * área o proceso, y opcionalmente la capacitación puntual del PIC. Lleva
+ * responsable, fecha de compromiso y una bitácora de seguimientos: es la
+ * trazabilidad por área que pedía el módulo.
+ */
+model PlanMejora {
+  id         String       @id @default(cuid())
+  planId     String
+  plan       TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  /** Código del indicador al que responde. */
+  codigo     String
+  /** Vigencia a la que se asigna. */
+  anio       Int
+  /** Trimestre de la medición que lo originó; null = toda la vigencia. */
+  trimestre  Int?
+  areaId     String?
+  area       TrainingArea? @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  /** Capacitación concreta del PIC, cuando el hallazgo es de una línea puntual. */
+  activityId String?
+  activity   TrainingActivity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+
+  titulo   String
+  /** Qué se encontró: el hecho medido que motiva el plan. */
+  hallazgo String
+  /** Acciones comprometidas, en texto libre. */
+  acciones String
+
+  responsableUserId String?
+  responsable       User?   @relation("PlanMejoraResponsable", fields: [responsableUserId], references: [id], onDelete: SetNull)
+  /** Responsable por CARGO cuando no es un usuario de la plataforma (como en el PIC). */
+  responsableLabel  String?
+  fechaCompromiso   DateTime
+
+  estado      PlanMejoraEstado @default(ABIERTO)
+  /** Cómo se cerró: evidencia o resultado. Obligatorio al cerrar. */
+  cierreTexto String?
+  cerradoAt   DateTime?
+
+  creadoPorId String?
+  creadoPor   User?   @relation("PlanMejoraCreadoPor", fields: [creadoPorId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  seguimientos PlanMejoraSeguimiento[]
+
+  @@index([planId, codigo])
+  @@index([areaId])
+  @@index([activityId])
+  @@index([estado])
+}
+
+/** Entrada de la bitácora de un plan de mejora: qué se avanzó, quién y cuándo. */
+model PlanMejoraSeguimiento {
+  id           String     @id @default(cuid())
+  planMejoraId String
+  planMejora   PlanMejora @relation(fields: [planMejoraId], references: [id], onDelete: Cascade)
+  texto        String
+  /** Avance acumulado declarado, 0–100. */
+  avance       Int        @default(0)
+  autorId      String?
+  autor        User?      @relation("PlanMejoraSeguimientoAutor", fields: [autorId], references: [id], onDelete: SetNull)
+  createdAt    DateTime   @default(now())
+
+  @@index([planMejoraId])
 }
