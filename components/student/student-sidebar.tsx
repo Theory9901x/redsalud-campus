@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, CalendarRange, ClipboardList, Gavel, GraduationCap, Layers, LayoutDashboard, User } from "lucide-react";
+import { Award, CalendarRange, ClipboardList, Gavel, GraduationCap, Layers, LayoutDashboard, Radio, User } from "lucide-react";
 import { AppSidebar, type GrupoNav } from "@/components/shell/app-sidebar";
 
 const GRUPOS: GrupoNav[] = [
@@ -8,6 +8,7 @@ const GRUPOS: GrupoNav[] = [
     label: null,
     items: [
       { href: "/inicio", label: "Dashboard", icon: LayoutDashboard, exact: true, hash: "" },
+      { href: "/en-vivo", label: "En vivo", icon: Radio },
       { href: "/mi-aula", label: "Mis cursos", icon: GraduationCap, exact: true, hash: "" },
       { href: "/cursos", label: "Catálogo", icon: Layers },
     ],
@@ -15,7 +16,7 @@ const GRUPOS: GrupoNav[] = [
   {
     label: "Mi expediente",
     items: [
-      { href: "/mis-certificados", label: "Mis certificados", icon: Award },
+      { href: "/mis-certificados", label: "Mis constancias", icon: Award },
       { href: "/mis-capacitaciones", label: "Mis capacitaciones", icon: CalendarRange },
       { href: "/mis-comites", label: "Mis comités", icon: Gavel },
       { href: "/evaluaciones", label: "Evaluaciones", icon: ClipboardList },
@@ -46,8 +47,8 @@ export function StudentSidebar({
       logoUrl={logoUrl}
       claseAcento="accent-student"
       pie={{
-        titulo: "Tu formación queda certificada",
-        texto: "Cada curso aprobado genera un certificado verificable con código QR.",
+        titulo: "Tu formación queda registrada",
+        texto: "Cada curso aprobado genera una constancia verificable con código QR.",
       }}
     />
   );

@@ -4,6 +4,7 @@ import { getPlanMetricsData } from "@/lib/plan-metrics";
 import { getAreaCoverageBreakdown } from "@/lib/training-plans";
 import { TrainingDashboardView } from "@/components/training-plans/training-dashboard-view";
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { veComoAdmin } from "@/lib/roles";
 
 const BASE_PATH = "/admin/planes-capacitacion";
 
@@ -21,11 +22,11 @@ export default async function AdminPlanesCapacitacionDashboardPage({
   // Un tutor de área solo ve LO SUYO, también aquí: ni la cobertura ni las
   // métricas de las demás áreas le aparecen.
   const areaCoverage =
-    session.user.role === "ADMIN"
+    veComoAdmin(session.user.role)
       ? coberturaCompleta
       : coberturaCompleta.filter((a) => a.tutorId === session.user.id);
   const areasPropias =
-    session.user.role === "ADMIN" ? null : areaCoverage.map((a) => a.id);
+    veComoAdmin(session.user.role) ? null : areaCoverage.map((a) => a.id);
 
   const isPlanInScope = !!planParam && data.planRows.some((p) => p.id === planParam);
   const selectedPlanMetrics = isPlanInScope ? await getPlanMetricsData(planParam, areasPropias) : null;
@@ -43,7 +44,7 @@ export default async function AdminPlanesCapacitacionDashboardPage({
         activeTab={tab ?? "total"}
         selectedPlanId={isPlanInScope ? planParam! : null}
         selectedPlanMetrics={selectedPlanMetrics}
-        esAdmin={session.user.role === "ADMIN"}
+        esAdmin={veComoAdmin(session.user.role)}
         currentUserId={session.user.id}
       />
     </div>

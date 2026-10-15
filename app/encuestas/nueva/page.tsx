@@ -60,19 +60,18 @@ export default async function NuevaEncuestaPage() {
           Encuestas
         </Link>
 
-        <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+        <p className="mono-label flex items-center gap-1.5 text-primary">
           <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />
-          Módulo de encuestas
+          Módulo de encuestas · Paso 1 de 2
         </p>
-        <h1 className="mt-2 font-display text-[clamp(1.7rem,3.5vw,2.2rem)] font-extrabold leading-tight tracking-tight text-foreground">
-          Nueva{" "}
-          <span className="bg-gradient-to-r from-primary to-success bg-clip-text text-transparent">encuesta</span>
+        <h1 className="mt-2 font-display text-[clamp(1.6rem,3.2vw,2rem)] font-bold leading-tight tracking-tight text-foreground">
+          Nueva encuesta
         </h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
+        <p className="mt-1.5 text-[14px] leading-relaxed text-muted-foreground">
           Define lo esencial; los bloques y las preguntas se arman en el constructor.
         </p>
 
-        <div className="surface-vivo mt-7">
+        <div className="barra-modulo mt-6">
           <div className="p-6">
             <FormularioNuevaEncuesta
               areas={areas.map((a) => ({ id: a.id, nombre: a.name }))}

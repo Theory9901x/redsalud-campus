@@ -80,7 +80,7 @@ export default async function InicioPage() {
   const KPIS = [
     { icon: BookOpen, value: activos, label: "Cursos activos", box: "bg-primary/15 text-primary" },
     { icon: CheckCircle2, value: completados, label: "Completados", box: "bg-success/15 text-success" },
-    { icon: Award, value: certificateCount, label: "Certificados", box: "bg-warning/15 text-warning-foreground" },
+    { icon: Award, value: certificateCount, label: "Constancias", box: "bg-warning/15 text-warning-foreground" },
     {
       icon: ShieldAlert,
       value: obligatoriosPendientes,

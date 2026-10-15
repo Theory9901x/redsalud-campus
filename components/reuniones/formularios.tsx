@@ -213,7 +213,7 @@ export function AccionesSesion({
     });
   };
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2" data-escritura>
       {estado !== "CLOSED" ? (
         <Button type="button" size="sm" variant="outline" disabled={pendiente} className="gap-1.5" onClick={() => correr(onCerrar, "¿Cerrar la sesión? La asistencia queda congelada y el enlace deja de aceptar registros.")}>
           <Lock className="h-3.5 w-3.5" /> Cerrar sesión

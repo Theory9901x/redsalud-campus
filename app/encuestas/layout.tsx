@@ -6,6 +6,7 @@ import { TutorShell } from "@/components/tutor/tutor-shell";
 import { StudentShell } from "@/components/student/student-shell";
 import { getUserAvatarUrl } from "@/lib/avatar";
 import { getNotificationsForUser } from "@/lib/notifications";
+import { veComoAdmin } from "@/lib/roles";
 
 /**
  * El módulo de encuestas vive DENTRO del entorno principal: cada rol lo ve
@@ -16,11 +17,12 @@ export default async function EncuestasLayout({ children }: { children: React.Re
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  if (session.user.role === "ADMIN") {
+  if (veComoAdmin(session.user.role)) {
     return (
       <AdminShell
         userName={session.user.name ?? "Administrador"}
         restrictedAdminSections={session.user.restrictedAdminSections}
+        soloLectura={session.user.role === "SEGUIMIENTO"}
       >
         {children}
       </AdminShell>

@@ -17,9 +17,9 @@ function formatoDuracion(seg: number): string {
  * Es la trazabilidad completa de la sala; la vista de una jornada concreta
  * muestra lo mismo acotado a su franja.
  */
-export async function RegistroConexiones({ activityId }: { activityId: string }) {
+export async function RegistroConexiones({ activityId, desde, hasta }: { activityId: string; desde?: Date; hasta?: Date }) {
   const tramos = await prisma.callConnectionLog.findMany({
-    where: { activityId },
+    where: { activityId, ...(desde && hasta ? { joinedAt: { gte: desde, lt: hasta } } : {}) },
     orderBy: { joinedAt: "asc" },
     select: {
       displayName: true,

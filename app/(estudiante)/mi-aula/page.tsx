@@ -141,7 +141,7 @@ export default async function MiAulaPage({
   const STATS = [
     { icon: BookOpen, value: stats.activos, label: "Cursos activos", box: "bg-primary/15 text-primary" },
     { icon: CheckCircle2, value: stats.completados, label: "Completados", box: "bg-success/15 text-success" },
-    { icon: Award, value: stats.certificados, label: "Certificados", box: "bg-warning/15 text-warning-foreground" },
+    { icon: Award, value: stats.certificados, label: "Constancias", box: "bg-warning/15 text-warning-foreground" },
     { icon: ShieldAlert, value: stats.obligatorios, label: "Obligatorios pendientes", box: "bg-destructive/15 text-destructive" },
   ];
 

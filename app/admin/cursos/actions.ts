@@ -227,7 +227,7 @@ export async function deleteCourseAction(courseId: string): Promise<DeleteCourse
 
   if (course._count.certificates > 0) {
     return {
-      error: `No se puede eliminar "${course.title}" porque ya emitió ${course._count.certificates} certificado(s), que se perderían. Usa "Archivar" para sacarlo del catálogo conservando todo.`,
+      error: `No se puede eliminar "${course.title}" porque ya emitió ${course._count.certificates} constancia(s), que se perderían. Usa "Archivar" para sacarlo del catálogo conservando todo.`,
     };
   }
 

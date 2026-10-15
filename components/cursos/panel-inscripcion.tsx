@@ -58,7 +58,7 @@ export function PanelInscripcion({
               </span>
               <div className="min-w-0">
                 <p className="font-display text-sm font-extrabold text-foreground">Curso completado</p>
-                <p className="text-xs text-muted-foreground">Ya puedes descargar tu certificado.</p>
+                <p className="text-xs text-muted-foreground">Ya puedes descargar tu constancia.</p>
               </div>
             </div>
           ) : (

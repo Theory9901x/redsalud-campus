@@ -35,7 +35,7 @@ const GRUPOS: { label: string | null; items: ItemAdmin[] }[] = [
     items: [
       { href: "/admin/usuarios", label: "Usuarios", icon: Users, section: "USUARIOS" },
       { href: "/admin/inscripciones", label: "Inscripciones", icon: ClipboardList, section: "INSCRIPCIONES" },
-      { href: "/admin/certificados", label: "Certificados", icon: Award, section: "CERTIFICADOS" },
+      { href: "/admin/certificados", label: "Constancias", icon: Award, section: "CERTIFICADOS" },
     ],
   },
   {

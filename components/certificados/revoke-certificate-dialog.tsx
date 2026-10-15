@@ -33,7 +33,7 @@ export function RevokeCertificateDialog({ certificateId, studentName }: { certif
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Anular certificado</DialogTitle>
+            <DialogTitle>Anular constancia</DialogTitle>
             <DialogDescription>
               El certificado de {studentName} quedará marcado como anulado y la validación pública lo mostrará de
               inmediato. Esta acción se puede revertir después.
@@ -49,7 +49,7 @@ export function RevokeCertificateDialog({ certificateId, studentName }: { certif
             )}
             <DialogFooter>
               <Button type="submit" variant="destructive" disabled={pending}>
-                {pending ? "Anulando..." : "Anular certificado"}
+                {pending ? "Anulando..." : "Anular constancia"}
               </Button>
             </DialogFooter>
           </form>

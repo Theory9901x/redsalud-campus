@@ -349,7 +349,7 @@ export function QuizTakingForm({
     return (
       <div className="surface-glass flex flex-col items-center gap-3 p-10 text-center">
         <Award className="h-10 w-10 animate-pulse text-warning-foreground" />
-        <p className="text-sm font-medium text-muted-foreground">Preparando tu certificado...</p>
+        <p className="text-sm font-medium text-muted-foreground">Preparando tu constancia...</p>
       </div>
     );
   }

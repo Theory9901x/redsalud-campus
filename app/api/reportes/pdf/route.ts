@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { registrarAuditoria } from "@/lib/audit";
 import { PdfNoDisponibleError, renderizarPdf } from "@/lib/pdf";
 import { REPORTE_META, esTipoReporte } from "@/lib/reportes-meta";
+import { veComoAdmin } from "@/lib/roles";
 
 /** Lanzar Chromium y renderizar un informe largo no cabe en el límite corto. */
 export const maxDuration = 120;
@@ -11,7 +12,7 @@ const FILTROS_PERMITIDOS = ["municipio", "personal", "curso", "estado"] as const
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
+  if (!session?.user || !veComoAdmin(session.user.role)) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 

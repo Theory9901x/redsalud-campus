@@ -212,6 +212,11 @@ export function TrainingActivityTimeline({
           <div className="space-y-2.5">
             {grupo.items.map((activity, idx) => {
               const TypeIcon = TRAINING_ACTIVITY_TYPE_ICONS[activity.type];
+              // Agrupado por trimestre, la tarjeta ES la de ese trimestre:
+              // abre la capacitación en él y muestra su adherencia.
+              const t = agruparPor === "trimestre" && grupo.key !== "t0" ? Number(grupo.key.slice(1)) : null;
+              const adherencia = t !== null ? (adherenceByActivity?.[`${activity.id}:${t}`] ?? adherenceByActivity?.[activity.id]) : adherenceByActivity?.[activity.id];
+              const enlace = `${basePath}/${planId}/actividades/${activity.id}${t !== null ? `?t=${t}` : ""}`;
               const gestionable =
                 areasGestionables === null || (activity.area !== null && areasGestionables.includes(activity.area.id));
               return (
@@ -229,7 +234,7 @@ export function TrainingActivityTimeline({
                     <div className="flex flex-wrap items-center gap-2">
                       {gestionable ? (
                         <Link
-                          href={`${basePath}/${planId}/actividades/${activity.id}`}
+                          href={enlace}
                           className="font-display text-sm font-bold text-foreground hover:underline"
                         >
                           {tituloLegible(activity.title)}
@@ -290,9 +295,9 @@ export function TrainingActivityTimeline({
                       <span className="text-xs font-medium text-muted-foreground">{etiquetaProgramacion(activity)}</span>
                     )}
                     <PildoraEstado estado={activity.status}>{TRAINING_ACTIVITY_STATUS_LABELS[activity.status]}</PildoraEstado>
-                    {adherenceByActivity?.[activity.id] !== undefined && (
+                    {adherencia !== undefined && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/8 px-2 py-0.5 text-[11px] font-bold tabular-nums text-primary">
-                        {adherenceByActivity[activity.id]}%<span className="font-semibold text-primary/70">adherencia</span>
+                        {adherencia}%<span className="font-semibold text-primary/70">adherencia{t !== null && activity.quarters.length > 1 ? ` T${t}` : ""}</span>
                       </span>
                     )}
                     {puedeEliminar && (

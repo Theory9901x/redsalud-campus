@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { toCsv, csvResponse } from "@/lib/csv";
 import { getTrainingDashboardData } from "@/lib/training-dashboard";
+import { veComoAdmin } from "@/lib/roles";
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "TUTOR")) {
+  if (!session?.user || (!veComoAdmin(session.user.role) && session.user.role !== "TUTOR")) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 

@@ -20,7 +20,7 @@ export async function generateCertificateCode(): Promise<string> {
     const existing = await prisma.certificate.findUnique({ where: { certificateCode: code }, select: { id: true } });
     if (!existing) return code;
   }
-  throw new Error("No se pudo generar un código de certificado único.");
+  throw new Error("No se pudo generar un código de constancia único.");
 }
 
 /** Token secundario único almacenado junto al certificado, reservado para validación reforzada futura. */

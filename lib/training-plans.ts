@@ -1,4 +1,3 @@
-import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import {
   compararAdherencia,
@@ -9,6 +8,7 @@ import {
   estadoPostsaber,
 } from "@/lib/presaber-postsaber";
 import type { Prisma, Role, CourseAudience, TrainingActivityStatus, AttendanceSource, PlanKind } from "@prisma/client";
+import { veComoAdmin } from "@/lib/roles";
 
 /**
  * ADMIN ve todos los planes. Un TUTOR ve los que responde y, además, aquellos
@@ -16,7 +16,7 @@ import type { Prisma, Role, CourseAudience, TrainingActivityStatus, AttendanceSo
  * Humano, pero cada área responde por su parte y necesita llegar a ella.
  */
 export function trainingPlanScopeWhere(role: Role, userId: string) {
-  if (role === "ADMIN") return {};
+  if (veComoAdmin(role)) return {};
   return {
     OR: [{ tutorId: userId }, { activities: { some: { area: { tutorId: userId } } } }],
   };
@@ -301,7 +301,7 @@ export async function getTrainingActivityDetail(activityId: string) {
   return prisma.trainingActivity.findUnique({
     where: { id: activityId },
     include: {
-      plan: { select: { id: true, title: true, tutorId: true, targetDepartment: true, kind: true } },
+      plan: { select: { id: true, title: true, year: true, tutorId: true, targetDepartment: true, kind: true } },
       course: { select: { id: true, title: true, slug: true } },
       area: { select: { id: true, name: true } },
       responsibleUser: { select: { id: true, fullName: true, username: true } },
@@ -433,7 +433,9 @@ export async function getMomentoParaUsuario(quizId: string, userId: string) {
  * promedio de todos sus intentos-, porque a alguien se le mide por lo mejor
  * que demostró saber en esa ventana, no por sus tropiezos previos.
  */
-export async function getPresaberPostsaberSummary(activityId: string) {
+export async function getPresaberPostsaberSummary(activityId: string, filtro?: FiltroTrimestre | null) {
+  // Vista de un trimestre: siempre en vivo, acotada a sus fechas.
+  if (filtro) return computePresaberPostsaberSummary(activityId, filtro);
   // Jornada cerrada: las cifras salen del informe congelado, no de las tablas.
   // Si no fuera así, la pantalla y el PDF -que sí lee el congelado- podrían
   // mostrar números distintos de la misma jornada.
@@ -449,7 +451,7 @@ export async function getPresaberPostsaberSummary(activityId: string) {
   return computePresaberPostsaberSummary(activityId);
 }
 
-async function computePresaberPostsaberSummary(activityId: string) {
+async function computePresaberPostsaberSummary(activityId: string, filtro?: FiltroTrimestre | null) {
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
     select: { courseId: true },
@@ -467,7 +469,7 @@ async function computePresaberPostsaberSummary(activityId: string) {
   }
 
   const intentos = await prisma.quizAttempt.findMany({
-    where: { quizId: quiz.id, moment: { not: null }, score: { not: null }, finishedAt: { not: null } },
+    where: { quizId: quiz.id, moment: { not: null }, score: { not: null }, finishedAt: filtro ? enVentana(filtro) : { not: null } },
     select: { userId: true, moment: true, score: true },
   });
 
@@ -506,13 +508,14 @@ async function computePresaberPostsaberSummary(activityId: string) {
  * mejores intentos -no sobre todos los intentos fallidos previos-, para que
  * las dos tablas cuenten la misma historia.
  */
-export async function getCycleResults(activityId: string) {
+export async function getCycleResults(activityId: string, filtro?: FiltroTrimestre | null) {
+  if (filtro) return computeCycleResults(activityId, filtro);
   const congelado = await getFrozenActivityReport(activityId);
   if (congelado) return { personas: congelado.personas, porPregunta: congelado.porPregunta };
   return computeCycleResults(activityId);
 }
 
-async function computeCycleResults(activityId: string) {
+async function computeCycleResults(activityId: string, filtro?: FiltroTrimestre | null) {
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
     select: { courseId: true },
@@ -526,7 +529,7 @@ async function computeCycleResults(activityId: string) {
   if (!quiz) return null;
 
   const intentos = await prisma.quizAttempt.findMany({
-    where: { quizId: quiz.id, moment: { not: null }, score: { not: null }, finishedAt: { not: null } },
+    where: { quizId: quiz.id, moment: { not: null }, score: { not: null }, finishedAt: filtro ? enVentana(filtro) : { not: null } },
     select: {
       id: true,
       moment: true,
@@ -961,9 +964,9 @@ export async function getPromedioEvaluaciones(userId: string) {
  * propósito de las métricas internas: son universos distintos y mezclarlos
  * distorsionaría la adherencia del personal propio.
  */
-export async function getExternosDeActividad(activityId: string) {
+export async function getExternosDeActividad(activityId: string, filtro?: FiltroTrimestre | null) {
   const externos = await prisma.externalParticipant.findMany({
-    where: { activityId },
+    where: { activityId, ...(filtro ? { createdAt: enVentana(filtro) } : {}) },
     orderBy: { createdAt: "asc" },
     select: {
       fullName: true,
@@ -997,6 +1000,8 @@ export type ActivityReportData = {
   area: string | null;
   responsable: string | null;
   titulo: string;
+  /** Trimestre del informe cuando se pidió uno solo (null = toda la capacitación). */
+  trimestre?: number | null;
   programa: string | null;
   dirigidoA: string | null;
   status: TrainingActivityStatus;
@@ -1064,13 +1069,15 @@ export async function freezeActivityReport(activityId: string) {
   return data;
 }
 
-export async function getActivityReportData(activityId: string): Promise<ActivityReportData | null> {
+export async function getActivityReportData(activityId: string, filtro?: FiltroTrimestre | null): Promise<ActivityReportData | null> {
+  // El informe de UN trimestre se calcula siempre en vivo, acotado a él.
+  if (filtro) return computeActivityReportData(activityId, filtro);
   const congelado = await getFrozenActivityReport(activityId);
   if (congelado) return congelado;
   return computeActivityReportData(activityId);
 }
 
-async function computeActivityReportData(activityId: string): Promise<ActivityReportData | null> {
+async function computeActivityReportData(activityId: string, filtro?: FiltroTrimestre | null): Promise<ActivityReportData | null> {
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
     select: {
@@ -1088,7 +1095,7 @@ async function computeActivityReportData(activityId: string): Promise<ActivityRe
   if (!actividad) return null;
 
   const [resultados, quiz, asistencia, encuestas, externos] = await Promise.all([
-    computeCycleResults(activityId),
+    computeCycleResults(activityId, filtro),
     actividad.courseId
       ? prisma.quiz.findFirst({
           where: { courseId: actividad.courseId, moduleId: null },
@@ -1096,7 +1103,7 @@ async function computeActivityReportData(activityId: string): Promise<ActivityRe
         })
       : Promise.resolve(null),
     prisma.trainingAttendance.findMany({
-      where: { activityId, attended: true },
+      where: { activityId, attended: true, ...(filtro ? { trimestre: filtro.trimestre } : {}) },
       select: { userId: true, user: { select: { fullName: true, documentNumber: true } }, registeredAt: true, source: true },
       orderBy: { user: { fullName: "asc" } },
     }),
@@ -1104,7 +1111,7 @@ async function computeActivityReportData(activityId: string): Promise<ActivityRe
       where: { trainingActivityId: activityId },
       select: { title: true, _count: { select: { responses: true } } },
     }),
-    getExternosDeActividad(activityId),
+    getExternosDeActividad(activityId, filtro),
   ]);
 
   const passingScore = quiz?.passingScore ?? 60;
@@ -1123,6 +1130,7 @@ async function computeActivityReportData(activityId: string): Promise<ActivityRe
     area: actividad.area?.name ?? null,
     responsable: actividad.area?.tutor?.fullName ?? null,
     titulo: actividad.title,
+    trimestre: filtro?.trimestre ?? null,
     programa: actividad.programa,
     dirigidoA: actividad.targetAudienceNote,
     status: actividad.status,
@@ -1358,30 +1366,17 @@ export async function getActivityLiveMetrics(activityId: string): Promise<Activi
  * cerrar la jornada, igual que rige para el registro manual.
  */
 export async function registrarAsistenciaAutomatica(courseId: string, userId: string, activityId?: string) {
-  // Con `activityId` (se entró por la puerta de UNA capacitación) solo se
-  // marca esa. Sin él (se completó el curso desde el aula), el curso puede
-  // estar en varias instancias trimestrales del mismo plan: solo se marca la
-  // del trimestre en curso, nunca las de otros trimestres.
-  const candidatas = await prisma.trainingActivity.findMany({
-    where: { courseId, ...(activityId ? { id: activityId } : {}) },
-    select: { id: true, planId: true, status: true, quarters: true, plan: { select: { year: true } } },
+  const actividades = await prisma.trainingActivity.findMany({
+    where: { courseId, status: { not: "CLOSED" }, ...(activityId ? { id: activityId } : {}) },
+    select: { id: true },
   });
-  const hermanas = new Map<string, number>();
-  for (const a of candidatas) hermanas.set(a.planId, (hermanas.get(a.planId) ?? 0) + 1);
-  const ahora = trimestreActual();
-  const actividades = candidatas.filter(
-    (a) =>
-      a.status !== "CLOSED" &&
-      (activityId !== undefined ||
-        (hermanas.get(a.planId) ?? 0) < 2 ||
-        (a.plan.year === ahora.anio && a.quarters.includes(ahora.trimestre)))
-  );
-
+  // La asistencia queda en el trimestre en que ocurre.
+  const { trimestre } = trimestreActual();
   for (const actividad of actividades) {
     await prisma.trainingAttendance.upsert({
-      where: { activityId_userId: { activityId: actividad.id, userId } },
+      where: { activityId_userId_trimestre: { activityId: actividad.id, userId, trimestre } },
       update: { attended: true },
-      create: { activityId: actividad.id, userId, attended: true, source: "AUTOMATIC" },
+      create: { activityId: actividad.id, userId, attended: true, source: "AUTOMATIC", trimestre },
     });
   }
 }
@@ -1392,9 +1387,9 @@ export async function registrarAsistenciaAutomatica(courseId: string, userId: st
  * no existía para actividades con curso -solo se veía para las de gestión
  * directa- porque no había ninguna fuente de asistencia; ahora la hay.
  */
-export async function getAutomaticAttendanceRoster(activityId: string) {
+export async function getAutomaticAttendanceRoster(activityId: string, trimestre?: number) {
   return prisma.trainingAttendance.findMany({
-    where: { activityId, attended: true },
+    where: { activityId, attended: true, ...(trimestre ? { trimestre } : {}) },
     orderBy: { registeredAt: "asc" },
     select: {
       registeredAt: true,
@@ -1615,30 +1610,53 @@ export function rangoTrimestre(anio: number, t: number) {
 }
 
 /**
- * Ventana de una INSTANCIA TRIMESTRAL. Cuando el mismo curso se dicta en
- * varios trimestres del plan, cada trimestre es una capacitación aparte y
- * solo cuenta lo completado dentro de su trimestre: lo de T1 no infla T4.
- * Si el curso está en una sola línea del plan no hay ventana y cuenta todo
- * lo completado, como siempre.
+ * VISTA POR TRIMESTRE de una capacitación. Una misma línea del PIC puede
+ * programarse en varios trimestres: no se duplica, pero cada trimestre se
+ * revisa por separado. La asistencia lleva su trimestre (columna propia); lo
+ * demás -jornadas, conexiones, externos, evaluaciones, cursos completados- se
+ * filtra por las fechas del trimestre dentro del año del plan.
  */
-async function ventanaDeInstancia(activityId: string, courseId: string) {
-  const delCurso = await actividadesDelCurso(courseId);
-  const a = delCurso.find((x) => x.id === activityId);
-  if (!a || a.quarters.length !== 1 || delCurso.filter((x) => x.planId === a.planId).length < 2) return null;
-  return rangoTrimestre(a.plan.year, a.quarters[0]);
+export type FiltroTrimestre = { trimestre: number; desde: Date; hasta: Date };
+
+export function filtroTrimestre(anio: number, trimestre: number): FiltroTrimestre {
+  return { trimestre, ...rangoTrimestre(anio, trimestre) };
 }
 
+const enVentana = (f: FiltroTrimestre) => ({ gte: f.desde, lt: f.hasta });
+
 /**
- * Las líneas de todos los planes que usan un curso. Memorizada por petición:
- * el cumplimiento del plan pide la adherencia de 50+ líneas a la vez y sin
- * esto serían 50+ consultas simultáneas para la misma respuesta.
+ * Trimestres que se pueden revisar de una capacitación: los programados en el
+ * PIC más cualquiera donde ya haya asistencia registrada (nada se esconde), y
+ * el que se abre por defecto: el pedido, o el que está en curso, o el último
+ * ya transcurrido, o el primero.
  */
-const actividadesDelCurso = cache((courseId: string) =>
-  prisma.trainingActivity.findMany({
-    where: { courseId },
-    select: { id: true, planId: true, quarters: true, plan: { select: { year: true } } },
-  })
-);
+export async function trimestresDeActividad(
+  activity: { id: string; quarters: number[]; plan: { year: number } },
+  pedido?: number | string | null
+) {
+  const conDatos = await prisma.trainingAttendance.groupBy({
+    by: ["trimestre"],
+    where: { activityId: activity.id, trimestre: { gte: 1, lte: 4 } },
+  });
+  const opciones = [...new Set([...activity.quarters, ...conDatos.map((d) => d.trimestre)])]
+    .filter((t) => t >= 1 && t <= 4)
+    .sort((a, b) => a - b);
+  const ahora = trimestreActual();
+  const enCurso = activity.plan.year === ahora.anio ? ahora.trimestre : activity.plan.year < ahora.anio ? 5 : 0;
+  const n = Number(pedido);
+  const elegido =
+    (opciones.includes(n) && n) ||
+    (opciones.includes(enCurso) && enCurso) ||
+    [...opciones].reverse().find((t) => t < enCurso) ||
+    opciones[0] ||
+    (enCurso >= 1 && enCurso <= 4 ? enCurso : 1);
+  return { opciones: opciones.length ? opciones : [elegido], elegido, enCurso, filtro: filtroTrimestre(activity.plan.year, elegido) };
+}
+
+/** Personas distintas (no filas: con trimestres, alguien puede tener varias). */
+async function personasConAsistencia(where: Prisma.TrainingAttendanceWhereInput) {
+  return (await prisma.trainingAttendance.groupBy({ by: ["userId"], where })).length;
+}
 
 export type ActivityAdherence = {
   source: "AUTOMATIC" | "MANUAL";
@@ -1660,7 +1678,7 @@ type ActivityForAdherence = {
  * (sin captura manual). Sin curso (evento externo o "No aplica"): adherencia
  * desde el registro manual de asistencia (TrainingAttendance).
  */
-export async function getActivityAdherence(activity: ActivityForAdherence): Promise<ActivityAdherence> {
+export async function getActivityAdherence(activity: ActivityForAdherence, filtro?: FiltroTrimestre | null): Promise<ActivityAdherence> {
   // Dos CONTEOS, no dos listas. Antes se traían los ids de toda la audiencia
   // -doscientas y pico filas- solo para saber cuántos eran y para armar un
   // `IN (...)` gigante. El cumplimiento del plan llama a esta función una vez
@@ -1672,18 +1690,19 @@ export async function getActivityAdherence(activity: ActivityForAdherence): Prom
   const [totalExpected, adherentCount] = await Promise.all([
     contarAudiencia(activity),
     activity.courseId
-      ? ventanaDeInstancia(activity.id, activity.courseId).then((ventana) =>
-          prisma.enrollment.count({
-            where: {
-              courseId: activity.courseId!,
-              status: "COMPLETED",
-              user: audiencia,
-              ...(ventana ? { completedAt: { gte: ventana.desde, lt: ventana.hasta } } : {}),
-            },
-          })
-        )
-      : prisma.trainingAttendance.count({
-          where: { activityId: activity.id, attended: true, user: audiencia },
+      ? prisma.enrollment.count({
+          where: {
+            courseId: activity.courseId,
+            status: "COMPLETED",
+            user: audiencia,
+            ...(filtro ? { completedAt: enVentana(filtro) } : {}),
+          },
+        })
+      : personasConAsistencia({
+          activityId: activity.id,
+          attended: true,
+          user: audiencia,
+          ...(filtro ? { trimestre: filtro.trimestre } : {}),
         }),
   ]);
 
@@ -1705,17 +1724,18 @@ export async function getActivityAttendanceCounts(activity: {
   targetAudience: CourseAudience;
   plan: PlanDeAudiencia;
   audienceCommitteePlanId?: string | null;
-}) {
+}, filtro?: FiltroTrimestre | null) {
   // Con audiencia de comité el "X de Y" se lee sobre los integrantes: quien
   // asistió sin ser integrante no entra en la adherencia, pero se reporta
   // aparte como "otros asistentes" -nunca se pierde-.
   const deComite = comiteDeAudiencia(activity) !== null;
   const soloAudiencia = deComite ? { user: audienciaDeActividad(activity) } : {};
+  const delTrimestre = filtro ? { trimestre: filtro.trimestre } : {};
   const [totalAudiencia, asistieron, registrados, asistieronTodos] = await Promise.all([
     contarAudiencia(activity),
-    prisma.trainingAttendance.count({ where: { activityId: activity.id, attended: true, ...soloAudiencia } }),
-    prisma.trainingAttendance.count({ where: { activityId: activity.id, ...soloAudiencia } }),
-    deComite ? prisma.trainingAttendance.count({ where: { activityId: activity.id, attended: true } }) : Promise.resolve(0),
+    personasConAsistencia({ activityId: activity.id, attended: true, ...soloAudiencia, ...delTrimestre }),
+    personasConAsistencia({ activityId: activity.id, ...soloAudiencia, ...delTrimestre }),
+    deComite ? personasConAsistencia({ activityId: activity.id, attended: true, ...delTrimestre }) : Promise.resolve(0),
   ]);
   return {
     totalAudiencia,
@@ -1751,8 +1771,9 @@ export type FilaAsistencia = {
  */
 export async function getActivityAttendancePage(
   activity: { id: string; targetAudience: CourseAudience; plan: PlanDeAudiencia; audienceCommitteePlanId?: string | null },
-  opciones: { buscar?: string; pagina?: number; porPagina?: number } = {}
+  opciones: { buscar?: string; pagina?: number; porPagina?: number; trimestre?: number } = {}
 ): Promise<{ filas: FilaAsistencia[]; total: number; pagina: number; porPagina: number }> {
+  const delTrimestre = opciones.trimestre ? { trimestre: opciones.trimestre } : {};
   const buscar = opciones.buscar?.trim() ?? "";
   const porPagina = Math.min(Math.max(opciones.porPagina ?? 25, 5), 100);
   const pagina = Math.max(opciones.pagina ?? 1, 1);
@@ -1771,7 +1792,7 @@ export async function getActivityAttendancePage(
           ],
         }
       : // Sin búsqueda: solo quien ya tiene registro en esta jornada.
-        { trainingAttendances: { some: { activityId: activity.id } } }),
+        { trainingAttendances: { some: { activityId: activity.id, ...delTrimestre } } }),
   };
 
   const [total, usuarios] = await Promise.all([
@@ -1783,8 +1804,9 @@ export async function getActivityAttendancePage(
         fullName: true,
         documentNumber: true,
         trainingAttendances: {
-          where: { activityId: activity.id },
+          where: { activityId: activity.id, ...delTrimestre },
           select: { attended: true, registeredAt: true, source: true },
+          orderBy: { registeredAt: "desc" },
           take: 1,
         },
       },
@@ -1833,23 +1855,48 @@ export async function getActivityAttendanceRoster(activity: {
  */
 export async function getActivityCompletionRoster(activity: {
   id?: string;
+  filtro?: FiltroTrimestre | null;
   courseId: string;
   targetAudience: CourseAudience;
   plan: { targetDepartment: string | null };
 }) {
   const users = await getTargetAudienceUsers(activity.plan.targetDepartment, activity.targetAudience);
-  const ventana = activity.id ? await ventanaDeInstancia(activity.id, activity.courseId) : null;
+  const ventana = activity.filtro ?? null;
   const completed = await prisma.enrollment.findMany({
     where: {
       courseId: activity.courseId,
       userId: { in: users.map((u) => u.id) },
       status: "COMPLETED",
-      ...(ventana ? { completedAt: { gte: ventana.desde, lt: ventana.hasta } } : {}),
+      ...(ventana ? { completedAt: enVentana(ventana) } : {}),
     },
     select: { userId: true },
   });
   const completedIds = new Set(completed.map((e) => e.userId));
   return users.map((u) => ({ ...u, completed: completedIds.has(u.id) }));
+}
+
+/**
+ * Adherencia de cada capacitación EN CADA uno de sus trimestres, para las
+ * tarjetas del cronograma agrupado por trimestre: la tarjeta de T4 dice cómo
+ * va T4, no un número que mezcla los cuatro. Clave: "<activityId>:<trimestre>".
+ */
+export async function getAdherenciaPorTrimestre(planId: string): Promise<Record<string, number>> {
+  const actividades = await prisma.trainingActivity.findMany({
+    where: { planId },
+    select: {
+      id: true,
+      courseId: true,
+      targetAudience: true,
+      quarters: true,
+      audienceCommitteePlanId: true,
+      plan: { select: { id: true, year: true, targetDepartment: true, kind: true } },
+    },
+  });
+  const pares = actividades.flatMap((a) => a.quarters.map((t) => ({ a, t })));
+  const resultados = await Promise.all(
+    pares.map(async ({ a, t }) => [`${a.id}:${t}`, (await getActivityAdherence(a, filtroTrimestre(a.plan.year, t))).percentage] as const)
+  );
+  return Object.fromEntries(resultados);
 }
 
 /** Cumplimiento del plan: promedio de adherencia entre las actividades que sí tienen audiencia objetivo. */
@@ -1946,7 +1993,7 @@ export async function getLinkableCourses() {
  */
 export async function getLinkableCoursesForUser(role: Role, userId: string) {
   return prisma.course.findMany({
-    where: { status: "PUBLISHED", ...(role === "ADMIN" ? {} : { tutorId: userId }) },
+    where: { status: "PUBLISHED", ...(veComoAdmin(role) ? {} : { tutorId: userId }) },
     select: { id: true, title: true },
     orderBy: { title: "asc" },
   });

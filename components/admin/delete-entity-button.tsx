@@ -51,7 +51,7 @@ export function DeleteEntityButton({
 
   return (
     <AlertDialog>
-      <AlertDialogTrigger
+      <AlertDialogTrigger data-escritura
         render={
           <Button
             type="button"

@@ -17,6 +17,7 @@ import {
   etiquetaProgramacion,
 } from "@/components/training-plans/labels";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
+import { veComoAdmin } from "@/lib/roles";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", year: "numeric" });
 
@@ -25,7 +26,7 @@ const STATUS_CHART_COLORS = { DRAFT: "#5B7184", OPEN: "#3BB54A", CLOSED: "#0F243
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
-  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "TUTOR")) {
+  if (!session?.user || (!veComoAdmin(session.user.role) && session.user.role !== "TUTOR")) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 
@@ -33,7 +34,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!plan) {
     return NextResponse.json({ error: "Plan no encontrado." }, { status: 404 });
   }
-  if (session.user.role !== "ADMIN" && plan.tutorId !== session.user.id) {
+  if (!veComoAdmin(session.user.role) && plan.tutorId !== session.user.id) {
     return NextResponse.json({ error: "No autorizado: no eres el tutor responsable de este plan." }, { status: 403 });
   }
 

@@ -15,7 +15,7 @@ export default async function ConfiguracionPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="Configuración institucional"
-        description="Estos datos aparecen impresos en todos los certificados emitidos."
+        description="Estos datos aparecen impresos en todas las constancias emitidas."
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -23,7 +23,7 @@ export default async function ConfiguracionPage() {
           action={uploadInstitutionLogoAction}
           fieldName="logo"
           label="Logo institucional"
-          description="Aparece en la parte superior del certificado. PNG con fondo transparente recomendado."
+          description="Aparece en la parte superior de la constancia. PNG con fondo transparente recomendado."
           imageUrl={settings.logoUrl}
         />
         <InstitutionAssetUploader

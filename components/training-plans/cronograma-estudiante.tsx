@@ -386,7 +386,7 @@ export function CronogramaEstudiante({
           <h2 className="mono-label">Accesos rápidos</h2>
           {[
             { icono: BookOpen, titulo: "Mis cursos", detalle: "Continúa donde ibas", href: "/mi-aula", chip: "bg-primary/15 text-primary" },
-            { icono: Award, titulo: "Mis certificados", detalle: "Descárgalos en PDF", href: "/mis-certificados", chip: "bg-[var(--accent)]/15 text-[var(--accent)]" },
+            { icono: Award, titulo: "Mis constancias", detalle: "Descárgalas en PDF", href: "/mis-certificados", chip: "bg-[var(--accent)]/15 text-[var(--accent)]" },
             { icono: ClipboardCheck, titulo: "Evaluaciones", detalle: "Presaber, postsaber y encuestas", href: "/evaluaciones", chip: "bg-success/15 text-success" },
             { icono: GraduationCap, titulo: "Catálogo", detalle: "Explora la oferta", href: "/cursos", chip: "bg-warning/15 text-warning-foreground" },
           ].map((a) => (

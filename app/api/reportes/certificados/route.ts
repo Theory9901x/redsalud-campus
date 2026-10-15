@@ -4,10 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { toCsv, csvResponse } from "@/lib/csv";
 import { CERTIFICATE_STATUS_LABELS } from "@/components/certificados/labels";
 import type { CertificateStatus, Prisma } from "@prisma/client";
+import { veComoAdmin } from "@/lib/roles";
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
+  if (!session?.user || !veComoAdmin(session.user.role)) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 
@@ -44,5 +45,5 @@ export async function GET(request: Request) {
     ])
   );
 
-  return csvResponse("certificados.csv", csv);
+  return csvResponse("constancias.csv", csv);
 }

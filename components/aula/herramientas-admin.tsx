@@ -21,13 +21,13 @@ const TEXTOS: Record<Accion, { titulo: string; descripcion: string; boton: strin
   reiniciar: {
     titulo: "¿Reiniciar tu avance en este curso?",
     descripcion:
-      "Se borrará TU progreso: lecciones vistas, intentos de evaluación y el certificado si lo tienes. Vuelves al principio, con el desbloqueo secuencial desde cero. No afecta al avance de ninguna otra persona.",
+      "Se borrará TU progreso: lecciones vistas, intentos de evaluación y la constancia si la tienes. Vuelves al principio, con el desbloqueo secuencial desde cero. No afecta al avance de ninguna otra persona.",
     boton: "Sí, reiniciar",
   },
   completar: {
     titulo: "¿Dar el curso por completado?",
     descripcion:
-      "Se marcarán todas TUS lecciones como vistas y todas las evaluaciones como aprobadas, para llegar al certificado sin recorrer el curso entero. No afecta al avance de ninguna otra persona.",
+      "Se marcarán todas TUS lecciones como vistas y todas las evaluaciones como aprobadas, para llegar a la constancia sin recorrer el curso entero. No afecta al avance de ninguna otra persona.",
     boton: "Sí, completar",
   },
 };

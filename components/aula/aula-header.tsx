@@ -67,7 +67,7 @@ export function AulaHeader({
           <div className="instrumento flex min-w-[120px] items-center gap-2">
             <Award className="h-5 w-5 shrink-0 text-[color-mix(in_oklch,var(--success)_70%,white)]" aria-hidden="true" />
             <div>
-              <b className="!text-[0.95rem]">Certificado</b>
+              <b className="!text-[0.95rem]">Constancia</b>
               <span className="mt-0.5 block font-mono text-[0.6rem] uppercase tracking-[0.16em] text-white/55">al finalizar</span>
             </div>
           </div>

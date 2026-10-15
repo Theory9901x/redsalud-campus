@@ -89,8 +89,8 @@ export function CertificateReveal({
   async function handleShare() {
     const url = `${window.location.origin}${validationUrl}`;
     const shareData = {
-      title: `Certificado — ${courseTitle}`,
-      text: `Verifica mi certificado de "${courseTitle}" emitido por ${institutionName}.`,
+      title: `Constancia — ${courseTitle}`,
+      text: `Verifica mi constancia de "${courseTitle}" emitido por ${institutionName}.`,
       url,
     };
     if (navigator.share && navigator.canShare?.(shareData)) {
@@ -124,7 +124,7 @@ export function CertificateReveal({
           className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80 ring-1 ring-white/15"
         >
           <Award className="h-3.5 w-3.5 text-warning" />
-          Certificado emitido
+          Constancia emitida
         </motion.span>
 
         <motion.h1
@@ -141,7 +141,7 @@ export function CertificateReveal({
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-3 max-w-xl text-balance text-base text-white/70"
         >
-          Completaste <span className="font-semibold text-white">{courseTitle}</span> y tu certificado ya está listo
+          Completaste <span className="font-semibold text-white">{courseTitle}</span> y tu constancia ya está lista
           para descargar y compartir.
         </motion.p>
 
@@ -225,7 +225,7 @@ export function CertificateReveal({
             className={cn(buttonVariants({ size: "lg" }), "gap-2 bg-gradient-to-r from-primary to-success text-white hover:opacity-90")}
           >
             <Download className="h-4 w-4" />
-            Descargar certificado (PDF)
+            Descargar constancia (PDF)
           </a>
           <button
             type="button"
@@ -246,7 +246,7 @@ export function CertificateReveal({
 
         {status === "REVOKED" && (
           <p className="mt-6 rounded-lg bg-destructive/20 px-4 py-2 text-sm text-destructive-foreground">
-            Este certificado fue anulado posteriormente y ya no es válido para verificación.
+            Esta constancia fue anulada posteriormente y ya no es válido para verificación.
           </p>
         )}
       </div>

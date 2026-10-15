@@ -54,7 +54,7 @@ const baseUser = {
   personnelType: z.enum(["ADMINISTRATIVO", "ASISTENCIAL"], {
     message: "Selecciona el tipo de personal.",
   }),
-  role: z.enum(["ADMIN", "TUTOR", "STUDENT"]),
+  role: z.enum(["ADMIN", "TUTOR", "STUDENT", "SEGUIMIENTO"]),
   restrictedAdminSections: z.array(adminSectionSchema).default([]),
 };
 

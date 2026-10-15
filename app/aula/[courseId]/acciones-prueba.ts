@@ -89,7 +89,7 @@ export async function reiniciarMiCursoAction(courseId: string): Promise<Resultad
 
 /**
  * Deja el curso terminado: todas las lecciones vistas y todas las
- * evaluaciones aprobadas, para llegar al certificado sin recorrerlo entero.
+ * evaluaciones aprobadas, para llegar a la constancia sin recorrerlo entero.
  *
  * Los intentos que crea son reales y quedan marcados como aprobados al 100 %.
  * No se falsean respuestas: se registra el intento, que es lo que el cálculo

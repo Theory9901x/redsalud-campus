@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BarChart3 } from "lucide-react";
+import { ArrowLeft, Globe, Inbox, ListChecks, MonitorSmartphone } from "lucide-react";
 import { requireSurveyAccess } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { parsePageSize } from "@/lib/pagination";
 import { TablePagination } from "@/components/admin/table-pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import { ModuloHero } from "@/components/training-plans/modulo-hero";
+import { PildoraEstado } from "@/components/training-plans/plan-visual";
+import { COLOR_SEMAFORO, NavFicha, tonoDe } from "@/components/encuestas/ficha-encuesta";
 
 const FORMATO = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 
@@ -57,43 +59,45 @@ export default async function RespuestasPage({
     }),
   ]);
 
-  const acento = encuesta.themeColor || "#6D3BF5";
+  const paginas = Math.max(1, Math.ceil(total / porPagina));
+  const desde = total === 0 ? 0 : (pagina - 1) * porPagina + 1;
+  const hasta = Math.min(total, pagina * porPagina);
 
   return (
-    <div>
-      <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8 sm:px-6">
-        <Link
-          href="/encuestas"
-          className="flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Encuestas
-        </Link>
+    <div className="space-y-5">
+      <Link
+        href="/encuestas"
+        className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        Encuestas
+      </Link>
 
-        <header className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: acento }}>
-              Respuestas · {encuesta.code}
-            </p>
-            <h1 className="mt-1 font-display text-[clamp(1.5rem,3.2vw,2rem)] font-extrabold leading-tight tracking-tight text-foreground">
-              {encuesta.title}
-            </h1>
-            <p className="mt-1 text-[13px] text-muted-foreground">{total} respuestas registradas</p>
-          </div>
-          <Link
-            href={`/encuestas/${id}/resultados`}
-            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold text-white"
-            style={{ backgroundColor: acento }}
-          >
-            <BarChart3 className="h-4 w-4" />
-            Resultados
-          </Link>
-        </header>
+      <div className="space-y-3">
+        <ModuloHero
+          eyebrow={`Respuestas individuales · ${encuesta.code}`}
+          Icono={ListChecks}
+          titulo={encuesta.title}
+          descripcion="Quién respondió, cuándo, por qué canal y con qué resultado. El detalle pregunta a pregunta está en Resultados y en sus exportables."
+          cifras={[
+            { valor: total, etiqueta: "Respuestas registradas" },
+            { valor: total === 0 ? "—" : `${desde}–${hasta}`, etiqueta: "En esta página" },
+            { valor: `${Math.min(pagina, paginas)}/${paginas}`, etiqueta: "Página" },
+            { valor: porPagina, etiqueta: "Registros por página" },
+          ]}
+        />
+        <div className="barra-modulo flex flex-wrap items-center justify-between gap-3 p-2.5">
+          <NavFicha id={id} activa="respuestas" />
+          <p className="mono-label px-2">Ordenadas de la más reciente a la más antigua</p>
+        </div>
+      </div>
 
-        <div className="surface-lumen overflow-hidden">
+      <div className="tabla-modulo">
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-14">#</TableHead>
                 <TableHead>Encuestado</TableHead>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Canal</TableHead>
@@ -104,52 +108,56 @@ export default async function RespuestasPage({
             <TableBody>
               {filas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
-                    Nadie ha respondido todavía.
+                  <TableCell colSpan={6} className="py-14 text-center">
+                    <span className="flex flex-col items-center gap-2">
+                      <Inbox className="h-6 w-6 text-primary" aria-hidden="true" />
+                      <span className="font-display text-[14px] font-bold text-foreground">Nadie ha respondido todavía</span>
+                      <span className="text-[12.5px] text-muted-foreground">Comparte el enlace público o el QR desde Resultados.</span>
+                    </span>
                   </TableCell>
                 </TableRow>
               )}
-              {filas.map((r, i) => (
-                <TableRow key={r.id}>
-                  <TableCell className="font-medium text-foreground">
-                    {r.user?.fullName ?? r.respondentName ?? `Respuesta #${total - (pagina - 1) * porPagina - i}`}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{FORMATO.format(r.submittedAt ?? r.startedAt)}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {r.channel === "publico" ? "Enlace público" : "Plataforma"}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold",
-                        r.completed
-                          ? "border-success/40 bg-success/10 text-success"
-                          : "border-border/60 bg-muted/40 text-muted-foreground"
-                      )}
-                    >
-                      {r.completed ? "Completa" : "Abandonada"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {r.scorePercent !== null ? (
-                      <span
-                        className={cn(
-                          "font-bold tabular-nums",
-                          r.scorePercent >= 85 ? "text-success" : r.scorePercent >= 70 ? "text-warning-foreground" : "text-destructive"
-                        )}
-                      >
-                        {r.scoreEarned}/{r.scorePossible} ({r.scorePercent}%)
+              {filas.map((r, i) => {
+                const numero = total - (pagina - 1) * porPagina - i;
+                return (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-mono text-[11.5px] text-muted-foreground">{String(numero).padStart(3, "0")}</TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      {r.user?.fullName ?? r.respondentName ?? `Respuesta #${numero}`}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap font-mono text-[12px] text-muted-foreground">
+                      {FORMATO.format(r.submittedAt ?? r.startedAt)}
+                    </TableCell>
+                    <TableCell>
+                      <span className="chip-dato">
+                        {r.channel === "publico" ? <Globe aria-hidden="true" /> : <MonitorSmartphone aria-hidden="true" />}
+                        {r.channel === "publico" ? "Enlace público" : "Plataforma"}
                       </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell>
+                      <PildoraEstado estado={r.completed ? "ACTIVE" : "CLOSED"} className={r.completed ? "[&_.punto-vivo::after]:hidden" : undefined}>
+                        {r.completed ? "Completa" : "Abandonada"}
+                      </PildoraEstado>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {r.scorePercent !== null ? (
+                        <span
+                          className="font-mono text-[12.5px] font-semibold tabular-nums"
+                          style={{ color: COLOR_SEMAFORO[tonoDe(r.scorePercent)] }}
+                        >
+                          {r.scoreEarned}/{r.scorePossible} · {r.scorePercent}%
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
-          <TablePagination total={total} page={pagina} pageSize={porPagina} />
         </div>
+        <TablePagination total={total} page={pagina} pageSize={porPagina} />
       </div>
     </div>
   );

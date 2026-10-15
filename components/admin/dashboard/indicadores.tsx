@@ -41,7 +41,7 @@ export async function Indicadores({ filtros }: { filtros: FiltrosPanel }) {
             : undefined
         }
       />
-      <KpiCard label="Certificados emitidos" value={d.certificados} icon={Award} href="/admin/certificados" />
+      <KpiCard label="Constancias emitidas" value={d.certificados} icon={Award} href="/admin/certificados" />
       <KpiCard
         label="Promedio de aprobación"
         value={d.promedioAprobacion !== null ? `${d.promedioAprobacion}%` : "—"}

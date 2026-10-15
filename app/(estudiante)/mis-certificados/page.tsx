@@ -32,12 +32,12 @@ export default async function MisCertificadosPage() {
             </span>
             <div>
               <h1 className="font-display text-[26px] font-extrabold leading-tight tracking-tight text-foreground">
-                Mis certificados
+                Mis constancias
               </h1>
               <p className="text-[13px] text-muted-foreground">
                 {certificados.length === 0
-                  ? "Aún no tienes certificados."
-                  : `${certificados.length} ${certificados.length === 1 ? "certificado emitido" : "certificados emitidos"}, verificables con código QR.`}
+                  ? "Aún no tienes constancias."
+                  : `${certificados.length} ${certificados.length === 1 ? "constancia emitida" : "constancias emitidas"}, verificables con código QR.`}
               </p>
             </div>
           </div>
@@ -45,8 +45,8 @@ export default async function MisCertificadosPage() {
           {certificados.length === 0 ? (
             <EmptyState
               icon={Award}
-              title="Aún no tienes certificados"
-              description="Completa un curso y aprueba sus evaluaciones para obtener tu primer certificado verificable."
+              title="Aún no tienes constancias"
+              description="Completa un curso y aprueba sus evaluaciones para obtener tu primera constancia verificable."
             />
           ) : (
             // Lista glassmorfismo: cada certificado es una fila de vidrio.
@@ -95,7 +95,7 @@ export default async function MisCertificadosPage() {
           <div className="flex items-center justify-between border-t border-border pt-4 text-[12.5px] text-muted-foreground">
             <span className="inline-flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-[var(--accent)]/70" />
-              Cada certificado es verificable públicamente con su código.
+              Cada constancia es verificable públicamente con su código.
             </span>
             <Link href="/mi-aula" className="inline-flex items-center gap-1.5 text-[var(--accent)] hover:underline">
               Ir a mi aula <ArrowRight className="h-3.5 w-3.5" />

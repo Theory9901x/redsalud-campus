@@ -1,19 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { Download, FileSpreadsheet, FileText, Table2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState, type ReactNode } from "react";
+import { Check, FileSpreadsheet, FileText, FileType2, RotateCcw, Table2 } from "lucide-react";
+import { CentroExportacion, TarjetaExporte } from "@/components/encuestas/ficha-encuesta";
 
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-const campo = "h-10 rounded-xl border border-border/60 bg-card/70 px-3 text-[13px] font-semibold text-foreground outline-none focus:ring-2 focus:ring-primary/30";
+const NOMBRE_FILTRO: Record<string, string> = { sede: "Sede", servicio: "Servicio", sexo: "Sexo", eps: "EPS" };
 
 /**
- * EXPORTABLES POR PERIODO, siempre por separado: se elige explícitamente
- * mensual / trimestral / anual y se descarga cada uno de los tres archivos
- * (informe PDF, Excel SIHO, datos crudos). Los filtros de variable de la
- * página (sede, servicio, sexo, EPS) también viajan al exportable.
+ * CENTRO DE EXPORTACIÓN SIAU. Todos los archivos en un solo bloque: se elige
+ * explícitamente el periodo (mensual / trimestral / anual) y se descarga
+ * cada archivo por separado (informe PDF, Excel SIHO, datos crudos), más el
+ * formato oficial en Word, que no depende del periodo. Arranca en el
+ * periodo de la vista, y los filtros de variable de la página (sede,
+ * servicio, sexo, EPS) también viajan al exportable.
  */
-export function ExportablesSiau({ inicial, filtros }: { inicial: { tipo: string; anio: number; mes: number; trimestre: number }; filtros: Record<string, string | undefined> }) {
+export function ExportablesSiau({
+  inicial,
+  filtros,
+  formatoHref,
+  pie,
+}: {
+  inicial: { tipo: string; anio: number; mes: number; trimestre: number };
+  filtros: Record<string, string | undefined>;
+  /** Formato oficial (.docx) de la encuesta. */
+  formatoHref?: string;
+  /** Registro de las últimas descargas. */
+  pie?: ReactNode;
+}) {
   const [tipo, setTipo] = useState(inicial.tipo);
   const [anio, setAnio] = useState(inicial.anio);
   const [mes, setMes] = useState(inicial.mes);
@@ -26,59 +40,142 @@ export function ExportablesSiau({ inicial, filtros }: { inicial: { tipo: string;
   for (const [k, v] of Object.entries(filtros)) if (v) q.set(k, v);
   const consulta = q.toString();
   const etiqueta = tipo === "mensual" ? `${MESES[mes - 1]} ${anio}` : tipo === "trimestral" ? `${trimestre}º trimestre ${anio}` : `Año ${anio}`;
+  const filtrosActivos = Object.entries(filtros).filter(([, v]) => v);
 
-  const archivos = [
-    { href: `/api/encuestas/siau/informe?${consulta}`, Icono: FileText, titulo: "Informe general (PDF)", detalle: "Todas las secciones del centro de datos para el periodo" },
-    { href: `/api/encuestas/siau/siho?${consulta}`, Icono: FileSpreadsheet, titulo: "Excel del ente de control (SIHO)", detalle: "Estructura oficial: datos + resumen por IPS con fórmulas" },
-    { href: `/api/encuestas/siau/crudo?${consulta}`, Icono: Table2, titulo: "Datos crudos (.xlsx)", detalle: "Una fila por encuesta, valor numérico y etiqueta por pregunta" },
-  ];
+  const comoLaVista =
+    tipo === inicial.tipo &&
+    anio === inicial.anio &&
+    (tipo !== "mensual" || mes === inicial.mes) &&
+    (tipo !== "trimestral" || trimestre === inicial.trimestre);
+
+  function volverALaVista() {
+    setTipo(inicial.tipo);
+    setAnio(inicial.anio);
+    setMes(inicial.mes);
+    setTrimestre(inicial.trimestre);
+  }
 
   return (
-    <section className="comite-tarjeta p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="flex items-center gap-2 font-display text-[15px] font-bold text-foreground"><Download className="h-4 w-4 text-primary" aria-hidden="true" />Exportables por periodo</h2>
-          <p className="mt-1 text-[12px] text-muted-foreground">Cada periodo se exporta por separado. Nombre del archivo: SIAU_&lt;tipo&gt;_&lt;periodo&gt;_&lt;fecha&gt;. Cada descarga queda registrada.</p>
-          {Object.values(filtros).some(Boolean) && (
-            <p className="mt-1.5 inline-flex flex-wrap items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-[11.5px] font-semibold text-primary">
-              Filtros activos que se aplican a los exportables:
-              {Object.entries(filtros).filter(([, v]) => v).map(([k, v]) => <span key={k} className="rounded-md bg-card px-1.5 py-0.5">{k}: {v}</span>)}
-            </p>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-xl bg-muted/60 p-1">
+    <CentroExportacion
+      id="exportar"
+      titulo="Exportables del centro de datos"
+      bajada={
+        <>
+          Cada periodo se exporta por separado y cada descarga queda registrada. Nombre del archivo:{" "}
+          <code className="font-mono text-[11.5px] text-foreground">SIAU_&lt;tipo&gt;_&lt;periodo&gt;_&lt;fecha&gt;</code>.
+        </>
+      }
+      pie={pie}
+    >
+      {/* Periodo a exportar */}
+      <div className="flex flex-wrap items-end gap-3 rounded-[14px] border border-border/70 bg-[color-mix(in_oklch,var(--foreground)_2%,var(--card))] p-3">
+        <div className="enc-campo">
+          <span>Periodo a exportar</span>
+          <div className="enc-interruptor" role="group" aria-label="Tipo de periodo">
             {[["mensual", "Mensual"], ["trimestral", "Trimestral"], ["anual", "Anual"]].map(([v, l]) => (
-              <button key={v} type="button" onClick={() => setTipo(v)} className={cn("rounded-lg px-3 py-1.5 text-[12.5px] font-bold transition-all", tipo === v ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}>{l}</button>
+              <button key={v} type="button" data-activo={tipo === v} aria-pressed={tipo === v} onClick={() => setTipo(v)}>
+                {l}
+              </button>
             ))}
           </div>
-          <select value={anio} onChange={(e) => setAnio(Number(e.target.value))} className={campo} aria-label="Año">
-            {[anioActual - 2, anioActual - 1, anioActual, anioActual + 1].map((a) => <option key={a} value={a}>{a}</option>)}
+        </div>
+        <label className="enc-campo w-[110px]">
+          <span>Año</span>
+          <select value={anio} onChange={(e) => setAnio(Number(e.target.value))} className="enc-control">
+            {[anioActual - 2, anioActual - 1, anioActual, anioActual + 1].map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
           </select>
-          {tipo === "mensual" && (
-            <select value={mes} onChange={(e) => setMes(Number(e.target.value))} className={campo} aria-label="Mes">
-              {MESES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+        </label>
+        {tipo === "mensual" && (
+          <label className="enc-campo w-[150px]">
+            <span>Mes</span>
+            <select value={mes} onChange={(e) => setMes(Number(e.target.value))} className="enc-control">
+              {MESES.map((m, i) => (
+                <option key={m} value={i + 1}>
+                  {m}
+                </option>
+              ))}
             </select>
-          )}
-          {tipo === "trimestral" && (
-            <select value={trimestre} onChange={(e) => setTrimestre(Number(e.target.value))} className={campo} aria-label="Trimestre">
-              {[1, 2, 3, 4].map((t) => <option key={t} value={t}>{t}º trimestre</option>)}
+          </label>
+        )}
+        {tipo === "trimestral" && (
+          <label className="enc-campo w-[150px]">
+            <span>Trimestre</span>
+            <select value={trimestre} onChange={(e) => setTrimestre(Number(e.target.value))} className="enc-control">
+              {[1, 2, 3, 4].map((t) => (
+                <option key={t} value={t}>
+                  {t}º trimestre
+                </option>
+              ))}
             </select>
+          </label>
+        )}
+        <div className="flex min-h-[2.4rem] flex-wrap items-center gap-2 sm:ml-auto">
+          {comoLaVista ? (
+            <span className="chip-dato chip-dato-primario">
+              <Check aria-hidden="true" />
+              Mismo periodo de la vista
+            </span>
+          ) : (
+            <button type="button" onClick={volverALaVista} className="enc-boton enc-boton-mini">
+              <RotateCcw aria-hidden="true" />
+              Volver al periodo de la vista
+            </button>
           )}
         </div>
       </div>
-      <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
-        {archivos.map((a) => (
-          <a key={a.titulo} href={a.href} className="group flex items-start gap-3 rounded-2xl border border-border/60 bg-card/70 p-4 transition-all hover:-translate-y-px hover:border-primary/40 hover:shadow-md">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary"><a.Icono className="h-5 w-5" aria-hidden="true" /></span>
-            <span className="min-w-0">
-              <span className="block text-[13.5px] font-bold text-foreground">{a.titulo}</span>
-              <span className="block text-[11.5px] text-muted-foreground">{a.detalle}</span>
-              <span className="mt-1.5 inline-flex items-center gap-1 text-[11.5px] font-bold text-primary"><Download className="h-3 w-3" aria-hidden="true" />{etiqueta}</span>
+
+      {filtrosActivos.length > 0 && (
+        <p className="mt-3 flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
+          <span className="mono-label mr-1">Filtros que viajan al archivo</span>
+          {filtrosActivos.map(([k, v]) => (
+            <span key={k} className="chip-dato">
+              {NOMBRE_FILTRO[k] ?? k}: <b className="font-semibold text-foreground">{v}</b>
             </span>
-          </a>
-        ))}
+          ))}
+        </p>
+      )}
+
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <TarjetaExporte
+          destacado
+          href={`/api/encuestas/siau/informe?${consulta}`}
+          Icono={FileText}
+          formato="PDF"
+          titulo="Informe general"
+          detalle="Todas las secciones del centro de datos para el periodo: tendencia, sedes, preguntas, cruces y sugerencias."
+          pie={etiqueta}
+        />
+        <TarjetaExporte
+          href={`/api/encuestas/siau/siho?${consulta}`}
+          Icono={FileSpreadsheet}
+          formato="XLSX"
+          titulo="Excel SIHO (ente de control)"
+          detalle="Estructura oficial: hoja de datos y resumen por IPS con fórmulas."
+          pie={etiqueta}
+        />
+        <TarjetaExporte
+          href={`/api/encuestas/siau/crudo?${consulta}`}
+          Icono={Table2}
+          formato="XLSX"
+          titulo="Datos crudos"
+          detalle="Una fila por encuesta, con el valor numérico y la etiqueta de cada pregunta."
+          pie={etiqueta}
+        />
+        {formatoHref && (
+          <TarjetaExporte
+            href={formatoHref}
+            Icono={FileType2}
+            formato="DOCX"
+            titulo="Formato oficial en Word"
+            detalle="El instrumento institucional sin diligenciar, para imprimir o aplicar en papel."
+            pie="No depende del periodo"
+          />
+        )}
       </div>
-    </section>
+    </CentroExportacion>
   );
 }

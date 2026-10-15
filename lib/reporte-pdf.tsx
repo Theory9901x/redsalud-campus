@@ -138,7 +138,7 @@ function InformeDoc({ datos, logo }: { datos: DatosInforme; logo: string | null 
             { v: datos.kpis.inscritos, e: "Inscritas" },
             { v: datos.kpis.completaron, e: "Completaron" },
             { v: `${datos.kpis.cumplimiento}%`, e: "Cumplimiento" },
-            { v: datos.kpis.certificados, e: "Certificados" },
+            { v: datos.kpis.certificados, e: "Constancias" },
           ].map((k) => (
             <View key={k.e} style={styles.kpi}>
               <Text style={styles.kpiValor}>{String(k.v)}</Text>
@@ -208,14 +208,14 @@ function InformeDoc({ datos, logo }: { datos: DatosInforme; logo: string | null 
         </View>
 
         <View style={styles.seccion}>
-          <Text style={styles.seccionTitulo}>Certificados por municipio</Text>
+          <Text style={styles.seccionTitulo}>Constancias por municipio</Text>
           {datos.certificadosMunicipio.length === 0 ? (
-            <Text style={{ fontSize: 8, color: COLORES.suave }}>Todavía no hay certificados emitidos.</Text>
+            <Text style={{ fontSize: 8, color: COLORES.suave }}>Todavía no hay constancias emitidas.</Text>
           ) : (
             <>
               <View style={styles.th}>
                 <Text style={[styles.celda, { flex: 3, fontWeight: "bold" }]}>Municipio</Text>
-                <Text style={[styles.celda, { flex: 1, textAlign: "right", fontWeight: "bold" }]}>Certificados</Text>
+                <Text style={[styles.celda, { flex: 1, textAlign: "right", fontWeight: "bold" }]}>Constancias</Text>
               </View>
               {datos.certificadosMunicipio.map((f) => (
                 <View key={f.etiqueta} style={styles.tr} wrap={false}>

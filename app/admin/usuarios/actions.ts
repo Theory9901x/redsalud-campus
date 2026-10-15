@@ -236,7 +236,7 @@ export async function deleteUserAction(userId: string): Promise<DeleteUserState>
 
   const c = user._count;
   const motivos: string[] = [];
-  if (c.certificates > 0) motivos.push(`${c.certificates} certificado(s) emitido(s)`);
+  if (c.certificates > 0) motivos.push(`${c.certificates} constancia(s) emitida(s)`);
   if (c.coursesTutored > 0) motivos.push(`${c.coursesTutored} curso(s) como tutor`);
   if (c.trainingPlansAsTutor > 0) motivos.push(`${c.trainingPlansAsTutor} plan(es) de capacitación`);
   if (c.mediaUploads > 0) motivos.push(`${c.mediaUploads} archivo(s) subido(s)`);

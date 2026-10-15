@@ -3,10 +3,10 @@ import { ConstellationPattern } from "@/components/brand/dot-pattern";
 import { ThemeToggle } from "@/components/brand/theme-toggle";
 
 const FEATURES = [
-  { icon: Award, label: "Certificación digital", description: "Certificados en PDF verificables al instante." },
+  { icon: Award, label: "Constancias digitales", description: "Constancias en PDF verificables al instante." },
   { icon: Layers, label: "Cursos modulares", description: "Contenido organizado por módulos y lecciones." },
   { icon: LineChart, label: "Seguimiento en vivo", description: "Progreso y resultados en tiempo real." },
-  { icon: QrCode, label: "Validación con QR", description: "Verifica la autenticidad de cada certificado." },
+  { icon: QrCode, label: "Validación con QR", description: "Verifica la autenticidad de cada constancia." },
 ];
 
 /**

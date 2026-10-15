@@ -72,7 +72,7 @@ export function HeroCatalogo({
         {mostrarPersonales && (
           <>
             <Kpi icono={CirclePlay} valor={enCurso} etiqueta="En curso" pie="Formación que ya empezaste" />
-            <Kpi icono={CircleCheckBig} valor={completados} etiqueta="Completados" pie="Con certificado emitido" />
+            <Kpi icono={CircleCheckBig} valor={completados} etiqueta="Completados" pie="Con constancia emitida" />
             <Kpi
               icono={Clock}
               valor={horas}

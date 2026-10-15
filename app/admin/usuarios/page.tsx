@@ -28,9 +28,10 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: "ADMIN", label: "Administrador" },
   { value: "TUTOR", label: "Tutor" },
   { value: "STUDENT", label: "Estudiante" },
+  { value: "SEGUIMIENTO", label: "Seguimiento (Control Interno)" },
 ];
 
-const ROLE_LABEL: Record<Role, string> = { ADMIN: "Admin", TUTOR: "Tutor", STUDENT: "Estudiante" };
+const ROLE_LABEL: Record<Role, string> = { ADMIN: "Admin", TUTOR: "Tutor", STUDENT: "Estudiante", SEGUIMIENTO: "Seguimiento" };
 const STATUS_LABEL: Record<UserStatus, string> = { ACTIVE: "Activo", INACTIVE: "Inactivo", BLOCKED: "Bloqueado" };
 
 const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [

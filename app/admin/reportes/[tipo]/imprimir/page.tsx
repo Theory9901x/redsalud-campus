@@ -8,6 +8,7 @@ import {
   esTipoReporte,
   getDatosReporte,
 } from "@/lib/reportes-imprimibles";
+import { veComoAdmin } from "@/lib/roles";
 
 /**
  * Hoja imprimible de un reporte.
@@ -28,7 +29,7 @@ export default async function ImprimirReportePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") notFound();
+  if (!session?.user || !veComoAdmin(session.user.role)) notFound();
 
   const { tipo } = await params;
   if (!esTipoReporte(tipo)) notFound();
@@ -97,7 +98,7 @@ export default async function ImprimirReportePage({
               </td>
               <td>
                 <span className="hoja-cifra">{datos.indicadores.certificados}</span>
-                <span className="hoja-etiqueta">Certificados</span>
+                <span className="hoja-etiqueta">Constancias</span>
               </td>
               <td>
                 <span className="hoja-cifra">

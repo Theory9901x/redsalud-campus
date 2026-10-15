@@ -14,7 +14,7 @@ import {
   getAutomaticAttendanceRoster,
 } from "@/lib/training-plans";
 import { getSurveysForActivity } from "@/lib/surveys";
-import { getLinkableCoursesForUser, getMunicipioOptions, getPresaberPostsaberSummary, getCycleResults, getExternosDeActividad, fichaCompletaParaPublicar } from "@/lib/training-plans";
+import { getLinkableCoursesForUser, getMunicipioOptions, getPresaberPostsaberSummary, getCycleResults, getExternosDeActividad, fichaCompletaParaPublicar, trimestresDeActividad } from "@/lib/training-plans";
 import {
   uploadTrainingActivityDocumentAction,
   hideActivityAction,
@@ -72,10 +72,10 @@ export default async function AdminActividadDetallePage({
   searchParams,
 }: {
   params: Promise<{ id: string; activityId: string }>;
-  searchParams: Promise<{ asistencia?: string; pagina?: string }>;
+  searchParams: Promise<{ asistencia?: string; pagina?: string; t?: string }>;
 }) {
   const { id, activityId } = await params;
-  const { asistencia: buscarAsistencia = "", pagina: paginaParam } = await searchParams;
+  const { asistencia: buscarAsistencia = "", pagina: paginaParam, t: trimestreParam } = await searchParams;
   const { session } = await requireTrainingActivityAccess(activityId);
 
   const activity = await getTrainingActivityDetail(activityId);
@@ -90,17 +90,25 @@ export default async function AdminActividadDetallePage({
   };
   const isClosed = activity.status === "CLOSED";
 
+  // VISTA POR TRIMESTRE: la misma capacitación programada en varios
+  // trimestres no se duplica; se elige cuál revisar y todo lo de abajo
+  // (jornadas, asistencia, adherencia, evaluaciones, externos, informe)
+  // sale solo de ese trimestre.
+  const vistaTrimestre = await trimestresDeActividad(activity, trimestreParam);
+  const filtro = vistaTrimestre.filtro;
+  const jornadas = activity.sessions.filter((ses) => ses.startsAt >= filtro.desde && ses.startsAt < filtro.hasta);
+
   const [adherence, conteosAsistencia, roster, completionRoster, surveys, asistenciasAutomaticas] = await Promise.all([
-    getActivityAdherence(activityForAdherence),
-    getActivityAttendanceCounts(activityForAdherence),
+    getActivityAdherence(activityForAdherence, filtro),
+    getActivityAttendanceCounts(activityForAdherence, filtro),
     activity.courseId
       ? Promise.resolve(null)
-      : getActivityAttendancePage(activityForAdherence, { buscar: buscarAsistencia, pagina: Number(paginaParam) || 1 }),
+      : getActivityAttendancePage(activityForAdherence, { buscar: buscarAsistencia, pagina: Number(paginaParam) || 1, trimestre: filtro.trimestre }),
     activity.courseId && isClosed
-      ? getActivityCompletionRoster({ ...activityForAdherence, courseId: activity.courseId })
+      ? getActivityCompletionRoster({ ...activityForAdherence, filtro, courseId: activity.courseId })
       : Promise.resolve(null),
     getSurveysForActivity(activityId),
-    activity.courseId ? getAutomaticAttendanceRoster(activityId) : Promise.resolve([]),
+    activity.courseId ? getAutomaticAttendanceRoster(activityId, filtro.trimestre) : Promise.resolve([]),
   ]);
 
   const nonAdherentUsers = activity.courseId
@@ -116,8 +124,8 @@ export default async function AdminActividadDetallePage({
   const unlinkCourseAction = unlinkCourseFromActivityAction.bind(null, BASE_PATH, id, activityId);
   const linkableCourses = activity.course ? [] : await getLinkableCoursesForUser(session.user.role, session.user.id);
   const municipios = await getMunicipioOptions();
-  const resumenCiclo = activity.courseId ? await getPresaberPostsaberSummary(activityId) : null;
-  const resultadosCiclo = activity.courseId ? await getCycleResults(activityId) : null;
+  const resumenCiclo = activity.courseId ? await getPresaberPostsaberSummary(activityId, filtro) : null;
+  const resultadosCiclo = activity.courseId ? await getCycleResults(activityId, filtro) : null;
 
   // Enlaces estables de la jornada, como QR. Se generan aquí -en servidor-
   // porque el QR es una imagen determinista del enlace; el cliente solo
@@ -143,7 +151,7 @@ export default async function AdminActividadDetallePage({
       qrDataUrl: await QRCode.toDataURL(d.url, { width: 320, margin: 1 }),
     }))
   );
-  const externos = await getExternosDeActividad(activityId);
+  const externos = await getExternosDeActividad(activityId, filtro);
   const etiquetasCiclo = {
     presaberOpened: activity.presaberOpenedAt ? DATETIME_FORMAT.format(activity.presaberOpenedAt) : null,
     presaberClosed: activity.presaberClosedAt ? DATETIME_FORMAT.format(activity.presaberClosedAt) : null,
@@ -206,8 +214,8 @@ export default async function AdminActividadDetallePage({
     },
     {
       etiqueta: "Jornadas",
-      valor: String(activity.sessions.length),
-      detalle: activity.sessions.length === 1 ? "agendada" : "agendadas",
+      valor: String(jornadas.length),
+      detalle: jornadas.length === 1 ? "agendada en el trimestre" : "agendadas en el trimestre",
       Icono: CalendarRange,
       chip: "bg-success/15 text-success",
       destacar: false,
@@ -227,7 +235,7 @@ export default async function AdminActividadDetallePage({
       valor: "jornadas",
       etiqueta: "Jornadas y acceso",
       Icono: CalendarRange,
-      conteo: activity.sessions.length,
+      conteo: jornadas.length,
       contenido: (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
           <SeccionActividad
@@ -245,7 +253,7 @@ export default async function AdminActividadDetallePage({
             }
           >
             <TrainingSessionList
-              sessions={activity.sessions.map((ses) => ({
+              sessions={jornadas.map((ses) => ({
                 ...ses,
                 etiqueta: etiquetaJornada(ses),
                 ficha: etiquetaDiaMes(ses.startsAt),
@@ -290,11 +298,12 @@ export default async function AdminActividadDetallePage({
                 paginacion={{ pagina: roster!.pagina, porPagina: roster!.porPagina, total: roster!.total }}
                 buscar={buscarAsistencia}
                 locked={isClosed}
+                trimestre={filtro.trimestre}
               />
             )}
             {isClosed && <NonAdherentList users={nonAdherentUsers} />}
           </SeccionActividad>
-          <RegistroConexiones activityId={activityId} />
+          <RegistroConexiones activityId={activityId} desde={filtro.desde} hasta={filtro.hasta} />
           {externos.length > 0 && (
             <ExternalParticipantsPanel
               externos={externos.map((e) => ({ ...e, registradoEtiqueta: DATETIME_FORMAT.format(e.registradoEl) }))}
@@ -411,14 +420,21 @@ export default async function AdminActividadDetallePage({
       valor: "informe",
       etiqueta: "Informe",
       Icono: FileBarChart,
-      contenido: <ActivityReportPanel activityId={activityId} cerrada={isClosed} />,
+      contenido: (
+        <ActivityReportPanel
+          activityId={activityId}
+          cerrada={isClosed}
+          trimestre={vistaTrimestre.opciones.length > 1 ? filtro.trimestre : undefined}
+          trimestreTerminado={filtro.hasta <= new Date()}
+        />
+      ),
     },
   ];
 
   return (
     <VistaActividad
       volver={{ href: `${BASE_PATH}/${id}`, etiqueta: activity.plan.title }}
-      eyebrow={`${activity.area?.name ?? "Capacitación del plan"}${activity.programa ? ` · ${activity.programa}` : ""}${activity.quarters.length === 1 ? ` · ${nombreTrimestre(activity.quarters[0], false)}` : ""}`}
+      eyebrow={`${activity.area?.name ?? "Capacitación del plan"}${activity.programa ? ` · ${activity.programa}` : ""} · ${nombreTrimestre(filtro.trimestre, false)}`}
       titulo={activity.title}
       chips={[
         { Icono: CalendarRange, contenido: etiquetaProgramacion(activity) },
@@ -433,6 +449,7 @@ export default async function AdminActividadDetallePage({
         },
       ]}
       estado={activity.status}
+      trimestres={{ opciones: vistaTrimestre.opciones, elegido: filtro.trimestre, enCurso: vistaTrimestre.enCurso }}
       acciones={
         <>
           <ActivityLifecycleActions

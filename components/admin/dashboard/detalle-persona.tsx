@@ -108,7 +108,7 @@ export async function DetallePersona({ id }: { id: string }) {
         {/* Certificados */}
         {persona.certificates.length > 0 && (
           <section className="space-y-2">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Certificados</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Constancias</h3>
             <ul className="space-y-1.5">
               {persona.certificates.map((c) => (
                 <li key={c.id} className="flex items-center gap-2 text-sm">

@@ -6,6 +6,7 @@ import { compararAdherencia } from "@/lib/presaber-postsaber";
 import { renderAreaReportPdf, type AreaReportInput } from "@/lib/area-report-pdf";
 import { TRAINING_ACTIVITY_STATUS_LABELS, etiquetaProgramacion } from "@/components/training-plans/labels";
 import { slugify } from "@/lib/slug";
+import { veComoAdmin } from "@/lib/roles";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -21,7 +22,7 @@ const DATE_FORMAT = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "s
 export async function GET(_request: Request, { params }: { params: Promise<{ areaId: string }> }) {
   const { areaId } = await params;
   const session = await auth();
-  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "TUTOR")) {
+  if (!session?.user || (!veComoAdmin(session.user.role) && session.user.role !== "TUTOR")) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 
@@ -42,7 +43,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ are
   });
   if (!area) return NextResponse.json({ error: "Área no encontrada." }, { status: 404 });
 
-  if (session.user.role !== "ADMIN" && area.tutor?.id !== session.user.id) {
+  if (!veComoAdmin(session.user.role) && area.tutor?.id !== session.user.id) {
     return NextResponse.json({ error: "No autorizado: no eres el responsable de esta área." }, { status: 403 });
   }
 

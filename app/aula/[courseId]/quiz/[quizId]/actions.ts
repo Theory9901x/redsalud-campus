@@ -293,7 +293,7 @@ export async function submitQuizAttemptAction(
       action: "ISSUE_CERT",
       entity: "Certificate",
       entityId: certificateId,
-      description: `Se emitió su certificado al completar «${aulaQuiz.course.title}».`,
+      description: `Se emitió su constancia al completar «${aulaQuiz.course.title}».`,
     });
   }
 

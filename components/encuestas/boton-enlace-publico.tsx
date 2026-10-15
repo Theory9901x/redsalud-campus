@@ -24,8 +24,11 @@ export function BotonEnlacePublico({
   slug: string;
   titulo: string;
   acento: string;
-  /** `icono` en tarjetas y cabeceras; `boton` como llamada a la acción con texto. */
-  variante?: "icono" | "boton";
+  /**
+   * `icono` en cabeceras; `boton` como llamada a la acción con texto;
+   * `barra` en la barra de mando de la ficha; `celda` en el pie de la tarjeta.
+   */
+  variante?: "icono" | "boton" | "barra" | "celda";
 }) {
   const [abierto, setAbierto] = useState(false);
   const [qr, setQr] = useState<string | null>(null);
@@ -106,6 +109,16 @@ export function BotonEnlacePublico({
         >
           <QrCode className="h-4 w-4" aria-hidden="true" />
           Enlace y QR
+        </button>
+      ) : variante === "barra" ? (
+        <button type="button" onClick={abrir} className="enc-boton">
+          <QrCode aria-hidden="true" />
+          Enlace público y QR
+        </button>
+      ) : variante === "celda" ? (
+        <button type="button" onClick={abrir} title="Enlace público y QR">
+          <QrCode aria-hidden="true" />
+          Difundir
         </button>
       ) : (
         <button

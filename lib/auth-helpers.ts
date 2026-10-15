@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { veComoAdmin } from "@/lib/roles";
 
 /**
  * La sesión de una página que exige estar identificado, o un redirect a
@@ -23,7 +24,7 @@ export async function requireSession(callbackUrl?: string) {
 
 export async function requireAdmin() {
   const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
+  if (!session?.user || !veComoAdmin(session.user.role)) {
     throw new Error("No autorizado: se requiere rol ADMIN.");
   }
   return session;
@@ -31,7 +32,7 @@ export async function requireAdmin() {
 
 export async function requireTutorOrAdmin() {
   const session = await auth();
-  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "TUTOR")) {
+  if (!session?.user || (!veComoAdmin(session.user.role) && session.user.role !== "TUTOR")) {
     throw new Error("No autorizado: se requiere rol TUTOR o ADMIN.");
   }
   return session;
@@ -40,7 +41,7 @@ export async function requireTutorOrAdmin() {
 /** Verifica que el usuario sea ADMIN, o TUTOR dueño del curso. Lanza si no cumple. */
 export async function requireCourseAccess(courseId: string) {
   const session = await requireTutorOrAdmin();
-  if (session.user.role === "ADMIN") return session;
+  if (veComoAdmin(session.user.role)) return session;
 
   const course = await prisma.course.findUnique({ where: { id: courseId }, select: { tutorId: true } });
   if (!course || course.tutorId !== session.user.id) {
@@ -52,7 +53,7 @@ export async function requireCourseAccess(courseId: string) {
 /** Verifica que el usuario sea ADMIN, o TUTOR responsable del plan. Lanza si no cumple. */
 export async function requireTrainingPlanAccess(planId: string) {
   const session = await requireTutorOrAdmin();
-  if (session.user.role === "ADMIN") return session;
+  if (veComoAdmin(session.user.role)) return session;
 
   const plan = await prisma.trainingPlan.findUnique({ where: { id: planId }, select: { tutorId: true } });
   if (!plan || plan.tutorId !== session.user.id) {
@@ -72,7 +73,7 @@ export async function requireTrainingPlanAccess(planId: string) {
  */
 export async function requireTrainingPlanRead(planId: string) {
   const session = await requireTutorOrAdmin();
-  if (session.user.role === "ADMIN") return session;
+  if (veComoAdmin(session.user.role)) return session;
 
   const plan = await prisma.trainingPlan.findUnique({
     where: { id: planId },
@@ -105,7 +106,7 @@ export async function requireTrainingActivityAccess(activityId: string) {
   }
 
   const session = await requireTutorOrAdmin();
-  if (session.user.role === "ADMIN" || activity.area?.tutorId === session.user.id) {
+  if (veComoAdmin(session.user.role) || activity.area?.tutorId === session.user.id) {
     return { session, planId: activity.planId };
   }
 
@@ -132,7 +133,7 @@ export async function requireSurveyAccess(surveyId: string) {
   }
 
   const session = await requireTutorOrAdmin();
-  if (session.user.role === "ADMIN" || survey.trainingActivity?.area?.tutorId === session.user.id) {
+  if (veComoAdmin(session.user.role) || survey.trainingActivity?.area?.tutorId === session.user.id) {
     return { session, planId: survey.trainingPlanId };
   }
 

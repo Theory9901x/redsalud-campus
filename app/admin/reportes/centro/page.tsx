@@ -120,7 +120,7 @@ export default async function CentroDatosPage({
     { etiqueta: "Personas activas", valor: String(k.personas), detalle: "con formación asignada", icon: Users },
     { etiqueta: "Inscripciones", valor: String(k.inscritos), detalle: "en todos los cursos", icon: BadgeCheck, spark: "inscripciones" },
     { etiqueta: "Cumplimiento", valor: `${k.cumplimiento}%`, detalle: `${k.completaron} completadas`, icon: Percent, spark: "completadas" },
-    { etiqueta: "Certificados", valor: String(k.certificados), detalle: "emitidos", icon: Award, spark: "certificados" },
+    { etiqueta: "Constancias", valor: String(k.certificados), detalle: "emitidos", icon: Award, spark: "certificados" },
     { etiqueta: "Adopción", valor: `${adopcionPct}%`, detalle: `${ingresaron} ya ingresaron`, icon: LogIn },
     {
       etiqueta: "Nunca ingresaron",
@@ -231,7 +231,7 @@ export default async function CentroDatosPage({
         resumen={
           <>
             <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-              <DashboardPanel title="Evolución mensual" description="Inscripciones, finalizaciones y certificados de los últimos 12 meses.">
+              <DashboardPanel title="Evolución mensual" description="Inscripciones, finalizaciones y constancias de los últimos 12 meses.">
                 <LineaMensual datos={serie} />
               </DashboardPanel>
               <DashboardPanel title="Distribución del personal" description="Personas inscritas por grupo poblacional.">
@@ -278,7 +278,7 @@ export default async function CentroDatosPage({
               <LineaMensual datos={serie} alto={320} />
             </DashboardPanel>
             <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
-              <DashboardPanel title="Actividad diaria" description="Inscripciones y certificados por día en el rango filtrado.">
+              <DashboardPanel title="Actividad diaria" description="Inscripciones y constancias por día en el rango filtrado.">
                 <AreaActividad datos={actividad} />
               </DashboardPanel>
               <DashboardPanel title="Cohortes de inscripción" description="Retención real: de cada camada mensual, cuánto ya terminó.">
@@ -296,11 +296,11 @@ export default async function CentroDatosPage({
                 <BarrasCumplimiento datos={porMunicipio} maximo={14} />
               )}
             </DashboardPanel>
-            <DashboardPanel title="Certificados por municipio">
+            <DashboardPanel title="Constancias por municipio">
               {certPorMunicipio.length === 0 ? (
-                <EmptyState icon={Award} title="Todavía no hay certificados emitidos" className="py-10" />
+                <EmptyState icon={Award} title="Todavía no hay constancias emitidas" className="py-10" />
               ) : (
-                <BarrasConteo datos={certPorMunicipio} etiquetaSerie="Certificados" />
+                <BarrasConteo datos={certPorMunicipio} etiquetaSerie="Constancias" />
               )}
             </DashboardPanel>
           </div>
@@ -315,11 +315,11 @@ export default async function CentroDatosPage({
               )}
             </DashboardPanel>
             <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
-              <DashboardPanel title="Certificados por curso">
+              <DashboardPanel title="Constancias por curso">
                 {certPorCurso.length === 0 ? (
-                  <EmptyState icon={Award} title="Todavía no hay certificados emitidos" className="py-10" />
+                  <EmptyState icon={Award} title="Todavía no hay constancias emitidas" className="py-10" />
                 ) : (
-                  <BarrasConteo datos={certPorCurso} etiquetaSerie="Certificados" />
+                  <BarrasConteo datos={certPorCurso} etiquetaSerie="Constancias" />
                 )}
               </DashboardPanel>
               <DashboardPanel title="Cumplimiento por cargo" description="Qué tipo de profesional está cumpliendo.">

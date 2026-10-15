@@ -39,7 +39,7 @@ const NAV_GROUPS: GrupoNav[] = [
     label: "Personas",
     items: [
       { href: "/tutor/inscritos", label: "Inscritos y progreso", icon: Users },
-      { href: "/tutor/certificados", label: "Certificados", icon: Award },
+      { href: "/tutor/certificados", label: "Constancias", icon: Award },
     ],
   },
   {
@@ -62,7 +62,7 @@ const BREADCRUMBS: [string, string][] = [
   ["/tutor/cursos", "Contenido · Mis cursos"],
   ["/tutor/planes-capacitacion", "Contenido · Planes de capacitación"],
   ["/tutor/inscritos", "Personas · Inscritos y progreso"],
-  ["/tutor/certificados", "Personas · Certificados"],
+  ["/tutor/certificados", "Personas · Constancias"],
   ["/tutor/mis-encuestas", "Seguimiento · Evaluaciones en vivo"],
   ["/cursos", "Explorar · Catálogo institucional"],
   ["/tutor", "Panel"],

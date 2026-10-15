@@ -8,6 +8,7 @@ import {
   getLinkableCourses,
   getSessionsForPlan,
   getPlanAdherenceSummary,
+  getAdherenciaPorTrimestre,
 } from "@/lib/training-plans";
 import { getSurveysForPlan } from "@/lib/surveys";
 import { getPlanMetricsData } from "@/lib/plan-metrics";
@@ -95,9 +96,10 @@ export default async function TutorPlanCapacitacionDetallePage({
     targetDepartment: plan.targetDepartment,
     activities: actividadesVisibles,
   });
-  const adherenceByActivity = Object.fromEntries(
-    adherenceSummary.perActivity.map((a) => [a.activityId, a.percentage])
-  );
+  const adherenceByActivity = {
+    ...Object.fromEntries(adherenceSummary.perActivity.map((a) => [a.activityId, a.percentage])),
+    ...(await getAdherenciaPorTrimestre(id)),
+  };
 
 
   const metricas = await getPlanMetricsData(id, areasGestionables);

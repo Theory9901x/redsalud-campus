@@ -518,7 +518,7 @@ async function main() {
 
     // --- asistencia automática
     await prisma.trainingAttendance.upsert({
-      where: { activityId_userId: { activityId: actividad.id, userId: u.id } },
+      where: { activityId_userId_trimestre: { activityId: actividad.id, userId: u.id, trimestre: 0 } },
       update: {},
       create: {
         activityId: actividad.id,

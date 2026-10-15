@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { trimestreActual } from "@/lib/training-plans";
 import type { Prisma } from "@prisma/client";
 
 /**
@@ -88,10 +89,12 @@ async function marcarAsistenciaPorConexion(activityId: string, userId: string) {
   const actividad = await prisma.trainingActivity.findUnique({ where: { id: activityId }, select: { status: true } });
   if (!actividad || actividad.status === "CLOSED") return;
   if (await esAnfitrionDeActividad(activityId, userId)) return;
+  // La asistencia queda en el trimestre en que ocurre la conexión.
+  const { trimestre } = trimestreActual();
   await prisma.trainingAttendance.upsert({
-    where: { activityId_userId: { activityId, userId } },
+    where: { activityId_userId_trimestre: { activityId, userId, trimestre } },
     update: { attended: true },
-    create: { activityId, userId, attended: true, source: "AUTOMATIC" },
+    create: { activityId, userId, attended: true, source: "AUTOMATIC", trimestre },
   });
 }
 

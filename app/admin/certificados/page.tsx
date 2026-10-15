@@ -57,7 +57,7 @@ export default async function AdminCertificadosPage({
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        title="Certificados"
+        title="Constancias"
         description="Se emiten automáticamente al completar un curso. Puedes buscarlos, anularlos y volver a descargarlos."
         action={
           <Link href="/admin/certificados/plantilla" className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>

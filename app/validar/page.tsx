@@ -29,9 +29,9 @@ export default async function ValidarPage({
             <ShieldCheck className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="font-display text-xl font-extrabold text-foreground">Validar un certificado</h1>
+            <h1 className="font-display text-xl font-extrabold text-foreground">Validar una constancia</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Escribe el código impreso en el certificado (formato RSC-AAAA-XXXXXX) para verificar su autenticidad.
+              Escribe el código impreso en la constancia (formato RSC-AAAA-XXXXXX) para verificar su autenticidad.
             </p>
           </div>
           <form method="get" className="flex flex-col gap-3 sm:flex-row">

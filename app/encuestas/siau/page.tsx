@@ -1,34 +1,52 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowDownRight, ArrowUpRight, BarChart3, Building2, FileSpreadsheet, FileText, Gauge, MessageSquareText, Minus, Sparkles, TrendingUp, Users2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Activity,
+  ArrowDownRight,
+  ArrowLeft,
+  ArrowUpRight,
+  BarChart3,
+  Building2,
+  CalendarRange,
+  ChevronDown,
+  Download,
+  Gauge,
+  GitCompareArrows,
+  History,
+  Inbox,
+  MapPin,
+  MessageSquareText,
+  Minus,
+  ShieldCheck,
+  Sparkles,
+  Stethoscope,
+  TrendingUp,
+  Users2,
+} from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getInformeSiau, getEstructuraSiau, type MetricaPregunta } from "@/lib/encuestas/metrics";
 import { leerPeriodo, periodoActual } from "@/lib/encuestas/periodo-url";
 import { FiltrosSiau } from "@/components/encuestas/filtros-siau";
 import { LineaTendencia, BarrasApiladasCaritas, BarrasRanking, COLOR_TONO } from "@/components/encuestas/graficas-siau";
-import { etiquetaFecha } from "@/components/training-plans/labels";
+import { etiquetaFecha, etiquetaHora } from "@/components/training-plans/labels";
 import { leerConfig } from "@/lib/encuestas/tipos";
 import { cn } from "@/lib/utils";
 import { ExportablesSiau } from "@/components/encuestas/exportables-siau";
 import { ultimasExportacionesSiau } from "@/lib/encuestas/registro-exportacion";
 import { TEMAS_SUGERENCIAS } from "@/lib/encuestas/temas";
-import { etiquetaHora } from "@/components/training-plans/labels";
-
-const CLASE_SEMAFORO = {
-  success: "bg-success/15 text-success",
-  warning: "bg-warning/18 text-warning-foreground",
-  destructive: "bg-destructive/10 text-destructive",
-  muted: "bg-muted text-muted-foreground",
-} as const;
-const TEXTO_SEMAFORO = { success: "Cumple", warning: "Aceptable", destructive: "Crítico", muted: "Sin datos" } as const;
+import { BarraPorcentaje, COLOR_SEMAFORO, EncabezadoSeccion, Semaforo } from "@/components/encuestas/ficha-encuesta";
+import { ModuloHero } from "@/components/training-plans/modulo-hero";
+import { AnilloPorcentaje, escalon } from "@/components/training-plans/plan-visual";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const TEMAS = TEMAS_SUGERENCIAS;
 
 function Variacion({ v }: { v: number | null }) {
-  if (v === null) return <span className="text-[11px] text-muted-foreground">sin periodo previo</span>;
+  if (v === null) return <span className="mono-label">sin periodo previo</span>;
   const Icono = v > 0 ? ArrowUpRight : v < 0 ? ArrowDownRight : Minus;
   return (
-    <span className={cn("inline-flex items-center gap-0.5 text-[11.5px] font-bold", v > 0 ? "text-success" : v < 0 ? "text-destructive" : "text-muted-foreground")}>
+    <span className={cn("inline-flex items-center gap-0.5 font-mono text-[11px] font-semibold", v > 0 ? "text-success" : v < 0 ? "text-destructive" : "text-muted-foreground")}>
       <Icono className="h-3.5 w-3.5" aria-hidden="true" />
       {v > 0 ? "+" : ""}{v} pp vs periodo anterior
     </span>
@@ -43,6 +61,10 @@ function Pct({ v }: { v: number | null }) {
  * CENTRO DE DATOS SIAU: informe general de la Encuesta de Atención al
  * Usuario por periodo, con filtros combinables, tendencia, comparativo,
  * ranking de sedes, detalle por pregunta, cruces por variable y sugerencias.
+ *
+ * Orden de trabajo: cabecera con la adherencia como instrumento → filtros
+ * de la vista → análisis en pestañas → centro de exportación (todos los
+ * archivos en un solo bloque, con el periodo elegido explícitamente).
  */
 export default async function CentroDatosSiauPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   await requireTutorOrAdmin();
@@ -61,12 +83,6 @@ export default async function CentroDatosSiauPage({ searchParams }: { searchPara
   const epss = leerConfig(opcionesDe("eps")?.config).opciones?.map((o) => o.texto) ?? [];
   const anioActual = new Date().getFullYear();
   const consulta = params.toString();
-  // Todos los filtros activos viajan a cada exportable: lo que se ve es lo que se descarga.
-  const qExport = new URLSearchParams({ tipo: periodo.tipo, anio: String(periodo.anio) });
-  if (periodo.mes) qExport.set("mes", String(periodo.mes));
-  if (periodo.trimestre) qExport.set("trimestre", String(periodo.trimestre));
-  for (const [k, v] of Object.entries(filtros)) if (v) qExport.set(k, v);
-  const urlExport = qExport.toString();
 
   const tonosEscala = [
     { clave: "exc", etiqueta: "Excelente / Muy buena / Sí", tono: "exc" as const },
@@ -87,244 +103,423 @@ export default async function CentroDatosSiauPage({ searchParams }: { searchPara
   const temas = TEMAS.map((t) => ({ tema: t.tema, n: m.sugerencias.filter((s) => t.claves.test(s.texto)).length })).filter((t) => t.n > 0).sort((a, b) => b.n - a.n);
   const sinTema = m.sugerencias.filter((s) => !TEMAS.some((t) => t.claves.test(s.texto))).length;
 
-  const kpis = [
-    { etiqueta: "Encuestas en el periodo", valor: String(m.total), detalle: prev ? `${prev.total} en el periodo anterior` : "", Icono: Users2 },
-    { etiqueta: "Adherencia general", valor: m.adherenciaGeneral === null ? "—" : `${m.adherenciaGeneral}%`, detalle: TEXTO_SEMAFORO[m.semaforo], Icono: Gauge, semaforo: m.semaforo, variacion: informe.variacionGeneral },
-    { etiqueta: "Puntaje promedio", valor: m.puntajeGeneral === null ? "—" : `${m.puntajeGeneral}%`, detalle: "promedio de la escala sobre su máximo", Icono: TrendingUp },
-    { etiqueta: "Sedes con datos", valor: String(informe.porSede.filter((s) => s.valor !== "Sin dato").length), detalle: `${informe.porSede.filter((s) => s.semaforo === "success").length} en verde`, Icono: Building2 },
-  ];
+  const sedesConDatos = informe.porSede.filter((s) => s.valor !== "Sin dato").length;
+  const sedesEnVerde = informe.porSede.filter((s) => s.semaforo === "success").length;
+  const variacion = informe.variacionGeneral;
+  const filtrosChips = [
+    { Icono: MapPin, valor: filtros.sede },
+    { Icono: Stethoscope, valor: filtros.servicio },
+    { Icono: Users2, valor: filtros.sexo },
+    { Icono: ShieldCheck, valor: filtros.eps },
+  ].filter((f) => f.valor);
+  const chipHero = "inline-flex max-w-full items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.06] px-2.5 py-1 text-[12.5px] text-white/85";
+  const iconoHero = "h-3.5 w-3.5 shrink-0 text-[color-mix(in_oklch,var(--primary)_70%,white)]";
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-6 px-4 py-8 sm:px-6">
-      <Link href="/encuestas" className="flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" />
+    <div className="space-y-5">
+      <Link href="/encuestas" className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Encuestas
       </Link>
 
-      {/* Héroe */}
-      <header className="comite-hero p-6 sm:p-8">
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-white/70">
+      <ModuloHero
+        eyebrow={`Centro de datos SIAU · ${encuesta.code}`}
+        Icono={Activity}
+        titulo={encuesta.title}
+        descripcion={
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={chipHero}>
+              <CalendarRange className={iconoHero} aria-hidden="true" />
+              <span className="truncate">{rango.etiqueta}</span>
+            </span>
+            {filtrosChips.map(({ Icono, valor }) => (
+              <span key={valor} className={chipHero}>
+                <Icono className={iconoHero} aria-hidden="true" />
+                <span className="truncate">{valor}</span>
+              </span>
+            ))}
+            <span className={chipHero}>
+              <GitCompareArrows className={iconoHero} aria-hidden="true" />
+              <span className="truncate">vs {rangoPrevio.etiqueta}</span>
+            </span>
+          </div>
+        }
+        cifras={[
+          { valor: m.total, etiqueta: "Encuestas en el periodo", detalle: prev ? `${prev.total} en el periodo anterior` : undefined },
+          {
+            valor: variacion === null ? "—" : `${variacion > 0 ? "+" : ""}${variacion} pp`,
+            etiqueta: "Variación de adherencia",
+            detalle: variacion === null ? "sin periodo previo" : `frente a ${rangoPrevio.etiqueta}`,
+          },
+          { valor: m.puntajeGeneral === null ? "—" : `${m.puntajeGeneral}%`, etiqueta: "Puntaje promedio", detalle: "escala sobre su máximo" },
+          { valor: sedesConDatos, etiqueta: "Sedes con datos", detalle: `${sedesEnVerde} en verde` },
+        ]}
+        lateral={
+          <div className="flex items-center gap-4 sm:flex-col sm:gap-2.5">
+            <AnilloPorcentaje valor={m.adherenciaGeneral} tamano={128} grosor={7} oscuro etiqueta="Adherencia" />
+            <Semaforo tono={m.semaforo} />
+          </div>
+        }
+        acciones={
+          <>
+            <a href="#exportar" className="boton-hero">
+              <Download className="h-4 w-4" aria-hidden="true" />
+              Exportar esta vista
+            </a>
+            <Link href={`/encuestas/${encuesta.id}/resultados`} className="enlace-hero">
               <BarChart3 className="h-4 w-4" aria-hidden="true" />
-              Centro de datos · {encuesta.code}
-            </p>
-            <h1 className="mt-2 font-display text-[clamp(1.6rem,3.4vw,2.3rem)] font-extrabold leading-tight tracking-tight">{encuesta.title}</h1>
-            <p className="mt-2 text-[13.5px] text-white/80">
-              {rango.etiqueta}
-              {filtros.sede ? ` · ${filtros.sede}` : ""}{filtros.servicio ? ` · ${filtros.servicio}` : ""}{filtros.sexo ? ` · ${filtros.sexo}` : ""}{filtros.eps ? ` · ${filtros.eps}` : ""} · comparado con {rangoPrevio.etiqueta}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <a href={`/api/encuestas/siau/informe?${urlExport}`} className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-[12.5px] font-bold text-[#0f2438] shadow-lg">
-              <FileText className="h-4 w-4" aria-hidden="true" />
-              PDF de esta vista
-            </a>
-            <a href={`/api/encuestas/siau/siho?${urlExport}`} className="comite-vidrio inline-flex items-center gap-1.5 px-3.5 py-2 text-[12.5px] font-bold text-white">
-              <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
-              Excel SIHO del periodo
-            </a>
-            <a href={`/api/encuestas/${encuesta.slug}/formato-docx`} className="comite-vidrio inline-flex items-center gap-1.5 px-3.5 py-2 text-[12.5px] font-bold text-white">
-              <FileText className="h-4 w-4" aria-hidden="true" />
-              Formato (.docx)
-            </a>
-          </div>
-        </div>
-        <div className="relative mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {kpis.map((k) => (
-            <div key={k.etiqueta} className="comite-vidrio p-4">
-              <span className="grid h-8 w-8 place-items-center rounded-xl bg-white/15"><k.Icono className="h-4 w-4" aria-hidden="true" /></span>
-              <p className={cn("mt-3 font-display text-[1.7rem] font-extrabold leading-none tabular-nums", k.semaforo === "success" ? "text-[#7ee2b8]" : k.semaforo === "warning" ? "text-[#ffd76a]" : k.semaforo === "destructive" ? "text-[#ff9b9b]" : "")}>{k.valor}</p>
-              <p className="mt-1 text-[12px] font-semibold text-white/85">{k.etiqueta}</p>
-              <p className="text-[11px] text-white/60">{k.detalle}</p>
-              {"variacion" in k && k.variacion !== undefined && <p className="mt-1 [&_span]:text-white/85"><Variacion v={k.variacion} /></p>}
-            </div>
-          ))}
-        </div>
-      </header>
+              Ficha de la encuesta
+            </Link>
+          </>
+        }
+      />
 
       <FiltrosSiau
         valores={{ tipo: periodo.tipo, anio: periodo.anio, mes: periodo.mes ?? 1, trimestre: periodo.trimestre ?? 1, sede: filtros.sede ?? "", servicio: filtros.servicio ?? "", sexo: filtros.sexo ?? "", eps: filtros.eps ?? "" }}
         opciones={{ sedes, servicios, eps: epss, anios: [anioActual - 2, anioActual - 1, anioActual, anioActual + 1] }}
       />
 
-      <ExportablesSiau inicial={{ tipo: periodo.tipo, anio: periodo.anio, mes: periodo.mes ?? new Date().getMonth() + 1, trimestre: periodo.trimestre ?? Math.floor(new Date().getMonth() / 3) + 1 }} filtros={filtros} />
-      {exportaciones.length > 0 && (
-        <details className="comite-tarjeta p-5">
-          <summary className="cursor-pointer text-[13px] font-bold text-foreground">Últimas exportaciones registradas ({exportaciones.length})</summary>
-          <ul className="mt-3 divide-y divide-border/40 text-[12.5px]">
-            {exportaciones.map((e) => (
-              <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span className="text-foreground">{e.description}</span>
-                <span className="text-muted-foreground">{e.user?.fullName ?? "—"} · {etiquetaFecha(e.createdAt)} {etiquetaHora(e.createdAt)}</span>
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
-
       {m.total === 0 ? (
-        <p className="comite-tarjeta p-8 text-center text-sm text-muted-foreground">No hay encuestas en este periodo con los filtros elegidos.</p>
+        <div className="barra-modulo flex flex-col items-center gap-2 px-6 py-10 text-center">
+          <Inbox className="h-6 w-6 text-primary" aria-hidden="true" />
+          <p className="font-display text-[15px] font-bold text-foreground">Sin encuestas en este periodo</p>
+          <p className="max-w-md text-[13px] text-muted-foreground">
+            No hay respuestas para {rango.etiqueta} con los filtros elegidos. Cambia el periodo o limpia los filtros; los exportables siguen disponibles abajo.
+          </p>
+        </div>
       ) : (
-        <>
-          {/* Vista general: tendencia + top/peores */}
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-            <div className="comite-tarjeta p-6 xl:col-span-2">
-              <h2 className="flex items-center gap-2 font-display text-[15px] font-bold text-foreground"><TrendingUp className="h-4 w-4 text-primary" aria-hidden="true" />Tendencia mensual de adherencia</h2>
-              <p className="mt-1 text-[12px] text-muted-foreground">Líneas de referencia: 85 % (cumple) y 70 % (aceptable). {prev && prev.adherenciaGeneral !== null ? `Periodo anterior: ${prev.adherenciaGeneral}% con ${prev.total} encuestas.` : ""}</p>
-              <div className="mt-4"><LineaTendencia datos={informe.tendencia} referencia={prev?.adherenciaGeneral ?? null} /></div>
-            </div>
-            <div className="space-y-5">
-              <div className="comite-tarjeta p-5">
-                <h3 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground"><Sparkles className="h-4 w-4 text-success" aria-hidden="true" />Mejores preguntas</h3>
-                <ul className="mt-3 space-y-2">
-                  {m.mejores.map((p) => (
-                    <li key={p.clave} className="flex items-center justify-between gap-3 rounded-xl bg-success/10 px-3 py-2 text-[13px]"><span className="min-w-0 truncate"><b>P{p.numero}</b> · {p.enunciado}</span><b className="shrink-0 text-success">{p.adherencia}%</b></li>
-                  ))}
-                </ul>
+        <Tabs defaultValue="general">
+          <TabsList className="plan-tabs">
+            <TabsTrigger value="general">
+              <TrendingUp aria-hidden="true" />
+              Visión general
+            </TabsTrigger>
+            <TabsTrigger value="sedes">
+              <Building2 aria-hidden="true" />
+              Sedes
+              <span className="conteo">{informe.porSede.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="preguntas">
+              <BarChart3 aria-hidden="true" />
+              Por pregunta
+              <span className="conteo">{m.porPregunta.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="cruces">
+              <Users2 aria-hidden="true" />
+              Cruces por variable
+            </TabsTrigger>
+            <TabsTrigger value="sugerencias">
+              <MessageSquareText aria-hidden="true" />
+              Sugerencias
+              <span className="conteo">{m.sugerencias.length}</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Visión general: tendencia + mejores y peores preguntas */}
+          <TabsContent value="general" className="pt-4">
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+              <section className="barra-modulo min-w-0 p-5 xl:col-span-2">
+                <EncabezadoSeccion
+                  numero="01"
+                  titulo="Tendencia mensual de adherencia"
+                  bajada={`Referencias: 85 % (cumple) y 70 % (aceptable).${prev && prev.adherenciaGeneral !== null ? ` Periodo anterior: ${prev.adherenciaGeneral}% con ${prev.total} encuestas.` : ""}`}
+                />
+                <div className="mt-4">
+                  <LineaTendencia datos={informe.tendencia} referencia={prev?.adherenciaGeneral ?? null} />
+                </div>
+              </section>
+              <div className="min-w-0 space-y-5">
+                <ListaPreguntas titulo="Mejores preguntas" Icono={Sparkles} preguntas={m.mejores} />
+                <ListaPreguntas titulo="Preguntas por mejorar" Icono={Gauge} preguntas={m.peores} />
               </div>
-              <div className="comite-tarjeta p-5">
-                <h3 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground"><Gauge className="h-4 w-4 text-destructive" aria-hidden="true" />Preguntas por mejorar</h3>
-                <ul className="mt-3 space-y-2">
-                  {m.peores.map((p) => (
-                    <li key={p.clave} className="flex items-center justify-between gap-3 rounded-xl bg-destructive/10 px-3 py-2 text-[13px]"><span className="min-w-0 truncate"><b>P{p.numero}</b> · {p.enunciado}</span><b className={cn("shrink-0", p.semaforo === "success" ? "text-success" : p.semaforo === "warning" ? "text-warning-foreground" : "text-destructive")}>{p.adherencia}%</b></li>
-                  ))}
-                </ul>
-              </div>
             </div>
-          </section>
+          </TabsContent>
 
           {/* Por sede */}
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-            <div className="comite-tarjeta p-6">
-              <h2 className="flex items-center gap-2 font-display text-[15px] font-bold text-foreground"><Building2 className="h-4 w-4 text-primary" aria-hidden="true" />Ranking de sedes</h2>
-              <p className="mt-1 text-[12px] text-muted-foreground">Adherencia general por sede; línea punteada = promedio institucional ({m.adherenciaGeneral ?? "—"}%).</p>
-              <div className="mt-3"><BarrasRanking datos={informe.porSede.map((s) => ({ nombre: s.valor, valor: s.adherencia, n: s.total }))} referencia={m.adherenciaGeneral} /></div>
-            </div>
-            <div className="comite-tarjeta overflow-x-auto p-0">
-              <h2 className="flex items-center gap-2 px-6 pt-6 font-display text-[15px] font-bold text-foreground"><Building2 className="h-4 w-4 text-primary" aria-hidden="true" />Sede vs. promedio institucional</h2>
-              <table className="mt-4 w-full min-w-[560px] text-[12.5px]">
-                <thead><tr className="border-y border-border/60 bg-muted/40 text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground"><th className="px-5 py-2.5 text-left">Sede</th><th className="px-3 py-2.5 text-right">Encuestas</th><th className="px-3 py-2.5 text-right">Adherencia</th><th className="px-3 py-2.5 text-right">Puntaje</th><th className="px-3 py-2.5 text-right">vs institucional</th><th className="px-3 py-2.5 text-left">Semáforo</th></tr></thead>
-                <tbody className="divide-y divide-border/40">
-                  {informe.porSede.map((s) => {
-                    const dif = s.adherencia !== null && m.adherenciaGeneral !== null ? Math.round((s.adherencia - m.adherenciaGeneral) * 10) / 10 : null;
-                    return (
-                      <tr key={s.valor} className="hover:bg-primary/[0.04]">
-                        <td className="px-5 py-2 font-semibold text-foreground">{s.valor}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{s.total}</td>
-                        <td className="px-3 py-2 text-right font-bold tabular-nums"><Pct v={s.adherencia} /></td>
-                        <td className="px-3 py-2 text-right tabular-nums text-muted-foreground"><Pct v={s.puntaje} /></td>
-                        <td className={cn("px-3 py-2 text-right font-semibold tabular-nums", dif === null ? "text-muted-foreground" : dif >= 0 ? "text-success" : "text-destructive")}>{dif === null ? "—" : `${dif > 0 ? "+" : ""}${dif} pp`}</td>
-                        <td className="px-3 py-2"><span className={cn("rounded-md px-2 py-0.5 text-[10.5px] font-bold", CLASE_SEMAFORO[s.semaforo])}>{TEXTO_SEMAFORO[s.semaforo]}</span></td>
+          <TabsContent value="sedes" className="pt-4">
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+              <section className="barra-modulo min-w-0 p-5">
+                <EncabezadoSeccion
+                  numero="02"
+                  titulo="Ranking de sedes"
+                  bajada={`Adherencia general por sede; línea punteada = promedio institucional (${m.adherenciaGeneral ?? "—"}%).`}
+                />
+                <div className="mt-3">
+                  <BarrasRanking datos={informe.porSede.map((s) => ({ nombre: s.valor, valor: s.adherencia, n: s.total }))} referencia={m.adherenciaGeneral} />
+                </div>
+              </section>
+              <section className="barra-modulo min-w-0 overflow-hidden">
+                <div className="p-5 pb-0">
+                  <EncabezadoSeccion numero="03" titulo="Sede vs. promedio institucional" />
+                </div>
+                <div className="mt-4 overflow-x-auto">
+                  <table className="enc-tabla min-w-[560px]">
+                    <thead>
+                      <tr>
+                        <th className="text-left">Sede</th>
+                        <th className="num">Encuestas</th>
+                        <th className="num">Adherencia</th>
+                        <th className="num">Puntaje</th>
+                        <th className="num">vs instit.</th>
+                        <th className="text-left">Semáforo</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {informe.porSede.map((s) => {
+                        const dif = s.adherencia !== null && m.adherenciaGeneral !== null ? Math.round((s.adherencia - m.adherenciaGeneral) * 10) / 10 : null;
+                        return (
+                          <tr key={s.valor}>
+                            <td className="font-semibold text-foreground">{s.valor}</td>
+                            <td className="num">{s.total}</td>
+                            <td className="num font-semibold text-foreground"><Pct v={s.adherencia} /></td>
+                            <td className="num text-muted-foreground"><Pct v={s.puntaje} /></td>
+                            <td className={cn("num font-semibold", dif === null ? "text-muted-foreground" : dif >= 0 ? "text-success" : "text-destructive")}>
+                              {dif === null ? "—" : `${dif > 0 ? "+" : ""}${dif} pp`}
+                            </td>
+                            <td><Semaforo tono={s.semaforo} /></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             </div>
-          </section>
+          </TabsContent>
 
           {/* Por pregunta */}
-          <section className="space-y-4">
-            <h2 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight text-foreground"><BarChart3 className="h-4 w-4 text-primary" aria-hidden="true" />Por pregunta</h2>
-            <div className="comite-tarjeta p-6">
-              <p className="text-[12px] text-muted-foreground">Distribución de respuestas por carita (100 % apilado).</p>
-              <div className="mt-3"><BarrasApiladasCaritas datos={apilado(m.porPregunta)} tonos={tonosEscala} /></div>
-            </div>
+          <TabsContent value="preguntas" className="space-y-5 pt-4">
+            <section className="barra-modulo p-5">
+              <EncabezadoSeccion numero="04" titulo="Distribución por carita" bajada="Respuestas de cada pregunta, 100 % apilado." />
+              <div className="mt-3">
+                <BarrasApiladasCaritas datos={apilado(m.porPregunta)} tonos={tonosEscala} />
+              </div>
+            </section>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {m.porPregunta.map((p) => (
-                <article key={p.clave} className="comite-tarjeta p-5">
+              {m.porPregunta.map((p, i) => (
+                <article key={p.clave} className="plan-instancia revelar flex flex-col p-5" style={escalon(i)}>
                   <div className="flex items-start justify-between gap-3">
-                    <p className="text-[13px] font-semibold leading-snug text-foreground"><b className="text-primary">P{p.numero}</b> · {p.enunciado}</p>
-                    <span className={cn("shrink-0 rounded-md px-2 py-0.5 text-[10.5px] font-bold", CLASE_SEMAFORO[p.semaforo])}>{TEXTO_SEMAFORO[p.semaforo]}</span>
+                    <span className="enc-sello">P{p.numero}</span>
+                    <Semaforo tono={p.semaforo} />
                   </div>
-                  <div className="mt-3 flex items-end gap-4">
-                    <div><p className="font-display text-[1.7rem] font-extrabold leading-none tabular-nums text-foreground"><Pct v={p.adherencia} /></p><p className="text-[11px] text-muted-foreground">adherencia</p></div>
-                    <div><p className="font-display text-[1.2rem] font-extrabold leading-none tabular-nums text-muted-foreground"><Pct v={p.puntaje} /></p><p className="text-[11px] text-muted-foreground">puntaje</p></div>
-                    <div><p className="font-display text-[1.2rem] font-extrabold leading-none tabular-nums text-muted-foreground">{p.n}</p><p className="text-[11px] text-muted-foreground">respuestas</p></div>
+                  <p className="mt-3 text-[13px] font-semibold leading-snug text-foreground">{p.enunciado}</p>
+                  <div className="panel-cifras mt-4 grid grid-cols-3">
+                    <div className="dato-mini">
+                      <b style={{ color: COLOR_SEMAFORO[p.semaforo] }}><Pct v={p.adherencia} /></b>
+                      <span>Adherencia</span>
+                    </div>
+                    <div className="dato-mini">
+                      <b><Pct v={p.puntaje} /></b>
+                      <span>Puntaje</span>
+                    </div>
+                    <div className="dato-mini">
+                      <b>{p.n}</b>
+                      <span>Respuestas</span>
+                    </div>
                   </div>
-                  <div className="mt-2"><Variacion v={informe.variacionPorPregunta[p.clave] ?? null} /></div>
-                  <div className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div className="mt-2.5">
+                    <Variacion v={informe.variacionPorPregunta[p.clave] ?? null} />
+                  </div>
+                  <div className="mt-3 flex h-2 w-full overflow-hidden rounded-full bg-muted">
                     {p.distribucion.filter((d) => d.n > 0).map((d) => (
                       <span key={d.opcionId} style={{ width: `${d.pct}%`, backgroundColor: COLOR_TONO[d.tono ?? "na"] }} title={`${d.texto}: ${d.n} (${d.pct}%)`} />
                     ))}
                   </div>
-                  <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11.5px] text-muted-foreground">
+                  <ul className="mt-2.5 grid grid-cols-1 gap-y-1 text-[11.5px] text-muted-foreground sm:grid-cols-2 sm:gap-x-3">
                     {p.distribucion.map((d) => (
-                      <li key={d.opcionId} className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: COLOR_TONO[d.tono ?? "na"] }} />{d.texto}: <b className="text-foreground">{d.n}</b> ({d.pct}%)</li>
+                      <li key={d.opcionId} className="flex min-w-0 items-center gap-1.5">
+                        <span className="h-2 w-2 shrink-0 rounded-[3px]" style={{ backgroundColor: COLOR_TONO[d.tono ?? "na"] }} />
+                        <span className="truncate" title={d.texto}>{d.texto}</span>
+                        <span className="ml-auto shrink-0 font-mono tabular-nums">
+                          <b className="font-semibold text-foreground">{d.n}</b> · {d.pct}%
+                        </span>
+                      </li>
                     ))}
                   </ul>
                 </article>
               ))}
             </div>
-            <div className="comite-tarjeta p-6">
-              <h3 className="font-display text-[14px] font-bold text-foreground">P2 · Trato del personal por perfil</h3>
-              <div className="mt-3"><BarrasRanking datos={m.porPerfil.map((p) => ({ nombre: p.perfil ?? "", valor: p.adherencia, n: p.validas }))} referencia={m.porPregunta.find((p) => p.clave === "p2")?.adherencia ?? null} /></div>
-            </div>
-          </section>
+            <section className="barra-modulo p-5">
+              <EncabezadoSeccion numero="05" titulo="P2 · Trato del personal por perfil" bajada="Adherencia de cada perfil; línea punteada = adherencia general de P2." />
+              <div className="mt-3">
+                <BarrasRanking
+                  datos={m.porPerfil.map((p) => ({ nombre: p.perfil ?? "", valor: p.adherencia, n: p.validas }))}
+                  referencia={m.porPregunta.find((p) => p.clave === "p2")?.adherencia ?? null}
+                />
+              </div>
+            </section>
+          </TabsContent>
 
-          {/* Por variable */}
-          <section className="space-y-4">
-            <h2 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight text-foreground"><Users2 className="h-4 w-4 text-primary" aria-hidden="true" />Cruces por variable</h2>
+          {/* Cruces por variable */}
+          <TabsContent value="cruces" className="pt-4">
             <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
               {[
                 { titulo: "Adherencia × servicio (P1)", datos: informe.porServicio },
                 { titulo: "Adherencia × sexo", datos: informe.porSexo },
                 { titulo: "Adherencia × EPS", datos: informe.porEps },
                 { titulo: "Adherencia × sede", datos: informe.porSede },
-              ].map((c) => (
-                <div key={c.titulo} className="comite-tarjeta overflow-x-auto p-0">
-                  <h3 className="px-5 pt-5 font-display text-[14px] font-bold text-foreground">{c.titulo}</h3>
-                  <table className="mt-3 w-full min-w-[640px] text-[12px]">
-                    <thead><tr className="border-y border-border/60 bg-muted/40 text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground"><th className="px-4 py-2 text-left">Valor</th><th className="px-2 py-2 text-right">n</th><th className="px-2 py-2 text-right">General</th>{m.porPregunta.map((p) => <th key={p.clave} className="px-2 py-2 text-right">P{p.numero}</th>)}</tr></thead>
-                    <tbody className="divide-y divide-border/40">
-                      {c.datos.map((fila) => (
-                        <tr key={fila.valor}>
-                          <td className="px-4 py-1.5 font-semibold text-foreground">{fila.valor}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{fila.total}</td>
-                          <td className={cn("px-2 py-1.5 text-right font-bold tabular-nums", fila.semaforo === "success" ? "text-success" : fila.semaforo === "warning" ? "text-warning-foreground" : fila.semaforo === "destructive" ? "text-destructive" : "")}><Pct v={fila.adherencia} /></td>
-                          {m.porPregunta.map((p) => {
-                            const v = fila.porPregunta[p.clave] ?? null;
-                            return <td key={p.clave} className="px-2 py-1.5 text-right tabular-nums" style={{ background: v === null ? undefined : v >= 85 ? "color-mix(in oklch, var(--success) 14%, transparent)" : v >= 70 ? "color-mix(in oklch, var(--warning) 16%, transparent)" : "color-mix(in oklch, var(--destructive) 12%, transparent)" }}><Pct v={v} /></td>;
-                          })}
+              ].map((c, i) => (
+                <section key={c.titulo} className="barra-modulo min-w-0 overflow-hidden">
+                  <div className="p-5 pb-0">
+                    <EncabezadoSeccion numero={String(i + 6).padStart(2, "0")} titulo={c.titulo} />
+                  </div>
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="enc-tabla min-w-[640px]">
+                      <thead>
+                        <tr>
+                          <th className="text-left">Valor</th>
+                          <th className="num">n</th>
+                          <th className="num">General</th>
+                          {m.porPregunta.map((p) => (
+                            <th key={p.clave} className="num">P{p.numero}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {c.datos.map((fila) => (
+                          <tr key={fila.valor}>
+                            <td className="font-semibold text-foreground">{fila.valor}</td>
+                            <td className="num">{fila.total}</td>
+                            <td className="num font-semibold" style={{ color: fila.semaforo === "muted" ? undefined : COLOR_SEMAFORO[fila.semaforo] }}>
+                              <Pct v={fila.adherencia} />
+                            </td>
+                            {m.porPregunta.map((p) => {
+                              const v = fila.porPregunta[p.clave] ?? null;
+                              return (
+                                <td
+                                  key={p.clave}
+                                  className="num"
+                                  style={{ background: v === null ? undefined : v >= 85 ? "color-mix(in oklch, var(--success) 14%, transparent)" : v >= 70 ? "color-mix(in oklch, var(--warning) 16%, transparent)" : "color-mix(in oklch, var(--destructive) 12%, transparent)" }}
+                                >
+                                  <Pct v={v} />
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Sugerencias */}
+          <TabsContent value="sugerencias" className="pt-4">
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+              <section className="barra-modulo min-w-0 p-5">
+                <EncabezadoSeccion numero="10" titulo="Temas de las sugerencias" bajada={`${m.sugerencias.length} comentarios en el periodo, agrupados por palabras clave.`} />
+                <ul className="mt-4 space-y-2.5">
+                  {temas.map((t) => (
+                    <li key={t.tema}>
+                      <div className="flex items-baseline justify-between gap-3 text-[13px]">
+                        <span className="text-foreground">{t.tema}</span>
+                        <b className="font-mono text-[12.5px] font-semibold text-primary">{t.n}</b>
+                      </div>
+                      <BarraPorcentaje valor={m.sugerencias.length ? (t.n / m.sugerencias.length) * 100 : 0} color="var(--primary)" className="mt-1" />
+                    </li>
+                  ))}
+                  {sinTema > 0 && (
+                    <li className="flex items-baseline justify-between gap-3 text-[13px] text-muted-foreground">
+                      <span>Otros</span>
+                      <b className="font-mono text-[12.5px] font-semibold">{sinTema}</b>
+                    </li>
+                  )}
+                </ul>
+              </section>
+              <section className="barra-modulo min-w-0 overflow-hidden xl:col-span-2">
+                <div className="p-5 pb-0">
+                  <EncabezadoSeccion numero="11" titulo="Sugerencias y comentarios (P9)" />
+                </div>
+                <div className="mt-3 overflow-x-auto">
+                  <table className="enc-tabla min-w-[560px]">
+                    <thead>
+                      <tr>
+                        <th className="text-left">Fecha</th>
+                        <th className="text-left">Sede</th>
+                        <th className="text-left">Servicio</th>
+                        <th className="text-left">Comentario</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {m.sugerencias.slice(0, 60).map((s, i) => (
+                        <tr key={i}>
+                          <td className="whitespace-nowrap font-mono text-[11.5px] text-muted-foreground">{etiquetaFecha(s.fecha)}</td>
+                          <td>{s.sede ?? "—"}</td>
+                          <td className="text-muted-foreground">{s.servicio ?? "—"}</td>
+                          <td className="text-foreground">{s.texto}</td>
                         </tr>
                       ))}
+                      {m.sugerencias.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="py-8 text-center text-muted-foreground">Sin comentarios en el periodo.</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
-              ))}
+                {m.sugerencias.length > 60 && <p className="mono-label px-5 py-3">Mostrando 60 de {m.sugerencias.length} · el resto va en el CSV/Excel</p>}
+              </section>
             </div>
-          </section>
-
-          {/* Sugerencias */}
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-            <div className="comite-tarjeta p-5">
-              <h2 className="flex items-center gap-2 font-display text-[15px] font-bold text-foreground"><MessageSquareText className="h-4 w-4 text-primary" aria-hidden="true" />Temas de las sugerencias</h2>
-              <p className="mt-1 text-[12px] text-muted-foreground">{m.sugerencias.length} comentarios en el periodo, agrupados por palabras clave.</p>
-              <ul className="mt-3 space-y-2">
-                {temas.map((t) => (
-                  <li key={t.tema} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2 text-[13px]"><span>{t.tema}</span><b className="text-primary">{t.n}</b></li>
-                ))}
-                {sinTema > 0 && <li className="flex items-center justify-between rounded-xl bg-muted/30 px-3 py-2 text-[13px] text-muted-foreground"><span>Otros</span><b>{sinTema}</b></li>}
-              </ul>
-            </div>
-            <div className="comite-tarjeta overflow-x-auto p-0 xl:col-span-2">
-              <h2 className="px-5 pt-5 font-display text-[15px] font-bold text-foreground">Sugerencias y comentarios (P9)</h2>
-              <table className="mt-3 w-full min-w-[560px] text-[12.5px]">
-                <thead><tr className="border-y border-border/60 bg-muted/40 text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground"><th className="px-5 py-2 text-left">Fecha</th><th className="px-3 py-2 text-left">Sede</th><th className="px-3 py-2 text-left">Servicio</th><th className="px-3 py-2 text-left">Comentario</th></tr></thead>
-                <tbody className="divide-y divide-border/40">
-                  {m.sugerencias.slice(0, 60).map((s, i) => (
-                    <tr key={i}><td className="whitespace-nowrap px-5 py-2 text-muted-foreground">{etiquetaFecha(s.fecha)}</td><td className="px-3 py-2">{s.sede ?? "—"}</td><td className="px-3 py-2 text-muted-foreground">{s.servicio ?? "—"}</td><td className="px-3 py-2 text-foreground">{s.texto}</td></tr>
-                  ))}
-                  {m.sugerencias.length === 0 && <tr><td colSpan={4} className="px-5 py-6 text-center text-muted-foreground">Sin comentarios en el periodo.</td></tr>}
-                </tbody>
-              </table>
-              {m.sugerencias.length > 60 && <p className="px-5 py-3 text-[12px] text-muted-foreground">Mostrando 60 de {m.sugerencias.length}; el resto va en el CSV/Excel.</p>}
-            </div>
-          </section>
-        </>
+          </TabsContent>
+        </Tabs>
       )}
-      <p className="text-[11.5px] text-muted-foreground">Consulta: {consulta || "periodo actual"} · Adherencia = respuestas favorables sobre válidas (Res. 0256 de 2016); puntaje = promedio de la escala sobre su máximo. Fórmulas en lib/encuestas/metrics.ts.</p>
+
+      <ExportablesSiau
+        inicial={{ tipo: periodo.tipo, anio: periodo.anio, mes: periodo.mes ?? new Date().getMonth() + 1, trimestre: periodo.trimestre ?? Math.floor(new Date().getMonth() / 3) + 1 }}
+        filtros={filtros}
+        formatoHref={`/api/encuestas/${encuesta.slug}/formato-docx`}
+        pie={
+          exportaciones.length > 0 && (
+            <details className="group rounded-[12px] border border-border/70 bg-[color-mix(in_oklch,var(--foreground)_2%,var(--card))]">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                <span className="mono-label flex items-center gap-2">
+                  <History className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                  Registro de descargas · últimas {exportaciones.length}
+                </span>
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+              </summary>
+              <ul className="divide-y divide-border/50 border-t border-border/60 text-[12.5px]">
+                {exportaciones.map((e) => (
+                  <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
+                    <span className="text-foreground">{e.description}</span>
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                      {e.user?.fullName ?? "—"} · {etiquetaFecha(e.createdAt)} {etiquetaHora(e.createdAt)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )
+        }
+      />
+
+      <p className="font-mono text-[10.5px] leading-relaxed text-muted-foreground">
+        Consulta: {consulta || "periodo actual"} · Adherencia = respuestas favorables sobre válidas (Res. 0256 de 2016); puntaje = promedio de la escala sobre su máximo. Fórmulas en lib/encuestas/metrics.ts.
+      </p>
     </div>
+  );
+}
+
+function ListaPreguntas({ titulo, Icono, preguntas }: { titulo: string; Icono: LucideIcon; preguntas: MetricaPregunta[] }) {
+  return (
+    <section className="barra-modulo p-5">
+      <EncabezadoSeccion Icono={Icono} titulo={titulo} />
+      <ul className="mt-3 space-y-2.5">
+        {preguntas.map((p) => (
+          <li key={p.clave}>
+            <div className="flex items-center gap-2.5 text-[12.5px]">
+              <span className="enc-sello">P{p.numero}</span>
+              <span className="min-w-0 flex-1 truncate text-foreground" title={p.enunciado}>{p.enunciado}</span>
+              <b className="mono-dato shrink-0 text-[12.5px] font-semibold" style={{ color: COLOR_SEMAFORO[p.semaforo] }}>
+                <Pct v={p.adherencia} />
+              </b>
+            </div>
+            {p.adherencia !== null && <BarraPorcentaje valor={p.adherencia} className="mt-1.5" />}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

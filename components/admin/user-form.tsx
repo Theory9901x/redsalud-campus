@@ -19,6 +19,7 @@ const ROLES: { value: Role; label: string }[] = [
   { value: "STUDENT", label: "Estudiante" },
   { value: "TUTOR", label: "Tutor" },
   { value: "ADMIN", label: "Administrador" },
+  { value: "SEGUIMIENTO", label: "Seguimiento · Control Interno (solo lectura)" },
 ];
 
 const STATUSES: { value: UserStatus; label: string }[] = [
@@ -38,7 +39,7 @@ const ADMIN_SECTION_LABELS: { value: AdminSection; label: string }[] = [
   { value: "CURSOS", label: "Cursos" },
   { value: "PLANES_CAPACITACION", label: "Planes de capacitación" },
   { value: "INSCRIPCIONES", label: "Inscripciones" },
-  { value: "CERTIFICADOS", label: "Certificados" },
+  { value: "CERTIFICADOS", label: "Constancias" },
   { value: "NOTIFICACIONES", label: "Notificaciones" },
   { value: "REPORTES", label: "Reportes" },
   { value: "CONFIGURACION", label: "Configuración" },

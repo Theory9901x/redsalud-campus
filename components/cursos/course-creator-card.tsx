@@ -56,7 +56,7 @@ export function CourseCreatorCard({
             </span>
           )}
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Certificado por</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Constancia emitida por</p>
             <p className="truncate font-display text-sm font-bold text-foreground">{institution.name}</p>
             {institution.signerName && (
               <p className="truncate text-xs text-muted-foreground">

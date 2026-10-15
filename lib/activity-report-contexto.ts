@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { publicUploadDiskPath } from "@/lib/storage";
-import { audienciaDeActividad, getActivityAdherence, getActivityAttendanceCounts } from "@/lib/training-plans";
+import { audienciaDeActividad, getActivityAdherence, getActivityAttendanceCounts, type FiltroTrimestre } from "@/lib/training-plans";
 
 /**
  * CONTEXTO DEL INFORME DE JORNADA: lo que el informe congelado no trae y
@@ -28,7 +28,7 @@ export type ContextoInforme = {
   modalidad: string;
 };
 
-export async function getContextoInforme(activityId: string): Promise<ContextoInforme | null> {
+export async function getContextoInforme(activityId: string, filtro?: FiltroTrimestre | null): Promise<ContextoInforme | null> {
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
     select: {
@@ -39,22 +39,29 @@ export async function getContextoInforme(activityId: string): Promise<ContextoIn
       quarters: true,
       modality: true,
       plan: { select: { id: true, year: true, targetDepartment: true, kind: true } },
-      sessions: { orderBy: { startsAt: "asc" }, select: { startsAt: true, endsAt: true, modality: true, status: true } },
+      sessions: {
+        where: filtro ? { startsAt: { gte: filtro.desde, lt: filtro.hasta } } : {},
+        orderBy: { startsAt: "asc" },
+        select: { startsAt: true, endsAt: true, modality: true, status: true },
+      },
     },
   });
   if (!actividad) return null;
+  const delTrimestre = filtro ? { trimestre: filtro.trimestre } : {};
 
   const [adherencia, conteos, asistieronDeLaPoblacion, asistieronTodos, grupos, ajustes] = await Promise.all([
-    getActivityAdherence(actividad),
-    getActivityAttendanceCounts(actividad),
+    getActivityAdherence(actividad, filtro),
+    getActivityAttendanceCounts(actividad, filtro),
     // Cobertura = asistentes DENTRO de la población objetivo, el mismo
     // universo de la adherencia: si no, el informe decía "7% asistió" y "0%
     // de adherencia" a la vez porque los asistentes eran de fuera.
-    prisma.trainingAttendance.count({ where: { activityId, attended: true, user: audienciaDeActividad(actividad) } }),
-    prisma.trainingAttendance.count({ where: { activityId, attended: true } }),
+    prisma.trainingAttendance
+      .groupBy({ by: ["userId"], where: { activityId, attended: true, ...delTrimestre, user: audienciaDeActividad(actividad) } })
+      .then((g) => g.length),
+    prisma.trainingAttendance.groupBy({ by: ["userId"], where: { activityId, attended: true, ...delTrimestre } }).then((g) => g.length),
     prisma.callConnectionLog.groupBy({
       by: ["userId", "externalParticipantId", "displayName"],
-      where: { activityId },
+      where: { activityId, ...(filtro ? { joinedAt: { gte: filtro.desde, lt: filtro.hasta } } : {}) },
       _sum: { durationSeconds: true },
       _count: { _all: true },
     }),
@@ -87,7 +94,7 @@ export async function getContextoInforme(activityId: string): Promise<ContextoIn
   }
 
   return {
-    codigo: `INF-${actividad.plan.year}-${actividad.id.slice(-6).toUpperCase()}`,
+    codigo: `INF-${actividad.plan.year}${filtro ? `-T${filtro.trimestre}` : ""}-${actividad.id.slice(-6).toUpperCase()}`,
     logo,
     cobertura: {
       convocados: conteos.totalAudiencia,
@@ -104,7 +111,7 @@ export async function getContextoInforme(activityId: string): Promise<ContextoIn
     },
     permanencia: [...porPersona.values()].sort((a, b) => b.minutos - a.minutos),
     jornadas: actividad.sessions.map((s) => ({ inicio: s.startsAt, fin: s.endsAt, modalidad: s.modality, estado: s.status })),
-    trimestres: actividad.quarters,
+    trimestres: filtro ? [filtro.trimestre] : actividad.quarters,
     modalidad: actividad.modality,
   };
 }

@@ -50,7 +50,7 @@ export async function markLessonCompleteAction(
       action: "ISSUE_CERT",
       entity: "Certificate",
       entityId: certificateId,
-      description: `Se emitió su certificado al completar «${aulaData.course.title}».`,
+      description: `Se emitió su constancia al completar «${aulaData.course.title}».`,
     });
   }
 

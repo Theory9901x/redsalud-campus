@@ -22,8 +22,8 @@ export default async function CertificateTemplatePage() {
           Volver a certificados
         </Link>
         <AdminPageHeader
-          title="Plantilla del certificado"
-          description="Arrastra los campos del estudiante, el logo, la firma y el código QR para diseñar el certificado que se genera automáticamente. Los cambios aplican a los próximos certificados emitidos y a los que regeneres."
+          title="Plantilla de la constancia"
+          description="Arrastra los campos del estudiante, el logo, la firma y el código QR para diseñar la constancia que se genera automáticamente. Los cambios aplican a los próximos certificados emitidos y a los que regeneres."
         />
       </div>
 

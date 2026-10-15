@@ -1,5 +1,6 @@
 "use server";
 
+import { trimestreActual } from "@/lib/training-plans";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -221,7 +222,7 @@ export async function uploadTrainingActivityDocumentAction(
 }
 
 /** Etapa 3: registro manual de asistencia, solo aplica a actividades sin curso vinculado. */
-export async function setAttendanceAction(activityId: string, userId: string, attended: boolean) {
+export async function setAttendanceAction(activityId: string, userId: string, attended: boolean, trimestre?: number) {
   const { session, planId } = await requireTrainingActivityAccess(activityId);
 
   const cerrado = await errorSiPlanCerrado(planId);
@@ -232,10 +233,12 @@ export async function setAttendanceAction(activityId: string, userId: string, at
     throw new Error("La jornada ya cerró: la participación está congelada y no admite más cambios.");
   }
 
+  // Se marca en el trimestre que se está revisando (o el que está en curso).
+  const t = trimestre && trimestre >= 1 && trimestre <= 4 ? trimestre : trimestreActual().trimestre;
   await prisma.trainingAttendance.upsert({
-    where: { activityId_userId: { activityId, userId } },
+    where: { activityId_userId_trimestre: { activityId, userId, trimestre: t } },
     update: { attended, registeredBy: session.user.id, registeredAt: new Date() },
-    create: { activityId, userId, attended, registeredBy: session.user.id },
+    create: { activityId, userId, attended, registeredBy: session.user.id, trimestre: t },
   });
 
   revalidatePath(`/admin/planes-capacitacion/${planId}/actividades/${activityId}`);

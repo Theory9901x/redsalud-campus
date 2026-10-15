@@ -112,7 +112,7 @@ export function CertificateValidation({ result }: { result: ValidationResult }) 
                 exit={{ opacity: 0 }}
                 className="mt-6 text-sm font-medium text-muted-foreground"
               >
-                Verificando certificado...
+                Verificando constancia...
               </motion.p>
             ) : (
               <motion.div
@@ -123,9 +123,9 @@ export function CertificateValidation({ result }: { result: ValidationResult }) 
               >
                 {result.state === "valid" && (
                   <>
-                    <h1 className="mt-6 font-display text-2xl font-extrabold text-foreground">Certificado válido</h1>
+                    <h1 className="mt-6 font-display text-2xl font-extrabold text-foreground">Constancia válida</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Este certificado fue emitido por {result.institutionName}.
+                      Esta constancia fue emitida por {result.institutionName}.
                     </p>
                     <dl className="mt-6 space-y-2 text-left text-sm">
                       <div className="flex justify-between border-b border-border pb-2">
@@ -157,9 +157,9 @@ export function CertificateValidation({ result }: { result: ValidationResult }) 
 
                 {result.state === "revoked" && (
                   <>
-                    <h1 className="mt-6 font-display text-2xl font-extrabold text-foreground">Certificado anulado</h1>
+                    <h1 className="mt-6 font-display text-2xl font-extrabold text-foreground">Constancia anulada</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Este certificado fue anulado por la institución y ya no es válido.
+                      Esta constancia fue anulada por la institución y ya no es válido.
                     </p>
                     <p className="mt-6 font-mono text-xs text-muted-foreground">{result.certificateCode}</p>
                   </>
@@ -168,10 +168,10 @@ export function CertificateValidation({ result }: { result: ValidationResult }) 
                 {result.state === "not-found" && (
                   <>
                     <h1 className="mt-6 font-display text-2xl font-extrabold text-foreground">
-                      Certificado no encontrado
+                      Constancia no encontrada
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      El código no corresponde a ningún certificado emitido. Verifica que esté escrito exactamente
+                      El código no corresponde a ninguna constancia emitida. Verifica que esté escrito exactamente
                       como aparece en el documento.
                     </p>
                     <p className="mt-6 font-mono text-xs text-muted-foreground">{result.searchedCode}</p>

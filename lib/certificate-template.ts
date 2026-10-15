@@ -22,7 +22,7 @@ export const CERTIFICATE_FIELD_LABELS: Record<CertificateFieldKey, string> = {
   intensidadHoraria: "Intensidad horaria",
   ciudad: "Ciudad",
   fecha: "Fecha de emisión",
-  codigo: "Código del certificado",
+  codigo: "Código de la constancia",
   institucion: "Nombre de la institución",
   firmante: "Nombre del responsable",
   cargoFirmante: "Cargo del responsable",

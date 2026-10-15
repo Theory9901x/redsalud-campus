@@ -21,6 +21,8 @@ enum Role {
   ADMIN
   TUTOR
   STUDENT
+  /** Control Interno: ve todo el panel administrativo y sus métricas; no crea, edita ni elimina. */
+  SEGUIMIENTO
 }
 
 enum UserStatus {
@@ -1112,8 +1114,14 @@ model TrainingAttendance {
   registeredBy String?
   registeredByUser User?        @relation("TrainingAttendanceRegisteredBy", fields: [registeredBy], references: [id])
   source       AttendanceSource @default(MANUAL)
+  /**
+   * Trimestre (1-4) del año del plan al que pertenece esta asistencia. Una
+   * capacitación programada en T1 y T3 son dos ejecuciones: quien asiste a
+   * ambas tiene dos filas, y cada trimestre se mide por separado.
+   */
+  trimestre    Int              @default(0)
 
-  @@unique([activityId, userId])
+  @@unique([activityId, userId, trimestre])
   @@index([activityId])
 }
 

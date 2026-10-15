@@ -287,7 +287,7 @@ export default async function ReportesPage({
       {/* Certificados */}
       <section className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 className="font-display text-lg font-bold text-foreground">Certificados emitidos/anulados</h2>
+          <h2 className="font-display text-lg font-bold text-foreground">Constancias emitidas/anuladas</h2>
           <div className="flex flex-wrap items-end gap-2">
             <form method="get" className="flex flex-wrap items-end gap-2">
               <div className="space-y-1">

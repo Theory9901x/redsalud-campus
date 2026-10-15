@@ -35,7 +35,7 @@ export function InstitutionSettingsForm({
           <Input id="institutionName" name="institutionName" required defaultValue={defaultValues.institutionName} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="city">Ciudad (aparece en el certificado)</Label>
+          <Label htmlFor="city">Ciudad (aparece en la constancia)</Label>
           <Input id="city" name="city" required defaultValue={defaultValues.city} />
         </div>
         <div className="space-y-1.5">
@@ -60,7 +60,7 @@ export function InstitutionSettingsForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="certificateText">Texto adicional del certificado (opcional)</Label>
+        <Label htmlFor="certificateText">Texto adicional de la constancia (opcional)</Label>
         <Textarea
           id="certificateText"
           name="certificateText"

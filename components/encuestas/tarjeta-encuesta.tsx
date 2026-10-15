@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { BarChart3, ClipboardList, Pencil, Users2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { BarChart3, CalendarClock, GraduationCap, ListChecks, PencilRuler, Users2 } from "lucide-react";
 import type { EncuestaDeLista } from "@/lib/encuestas/consultas";
 import { BotonEnlacePublico } from "@/components/encuestas/boton-enlace-publico";
+import { PildoraEstado, escalon } from "@/components/training-plans/plan-visual";
 import type { SurveyStatus, SurveyAudience } from "@prisma/client";
 
 export const ETIQUETA_ESTADO: Record<SurveyStatus, string> = {
@@ -11,11 +11,11 @@ export const ETIQUETA_ESTADO: Record<SurveyStatus, string> = {
   CLOSED: "Cerrada",
 };
 
-/** El estado se dice con un punto y un borde, no pintando la tarjeta entera. */
-const COLOR_ESTADO: Record<SurveyStatus, { punto: string; texto: string; borde: string }> = {
-  DRAFT: { punto: "bg-muted-foreground/50", texto: "text-muted-foreground", borde: "border-border/60" },
-  PUBLISHED: { punto: "bg-success", texto: "text-success", borde: "border-success/40" },
-  CLOSED: { punto: "bg-muted-foreground/50", texto: "text-muted-foreground", borde: "border-border/60" },
+/** Estado de la encuesta en el vocabulario visual del módulo (PildoraEstado / .plan-instancia). */
+const ESTADO_VISUAL: Record<SurveyStatus, string> = {
+  DRAFT: "DRAFT",
+  PUBLISHED: "ACTIVE",
+  CLOSED: "CLOSED",
 };
 
 export const ETIQUETA_AUDIENCIA: Record<SurveyAudience, string> = {
@@ -24,141 +24,116 @@ export const ETIQUETA_AUDIENCIA: Record<SurveyAudience, string> = {
   MIXTA: "Interno y externo",
 };
 
+const FECHA = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", year: "numeric", timeZone: "America/Bogota" });
+
 /**
- * Tarjeta de una encuesta en el espacio de trabajo.
- *
- * Se construye sobre el vidrio de tres capas del sistema (surface-vivo) con
- * una cinta superior del color de la propia encuesta: en una rejilla de
- * veinte, el color es lo que deja distinguirlas de un vistazo sin leer el
- * título. Nada de cuadros blancos idénticos.
+ * Tarjeta de una encuesta en el espacio de trabajo: la misma tarjeta-
+ * instancia del centro de mando (canto de estado, foco que sigue al cursor),
+ * un tablero de cifras y, al pie, las acciones en celdas iguales con su
+ * nombre. El color propio de la encuesta queda como una muestra junto al
+ * código: identifica sin pintar la tarjeta.
  */
 export function TarjetaEncuesta({
   encuesta,
   puedeGestionar,
   baseUrl,
+  indice = 0,
 }: {
   encuesta: EncuestaDeLista;
   /** Estudiante: solo consulta su resultado; tutor y admin gestionan. */
   puedeGestionar: boolean;
   baseUrl: string;
+  indice?: number;
 }) {
-  const estado = COLOR_ESTADO[encuesta.status];
   const acento = encuesta.themeColor || "var(--primary)";
   const tasa = encuesta.respuestas > 0 ? Math.round((encuesta.completadas / encuesta.respuestas) * 100) : null;
+  const base = `${baseUrl}/${encuesta.id}`;
+  const principal = puedeGestionar ? `${base}/resultados` : `${base}/mi-resultado`;
+  const difundible = puedeGestionar && encuesta.status !== "DRAFT";
 
   return (
-    <article className="surface-vivo group">
-      <div className="flex h-full flex-col">
-        {/* Cinta de color: la identidad de la encuesta. */}
-        <span
-          className="h-1.5 w-full rounded-t-[23px]"
-          style={{ backgroundImage: `linear-gradient(90deg, ${acento}, color-mix(in oklch, ${acento} 45%, transparent))` }}
-          aria-hidden="true"
-        />
+    <article className="plan-instancia revelar flex flex-col" data-estado={ESTADO_VISUAL[encuesta.status]} style={escalon(indice)}>
+      <div className="flex items-center justify-between gap-3 px-5 pt-5">
+        <PildoraEstado estado={ESTADO_VISUAL[encuesta.status]}>{ETIQUETA_ESTADO[encuesta.status]}</PildoraEstado>
+        <span className="codigo-plan inline-flex min-w-0 items-center gap-2" title={encuesta.code}>
+          <span className="enc-muestra" style={{ backgroundColor: acento, color: acento }} aria-hidden="true" />
+          <span className="truncate">{encuesta.code}</span>
+        </span>
+      </div>
 
-        <div className="flex flex-1 flex-col p-5">
-          <div className="flex items-start justify-between gap-3">
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border bg-card/60 px-2.5 py-1 text-[11px] font-bold backdrop-blur-sm",
-                estado.borde,
-                estado.texto
-              )}
-            >
-              <span className={cn("h-1.5 w-1.5 rounded-full", estado.punto)} aria-hidden="true" />
-              {ETIQUETA_ESTADO[encuesta.status]}
-            </span>
-            <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{encuesta.code}</span>
-          </div>
-
-          <h3 className="mt-3 line-clamp-2 font-display text-[17px] font-extrabold leading-snug tracking-tight text-foreground">
+      <div className="px-5 pt-3">
+        <h3 className="line-clamp-2 font-display text-[1.06rem] font-bold leading-snug tracking-tight text-foreground">
+          <Link href={principal} className="enlace-tarjeta outline-none focus-visible:underline">
             {encuesta.title}
-          </h3>
-          {encuesta.description && (
-            <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed text-muted-foreground">
-              {encuesta.description}
-            </p>
-          )}
-
-          {/* Modularización: de qué capacitación es esta encuesta. */}
-          {(encuesta.capacitacion || encuesta.plan) && (
-            <p className="mt-3 flex items-start gap-1.5 text-[11.5px] leading-snug text-muted-foreground">
-              <ClipboardList className="mt-px h-3.5 w-3.5 shrink-0" style={{ color: acento }} aria-hidden="true" />
-              <span className="line-clamp-1">{encuesta.capacitacion ?? encuesta.plan}</span>
-            </p>
-          )}
-
-          {/* Cifras: respuestas y finalización, la señal que importa. */}
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <div className="rounded-xl border border-border/50 bg-card/50 px-3 py-2 backdrop-blur-sm">
-              <p className="font-display text-lg font-extrabold leading-none tabular-nums text-foreground">
-                {encuesta.completadas}
-              </p>
-              <p className="mt-1 text-[10.5px] leading-tight text-muted-foreground">
-                {encuesta.completadas === 1 ? "respuesta" : "respuestas"}
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 bg-card/50 px-3 py-2 backdrop-blur-sm">
-              <p className="font-display text-lg font-extrabold leading-none tabular-nums text-foreground">
-                {tasa !== null ? `${tasa}%` : "—"}
-              </p>
-              <p className="mt-1 text-[10.5px] leading-tight text-muted-foreground">finalización</p>
-            </div>
-          </div>
-
-          <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Users2 className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+        </h3>
+        {encuesta.description && (
+          <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed text-muted-foreground">{encuesta.description}</p>
+        )}
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <span className="chip-dato">
+            <Users2 aria-hidden="true" />
             {ETIQUETA_AUDIENCIA[encuesta.audience]}
-            <span className="ml-auto">
-              {encuesta.preguntas} {encuesta.preguntas === 1 ? "pregunta" : "preguntas"}
+          </span>
+          {(encuesta.capacitacion || encuesta.plan) && (
+            <span className="chip-dato max-w-full" title={encuesta.capacitacion ?? encuesta.plan ?? undefined}>
+              <GraduationCap className="shrink-0" aria-hidden="true" />
+              <span className="truncate">{encuesta.capacitacion ?? encuesta.plan}</span>
             </span>
-          </div>
-
-          {/* Acciones, al pie */}
-          <div className="mt-4 flex items-center gap-1 border-t border-border/50 pt-3">
-            {puedeGestionar ? (
-              <>
-                <Accion href={`${baseUrl}/${encuesta.id}/constructor`} icono={Pencil} titulo="Constructor" />
-                <Accion href={`${baseUrl}/${encuesta.id}/resultados`} icono={BarChart3} titulo="Resultados" />
-                <Accion href={`${baseUrl}/${encuesta.id}/respuestas`} icono={ClipboardList} titulo="Respuestas" />
-                {encuesta.status !== "DRAFT" && (
-                  <BotonEnlacePublico slug={encuesta.slug} titulo={encuesta.title} acento={acento} />
-                )}
-              </>
-            ) : (
-              <Link
-                href={`${baseUrl}/${encuesta.id}/mi-resultado`}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-bold text-white transition-transform hover:translate-x-0.5"
-                style={{ backgroundColor: acento }}
-              >
-                <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
-                Ver mi resultado
-              </Link>
-            )}
-          </div>
+          )}
+          <span className="chip-dato">
+            <CalendarClock aria-hidden="true" />
+            {FECHA.format(encuesta.actualizada)}
+          </span>
         </div>
       </div>
-    </article>
-  );
-}
 
-function Accion({
-  href,
-  icono: Icono,
-  titulo,
-}: {
-  href: string;
-  icono: typeof Pencil;
-  titulo: string;
-}) {
-  return (
-    <Link
-      href={href}
-      title={titulo}
-      aria-label={titulo}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-    >
-      <Icono className="h-4 w-4" aria-hidden="true" />
-    </Link>
+      {/* Tablero de cifras */}
+      <div className="mt-auto px-5 pt-4">
+        <div className="panel-cifras grid grid-cols-3">
+          <div className="dato-mini">
+            <b>{encuesta.completadas}</b>
+            <span>{encuesta.completadas === 1 ? "Respuesta" : "Respuestas"}</span>
+          </div>
+          <div className="dato-mini">
+            <b>{tasa !== null ? `${tasa}%` : "—"}</b>
+            <span>Finaliz.</span>
+          </div>
+          <div className="dato-mini">
+            <b>{encuesta.preguntas}</b>
+            <span>{encuesta.preguntas === 1 ? "Pregunta" : "Preguntas"}</span>
+          </div>
+        </div>
+        <div className="medidor mt-3" role="presentation">
+          {tasa !== null && tasa > 0 && <span style={{ width: `${tasa}%` }} />}
+        </div>
+      </div>
+
+      {/* Acciones, al pie, cada una con su nombre */}
+      {puedeGestionar ? (
+        <div className="enc-acciones mt-4" style={{ ["--n" as string]: difundible ? 4 : 3 }}>
+          <Link href={`${base}/resultados`} className="enc-accion-principal">
+            <BarChart3 aria-hidden="true" />
+            Resultados
+          </Link>
+          <Link href={`${base}/respuestas`}>
+            <ListChecks aria-hidden="true" />
+            Respuestas
+          </Link>
+          <Link href={`${base}/constructor`}>
+            <PencilRuler aria-hidden="true" />
+            Editar
+          </Link>
+          {difundible && <BotonEnlacePublico slug={encuesta.slug} titulo={encuesta.title} acento={acento} variante="celda" />}
+        </div>
+      ) : (
+        <div className="enc-acciones mt-4" style={{ ["--n" as string]: 1 }}>
+          <Link href={principal} className="enc-accion-principal">
+            <BarChart3 aria-hidden="true" />
+            Ver mi resultado
+          </Link>
+        </div>
+      )}
+    </article>
   );
 }

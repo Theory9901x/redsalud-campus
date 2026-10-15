@@ -162,7 +162,7 @@ export default async function TutorDashboardPage() {
       at: c.issuedAt,
       icon: Award,
       tone: "text-warning-foreground bg-warning/15",
-      text: `${c.user.fullName} obtuvo certificado de ${c.course.title}`,
+      text: `${c.user.fullName} obtuvo constancia de ${c.course.title}`,
     })),
   ]
     .sort((a, b) => b.at.getTime() - a.at.getTime())
@@ -175,7 +175,7 @@ export default async function TutorDashboardPage() {
     { label: "Borradores", value: draftCount, icon: FileWarning, href: "/tutor/cursos" },
     { label: "Inscritos", value: enrolledCount, icon: Users, href: "/tutor/inscritos" },
     { label: "Finalización", value: `${completionRate}%`, icon: Percent },
-    { label: "Certificados este mes", value: certificatesThisMonth, icon: Award, href: "/tutor/certificados" },
+    { label: "Constancias este mes", value: certificatesThisMonth, icon: Award, href: "/tutor/certificados" },
   ];
 
   const quickActions = [

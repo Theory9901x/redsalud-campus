@@ -219,7 +219,7 @@ export default async function CursoDetallePage({
                 )}
                 <span className="inline-flex items-center gap-1.5">
                   <Award className="h-4 w-4 text-[color-mix(in_oklch,var(--success)_70%,white)]" aria-hidden="true" />
-                  Certificado al aprobar
+                  Constancia al aprobar
                 </span>
               </div>
 
@@ -303,7 +303,7 @@ export default async function CursoDetallePage({
                       </span>
                     )}
                     <div>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Certificado por</p>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Constancia emitida por</p>
                       <p className="text-[14px] font-semibold text-foreground">{institutionSettings.institutionName}</p>
                       {institutionSettings.signerName && (
                         <p className="text-[12px] text-muted-foreground">

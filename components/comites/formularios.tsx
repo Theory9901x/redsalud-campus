@@ -175,6 +175,7 @@ export function BotonQuitar({ onQuitar, etiqueta = "Quitar" }: { onQuitar: () =>
   const [pendiente, iniciar] = useTransition();
   return (
     <button
+      data-escritura
       type="button"
       disabled={pendiente}
       onClick={() => {

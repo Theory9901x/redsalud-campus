@@ -39,6 +39,7 @@ export function VistaActividad({
   kpis,
   pestanas,
   pestanaInicial,
+  trimestres,
 }: {
   volver: { href: string; etiqueta: string };
   eyebrow: string;
@@ -49,6 +50,8 @@ export function VistaActividad({
   kpis: { valor: string | number; etiqueta: string; detalle?: string }[];
   pestanas: PestanaActividad[];
   pestanaInicial?: string;
+  /** Trimestres que se pueden revisar y el elegido (ver trimestresDeActividad). */
+  trimestres?: { opciones: number[]; elegido: number; enCurso: number };
 }) {
   return (
     <div className="space-y-5">
@@ -93,7 +96,9 @@ export function VistaActividad({
         </div>
       </div>
 
-      <Tabs defaultValue={pestanaInicial ?? pestanas[0]?.valor}>
+      {trimestres && <SelectorTrimestre {...trimestres} />}
+
+      <Tabs key={trimestres?.elegido} defaultValue={pestanaInicial ?? pestanas[0]?.valor}>
         <TabsList className="plan-tabs">
           {pestanas.map(({ valor, etiqueta, Icono, conteo }) => (
             <TabsTrigger key={valor} value={valor}>
@@ -136,5 +141,65 @@ export function SeccionActividad({
       </div>
       {children}
     </section>
+  );
+}
+
+const ROMANOS = ["I", "II", "III", "IV"];
+const MESES = ["ene – mar", "abr – jun", "jul – sep", "oct – dic"];
+
+/**
+ * QUÉ TRIMESTRE SE ESTÁ REVISANDO. Una capacitación programada en varios
+ * trimestres es una sola línea del PIC, pero cada trimestre es una ejecución
+ * distinta: se elige aquí y todo lo de abajo sale solo de ese trimestre.
+ */
+function SelectorTrimestre({ opciones, elegido, enCurso }: { opciones: number[]; elegido: number; enCurso: number }) {
+  return (
+    <nav className="selector-trimestre" aria-label="Trimestre que se está revisando">
+      <div className="selector-trimestre-cabeza">
+        <span className="mono-label">Trimestre en revisión</span>
+        <p>
+          {opciones.length > 1
+            ? "Esta capacitación se repite en varios trimestres. Cada uno se mide por separado: elige cuál revisar."
+            : "Programada en un solo trimestre."}
+        </p>
+      </div>
+      <div className="selector-trimestre-opciones">
+        {[1, 2, 3, 4].map((t) => {
+          const disponible = opciones.includes(t);
+          const activo = t === elegido;
+          const contenido = (
+            <>
+              <span className="st-sello">T{t}</span>
+              <span className="st-texto">
+                <b>Trimestre {ROMANOS[t - 1]}</b>
+                <small>{MESES[t - 1]}</small>
+              </span>
+              {t === enCurso && (
+                <span className="st-vivo">
+                  <span className="punto-vivo" aria-hidden="true" />
+                  En curso
+                </span>
+              )}
+            </>
+          );
+          return disponible ? (
+            <Link
+              key={t}
+              href={`?t=${t}`}
+              scroll={false}
+              className="st-opcion"
+              data-activo={activo || undefined}
+              aria-current={activo ? "page" : undefined}
+            >
+              {contenido}
+            </Link>
+          ) : (
+            <span key={t} className="st-opcion" data-inactivo title="No programada en este trimestre">
+              {contenido}
+            </span>
+          );
+        })}
+      </div>
+    </nav>
   );
 }

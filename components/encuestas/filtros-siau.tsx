@@ -3,10 +3,8 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Filter, RotateCcw } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-const campo = "h-10 rounded-xl border border-border/60 bg-card/70 px-3 text-[13px] font-semibold text-foreground outline-none focus:ring-2 focus:ring-primary/30";
 
 /**
  * Filtros combinables del centro de datos SIAU: periodo (mensual,
@@ -35,68 +33,95 @@ export function FiltrosSiau({
   }
 
   return (
-    <form action={aplicar} className="surface-glass flex flex-wrap items-end gap-3 p-4">
-      <div className="flex items-center gap-1.5 self-center pr-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground">
-        <Filter className="h-3.5 w-3.5" aria-hidden="true" />
-        Periodo
-      </div>
-      <div className="inline-flex rounded-xl bg-muted/60 p-1">
-        {[["mensual", "Mensual"], ["trimestral", "Trimestral"], ["anual", "Anual"]].map(([v, l]) => (
-          <label key={v} className={cn("cursor-pointer rounded-lg px-3 py-1.5 text-[12.5px] font-bold transition-all", tipo === v ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}>
-            <input type="radio" name="tipo" value={v} checked={tipo === v} onChange={() => setTipo(v)} className="sr-only" />
-            {l}
+    <form action={aplicar} className="barra-modulo p-4" aria-label="Filtros del centro de datos">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="enc-campo">
+          <span>Periodo</span>
+          <div className="enc-interruptor" role="radiogroup" aria-label="Tipo de periodo">
+            {[["mensual", "Mensual"], ["trimestral", "Trimestral"], ["anual", "Anual"]].map(([v, l]) => (
+              <label key={v} data-activo={tipo === v}>
+                <input type="radio" name="tipo" value={v} checked={tipo === v} onChange={() => setTipo(v)} className="sr-only" />
+                {l}
+              </label>
+            ))}
+          </div>
+        </div>
+        <label className="enc-campo w-[104px]">
+          <span>Año</span>
+          <select name="anio" defaultValue={valores.anio} className="enc-control">
+            {opciones.anios.map((a) => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+        </label>
+        {tipo === "mensual" && (
+          <label className="enc-campo w-[140px]">
+            <span>Mes</span>
+            <select name="mes" defaultValue={valores.mes} className="enc-control">
+              {MESES.map((m, i) => (
+                <option key={m} value={i + 1}>{m}</option>
+              ))}
+            </select>
           </label>
-        ))}
+        )}
+        {tipo === "trimestral" && (
+          <label className="enc-campo w-[140px]">
+            <span>Trimestre</span>
+            <select name="trimestre" defaultValue={valores.trimestre} className="enc-control">
+              {[1, 2, 3, 4].map((t) => (
+                <option key={t} value={t}>{t}º trimestre</option>
+              ))}
+            </select>
+          </label>
+        )}
+        <div className="flex items-center gap-2 sm:ml-auto">
+          <button type="submit" className="enc-boton enc-boton-primario">
+            <Filter aria-hidden="true" />
+            Aplicar filtros
+          </button>
+          <button type="button" onClick={() => router.push("?")} className="enc-boton" title="Limpiar filtros" aria-label="Limpiar filtros">
+            <RotateCcw aria-hidden="true" />
+          </button>
+        </div>
       </div>
-      <select name="anio" defaultValue={valores.anio} className={campo} aria-label="Año">
-        {opciones.anios.map((a) => (
-          <option key={a} value={a}>{a}</option>
-        ))}
-      </select>
-      {tipo === "mensual" && (
-        <select name="mes" defaultValue={valores.mes} className={campo} aria-label="Mes">
-          {MESES.map((m, i) => (
-            <option key={m} value={i + 1}>{m}</option>
-          ))}
-        </select>
-      )}
-      {tipo === "trimestral" && (
-        <select name="trimestre" defaultValue={valores.trimestre} className={campo} aria-label="Trimestre">
-          {[1, 2, 3, 4].map((t) => (
-            <option key={t} value={t}>{t}º trimestre</option>
-          ))}
-        </select>
-      )}
-      <span className="mx-1 hidden h-8 w-px bg-border/70 sm:block" aria-hidden="true" />
-      <select name="sede" defaultValue={valores.sede} className={campo} aria-label="Sede">
-        <option value="">Todas las sedes</option>
-        {opciones.sedes.map((s) => (
-          <option key={s} value={s}>{s}</option>
-        ))}
-      </select>
-      <select name="servicio" defaultValue={valores.servicio} className={campo} aria-label="Servicio">
-        <option value="">Todos los servicios</option>
-        {opciones.servicios.map((s) => (
-          <option key={s} value={s}>{s}</option>
-        ))}
-      </select>
-      <select name="sexo" defaultValue={valores.sexo} className={campo} aria-label="Sexo">
-        <option value="">Ambos sexos</option>
-        <option value="Femenino">Femenino</option>
-        <option value="Masculino">Masculino</option>
-      </select>
-      <select name="eps" defaultValue={valores.eps} className={campo} aria-label="EPS">
-        <option value="">Todas las EPS</option>
-        {opciones.eps.map((s) => (
-          <option key={s} value={s}>{s}</option>
-        ))}
-      </select>
-      <button type="submit" className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-teal-400 px-4 text-[13px] font-bold text-white shadow-md shadow-primary/25">
-        Aplicar
-      </button>
-      <button type="button" onClick={() => router.push("?")} className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border/60 bg-card/70 px-3 text-[12.5px] font-bold text-muted-foreground hover:text-foreground" title="Limpiar filtros">
-        <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-      </button>
+      {/* Variables de la encuesta */}
+      <div className="mt-4 grid grid-cols-1 gap-3 border-t border-border/60 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+        <label className="enc-campo">
+          <span>Sede</span>
+          <select name="sede" defaultValue={valores.sede} className="enc-control">
+            <option value="">Todas las sedes</option>
+            {opciones.sedes.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </label>
+        <label className="enc-campo">
+          <span>Servicio</span>
+          <select name="servicio" defaultValue={valores.servicio} className="enc-control">
+            <option value="">Todos los servicios</option>
+            {opciones.servicios.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </label>
+        <label className="enc-campo">
+          <span>Sexo</span>
+          <select name="sexo" defaultValue={valores.sexo} className="enc-control">
+            <option value="">Ambos sexos</option>
+            <option value="Femenino">Femenino</option>
+            <option value="Masculino">Masculino</option>
+          </select>
+        </label>
+        <label className="enc-campo">
+          <span>EPS</span>
+          <select name="eps" defaultValue={valores.eps} className="enc-control">
+            <option value="">Todas las EPS</option>
+            {opciones.eps.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </label>
+      </div>
     </form>
   );
 }

@@ -58,7 +58,7 @@ function Boton({
   }
   return (
     <AlertDialog>
-      <AlertDialogTrigger render={<Button type="button" size="sm" variant={variant} disabled={pendiente} className="gap-1.5" />}>
+      <AlertDialogTrigger data-escritura render={<Button type="button" size="sm" variant={variant} disabled={pendiente} className="gap-1.5" />}>
         <Icono className="h-3.5 w-3.5" />
         {etiqueta}
       </AlertDialogTrigger>

@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { privateMediaDiskPath } from "@/lib/storage";
+import { veComoAdmin } from "@/lib/roles";
 
 /** Si el archivo es un adjunto de lección ("lessons/{lessonId}"), ¿el usuario está inscrito en ese curso? */
 async function isEnrolledInLessonCourse(folder: string, userId: string) {
@@ -109,7 +110,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const cacheKey = `${session.user.id}:${media.id}`;
   if (!autorizado(cacheKey)) {
     const isOwner = media.uploadedBy === session.user.id;
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = veComoAdmin(session.user.role);
     const isEnrolled = !isAdmin && !isOwner && (await isEnrolledInLessonCourse(media.folder ?? "", session.user.id));
     const isPlanTutor = !isAdmin && !isOwner && !isEnrolled && (await isTrainingPlanTutor(media.folder ?? "", session.user.id));
     const isTargetedStudent =

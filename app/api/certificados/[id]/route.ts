@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { privateMediaDiskPath } from "@/lib/storage";
+import { veComoAdmin } from "@/lib/roles";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -14,11 +15,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   const certificate = await prisma.certificate.findUnique({ where: { id } });
   if (!certificate) {
-    return NextResponse.json({ error: "Certificado no encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Constancia no encontrada." }, { status: 404 });
   }
 
   const isOwner = certificate.userId === session.user.id;
-  const isAdmin = session.user.role === "ADMIN";
+  const isAdmin = veComoAdmin(session.user.role);
   if (!isAdmin && !isOwner) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
@@ -28,11 +29,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="certificado-${certificate.certificateCode}.pdf"`,
+        "Content-Disposition": `inline; filename="constancia-${certificate.certificateCode}.pdf"`,
         "Cache-Control": "private, max-age=0, no-cache",
       },
     });
   } catch {
-    return NextResponse.json({ error: "El archivo del certificado no está disponible en disco." }, { status: 404 });
+    return NextResponse.json({ error: "El archivo de la constancia no está disponible en disco." }, { status: 404 });
   }
 }

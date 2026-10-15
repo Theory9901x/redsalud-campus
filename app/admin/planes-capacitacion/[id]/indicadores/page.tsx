@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTrainingPlanAccess, requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getPlanIndicators } from "@/lib/plan-indicadores";
 import { PanelIndicadores } from "@/components/training-plans/panel-indicadores";
+import { veComoAdmin } from "@/lib/roles";
 
 /**
  * INDICADORES del plan, como submódulo propio.
@@ -24,7 +25,7 @@ export default async function IndicadoresPlanPage({ params }: { params: Promise<
   const plan = await prisma.trainingPlan.findUnique({ where: { id }, select: { id: true, tutorId: true, title: true } });
   if (!plan) notFound();
 
-  const institucional = sesion.user.role === "ADMIN" || plan.tutorId === sesion.user.id;
+  const institucional = veComoAdmin(sesion.user.role) || plan.tutorId === sesion.user.id;
   if (!institucional) await requireTrainingPlanAccess(id).catch(() => null);
 
   const areaIds = institucional
@@ -34,7 +35,7 @@ export default async function IndicadoresPlanPage({ params }: { params: Promise<
   const datos = await getPlanIndicators(id, areaIds);
   if (!datos) notFound();
 
-  const BASE_PATH = sesion.user.role === "ADMIN" ? "/admin/planes-capacitacion" : "/tutor/planes-capacitacion";
+  const BASE_PATH = veComoAdmin(sesion.user.role) ? "/admin/planes-capacitacion" : "/tutor/planes-capacitacion";
 
   return (
     // Sin lienzo propio: canvas-vivo pinta su fondo opaco y dentro del layout

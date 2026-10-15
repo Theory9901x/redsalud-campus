@@ -155,7 +155,7 @@ export function AreaActividad({
         <Area
           type="monotone"
           dataKey="certificados"
-          name="Certificados"
+          name="Constancias"
           stroke="var(--success)"
           strokeWidth={2}
           fill="url(#gCert)"
@@ -191,7 +191,7 @@ export function LineaMensual({
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Line type="monotone" dataKey="inscripciones" name="Inscripciones" stroke="var(--primary)" strokeWidth={2.2} dot={false} isAnimationActive={false} />
         <Line type="monotone" dataKey="completadas" name="Finalizadas" stroke="var(--success)" strokeWidth={2.2} dot={false} isAnimationActive={false} />
-        <Line type="monotone" dataKey="certificados" name="Certificados" stroke="var(--warning)" strokeWidth={2} dot={false} isAnimationActive={false} />
+        <Line type="monotone" dataKey="certificados" name="Constancias" stroke="var(--warning)" strokeWidth={2} dot={false} isAnimationActive={false} />
       </LineChart>
     </ResponsiveContainer>
   );

@@ -47,7 +47,7 @@ export function ActivityLifecycleActions({
   // decir cuál de las dos cosas es, no ofrecer un botón de "abrir".
   if (status === "DRAFT") {
     return (
-      <div className="flex flex-col items-end gap-1.5">
+      <div className="flex flex-col items-end gap-1.5" data-escritura>
         <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
           {fichaCompleta ? "Retirada de la vista" : "Ficha incompleta"}
@@ -81,7 +81,7 @@ export function ActivityLifecycleActions({
 
   if (status === "OPEN") {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" data-escritura>
         <Button
           type="button"
           size="sm"
@@ -100,7 +100,7 @@ export function ActivityLifecycleActions({
           Ocultar
         </Button>
       <AlertDialog>
-        <AlertDialogTrigger render={<Button type="button" size="sm" variant="destructive" className="gap-1.5" />}>
+        <AlertDialogTrigger data-escritura render={<Button type="button" size="sm" variant="destructive" className="gap-1.5" />}>
           <Lock className="h-4 w-4" />
           Cerrar jornada
         </AlertDialogTrigger>
@@ -130,7 +130,7 @@ export function ActivityLifecycleActions({
   }
 
   return (
-    <div className="flex flex-col items-end gap-2">
+    <div className="flex flex-col items-end gap-2" data-escritura>
       <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         <Lock className="h-3.5 w-3.5" />
         Jornada cerrada{closedAtLabel ? ` · ${closedAtLabel}` : ""}
@@ -138,7 +138,7 @@ export function ActivityLifecycleActions({
 
       {puedeReabrir && (
         <AlertDialog>
-          <AlertDialogTrigger render={<Button type="button" size="sm" variant="outline" className="gap-1.5" disabled={reabriendo} />}>
+          <AlertDialogTrigger data-escritura render={<Button type="button" size="sm" variant="outline" className="gap-1.5" disabled={reabriendo} />}>
             {reabriendo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Unlock className="h-3.5 w-3.5" />}
             Reabrir jornada
           </AlertDialogTrigger>

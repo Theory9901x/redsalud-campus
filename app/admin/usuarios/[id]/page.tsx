@@ -168,11 +168,11 @@ export default async function EditarUsuarioPage({
             <div className="flex items-center gap-2">
               <Award className="h-4 w-4 text-primary" />
               <h2 className="font-display text-lg font-bold text-foreground">
-                Certificados ({certificates.length})
+                Constancias ({certificates.length})
               </h2>
             </div>
             {certificates.length === 0 ? (
-              <EmptyState icon={Award} title="Sin certificados emitidos" className="py-8" />
+              <EmptyState icon={Award} title="Sin constancias emitidas" className="py-8" />
             ) : (
               <div className="surface-panel divide-y divide-slate-300 overflow-hidden dark:divide-slate-700">
                 {certificates.map((certificate) => (

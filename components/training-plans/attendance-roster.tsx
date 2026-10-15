@@ -30,6 +30,7 @@ export function AttendanceRoster({
   paginacion,
   buscar,
   locked = false,
+  trimestre,
 }: {
   activityId: string;
   roster: AttendanceRosterItem[];
@@ -38,11 +39,14 @@ export function AttendanceRoster({
   buscar: string;
   /** La jornada cerró, la participación queda congelada — se oculta la acción de marcar asistencia. */
   locked?: boolean;
+  /** Trimestre que se está revisando: la búsqueda y la paginación lo conservan y la marca cae en él. */
+  trimestre?: number;
 }) {
   const paginas = Math.max(1, Math.ceil(paginacion.total / paginacion.porPagina));
   const enBusqueda = buscar.trim() !== "";
   const qs = (pagina: number) => {
     const p = new URLSearchParams();
+    if (trimestre) p.set("t", String(trimestre));
     if (enBusqueda) p.set("asistencia", buscar);
     if (pagina > 1) p.set("pagina", String(pagina));
     const s = p.toString();
@@ -66,6 +70,7 @@ export function AttendanceRoster({
       {/* Formulario GET: la búsqueda vive en la URL, así el servidor pagina y
           la página se puede compartir o recargar sin perder el filtro. */}
       <form method="get" className="flex flex-wrap items-center gap-2">
+        {trimestre && <input type="hidden" name="t" value={trimestre} />}
         <div className="relative min-w-[220px] flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -78,7 +83,7 @@ export function AttendanceRoster({
         </div>
         <Button type="submit" size="sm" variant="outline">Buscar</Button>
         {enBusqueda && (
-          <Link href="?" className="text-xs font-semibold text-muted-foreground hover:text-foreground">
+          <Link href={trimestre ? `?t=${trimestre}` : "?"} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
             Quitar búsqueda
           </Link>
         )}
@@ -125,7 +130,7 @@ export function AttendanceRoster({
                     </TableCell>
                     {!locked && (
                       <TableCell className="text-right">
-                        <AttendanceToggleButton activityId={activityId} userId={user.id} attended={user.attended} />
+                        <AttendanceToggleButton activityId={activityId} userId={user.id} attended={user.attended} trimestre={trimestre} />
                       </TableCell>
                     )}
                   </TableRow>

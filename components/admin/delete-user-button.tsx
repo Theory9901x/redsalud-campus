@@ -35,7 +35,7 @@ export function DeleteUserButton({ userId, userName }: { userId: string; userNam
 
   return (
     <AlertDialog>
-      <AlertDialogTrigger
+      <AlertDialogTrigger data-escritura
         render={
           <Button
             type="button"

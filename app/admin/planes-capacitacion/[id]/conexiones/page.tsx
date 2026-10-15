@@ -10,6 +10,7 @@ import {
 } from "@/lib/call-connections";
 import { PanelConexiones } from "@/components/training-plans/panel-conexiones";
 import { parsePageSize } from "@/lib/pagination";
+import { veComoAdmin } from "@/lib/roles";
 
 /**
  * TRAZABILIDAD DE CONEXIÓN A VIDEOLLAMADA, por plan de capacitación.
@@ -33,7 +34,7 @@ export default async function ConexionesPlanPage({
   const plan = await prisma.trainingPlan.findUnique({ where: { id }, select: { id: true, tutorId: true, title: true } });
   if (!plan) notFound();
 
-  const institucional = sesion.user.role === "ADMIN" || plan.tutorId === sesion.user.id;
+  const institucional = veComoAdmin(sesion.user.role) || plan.tutorId === sesion.user.id;
   if (!institucional) await requireTrainingPlanAccess(id).catch(() => null);
 
   const areaIds = institucional
