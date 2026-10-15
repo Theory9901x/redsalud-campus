@@ -143,8 +143,10 @@ export default async function MiCapacitacionDetallePage({
               ? ("Cerrado" as const)
               : ("Bloqueado" as const);
 
+    // Sin curso ("No aplica") no es una falta: es una jornada programada que
+    // se mide por asistencia.
     const estadoGeneral: FilaCronograma["estadoGeneral"] = !conContenido
-      ? "Sin contenido"
+      ? "Programada"
       : completada
         ? "Completada"
         : presaber === "Disponible"

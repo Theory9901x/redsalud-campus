@@ -101,7 +101,7 @@ function agruparPorArea(activities: TrainingActivityTimelineItem[]) {
  * toca en el trimestre, no una lista donde tres trimestres van revueltos
  * en un solo lado.
  */
-function agruparPorTrimestre(activities: TrainingActivityTimelineItem[]) {
+function agruparPorTrimestre(activities: TrainingActivityTimelineItem[], soloTrimestre = 0) {
   const grupos = new Map<number, TrainingActivityTimelineItem[]>();
   // Sin trimestre en el PIC pero con jornada o fecha: se deduce de la fecha,
   // que es donde de verdad ocurre. Solo queda "sin trimestre" lo que no
@@ -112,7 +112,12 @@ function agruparPorTrimestre(activities: TrainingActivityTimelineItem[]) {
     return fecha ? [Math.floor(fecha.getMonth() / 3) + 1] : [0];
   };
   for (const a of activities) {
-    for (const t of trimestresDe(a)) grupos.set(t, [...(grupos.get(t) ?? []), a]);
+    for (const t of trimestresDe(a)) {
+      // Con un trimestre filtrado solo se arma SU apartado: una capacitación
+      // que también va en T1 no hace aparecer un "Trimestre I" al pedir T4.
+      if (soloTrimestre && t !== soloTrimestre) continue;
+      grupos.set(t, [...(grupos.get(t) ?? []), a]);
+    }
   }
   const porArea = (a: TrainingActivityTimelineItem, b: TrainingActivityTimelineItem) =>
     (a.area?.sortOrder ?? 99) - (b.area?.sortOrder ?? 99) || a.title.localeCompare(b.title, "es");
@@ -135,7 +140,10 @@ export function TrainingActivityTimeline({
   puedeEliminar = false,
   areasGestionables = null,
   agruparPor = "trimestre",
+  trimestre = 0,
 }: {
+  /** Trimestre filtrado (0 = todos). */
+  trimestre?: number;
   activities: TrainingActivityTimelineItem[];
   /** Eje del cronograma: por trimestre (apartados separados) o por área responsable. */
   agruparPor?: "area" | "trimestre";
@@ -165,15 +173,16 @@ export function TrainingActivityTimeline({
     );
   }
 
-  const areas = agruparPor === "trimestre" ? agruparPorTrimestre(activities) : agruparPorArea(activities);
+  const areas = agruparPor === "trimestre" ? agruparPorTrimestre(activities, trimestre) : agruparPorArea(activities);
 
   return (
     <div className="space-y-6">
       {areas.map((grupo) => {
         const enCurso = "enCurso" in grupo && grupo.enCurso === true;
-        // Cuántas de sus capacitaciones ya tienen curso montado. Es la
-        // pregunta que se le hace al área: qué falta por subir.
+        // Con curso o "No aplica" (adherencia por asistencia): las dos son
+        // válidas, así que se informa, no se alerta.
         const conContenido = grupo.items.filter((a) => a.course).length;
+        const porAsistencia = grupo.items.length - conContenido;
 
         return (
         <div key={grupo.key} className="space-y-3">
@@ -195,13 +204,7 @@ export function TrainingActivityTimeline({
             <p className="text-xs text-muted-foreground">
               {grupo.items.length} {grupo.items.length === 1 ? "capacitación" : "capacitaciones"}
               {" · "}
-              {conContenido === 0 ? (
-                <span className="font-semibold text-amber-700 dark:text-amber-400">sin contenido todavía</span>
-              ) : conContenido === grupo.items.length ? (
-                <span className="text-success">todas con contenido</span>
-              ) : (
-                <span>{conContenido} con contenido</span>
-              )}
+              {[conContenido > 0 && `${conContenido} con curso`, porAsistencia > 0 && `${porAsistencia} por asistencia`].filter(Boolean).join(" · ")}
             </p>
             </div>
             <span className="grupo-linea" aria-hidden="true" />
@@ -266,7 +269,7 @@ export function TrainingActivityTimeline({
                       ) : activity.type === "EXTERNAL_EVENT" ? (
                         TRAINING_ACTIVITY_TYPE_LABELS.EXTERNAL_EVENT
                       ) : (
-                        <span className="font-semibold text-amber-700 dark:text-amber-400">Sin contenido todavía</span>
+                        "Sin curso (no aplica) · adherencia por asistencia"
                       )}
                       {" · "}
                       {COURSE_AUDIENCE_LABELS[activity.targetAudience]}

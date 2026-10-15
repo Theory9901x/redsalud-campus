@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import {
   compararAdherencia,
@@ -1279,7 +1280,7 @@ export async function ensureEnrollment(userId: string, activityId: string): Prom
   // Mismo rastro de asistencia por cualquiera de los tres canales. Va después
   // de la inscripción y es idempotente, así que repetir la entrada no duplica
   // ni adelanta nada.
-  await registrarAsistenciaAutomatica(actividad.courseId, userId);
+  await registrarAsistenciaAutomatica(actividad.courseId, userId, activityId);
 
   const quiz = await prisma.quiz.findFirst({
     where: { courseId: actividad.courseId, moduleId: null, isActive: true },
@@ -1356,11 +1357,25 @@ export async function getActivityLiveMetrics(activityId: string): Promise<Activi
  * No toca actividades ya CERRADAS: ahí la participación quedó congelada al
  * cerrar la jornada, igual que rige para el registro manual.
  */
-export async function registrarAsistenciaAutomatica(courseId: string, userId: string) {
-  const actividades = await prisma.trainingActivity.findMany({
-    where: { courseId, status: { not: "CLOSED" } },
-    select: { id: true },
+export async function registrarAsistenciaAutomatica(courseId: string, userId: string, activityId?: string) {
+  // Con `activityId` (se entró por la puerta de UNA capacitación) solo se
+  // marca esa. Sin él (se completó el curso desde el aula), el curso puede
+  // estar en varias instancias trimestrales del mismo plan: solo se marca la
+  // del trimestre en curso, nunca las de otros trimestres.
+  const candidatas = await prisma.trainingActivity.findMany({
+    where: { courseId, ...(activityId ? { id: activityId } : {}) },
+    select: { id: true, planId: true, status: true, quarters: true, plan: { select: { year: true } } },
   });
+  const hermanas = new Map<string, number>();
+  for (const a of candidatas) hermanas.set(a.planId, (hermanas.get(a.planId) ?? 0) + 1);
+  const ahora = trimestreActual();
+  const actividades = candidatas.filter(
+    (a) =>
+      a.status !== "CLOSED" &&
+      (activityId !== undefined ||
+        (hermanas.get(a.planId) ?? 0) < 2 ||
+        (a.plan.year === ahora.anio && a.quarters.includes(ahora.trimestre)))
+  );
 
   for (const actividad of actividades) {
     await prisma.trainingAttendance.upsert({
@@ -1584,6 +1599,47 @@ export async function getTargetAudienceUsers(targetDepartment: string | null, ta
   });
 }
 
+/** Trimestre y año en curso, en hora de Colombia (el servidor corre en UTC). */
+export function trimestreActual(fecha = new Date()) {
+  const [mes, anio] = new Intl.DateTimeFormat("en-US", { month: "numeric", year: "numeric", timeZone: "America/Bogota" })
+    .format(fecha)
+    .split("/")
+    .map(Number);
+  return { anio, trimestre: Math.floor((mes - 1) / 3) + 1 };
+}
+
+/** [desde, hasta) del trimestre `t` de `anio`, en hora de Colombia. */
+export function rangoTrimestre(anio: number, t: number) {
+  const inicio = (a: number, mes: number) => new Date(`${a}-${String(mes).padStart(2, "0")}-01T00:00:00-05:00`);
+  return { desde: inicio(anio, (t - 1) * 3 + 1), hasta: t === 4 ? inicio(anio + 1, 1) : inicio(anio, t * 3 + 1) };
+}
+
+/**
+ * Ventana de una INSTANCIA TRIMESTRAL. Cuando el mismo curso se dicta en
+ * varios trimestres del plan, cada trimestre es una capacitación aparte y
+ * solo cuenta lo completado dentro de su trimestre: lo de T1 no infla T4.
+ * Si el curso está en una sola línea del plan no hay ventana y cuenta todo
+ * lo completado, como siempre.
+ */
+async function ventanaDeInstancia(activityId: string, courseId: string) {
+  const delCurso = await actividadesDelCurso(courseId);
+  const a = delCurso.find((x) => x.id === activityId);
+  if (!a || a.quarters.length !== 1 || delCurso.filter((x) => x.planId === a.planId).length < 2) return null;
+  return rangoTrimestre(a.plan.year, a.quarters[0]);
+}
+
+/**
+ * Las líneas de todos los planes que usan un curso. Memorizada por petición:
+ * el cumplimiento del plan pide la adherencia de 50+ líneas a la vez y sin
+ * esto serían 50+ consultas simultáneas para la misma respuesta.
+ */
+const actividadesDelCurso = cache((courseId: string) =>
+  prisma.trainingActivity.findMany({
+    where: { courseId },
+    select: { id: true, planId: true, quarters: true, plan: { select: { year: true } } },
+  })
+);
+
 export type ActivityAdherence = {
   source: "AUTOMATIC" | "MANUAL";
   totalExpected: number;
@@ -1616,9 +1672,16 @@ export async function getActivityAdherence(activity: ActivityForAdherence): Prom
   const [totalExpected, adherentCount] = await Promise.all([
     contarAudiencia(activity),
     activity.courseId
-      ? prisma.enrollment.count({
-          where: { courseId: activity.courseId, status: "COMPLETED", user: audiencia },
-        })
+      ? ventanaDeInstancia(activity.id, activity.courseId).then((ventana) =>
+          prisma.enrollment.count({
+            where: {
+              courseId: activity.courseId!,
+              status: "COMPLETED",
+              user: audiencia,
+              ...(ventana ? { completedAt: { gte: ventana.desde, lt: ventana.hasta } } : {}),
+            },
+          })
+        )
       : prisma.trainingAttendance.count({
           where: { activityId: activity.id, attended: true, user: audiencia },
         }),
@@ -1769,13 +1832,20 @@ export async function getActivityAttendanceRoster(activity: {
  * no-adherente se registra NOMINALMENTE, no solo como % agregado).
  */
 export async function getActivityCompletionRoster(activity: {
+  id?: string;
   courseId: string;
   targetAudience: CourseAudience;
   plan: { targetDepartment: string | null };
 }) {
   const users = await getTargetAudienceUsers(activity.plan.targetDepartment, activity.targetAudience);
+  const ventana = activity.id ? await ventanaDeInstancia(activity.id, activity.courseId) : null;
   const completed = await prisma.enrollment.findMany({
-    where: { courseId: activity.courseId, userId: { in: users.map((u) => u.id) }, status: "COMPLETED" },
+    where: {
+      courseId: activity.courseId,
+      userId: { in: users.map((u) => u.id) },
+      status: "COMPLETED",
+      ...(ventana ? { completedAt: { gte: ventana.desde, lt: ventana.hasta } } : {}),
+    },
     select: { userId: true },
   });
   const completedIds = new Set(completed.map((e) => e.userId));

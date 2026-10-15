@@ -221,6 +221,7 @@ export function CronogramaView({
           puedeEliminar={puedeEliminar}
           areasGestionables={areasGestionables}
           agruparPor={agruparPor}
+          trimestre={trimestre}
         />
       )}
       {vista === "ampliada" && (

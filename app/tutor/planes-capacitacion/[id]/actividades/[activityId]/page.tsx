@@ -54,6 +54,7 @@ import { ActivityReportPanel } from "@/components/training-plans/activity-report
 import { RegistroConexiones } from "@/components/training-plans/registro-conexiones";
 import { ExternalParticipantsPanel } from "@/components/training-plans/external-participants-panel";
 import QRCode from "qrcode";
+import { nombreTrimestre } from "@/components/training-plans/trimestres-chip";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
 import {
   TRAINING_ACTIVITY_TYPE_LABELS,
@@ -335,14 +336,14 @@ export default async function TutorActividadDetallePage({
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <SeccionActividad
             titulo="Contenido del curso"
-            bajada="Vincular un curso activa el cálculo automático de adherencia y el ciclo presaber/postsaber."
+            bajada="Opcional. Con curso, la adherencia sale de quien lo completa (en el trimestre de esta instancia); sin curso -«No aplica»-, de la asistencia."
             accion={
               activity.course ? (
                 <DeleteEntityButton
                   action={unlinkCourseAction}
-                  nombre="El vínculo con el curso"
-                  descripcion="La capacitación vuelve a quedar «sin contenido todavía». El curso en sí no se toca."
-                  etiquetaBoton="Desvincular"
+                  nombre="El curso de esta capacitación"
+                  descripcion="Queda en «No aplica»: sin curso, y la adherencia se mide con la asistencia real (conexión a la sala o registro). El curso en sí no se toca y se puede volver a vincular."
+                  etiquetaBoton="No aplica"
                   size="sm"
                 />
               ) : undefined
@@ -357,7 +358,11 @@ export default async function TutorActividadDetallePage({
                 .
               </p>
             ) : (
-              <div className="barra-modulo form-premium p-5">
+              <div className="barra-modulo form-premium space-y-4 p-5">
+                <p className="text-sm text-muted-foreground">
+                  <strong className="text-foreground">No aplica curso.</strong> La adherencia se mide con la asistencia real a
+                  la jornada. Si esta capacitación sí necesita un curso, vincúlalo:
+                </p>
                 <LinkCourseForm action={linkCourseAction} courses={linkableCourses} />
               </div>
             )}
@@ -413,7 +418,7 @@ export default async function TutorActividadDetallePage({
   return (
     <VistaActividad
       volver={{ href: `${BASE_PATH}/${id}`, etiqueta: activity.plan.title }}
-      eyebrow={`${activity.area?.name ?? "Capacitación del plan"}${activity.programa ? ` · ${activity.programa}` : ""}`}
+      eyebrow={`${activity.area?.name ?? "Capacitación del plan"}${activity.programa ? ` · ${activity.programa}` : ""}${activity.quarters.length === 1 ? ` · ${nombreTrimestre(activity.quarters[0], false)}` : ""}`}
       titulo={activity.title}
       chips={[
         { Icono: CalendarRange, contenido: etiquetaProgramacion(activity) },
@@ -424,7 +429,7 @@ export default async function TutorActividadDetallePage({
             ? activity.course.title
             : activity.type === "EXTERNAL_EVENT"
               ? TRAINING_ACTIVITY_TYPE_LABELS.EXTERNAL_EVENT
-              : "Sin curso · gestión directa",
+              : "No aplica curso · adherencia por asistencia",
         },
       ]}
       estado={activity.status}
