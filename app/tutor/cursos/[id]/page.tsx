@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, BookOpen, ExternalLink, Info, ListTree, Settings2, Users } from "lucide-react";
 import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
-import { Badge } from "@/components/ui/badge";
+import { ModuloHero } from "@/components/training-plans/modulo-hero";
+import { PildoraEstado } from "@/components/training-plans/plan-visual";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CourseForm } from "@/components/cursos/course-form";
 import { CourseImageUploader } from "@/components/cursos/course-image-uploader";
 import { ModuleLessonEditor } from "@/components/cursos/module-lesson-editor";
-import { COURSE_STATUS_CLASSES, COURSE_STATUS_LABELS } from "@/components/cursos/labels";
+import { COURSE_STATUS_LABELS } from "@/components/cursos/labels";
 import { updateCourseAction } from "@/app/admin/cursos/actions";
 
 export default async function TutorCursoDetallePage({
@@ -31,6 +32,8 @@ export default async function TutorCursoDetallePage({
           orderBy: { title: "asc" },
           include: { questions: { orderBy: { sortOrder: "asc" }, include: { options: { orderBy: { sortOrder: "asc" } } } } },
         },
+        category: { select: { name: true } },
+        _count: { select: { enrollments: true, certificates: true } },
       },
     }),
     prisma.courseCategory.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
@@ -41,45 +44,76 @@ export default async function TutorCursoDetallePage({
     redirect("/no-autorizado");
   }
 
+  const lecciones = course.modules.reduce((n, m) => n + m.lessons.length, 0);
+  const estadoPildora = course.status === "PUBLISHED" ? "ACTIVE" : course.status === "DRAFT" ? "DRAFT" : "CLOSED";
+
   return (
-    <div className="space-y-6">
-      <div>
-        <Link
-          href="/tutor/cursos"
-          className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Volver a mis cursos
-        </Link>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-2xl font-extrabold text-foreground">{course.title}</h1>
-          <Badge className={COURSE_STATUS_CLASSES[course.status]}>{COURSE_STATUS_LABELS[course.status]}</Badge>
-          {course.status === "PUBLISHED" && (
-            <Link
-              href={`/cursos/${course.slug}`}
-              target="_blank"
-              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-            >
-              Ver en el catálogo <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
+    <div className="space-y-5">
+      <Link
+        href="/tutor/cursos"
+        className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        Mis cursos
+      </Link>
+
+      <div className="space-y-3">
+        <ModuloHero
+          eyebrow={`Curso · ${course.category?.name ?? "Sin categoría"}`}
+          Icono={BookOpen}
+          titulo={course.title}
+          descripcion={course.shortDescription}
+          cifras={[
+            { valor: course.modules.length, etiqueta: "Módulos" },
+            { valor: lecciones, etiqueta: "Lecciones" },
+            { valor: course.quizzes.length, etiqueta: "Evaluaciones" },
+            { valor: course._count.enrollments, etiqueta: "Inscritos", detalle: `${course._count.certificates} constancias` },
+          ]}
+          acciones={
+            <>
+              <Link href={`/tutor/inscritos?vista=cursos&curso=${course.id}`} className="boton-hero">
+                <Users className="h-4 w-4" aria-hidden="true" />
+                Inscritos y progreso
+              </Link>
+              {course.status === "PUBLISHED" && (
+                <Link href={`/cursos/${course.slug}`} target="_blank" className="enlace-hero">
+                  <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                  Ver en el catálogo
+                </Link>
+              )}
+            </>
+          }
+        />
+        <div className="barra-modulo flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <span className="mono-label">Estado</span>
+            <PildoraEstado estado={estadoPildora}>{COURSE_STATUS_LABELS[course.status]}</PildoraEstado>
+          </div>
+          {course.status === "DRAFT" && (
+            <p className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
+              <Info className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              En borrador: un administrador debe publicarlo para que aparezca en el catálogo.
+            </p>
           )}
         </div>
-        {course.status === "DRAFT" && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Este curso está en borrador. Un administrador debe publicarlo para que aparezca en el catálogo.
-          </p>
-        )}
       </div>
 
       <Tabs defaultValue="general">
-        <TabsList>
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="temario">Temario</TabsTrigger>
+        <TabsList className="plan-tabs">
+          <TabsTrigger value="general">
+            <Settings2 aria-hidden="true" />
+            General
+          </TabsTrigger>
+          <TabsTrigger value="temario">
+            <ListTree aria-hidden="true" />
+            Temario
+            <span className="conteo">{lecciones}</span>
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="general" className="space-y-6">
+        <TabsContent value="general" className="space-y-5 pt-5">
           <CourseImageUploader courseId={course.id} basePath="/tutor/cursos" imageUrl={course.imageUrl} />
-          <div className="surface p-6">
+          <div className="barra-modulo p-5 sm:p-6">
             <CourseForm
               mode="edit"
               action={updateCourseAction.bind(null, course.id, "/tutor/cursos")}
@@ -105,7 +139,7 @@ export default async function TutorCursoDetallePage({
           </div>
         </TabsContent>
 
-        <TabsContent value="temario">
+        <TabsContent value="temario" className="pt-5">
           <ModuleLessonEditor courseId={course.id} initialModules={course.modules} initialQuizzes={course.quizzes} />
         </TabsContent>
       </Tabs>

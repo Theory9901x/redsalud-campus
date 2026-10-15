@@ -8,12 +8,12 @@ import {
   BookOpen,
   CalendarRange,
   Award,
-  ClipboardList,
+  ClipboardCheck,
   Layers,
   LayoutDashboard,
+  MessageSquareText,
   Users,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { AdminTopbar } from "@/components/admin/topbar";
 import { AppSidebar, type GrupoNav } from "@/components/shell/app-sidebar";
 
@@ -22,17 +22,25 @@ import { AppSidebar, type GrupoNav } from "@/components/shell/app-sidebar";
  * profundo, verde éxito como color principal del rol, badge "TUTOR"
  * permanente y franja de acento superior que distingue el área a simple
  * vista. Misma familia visual que el resto del chrome, distinta firma.
+ *
+ * El menú va en el orden del trabajo real de un tutor de área: primero el
+ * PLAN (sus capacitaciones, lo que evalúa y lo que pregunta), luego las
+ * PERSONAS (quién avanza, constancias) y por último los CURSOS que dicta.
  */
 const NAV_GROUPS: GrupoNav[] = [
   {
     label: null,
-    items: [{ href: "/tutor", label: "Panel", icon: LayoutDashboard, exact: true }],
+    items: [{ href: "/tutor", label: "Centro de mando", icon: LayoutDashboard, exact: true }],
   },
   {
-    label: "Contenido",
+    label: "Plan de capacitación",
     items: [
-      { href: "/tutor/cursos", label: "Mis cursos", icon: BookOpen },
       { href: "/tutor/planes-capacitacion", label: "Planes de capacitación", icon: CalendarRange },
+      // Vista de OBSERVACIÓN, no de acción: el tutor abre las ventanas del
+      // ciclo, no las presenta, así que aquí ve en vivo quién está
+      // presentando y quién terminó -no la pantalla del estudiante-.
+      { href: "/tutor/mis-encuestas", label: "Evaluaciones en vivo", icon: ClipboardCheck },
+      { href: "/encuestas", label: "Encuestas", icon: MessageSquareText },
     ],
   },
   {
@@ -43,29 +51,24 @@ const NAV_GROUPS: GrupoNav[] = [
     ],
   },
   {
-    // Vista de OBSERVACIÓN, no de acción: el tutor abre las ventanas del
-    // ciclo, no las presenta, así que aquí ve en vivo quién está
-    // presentando y quién terminó -no la pantalla del estudiante-.
-    label: "Seguimiento",
+    label: "Cursos",
     items: [
-      { href: "/tutor/mis-encuestas", label: "Evaluaciones en vivo", icon: ClipboardList },
-      { href: "/encuestas", label: "Encuestas", icon: ClipboardList },
+      { href: "/tutor/cursos", label: "Mis cursos", icon: BookOpen },
+      { href: "/cursos", label: "Catálogo institucional", icon: Layers },
     ],
-  },
-  {
-    label: "Explorar",
-    items: [{ href: "/cursos", label: "Catálogo institucional", icon: Layers }],
   },
 ];
 
 const BREADCRUMBS: [string, string][] = [
-  ["/tutor/cursos", "Contenido · Mis cursos"],
-  ["/tutor/planes-capacitacion", "Contenido · Planes de capacitación"],
+  ["/tutor/planes-capacitacion/en-vivo", "Plan · En vivo"],
+  ["/tutor/planes-capacitacion", "Plan · Planes de capacitación"],
+  ["/tutor/mis-encuestas", "Plan · Evaluaciones en vivo"],
+  ["/encuestas", "Plan · Encuestas"],
   ["/tutor/inscritos", "Personas · Inscritos y progreso"],
   ["/tutor/certificados", "Personas · Constancias"],
-  ["/tutor/mis-encuestas", "Seguimiento · Evaluaciones en vivo"],
-  ["/cursos", "Explorar · Catálogo institucional"],
-  ["/tutor", "Panel"],
+  ["/tutor/cursos", "Cursos · Mis cursos"],
+  ["/cursos", "Cursos · Catálogo institucional"],
+  ["/tutor", "Centro de mando"],
 ];
 
 export function TutorShell({
@@ -80,7 +83,7 @@ export function TutorShell({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const breadcrumb = BREADCRUMBS.find(([prefix]) => pathname.startsWith(prefix))?.[1] ?? "Panel";
+  const breadcrumb = BREADCRUMBS.find(([prefix]) => pathname.startsWith(prefix))?.[1] ?? "Centro de mando";
 
   return (
     <div className="accent-tutor flex min-h-screen">
@@ -90,10 +93,8 @@ export function TutorShell({
         grupos={NAV_GROUPS}
         subtitulo="Espacio de tutor"
         claseAcento="accent-tutor"
-        pie={{
-          titulo: "Tus cursos, tu seguimiento",
-          texto: "Aquí ves quién avanza, quién se quedó y a quién hay que empujar.",
-        }}
+        // Sin tarjeta de pie: con ocho entradas se montaba sobre el menú en
+        // pantallas de 900 px de alto.
       />
       <div className="page-canvas flex min-w-0 flex-1 flex-col">
         {/* Franja de acento del área tutor: verde -> azul, siempre visible. */}
