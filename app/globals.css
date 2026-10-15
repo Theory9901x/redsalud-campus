@@ -2290,6 +2290,8 @@
   color: var(--muted-foreground);
 }
 .form-premium textarea { padding-block: 0.6rem; }
+/* Campos anidados dentro de su <label>: no heredan la tipografía de la etiqueta. */
+.form-premium label :is(input, select, textarea) { font-family: var(--font-cuerpo); font-size: 0.86rem; font-weight: 400; letter-spacing: normal; text-transform: none; }
 /* Campo con ícono absoluto (buscador): más específico que la regla general para conservar el hueco del ícono. */
 .form-premium .relative > svg ~ input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) { padding-left: 2.3rem; }
 
