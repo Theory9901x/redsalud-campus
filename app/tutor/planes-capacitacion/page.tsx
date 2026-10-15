@@ -6,6 +6,7 @@ import { TrainingPlanList } from "@/components/training-plans/training-plan-list
 import { ModuloHero } from "@/components/training-plans/modulo-hero";
 import { RielTrimestres, conteoPorTrimestre } from "@/components/training-plans/plan-visual";
 import { nombreTrimestre, trimestreEnCurso } from "@/components/training-plans/trimestres-chip";
+import { PestanasPlanTutor } from "@/components/en-vivo/pestanas-plan-tutor";
 
 export default async function TutorPlanesCapacitacionPage() {
   const session = await requireTutorOrAdmin();
@@ -16,6 +17,7 @@ export default async function TutorPlanesCapacitacionPage() {
 
   return (
     <div className="space-y-6">
+      <PestanasPlanTutor activa="planes" />
       <ModuloHero
         eyebrow="Tu espacio de tutor"
         Icono={GraduationCap}

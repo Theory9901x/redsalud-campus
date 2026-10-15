@@ -220,9 +220,13 @@ export default async function CatalogoCursosPage({
     );
   }
 
-  if (session?.user.role === "ADMIN") {
+  if (session?.user.role === "ADMIN" || session?.user.role === "SEGUIMIENTO") {
     return (
-      <AdminShell userName={session.user.name ?? "Administrador"} restrictedAdminSections={session.user.restrictedAdminSections}>
+      <AdminShell
+        userName={session.user.name ?? "Administrador"}
+        restrictedAdminSections={session.user.restrictedAdminSections}
+        soloLectura={session.user.role === "SEGUIMIENTO"}
+      >
         <div className="mx-auto w-full max-w-6xl">{content}</div>
       </AdminShell>
     );
