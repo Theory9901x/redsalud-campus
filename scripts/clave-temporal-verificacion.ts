@@ -16,7 +16,8 @@ const RESPALDO = (email: string) => `/tmp/clave-original-${email.replace(/[^a-z0
 async function main() {
   const [modo, email, clave] = process.argv.slice(2);
   if (!modo || !email) throw new Error("uso: poner <email> <clave> | restaurar <email>");
-  const usuario = await prisma.user.findUniqueOrThrow({ where: { email }, select: { id: true, passwordHash: true, mustChangePassword: true } });
+  // Acepta correo o nombre de usuario (algunas cuentas de área no tienen correo).
+  const usuario = await prisma.user.findFirstOrThrow({ where: { OR: [{ email }, { username: email }] }, select: { id: true, passwordHash: true, mustChangePassword: true } });
   const archivo = RESPALDO(email);
   if (modo === "poner") {
     if (!clave) throw new Error("falta la clave temporal");
