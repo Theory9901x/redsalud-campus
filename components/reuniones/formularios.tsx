@@ -4,6 +4,7 @@ import { useActionState, useState, useTransition } from "react";
 import { CalendarPlus, CheckCircle2, FileUp, Lock, LockOpen, Plus, Save, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { EstadoReunion } from "@/app/admin/reuniones/actions";
+import { CamposFichaDocumento } from "@/components/documentos/campos-ficha-documento";
 
 const INICIAL: EstadoReunion = { error: null };
 type Sesion = { fecha: string; inicio: string; fin: string; dirigidoA: string };
@@ -177,6 +178,7 @@ export function SubirActaFirmada({ action }: { action: (s: EstadoReunion, fd: Fo
   const [state, formAction, pendiente] = useActionState(action, INICIAL);
   return (
     <form action={formAction} className="space-y-3">
+      <CamposFichaDocumento tipoFijo="ACTA" />
       <input type="file" name="file" accept=".pdf,image/*,.doc,.docx" required className="w-full text-sm" />
       {state.error && <p className="text-sm text-destructive">{state.error}</p>}
       {state.ok && <p className="flex items-center gap-1.5 text-sm font-semibold text-success"><CheckCircle2 className="h-4 w-4" /> Acta firmada archivada.</p>}

@@ -573,6 +573,9 @@ model Media {
   fileUrl    String
   fileSize   Int // bytes
   folder     String? // organización simple por carpeta
+  /** Qué documento es (PRESENTACION, LISTA_ASISTENCIA, ACTA, GRABACION, INFORME, FORMATO, EVIDENCIA, RESOLUCION, OTRO). Ver lib/documentos.ts. */
+  kind        String?
+  description String?
   uploadedBy String
   uploader   User     @relation(fields: [uploadedBy], references: [id])
   createdAt  DateTime @default(now())

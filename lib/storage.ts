@@ -3,6 +3,7 @@ import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
+import { leerTipoDocumento } from "@/lib/documentos";
 
 const PRIVATE_UPLOADS_ROOT = path.join(process.cwd(), "uploads");
 const PUBLIC_UPLOADS_ROOT = path.join(process.cwd(), "public", "uploads");
@@ -121,7 +122,7 @@ async function savePrivateFile(
   file: File,
   folder: string,
   uploadedBy: string,
-  extra?: { trainingPlanId?: string; trainingActivityId?: string }
+  extra?: { trainingPlanId?: string; trainingActivityId?: string; kind?: string | null; description?: string | null }
 ) {
   const id = randomUUID();
   const fileName = sanitizeFileName(file.name);
@@ -159,13 +160,25 @@ export async function saveAvatarImage(file: File, userId: string) {
 }
 
 /** Documento adjunto a un plan de capacitación (Etapa 2). */
-export async function saveTrainingPlanDocument(file: File, planId: string, uploadedBy: string) {
-  return savePrivateFile(file, `training-plans/${planId}`, uploadedBy, { trainingPlanId: planId });
+export type FichaDocumento = { kind?: string | null; description?: string | null };
+
+export async function saveTrainingPlanDocument(file: File, planId: string, uploadedBy: string, ficha: FichaDocumento = {}) {
+  return savePrivateFile(file, `training-plans/${planId}`, uploadedBy, { trainingPlanId: planId, ...ficha });
 }
 
 /** Documento adjunto a una actividad puntual del plan (Etapa 2). */
-export async function saveTrainingActivityDocument(file: File, activityId: string, uploadedBy: string) {
-  return savePrivateFile(file, `training-activities/${activityId}`, uploadedBy, { trainingActivityId: activityId });
+export async function saveTrainingActivityDocument(file: File, activityId: string, uploadedBy: string, ficha: FichaDocumento = {}) {
+  return savePrivateFile(file, `training-activities/${activityId}`, uploadedBy, { trainingActivityId: activityId, ...ficha });
+}
+
+/** Lee la ficha (tipo y descripción) del formulario de carga. */
+export function fichaDesdeFormulario(fd: FormData): FichaDocumento {
+  const kind = fd.get("kind");
+  const description = fd.get("description");
+  return {
+    kind: leerTipoDocumento(kind),
+    description: typeof description === "string" && description.trim() ? description.trim().slice(0, 200) : null,
+  };
 }
 
 export function privateMediaDiskPath(folder: string, fileName: string) {

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireTutorOrAdmin } from "@/lib/auth-helpers";
-import { saveTrainingPlanDocument, saveTrainingActivityDocument } from "@/lib/storage";
+import { saveTrainingPlanDocument, saveTrainingActivityDocument, fichaDesdeFormulario } from "@/lib/storage";
 import { registrarAuditoria } from "@/lib/audit";
 import { closeActivityAction, reopenActivityAction } from "@/app/admin/planes-capacitacion/actions";
 import type { CommitteeRole, TrainingModality } from "@prisma/client";
@@ -83,7 +83,7 @@ export async function subirDocumentoComiteAction(planId: string, _prev: EstadoCo
   const sesion = await requireTutorOrAdmin();
   const file = fd.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Selecciona un archivo." };
-  await saveTrainingPlanDocument(file, planId, sesion.user.id);
+  await saveTrainingPlanDocument(file, planId, sesion.user.id, fichaDesdeFormulario(fd));
   revalidatePath(`${BASE}/${planId}`);
   return { error: null };
 }

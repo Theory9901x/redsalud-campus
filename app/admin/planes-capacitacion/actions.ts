@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireTutorOrAdmin, requireTrainingPlanAccess, requireTrainingActivityAccess } from "@/lib/auth-helpers";
-import { saveTrainingPlanDocument, saveTrainingActivityDocument } from "@/lib/storage";
+import { saveTrainingPlanDocument, saveTrainingActivityDocument, fichaDesdeFormulario } from "@/lib/storage";
 import { trainingPlanSchema, trainingActivitySchema, trainingSessionSchema } from "@/lib/validations/training-plan";
 import { estadoPresaber, estadoPostsaber, puedeHabilitarPostsaber } from "@/lib/presaber-postsaber";
 import {
@@ -192,7 +192,7 @@ export async function uploadTrainingPlanDocumentAction(
     return { error: "Selecciona un archivo." };
   }
 
-  await saveTrainingPlanDocument(file, planId, session.user.id);
+  await saveTrainingPlanDocument(file, planId, session.user.id, fichaDesdeFormulario(formData));
 
   revalidatePath(`${basePath}/${planId}`);
   return { error: null };
@@ -215,7 +215,7 @@ export async function uploadTrainingActivityDocumentAction(
     return { error: "Selecciona un archivo." };
   }
 
-  await saveTrainingActivityDocument(file, activityId, session.user.id);
+  await saveTrainingActivityDocument(file, activityId, session.user.id, fichaDesdeFormulario(formData));
 
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
   return { error: null };

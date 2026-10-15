@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
-import { saveTrainingActivityDocument } from "@/lib/storage";
+import { saveTrainingActivityDocument, fichaDesdeFormulario } from "@/lib/storage";
 import { registrarAuditoria } from "@/lib/audit";
 
 /**
@@ -146,7 +146,7 @@ export async function subirActaFirmadaAction(planId: string, activityId: string,
   const act = await prisma.trainingActivity.findFirst({ where: { id: activityId, planId }, select: { id: true } });
   if (!act) return { error: "La sesión no existe." };
   const nombre = file.name.toUpperCase().startsWith("ACTA") ? file.name : `ACTA ${file.name}`;
-  await saveTrainingActivityDocument(new File([await file.arrayBuffer()], nombre, { type: file.type || "application/octet-stream" }), activityId, sesion.user.id);
+  await saveTrainingActivityDocument(new File([await file.arrayBuffer()], nombre, { type: file.type || "application/octet-stream" }), activityId, sesion.user.id, { ...fichaDesdeFormulario(fd), kind: "ACTA" });
   await registrarAuditoria({ userId: sesion.user.id, action: "UPDATE", entity: "TrainingActivity", entityId: activityId, description: `Acta firmada cargada: ${nombre}` }).catch(() => {});
   revalidatePath(`${BASE}/${planId}/sesiones/${activityId}`);
   revalidatePath(`${BASE}/${planId}`);

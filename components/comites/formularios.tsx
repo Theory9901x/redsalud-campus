@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { CamposFichaDocumento } from "@/components/documentos/campos-ficha-documento";
 import type { EstadoComite } from "@/app/admin/comites/actions";
 
 type Accion = (prev: EstadoComite, fd: FormData) => Promise<EstadoComite>;
@@ -115,12 +116,15 @@ export function FormularioInformacionComite({
 export function FormularioDocumentoComite({ action }: { action: Accion }) {
   const [state, formAction, pendiente] = useActionState(action, INICIAL);
   return (
-    <form action={formAction} className="flex flex-col gap-3 sm:flex-row sm:items-center">
-      <input type="file" name="file" required className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary" />
-      <Button type="submit" size="sm" disabled={pendiente} className="gap-1.5">
-        {pendiente ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
-        Adjuntar
-      </Button>
+    <form action={formAction} className="form-premium space-y-3">
+      <CamposFichaDocumento tipoInicial="RESOLUCION" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <input type="file" name="file" required className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary" />
+        <Button type="submit" size="sm" disabled={pendiente} className="gap-1.5">
+          {pendiente ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
+          Adjuntar
+        </Button>
+      </div>
       {state.error && <p className="text-sm text-destructive">{state.error}</p>}
     </form>
   );
