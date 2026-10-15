@@ -7,6 +7,7 @@ import {
   getActivityAdherence,
   trimestreActual,
 } from "@/lib/training-plans";
+import { CURSOS_CON_CONSTANCIA } from "@/lib/constancias-regla";
 
 /*
  * INSCRITOS Y PROGRESO (/tutor/inscritos). Solo LECTURA y solo lo suyo:
@@ -414,7 +415,7 @@ export async function getConstanciasTutor(
     return new Date(`${ym}-01T00:00:00-05:00`);
   })();
   const pendientesWhere: Prisma.EnrollmentWhereInput = {
-    course: { tutorId },
+    course: { tutorId, ...CURSOS_CON_CONSTANCIA },
     ...(filtros.curso ? { courseId: filtros.curso } : {}),
     status: "COMPLETED",
     certificate: { is: null },

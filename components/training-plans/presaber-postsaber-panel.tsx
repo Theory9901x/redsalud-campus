@@ -1,7 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
-import { PlayCircle, Lock, ArrowRight, TrendingUp, TrendingDown, Minus, Sparkles } from "lucide-react";
+import { PlayCircle, Lock, ArrowRight, TrendingUp, TrendingDown, Minus, Sparkles, FileSearch, ExternalLink } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -82,6 +83,21 @@ function Boton({
  * puede abrirse antes de que el presaber cierre, y hay que poder mostrar
  * las dos por separado mientras eso pasa.
  */
+/** Ir a VER la evaluación: el editor de preguntas del curso y el enlace estable para presentarla. */
+function EnlacesEvaluacion({ enlaces, presentar }: { enlaces?: { editor: string }; presentar: string }) {
+  if (!enlaces) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 pt-1">
+      <Link href={enlaces.editor} className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11.5px] font-semibold text-foreground hover:border-primary/40 hover:text-primary">
+        <FileSearch className="h-3.5 w-3.5" aria-hidden="true" /> Ver evaluación
+      </Link>
+      <a href={presentar} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11.5px] font-semibold text-foreground hover:border-primary/40 hover:text-primary">
+        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /> Abrir como la presenta el personal
+      </a>
+    </div>
+  );
+}
+
 export function PresaberPostsaberPanel({
   ventanas,
   etiquetas,
@@ -90,8 +106,11 @@ export function PresaberPostsaberPanel({
   onClosePresaber,
   onOpenPostsaber,
   onClosePostsaber,
+  enlaces,
 }: {
   ventanas: Ventanas;
+  /** A dónde ir a VER la evaluación: el editor de preguntas del curso y el enlace estable para presentarla. */
+  enlaces?: { editor: string; presaber: string; postsaber: string };
   /**
    * Las cuatro fechas ya formateadas, calculadas en el servidor.
    *
@@ -114,6 +133,7 @@ export function PresaberPostsaberPanel({
   onOpenPostsaber: () => Promise<EvaluationCycleState>;
   onClosePostsaber: () => Promise<EvaluationCycleState>;
 }) {
+
   const [pendiente, iniciar] = useTransition();
 
   function ejecutar(fn: () => Promise<EvaluationCycleState>) {
@@ -186,6 +206,7 @@ export function PresaberPostsaberPanel({
               {resumen.presaberCantidad > 0 && ` · ${resumen.presaberCantidad} lo presentaron`}
             </p>
           )}
+          <EnlacesEvaluacion enlaces={enlaces} presentar={enlaces?.presaber ?? "#"} />
         </div>
 
         <div className="surface space-y-2 p-4">
@@ -220,6 +241,7 @@ export function PresaberPostsaberPanel({
               {resumen.postsaberCantidad > 0 && ` · ${resumen.postsaberCantidad} lo presentaron`}
             </p>
           )}
+          <EnlacesEvaluacion enlaces={enlaces} presentar={enlaces?.postsaber ?? "#"} />
         </div>
       </div>
 

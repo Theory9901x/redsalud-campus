@@ -329,6 +329,11 @@ export default async function AdminActividadDetallePage({
                   etiquetas={etiquetasCiclo}
                   onOpenPostsaber={openPostsaber}
                   onClosePostsaber={closePostsaber}
+                  enlaces={
+                    activity.course
+                      ? { editor: `/admin/cursos/${activity.course.id}#evaluacion-final`, presaber: `/c/${activityId}/presaber`, postsaber: `/c/${activityId}/postsaber` }
+                      : undefined
+                  }
                 />
                 {resultadosCiclo && <CycleResults resultados={resultadosCiclo} activityId={activityId} />}
               </>

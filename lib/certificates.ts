@@ -5,6 +5,7 @@ import { renderCertificatePdf } from "@/lib/certificate-pdf";
 import { saveCertificatePdf, publicUploadDiskPath } from "@/lib/storage";
 import { buildFieldValues, parseCertificateLayout } from "@/lib/certificate-template";
 import { COURSE_TYPE_LABELS } from "@/components/cursos/labels";
+import { cursoEmiteConstancia } from "@/lib/constancias-regla";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -84,6 +85,8 @@ export async function issueCertificateIfEligible(enrollmentId: string): Promise<
     where: { id: enrollmentId },
     include: { user: true, course: true },
   });
+  // Regla de la entidad: solo Inducción y reinducción emite constancia.
+  if (!cursoEmiteConstancia(enrollment.course.courseType)) return null;
 
   const certificateCode = await generateCertificateCode();
   const validationHash = generateValidationHash();

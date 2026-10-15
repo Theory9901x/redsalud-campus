@@ -21,6 +21,7 @@ import { AutoSearchInput, AutoFilterSelect } from "@/components/admin/auto-searc
 import { parsePageSize } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import type { CertificateStatus, Prisma } from "@prisma/client";
+import { AVISO_CONSTANCIA, CURSOS_CON_CONSTANCIA } from "@/lib/constancias-regla";
 
 export default async function AdminCertificadosPage({
   searchParams,
@@ -50,7 +51,7 @@ export default async function AdminCertificadosPage({
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    prisma.course.findMany({ orderBy: { title: "asc" }, select: { id: true, title: true } }),
+    prisma.course.findMany({ where: CURSOS_CON_CONSTANCIA, orderBy: { title: "asc" }, select: { id: true, title: true } }),
     prisma.certificate.count({ where }),
   ]);
 
@@ -58,11 +59,11 @@ export default async function AdminCertificadosPage({
     <div className="space-y-6">
       <AdminPageHeader
         title="Constancias"
-        description="Se emiten automáticamente al completar un curso. Puedes buscarlos, anularlos y volver a descargarlos."
+        description={`${AVISO_CONSTANCIA} Se emite sola al completarlo; aquí la buscas, la anulas o la vuelves a descargar.`}
         action={
           <Link href="/admin/certificados/plantilla" className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>
             <LayoutTemplate className="h-4 w-4" />
-            Editar plantilla del certificado
+            Editar plantilla de la constancia
           </Link>
         }
       />

@@ -16,6 +16,7 @@ import { CourseLessonAccordion } from "@/components/cursos/course-lesson-accordi
 import { PublicCoursesShell } from "@/components/cursos/public-courses-shell";
 import { ShareCourseButton } from "@/components/cursos/share-course-button";
 import { COURSE_TYPE_LABELS } from "@/components/cursos/labels";
+import { cursoEmiteConstancia } from "@/lib/constancias-regla";
 
 /** Encabezado de sección numerado ("01 · Acerca de este curso ------ extra"). */
 function SeccionCurso({ indice, titulo, extra, children }: { indice: string; titulo: string; extra?: string; children: React.ReactNode }) {
@@ -217,10 +218,12 @@ export default async function CursoDetallePage({
                     {institutionSettings.institutionName}
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1.5">
-                  <Award className="h-4 w-4 text-[color-mix(in_oklch,var(--success)_70%,white)]" aria-hidden="true" />
-                  Constancia al aprobar
-                </span>
+                {cursoEmiteConstancia(course.courseType) && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Award className="h-4 w-4 text-[color-mix(in_oklch,var(--success)_70%,white)]" aria-hidden="true" />
+                    Constancia al aprobar
+                  </span>
+                )}
               </div>
 
               {instrumentos.length > 0 && (

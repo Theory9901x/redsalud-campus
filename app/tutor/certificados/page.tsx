@@ -8,6 +8,7 @@ import { escalon } from "@/components/training-plans/plan-visual";
 import { etiquetaDiaMes } from "@/components/training-plans/labels";
 import { PanelTutor, VacioCompacto } from "@/components/tutor/centro-mando";
 import { Paginacion } from "@/components/tutor/paginacion";
+import { AVISO_CONSTANCIA } from "@/lib/constancias-regla";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,7 @@ export default async function TutorConstanciasPage({ searchParams }: { searchPar
         Icono={Award}
         titulo="Constancias de"
         acento="tus cursos"
-        descripcion="Cada constancia lleva un código verificable públicamente. La emite la plataforma al completar el curso; aquí consultas el registro y quién ya terminó sin tenerla todavía."
+        descripcion={`${AVISO_CONSTANCIA} Cada constancia lleva un código verificable públicamente; aquí consultas el registro y quién ya terminó la inducción sin tenerla todavía.`}
         cifras={[
           { valor: datos.resumen.validas, etiqueta: "Vigentes" },
           { valor: datos.resumen.delMes, etiqueta: "Emitidas este mes" },

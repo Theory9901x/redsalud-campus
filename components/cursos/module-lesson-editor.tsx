@@ -247,12 +247,13 @@ export function ModuleLessonEditor({
         </SortableContext>
       </DndContext>
 
-      <div className="surface space-y-3 p-4">
+      <div className="surface space-y-3 p-4" id="evaluacion-final">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h4 className="font-display text-sm font-bold text-foreground">Evaluación final del curso</h4>
             <p className="text-xs text-muted-foreground">
-              Opcional: un cuestionario que se desbloquea cuando todos los módulos están completos.
+              Opcional: un cuestionario que se desbloquea cuando todos los módulos están completos. En las
+              capacitaciones del plan es el instrumento del presaber/postsaber. Solo Inducción y reinducción emite constancia.
             </p>
           </div>
           <QuizFormDialog
