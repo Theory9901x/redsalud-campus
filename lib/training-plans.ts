@@ -73,12 +73,16 @@ export async function getTrainingPlanDetail(id: string) {
  * edición — es el mismo criterio de audiencia que ya usan encuestas y
  * adherencia (targetAudienceUserWhere), visto desde el lado del estudiante.
  */
+/** Planes marcados [PRUEBA] o [DEMO]: existen para revisar pantallas, nunca se le muestran al personal. */
+const NO_PRUEBAS = { NOT: [{ title: { startsWith: "[PRUEBA]" } }, { title: { startsWith: "[DEMO]" } }] };
+
 export async function getTrainingPlansForStudent(userId: string) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { department: true } });
 
   return prisma.trainingPlan.findMany({
     where: {
       kind: "CAPACITACION",
+      ...NO_PRUEBAS,
       OR: [
         { targetDepartment: null },
         ...(user.department ? [{ targetDepartment: { equals: user.department, mode: "insensitive" as const } }] : []),
@@ -110,6 +114,7 @@ export async function getStudentPlansOverview(userId: string) {
 
   const planes = await prisma.trainingPlan.findMany({
     where: {
+      ...NO_PRUEBAS,
       OR: [
         { targetDepartment: null },
         ...(user.department ? [{ targetDepartment: { equals: user.department, mode: "insensitive" as const } }] : []),
@@ -209,7 +214,7 @@ export async function getTrainingPlanDetailForStudent(id: string, userId: string
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { department: true } });
 
   const plan = await getTrainingPlanDetail(id);
-  if (!plan) return null;
+  if (!plan || /^\s*\[(PRUEBA|DEMO)\]/i.test(plan.title)) return null;
 
   const matchesDepartment =
     !plan.targetDepartment ||

@@ -2,6 +2,9 @@ import Link from "next/link";
 import { requireSession } from "@/lib/auth-helpers";
 import { CalendarDays } from "lucide-react";
 import { getStudentPlansOverview } from "@/lib/training-plans";
+import { getCapacitacionesEnVivo } from "@/lib/en-vivo";
+import { veComoAdmin } from "@/lib/roles";
+import { PestanasCapacitaciones } from "@/components/en-vivo/pestanas-capacitaciones";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import {
   MisCapacitacionesView,
@@ -23,7 +26,12 @@ export default async function MisCapacitacionesPage() {
   const userId = session.user.id;
   const primerNombre = session.user.name?.split(" ")[0];
 
-  const planes = await getStudentPlansOverview(userId);
+  const [planes, enVivo] = await Promise.all([
+    getStudentPlansOverview(userId),
+    getCapacitacionesEnVivo({ verPruebas: veComoAdmin(session.user.role) || session.user.role === "TUTOR" }).then(
+      (f) => f.filter((x) => x.estado === "EN_VIVO").length
+    ),
+  ]);
 
   const tarjetas: PlanTarjeta[] = planes.map((p) => ({
     id: p.id,
@@ -64,6 +72,7 @@ export default async function MisCapacitacionesPage() {
     <main className="canvas-formacion min-h-full flex-1">
       <div className="mx-auto w-full max-w-[1480px] px-4 py-8 sm:px-6 lg:px-8">
         <StaggerSections className="space-y-8">
+        <PestanasCapacitaciones activa="planes" enVivo={enVivo} />
         {/* Encabezado del módulo */}
         <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
