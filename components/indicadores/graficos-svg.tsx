@@ -12,9 +12,9 @@ import { cn } from "@/lib/utils";
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 export const COLOR_SEMAFORO: Record<Semaforo, string> = {
-  verde: "var(--success)",
-  amarillo: "var(--warning)",
-  rojo: "var(--destructive)",
+  verde: "#12A537",
+  amarillo: "#F5B800",
+  rojo: "#E3141B",
   "sin-datos": "color-mix(in oklch, var(--foreground) 22%, transparent)",
 };
 

@@ -3510,10 +3510,13 @@ a.st-opcion:hover { border-color: color-mix(in oklch, var(--primary) 45%, var(--
  * lleva su tono propio (--ind-a/--ind-b) en la aurora y el acento; el
  * semáforo (--sem) aparece solo como SEÑAL: anillo, punto, cifra. Fuera de
  * @layer a propósito: debe ganarle a las utilidades de Tabs/Table. */
-.ind-pagina [data-sem="verde"] { --sem: var(--success); --sem-texto: color-mix(in oklch, var(--success) 78%, var(--foreground)); }
-.ind-pagina [data-sem="amarillo"] { --sem: var(--warning); --sem-texto: color-mix(in oklch, var(--warning) 50%, var(--foreground)); }
-.ind-pagina [data-sem="rojo"] { --sem: var(--destructive); --sem-texto: var(--destructive); }
-.ind-pagina [data-sem="sin-datos"] { --sem: color-mix(in oklch, var(--foreground) 22%, transparent); --sem-texto: var(--muted-foreground); }
+/* Semaforización institucional: colores normativos plenos, sin pastel.
+   Verde ≥ 85 · Amarillo 70–84,9 · Rojo < 70. --sem-fondo/--sem-tinta pintan
+   las celdas de la matriz como en el tablero de indicadores de la entidad. */
+.ind-pagina [data-sem="verde"] { --sem: #12A537; --sem-texto: #0B7A27; --sem-fondo: #12A537; --sem-tinta: #FFFFFF; }
+.ind-pagina [data-sem="amarillo"] { --sem: #F5B800; --sem-texto: #8A6500; --sem-fondo: #F5B800; --sem-tinta: #1A1300; }
+.ind-pagina [data-sem="rojo"] { --sem: #E3141B; --sem-texto: #C40F15; --sem-fondo: #E3141B; --sem-tinta: #FFFFFF; }
+.ind-pagina [data-sem="sin-datos"] { --sem: color-mix(in oklch, var(--foreground) 22%, transparent); --sem-texto: var(--muted-foreground); --sem-fondo: color-mix(in oklch, var(--foreground) 6%, var(--card)); --sem-tinta: var(--muted-foreground); }
 
 .ind-titulo-pagina { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.025em; line-height: 1.1; font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.2rem); color: var(--foreground); }
 .ind-titulo-pagina span { background: linear-gradient(95deg, var(--primary), var(--success)); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -3576,7 +3579,7 @@ a.st-opcion:hover { border-color: color-mix(in oklch, var(--primary) 45%, var(--
 .ind-panel { position: relative; border-radius: 18px; border: 1px solid var(--clay-border); background: color-mix(in oklch, var(--card) 90%, transparent); backdrop-filter: blur(10px); box-shadow: var(--shadow-1); }
 .ind-leyenda { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; list-style: none; margin: 0; padding: 0; }
 .ind-leyenda li { display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-foreground); }
-.ind-leyenda li::before { content: ""; width: 0.5rem; height: 0.5rem; border-radius: 999px; background: var(--sem); box-shadow: 0 0 8px -1px var(--sem); }
+.ind-leyenda li::before { content: ""; width: 0.75rem; height: 0.75rem; border-radius: 3px; background: var(--sem); }
 .ind-matriz { width: 100%; min-width: 640px; border-collapse: collapse; text-align: left; }
 .ind-matriz thead th { padding: 0.6rem 1.25rem; font-family: var(--font-mono); font-size: 0.62rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-foreground); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: color-mix(in oklch, var(--foreground) 3%, var(--card)); }
 .ind-matriz thead th small { display: block; font-size: 0.55rem; letter-spacing: 0.08em; opacity: 0.7; text-transform: none; }
@@ -3587,11 +3590,11 @@ a.st-opcion:hover { border-color: color-mix(in oklch, var(--primary) 45%, var(--
 .ind-matriz tbody tr:hover { background: color-mix(in oklch, var(--primary) 4%, transparent); }
 .ind-area-enlace { color: inherit; text-decoration: none; border-bottom: 1px dashed transparent; transition: border-color .15s, color .15s; }
 .ind-area-enlace:hover { color: var(--primary); border-bottom-color: color-mix(in oklch, var(--primary) 50%, transparent); }
-.ind-celda { display: inline-grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 0.5rem; align-items: center; padding: 0.35rem 0.7rem 0.35rem 0.6rem; border-radius: 10px; border: 1px solid color-mix(in oklch, var(--sem) 30%, transparent); background: color-mix(in oklch, var(--sem) 7%, transparent); text-decoration: none; transition: transform .15s, box-shadow .15s; }
-.ind-celda:hover { transform: translateY(-1px); box-shadow: 0 8px 18px -12px var(--sem); }
-.ind-celda i { grid-row: 1 / span 2; width: 0.55rem; height: 0.55rem; border-radius: 999px; background: var(--sem); box-shadow: 0 0 8px -1px var(--sem); }
-.ind-celda b { font-family: var(--font-mono); font-size: 0.86rem; font-weight: 600; line-height: 1.1; color: var(--sem-texto); font-variant-numeric: tabular-nums; }
-.ind-celda small { font-family: var(--font-mono); font-size: 0.58rem; color: var(--muted-foreground); }
+.ind-celda { display: inline-grid; grid-template-columns: auto; grid-template-rows: auto auto; justify-items: center; min-width: 5.2rem; padding: 0.4rem 0.75rem; border-radius: 8px; border: 1px solid color-mix(in oklch, var(--sem-fondo) 80%, black); background: var(--sem-fondo); text-decoration: none; transition: transform .15s, box-shadow .15s; }
+.ind-celda:hover { transform: translateY(-1px); box-shadow: 0 8px 18px -10px var(--sem-fondo); }
+.ind-celda i { display: none; }
+.ind-celda b { font-family: var(--font-mono); font-size: 0.92rem; font-weight: 700; line-height: 1.1; color: var(--sem-tinta); font-variant-numeric: tabular-nums; }
+.ind-celda small { font-family: var(--font-mono); font-size: 0.58rem; color: color-mix(in oklch, var(--sem-tinta) 85%, transparent); }
 .ind-contador { display: inline-grid; place-items: center; min-width: 1.8rem; height: 1.8rem; padding: 0 0.4rem; border-radius: 8px; font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600; color: var(--muted-foreground); background: color-mix(in oklch, var(--foreground) 5%, transparent); }
 .ind-contador-activo { color: var(--primary); background: color-mix(in oklch, var(--primary) 10%, transparent); }
 
@@ -3639,9 +3642,9 @@ a.st-opcion:hover { border-color: color-mix(in oklch, var(--primary) 45%, var(--
 .ind-variables td { padding: 0.5rem; vertical-align: top; line-height: 1.45; border-bottom: 1px solid color-mix(in oklch, var(--border) 70%, transparent); color: color-mix(in oklch, var(--foreground) 88%, transparent); }
 .ind-variables td:first-child { color: var(--ind-a); }
 .ind-rangos { display: grid; gap: 0.4rem; margin-top: 0.75rem; list-style: none; padding: 0; }
-.ind-rangos li { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; border-radius: 10px; border: 1px solid color-mix(in oklch, var(--sem) 30%, transparent); background: color-mix(in oklch, var(--sem) 6%, transparent); font-size: 12.5px; color: var(--sem-texto); }
+.ind-rangos li { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid color-mix(in oklch, var(--sem-fondo) 80%, black); background: var(--sem-fondo); font-size: 12.5px; font-weight: 700; color: var(--sem-tinta); }
 .ind-rangos li[data-activo] { box-shadow: 0 0 0 2px color-mix(in oklch, var(--sem) 35%, transparent); font-weight: 600; }
-.ind-rangos li i { width: 0.55rem; height: 0.55rem; border-radius: 999px; background: var(--sem); box-shadow: 0 0 8px -1px var(--sem); }
+.ind-rangos li i { display: none; }
 .ind-rangos li b { min-width: 5.5rem; }
 
 /* Análisis */
