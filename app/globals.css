@@ -3857,3 +3857,508 @@ a.st-opcion:hover { border-color: color-mix(in oklch, var(--primary) 45%, var(--
   .doc-inferido { display: inline; margin-left: 0.4rem; }
 }
 .doc-nombre { white-space: normal; }
+
+/* ════════════════════════════════════════════════════════════════════════
+ *  CENTRO DE DATOS SIAU — claymorfismo (prefijo .siau-)
+ * ════════════════════════════════════════════════════════════════════════
+ * Superficies de arcilla: relieve doble (luz arriba-izquierda, sombra suave
+ * abajo-derecha), esquinas infladas, POZOS hundidos para controles y
+ * estados PRESIONADOS al pulsar. Acento cian; el semáforo institucional
+ * (#12A537 · #F5B800 · #E3141B) aparece solo como señal. Fuera de @layer a
+ * propósito: debe ganarle a las utilidades. Todo acotado al prefijo .siau-. */
+:where(.siau-pagina, .siau-aviso) {
+  --siau-r-xl: 28px; --siau-r-lg: 22px; --siau-r-md: 16px; --siau-r-sm: 12px;
+  --siau-sup-a: oklch(99.4% 0.004 240);
+  --siau-sup-b: oklch(96.7% 0.011 238);
+  --siau-pozo-a: oklch(93.6% 0.015 242);
+  --siau-pozo-b: oklch(95.6% 0.011 242);
+  --siau-borde: oklch(100% 0 0 / 0.75);
+  --siau-luz: oklch(100% 0 0 / 0.95);
+  --siau-luz-difusa: oklch(100% 0 0 / 0.6);
+  --siau-halo: oklch(100% 0 0 / 0.85);
+  --siau-halo-pozo: oklch(100% 0 0 / 0.9);
+  --siau-sombra: oklch(32% 0.06 250 / 0.22);
+  --siau-sombra-suave: oklch(32% 0.06 250 / 0.09);
+  --siau-sombra-pozo: oklch(32% 0.06 250 / 0.13);
+  --siau-tinta: oklch(50% 0.12 236);
+  --siau-cian-a: oklch(74% 0.125 228);
+  --siau-cian-b: oklch(61% 0.135 238);
+  --siau-clay:
+    inset 0 1px 0 0 var(--siau-luz),
+    inset 3px 4px 10px -2px var(--siau-luz-difusa),
+    inset -4px -6px 14px -4px var(--siau-sombra-suave),
+    -6px -6px 18px -6px var(--siau-halo),
+    10px 14px 30px -12px var(--siau-sombra);
+  --siau-clay-sm:
+    inset 0 1px 0 0 var(--siau-luz),
+    inset -3px -4px 9px -3px var(--siau-sombra-suave),
+    -4px -4px 12px -5px var(--siau-halo),
+    6px 9px 18px -9px var(--siau-sombra);
+  --siau-clay-alto:
+    inset 0 1px 0 0 var(--siau-luz),
+    inset -3px -4px 9px -3px var(--siau-sombra-suave),
+    -6px -6px 16px -5px var(--siau-halo),
+    12px 18px 32px -12px var(--siau-sombra);
+  --siau-pozo-sombra:
+    inset 3px 3px 7px 0 var(--siau-sombra-pozo),
+    inset -3px -3px 7px 0 var(--siau-halo-pozo);
+  --siau-presionado:
+    inset 3px 4px 9px 0 var(--siau-sombra-pozo),
+    inset -2px -2px 6px 0 var(--siau-halo-pozo);
+  --siau-boton:
+    inset 0 1px 0 0 var(--siau-luz),
+    inset -2px -3px 6px -1px var(--siau-sombra-suave),
+    -3px -3px 8px -3px var(--siau-halo),
+    4px 6px 12px -5px var(--siau-sombra);
+}
+.dark :where(.siau-pagina, .siau-aviso) {
+  --siau-sup-a: oklch(28% 0.04 248);
+  --siau-sup-b: oklch(23% 0.035 249);
+  --siau-pozo-a: oklch(17.5% 0.03 250);
+  --siau-pozo-b: oklch(19.8% 0.031 250);
+  --siau-borde: oklch(86% 0.025 248 / 0.08);
+  --siau-luz: oklch(86% 0.025 248 / 0.13);
+  --siau-luz-difusa: oklch(86% 0.025 248 / 0.05);
+  --siau-halo: oklch(86% 0.025 248 / 0.035);
+  --siau-halo-pozo: oklch(86% 0.025 248 / 0.06);
+  --siau-sombra: oklch(0% 0 0 / 0.6);
+  --siau-sombra-suave: oklch(0% 0 0 / 0.3);
+  --siau-sombra-pozo: oklch(0% 0 0 / 0.5);
+  --siau-tinta: oklch(80% 0.11 228);
+}
+
+/* Lienzo: una bruma cian muy tenue detrás de la cabecera. */
+.siau-pagina { position: relative; isolation: isolate; }
+.siau-pagina::before {
+  content: ""; position: absolute; inset: -1.5rem 0 auto 0; height: 760px; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(55% 45% at 12% 8%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 72%),
+    radial-gradient(45% 40% at 92% 30%, color-mix(in oklch, var(--navy) 9%, transparent), transparent 72%);
+}
+.dark .siau-pagina::before {
+  background:
+    radial-gradient(55% 45% at 12% 8%, color-mix(in oklch, var(--primary) 12%, transparent), transparent 72%),
+    radial-gradient(45% 40% at 92% 30%, color-mix(in oklch, var(--primary) 6%, transparent), transparent 72%);
+}
+
+/* ── Materiales ── */
+.siau-sup {
+  position: relative; border-radius: var(--siau-r-xl); border: 1px solid var(--siau-borde);
+  background: linear-gradient(160deg, var(--siau-sup-a), var(--siau-sup-b));
+  box-shadow: var(--siau-clay);
+}
+.siau-pozo {
+  border-radius: var(--siau-r-md);
+  background: linear-gradient(160deg, var(--siau-pozo-a), var(--siau-pozo-b));
+  box-shadow: var(--siau-pozo-sombra);
+}
+.siau-tarjeta { padding: 1.25rem 1.3rem; border-radius: var(--siau-r-lg); }
+@media (max-width: 639px) { .siau-tarjeta { padding: 1rem; } }
+.siau-revelar { animation: siau-subir 0.6s var(--ease-signature) both; animation-delay: calc(var(--i, 0) * 70ms); }
+@keyframes siau-subir { from { opacity: 0; transform: translateY(14px) scale(0.99); } }
+
+/* Etiquetas y números */
+.siau-ceja { display: inline-flex; align-items: center; gap: 0.45rem; font-family: var(--font-mono); font-size: 0.64rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--siau-tinta); }
+.siau-ceja svg { width: 0.9rem; height: 0.9rem; flex: none; }
+.siau-ceja { flex-wrap: wrap; row-gap: 0.15rem; }
+.siau-ceja em { font-style: normal; color: var(--muted-foreground); letter-spacing: 0.1em; white-space: nowrap; }
+.siau-mono { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-foreground); }
+.siau-h2 { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-display); font-size: 1.02rem; font-weight: 700; letter-spacing: -0.015em; color: var(--foreground); }
+.siau-h2 > i { font-style: normal; font-family: var(--font-mono); font-size: 0.66rem; font-weight: 600; color: var(--siau-tinta); }
+.siau-h2 > svg { width: 1rem; height: 1rem; flex: none; color: var(--siau-tinta); }
+.siau-bajada { margin-top: 0.2rem; font-size: 12.5px; line-height: 1.5; color: var(--muted-foreground); }
+
+/* Semáforo institucional: colores plenos, solo como señal. */
+[data-siau-sem="verde"] { --sem: #12A537; --sem-texto: #0B7A27; }
+[data-siau-sem="amarillo"] { --sem: #F5B800; --sem-texto: #8A6500; }
+[data-siau-sem="rojo"] { --sem: #E3141B; --sem-texto: #C40F15; }
+[data-siau-sem="sin-datos"] { --sem: color-mix(in oklch, var(--foreground) 28%, transparent); --sem-texto: var(--muted-foreground); }
+.dark [data-siau-sem="verde"] { --sem-texto: #34C759; }
+.dark [data-siau-sem="amarillo"] { --sem-texto: #F5B800; }
+.dark [data-siau-sem="rojo"] { --sem-texto: #FF5A5F; }
+.siau-sem {
+  display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.22rem 0.6rem; border-radius: 999px; white-space: nowrap;
+  font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--sem-texto); border: 1px solid color-mix(in oklch, var(--sem) 38%, transparent);
+  background: color-mix(in oklch, var(--sem) 9%, transparent);
+}
+.siau-sem::before { content: ""; width: 0.45rem; height: 0.45rem; border-radius: 999px; background: var(--sem); box-shadow: 0 0 8px -1px var(--sem); }
+.siau-punto { display: inline-block; flex: none; width: 0.55rem; height: 0.55rem; border-radius: 999px; background: var(--sem); box-shadow: 0 0 0 2px color-mix(in oklch, var(--sem) 18%, transparent); }
+
+/* ── Botones de arcilla ── */
+.siau-boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; height: 2.65rem; padding: 0 1.1rem;
+  border-radius: 14px; border: 1px solid var(--siau-borde); white-space: nowrap; cursor: pointer;
+  font-size: 13px; font-weight: 650; color: var(--foreground);
+  background: linear-gradient(160deg, var(--siau-sup-a), var(--siau-sup-b));
+  box-shadow: var(--siau-boton);
+  transition: transform var(--duration-signature-fast) var(--ease-signature), box-shadow var(--duration-signature-fast), color var(--duration-signature-fast);
+}
+.siau-boton svg { width: 1rem; height: 1rem; flex: none; }
+.siau-boton:hover { transform: translateY(-1px); color: var(--siau-tinta); box-shadow: var(--siau-clay-alto); }
+.siau-boton:active { transform: translateY(1px); box-shadow: var(--siau-presionado); }
+.siau-boton:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.siau-boton-primario {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(160deg, var(--siau-cian-a), var(--siau-cian-b));
+  box-shadow:
+    inset 0 1px 0 0 oklch(100% 0 0 / 0.45),
+    inset 3px 3px 8px -2px oklch(100% 0 0 / 0.25),
+    inset -3px -4px 10px -2px oklch(38% 0.12 245 / 0.45),
+    -3px -3px 10px -4px var(--siau-halo),
+    0 12px 24px -12px color-mix(in oklch, var(--primary) 85%, transparent);
+}
+.siau-boton-primario:hover { color: #fff; box-shadow: inset 0 1px 0 0 oklch(100% 0 0 / 0.5), inset -3px -4px 10px -2px oklch(38% 0.12 245 / 0.45), -3px -3px 10px -4px var(--siau-halo), 0 16px 30px -12px var(--primary); }
+.siau-boton-primario:active { box-shadow: inset 3px 4px 10px 0 oklch(30% 0.12 245 / 0.55), inset -2px -2px 6px 0 oklch(100% 0 0 / 0.2); }
+.siau-boton-icono { width: 2.55rem; height: 2.55rem; padding: 0; border-radius: 12px; }
+.siau-boton-mini { height: 2rem; padding: 0 0.75rem; border-radius: 10px; font-size: 12px; }
+.siau-boton-mini svg { width: 0.85rem; height: 0.85rem; }
+
+/* Fichas */
+.siau-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem; max-width: 100%; padding: 0.3rem 0.7rem; border-radius: 999px;
+  font-size: 12px; font-weight: 550; color: var(--foreground);
+  background: linear-gradient(160deg, var(--siau-pozo-a), var(--siau-pozo-b)); box-shadow: var(--siau-pozo-sombra);
+}
+.siau-chip svg { width: 0.85rem; height: 0.85rem; flex: none; color: var(--siau-tinta); }
+.siau-chip > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.siau-chip-quitar {
+  display: inline-flex; align-items: center; gap: 0.35rem; max-width: 100%; padding: 0.25rem 0.3rem 0.25rem 0.65rem; border-radius: 999px; cursor: pointer;
+  font-size: 12px; color: var(--foreground); border: 1px solid color-mix(in oklch, var(--primary) 30%, transparent);
+  background: color-mix(in oklch, var(--primary) 9%, transparent);
+  transition: background var(--duration-signature-fast), box-shadow var(--duration-signature-fast);
+}
+.siau-chip-quitar > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.siau-chip-quitar b { font-weight: 650; }
+.siau-chip-quitar > span:last-child { display: grid; place-items: center; flex: none; width: 1.1rem; height: 1.1rem; border-radius: 999px; background: color-mix(in oklch, var(--primary) 16%, transparent); color: var(--siau-tinta); }
+.siau-chip-quitar svg { width: 0.7rem; height: 0.7rem; }
+.siau-chip-quitar:hover { background: color-mix(in oklch, var(--primary) 15%, transparent); }
+.siau-chip-quitar:active { box-shadow: var(--siau-presionado); }
+.siau-chip-quitar:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+/* ── Cabecera ── */
+.siau-cabecera { overflow: hidden; padding: 1.6rem 1.7rem 1.4rem; }
+.siau-cabecera::after {
+  content: ""; position: absolute; inset: -30% -10% auto auto; width: 46%; aspect-ratio: 1; border-radius: 50%; z-index: 0; pointer-events: none;
+  background: radial-gradient(circle at 40% 40%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 64%);
+  filter: blur(10px);
+}
+.siau-cabecera > * { position: relative; z-index: 1; }
+.siau-titulo { margin-top: 0.55rem; font-family: var(--font-display); font-weight: 800; letter-spacing: -0.028em; line-height: 1.06; font-size: clamp(1.5rem, 1.1rem + 1.5vw, 2.2rem); color: var(--foreground); }
+.siau-cabecera-grid { display: grid; gap: 1.4rem; grid-template-columns: minmax(0, 1fr); align-items: center; }
+@media (min-width: 900px) { .siau-cabecera-grid { grid-template-columns: minmax(0, 1fr) auto; } }
+@media (max-width: 639px) { .siau-cabecera { padding: 1.15rem 1rem 1rem; border-radius: var(--siau-r-lg); } }
+.siau-medidor { display: flex; align-items: center; gap: 1.1rem; }
+@media (min-width: 900px) { .siau-medidor { padding-right: 0.3rem; } }
+.siau-umbrales { display: grid; gap: 0.35rem; margin-top: 0.6rem; }
+.siau-umbrales li { display: flex; align-items: center; gap: 0.45rem; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.06em; color: var(--muted-foreground); white-space: nowrap; }
+
+/* Anillo de adherencia: pozo circular con el arco en relieve. */
+.siau-anillo { position: relative; display: grid; place-items: center; flex: none; border-radius: 50%; background: linear-gradient(160deg, var(--siau-pozo-a), var(--siau-pozo-b)); box-shadow: var(--siau-pozo-sombra); }
+.siau-anillo svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.siau-anillo-arco { filter: drop-shadow(0 0 5px color-mix(in oklch, var(--sem) 55%, transparent)); animation: siau-arco 1.3s var(--ease-signature) both 0.15s; }
+@keyframes siau-arco { from { stroke-dashoffset: var(--siau-arco-total); } }
+.siau-anillo-centro {
+  position: relative; display: grid; place-items: center; align-content: center; border-radius: 50%; text-align: center;
+  background: linear-gradient(160deg, var(--siau-sup-a), var(--siau-sup-b)); box-shadow: var(--siau-clay-sm);
+}
+.siau-anillo-centro b { display: block; font-family: var(--font-mono); font-weight: 600; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--foreground); }
+.siau-anillo-centro > span { display: block; margin-top: 0.3rem; font-family: var(--font-mono); font-size: 0.52rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted-foreground); }
+
+/* KPIs: lecturas de instrumento hundidas en la cabecera. */
+.siau-kpis { display: grid; gap: 0.75rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 1.4rem; }
+@media (min-width: 1024px) { .siau-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.siau-kpi { min-width: 0; padding: 0.85rem 0.95rem 0.8rem; }
+.siau-kpi-cabeza { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.siau-kpi-cabeza svg { width: 0.95rem; height: 0.95rem; color: var(--siau-tinta); flex: none; }
+.siau-kpi b { display: block; margin-top: 0.45rem; font-family: var(--font-mono); font-size: clamp(1.35rem, 1.1rem + 0.8vw, 1.75rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1; color: var(--foreground); font-variant-numeric: tabular-nums; }
+.siau-kpi b svg { width: 1.2rem; height: 1.2rem; }
+.siau-kpi small { display: block; margin-top: 0.4rem; font-size: 11.5px; line-height: 1.35; color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.siau-kpi-sem { display: flex; flex-wrap: wrap; gap: 0.25rem 0.6rem; margin-top: 0.4rem; font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+.siau-kpi-sem span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.siau-kpi-sem .siau-punto { width: 0.45rem; height: 0.45rem; }
+
+/* ── Barra de filtros (una fila) ── */
+.siau-filtros { padding: 0.9rem 1rem 0.8rem; border-radius: var(--siau-r-lg); scroll-margin-top: 6rem; }
+.siau-filtros-fila { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.6rem; }
+.siau-campo { display: flex; flex-direction: column; gap: 0.32rem; min-width: 0; }
+.siau-campo > span:first-child { padding-left: 0.2rem; font-family: var(--font-mono); font-size: 0.56rem; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted-foreground); }
+.siau-campo-var { flex: 1 1 128px; }
+.siau-divisor { align-self: stretch; width: 1px; margin: 0.9rem 0.15rem 0.2rem; background: color-mix(in oklch, var(--foreground) 10%, transparent); }
+.siau-selector { position: relative; display: block; min-width: 0; }
+.siau-selector > svg { position: absolute; top: 50%; translate: 0 -50%; width: 0.9rem; height: 0.9rem; pointer-events: none; color: var(--muted-foreground); }
+.siau-selector > .siau-selector-icono { left: 0.75rem; color: var(--siau-tinta); }
+.siau-selector > .siau-selector-flecha { right: 0.65rem; }
+.siau-control {
+  appearance: none; -webkit-appearance: none; display: block; width: 100%; min-width: 0; height: 2.55rem; padding: 0 1.9rem 0 0.85rem;
+  border-radius: var(--siau-r-sm); border: 1px solid transparent; outline: none; cursor: pointer;
+  font-size: 13px; color: var(--foreground); text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
+  background: linear-gradient(160deg, var(--siau-pozo-a), var(--siau-pozo-b)); box-shadow: var(--siau-pozo-sombra);
+  transition: box-shadow var(--duration-signature-fast), border-color var(--duration-signature-fast);
+}
+.siau-selector > .siau-selector-icono + .siau-control { padding-left: 2.15rem; }
+.siau-control:hover { border-color: color-mix(in oklch, var(--primary) 30%, transparent); }
+.siau-control:focus-visible { border-color: var(--primary); box-shadow: var(--siau-pozo-sombra), 0 0 0 3px color-mix(in oklch, var(--primary) 24%, transparent); }
+.siau-control[data-activo="true"] { border-color: color-mix(in oklch, var(--primary) 45%, transparent); color: var(--siau-tinta); font-weight: 600; }
+.siau-control option { color: var(--foreground); background: var(--card); font-weight: 400; }
+.siau-filtros-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.8rem; padding-top: 0.75rem; border-top: 1px dashed color-mix(in oklch, var(--foreground) 11%, transparent); }
+.siau-girando { animation: siau-girar 0.9s linear infinite; }
+@keyframes siau-girar { to { rotate: 360deg; } }
+@media (max-width: 639px) {
+  .siau-filtros-fila > .siau-campo-periodo { flex-basis: 100%; }
+  .siau-filtros-fila > .siau-campo-periodo .siau-segmento { display: flex; width: 100%; }
+  .siau-filtros-fila > .siau-campo-periodo .siau-segmento > * { flex: 1; justify-content: center; }
+  .siau-filtros-fila > .siau-campo-tiempo { flex: 1 1 40%; }
+  .siau-campo-var { flex-basis: 40%; }
+  .siau-divisor { display: none; }
+}
+
+/* Segmentado: pozo con una pastilla en relieve que se desliza. */
+.siau-segmento { display: inline-flex; gap: 0.15rem; padding: 0.25rem; border-radius: 15px; background: linear-gradient(160deg, var(--siau-pozo-a), var(--siau-pozo-b)); box-shadow: var(--siau-pozo-sombra); }
+.siau-segmento > * {
+  position: relative; z-index: 0; display: inline-flex; align-items: center; gap: 0.4rem; height: 2.05rem; padding: 0 0.8rem; border-radius: 11px; cursor: pointer;
+  font-size: 12.5px; font-weight: 600; color: var(--muted-foreground); white-space: nowrap;
+  transition: color var(--duration-signature-fast);
+}
+.siau-segmento > *:hover { color: var(--foreground); }
+.siau-segmento > *:active:not([data-activo="true"]) { box-shadow: var(--siau-presionado); }
+.siau-segmento > [data-activo="true"] { color: var(--siau-tinta); }
+.siau-segmento > :has(input:focus-visible), .siau-segmento > button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.siau-segmento .conteo { font-family: var(--font-mono); font-size: 0.6rem; opacity: 0.75; }
+.siau-pastilla { position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: linear-gradient(160deg, var(--siau-sup-a), var(--siau-sup-b)); box-shadow: var(--siau-boton); }
+
+/* ── Pestañas de análisis ── */
+.siau-pestanas {
+  display: flex; gap: 0.2rem; width: fit-content; max-width: 100%; padding: 0.3rem; border-radius: 19px; overflow-x: auto; scrollbar-width: none;
+  background: linear-gradient(160deg, var(--siau-pozo-a), var(--siau-pozo-b)); box-shadow: var(--siau-pozo-sombra);
+}
+.siau-pestanas::-webkit-scrollbar { display: none; }
+.siau-pestana {
+  position: relative; z-index: 0; display: inline-flex; flex: none; align-items: center; gap: 0.5rem; height: 2.5rem; padding: 0 1rem; border-radius: 14px; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--muted-foreground); white-space: nowrap; transition: color var(--duration-signature-fast);
+}
+.siau-pestana svg { width: 1rem; height: 1rem; flex: none; }
+.siau-pestana:hover { color: var(--foreground); }
+.siau-pestana:active:not([aria-selected="true"]) { box-shadow: var(--siau-presionado); }
+.siau-pestana[aria-selected="true"] { color: var(--foreground); }
+.siau-pestana[aria-selected="true"] svg { color: var(--siau-tinta); }
+.siau-pestana:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.siau-pestana .conteo { min-width: 1.4rem; padding: 0 0.35rem; border-radius: 6px; line-height: 1.2rem; text-align: center; font-family: var(--font-mono); font-size: 0.62rem; font-weight: 600; background: color-mix(in oklch, var(--foreground) 7%, transparent); }
+.siau-pestana[aria-selected="true"] .conteo { color: var(--siau-tinta); background: color-mix(in oklch, var(--primary) 14%, transparent); }
+@media (max-width: 639px) { .siau-pestana { padding: 0 0.8rem; } }
+
+/* ── Ranking (sedes, perfiles) ── */
+.siau-rank-cabeza, .siau-rank-fila {
+  display: grid; align-items: center; gap: 0.85rem;
+  grid-template-columns: 1.9rem minmax(0, 1.3fr) minmax(0, 2fr) 4.4rem 6.6rem;
+}
+.siau-rank-cabeza { padding: 0 0.7rem 0.5rem; border-bottom: 1px solid color-mix(in oklch, var(--foreground) 8%, transparent); }
+.siau-rank-cabeza > :nth-child(n + 4) { text-align: right; }
+.siau-rank-fila { padding: 0.55rem 0.7rem; border-radius: 14px; transition: background var(--duration-signature-fast), box-shadow var(--duration-signature-fast); }
+.siau-rank-fila:hover { background: linear-gradient(160deg, var(--siau-pozo-a), var(--siau-pozo-b)); box-shadow: var(--siau-pozo-sombra); }
+.siau-rank-fila > :nth-child(n + 4) { text-align: right; }
+.siau-rank-pos { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 10px; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; color: var(--muted-foreground); background: linear-gradient(160deg, var(--siau-sup-a), var(--siau-sup-b)); box-shadow: var(--siau-boton); }
+.siau-rank-nombre { min-width: 0; font-size: 13px; font-weight: 600; color: var(--foreground); }
+.siau-rank-nombre > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.siau-rank-nombre small { display: block; font-family: var(--font-mono); font-size: 0.6rem; font-weight: 400; letter-spacing: 0.06em; color: var(--muted-foreground); }
+.siau-rank-valor { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--sem-texto, var(--foreground)); }
+.siau-rank-dato { font-family: var(--font-mono); font-size: 0.76rem; font-variant-numeric: tabular-nums; color: var(--muted-foreground); }
+.siau-dif-pos { color: #0B7A27; } .siau-dif-neg { color: #C40F15; }
+.dark .siau-dif-pos { color: #34C759; } .dark .siau-dif-neg { color: #FF5A5F; }
+@media (max-width: 760px) {
+  .siau-rank-cabeza { display: none; }
+  .siau-rank-fila { grid-template-columns: 1.9rem minmax(0, 1fr) auto; row-gap: 0.4rem; column-gap: 0.7rem; }
+  .siau-rank-fila > .siau-pista { grid-column: 2 / -1; grid-row: 2; }
+  .siau-rank-fila > .siau-rank-valor { grid-column: 3; grid-row: 1; }
+  .siau-rank-fila > .siau-rank-extra { display: none; }
+}
+
+/* Pista hundida con relleno sólido del semáforo y marca del promedio. */
+.siau-pista { position: relative; height: 0.7rem; border-radius: 999px; background: linear-gradient(160deg, var(--siau-pozo-a), var(--siau-pozo-b)); box-shadow: inset 1px 2px 4px 0 var(--siau-sombra-pozo), inset -1px -1px 3px 0 var(--siau-halo-pozo); }
+.siau-pista > span {
+  position: absolute; top: 0.12rem; bottom: 0.12rem; left: 0.12rem; max-width: calc(100% - 0.24rem); border-radius: inherit;
+  background: linear-gradient(180deg, oklch(100% 0 0 / 0.38), transparent 70%), var(--sem, var(--primary));
+  box-shadow: 0 2px 6px -2px color-mix(in oklch, var(--sem, var(--primary)) 70%, transparent);
+  transform-origin: left; animation: siau-llenar 1s var(--ease-signature) both; animation-delay: calc(var(--i, 0) * 45ms);
+}
+@keyframes siau-llenar { from { transform: scaleX(0); } }
+.siau-pista > i { position: absolute; top: -0.25rem; bottom: -0.25rem; width: 2px; margin-left: -1px; border-radius: 2px; background: var(--foreground); opacity: 0.55; }
+.siau-pista-fina { height: 0.5rem; }
+
+/* ── Preguntas ── */
+.siau-preg { border-radius: 16px; transition: background var(--duration-signature-fast), box-shadow var(--duration-signature-fast); }
+.siau-preg[open], .siau-preg:hover { background: linear-gradient(160deg, var(--siau-pozo-a), var(--siau-pozo-b)); box-shadow: var(--siau-pozo-sombra); }
+.siau-preg > summary {
+  display: grid; align-items: center; gap: 0.9rem; padding: 0.7rem 0.8rem; cursor: pointer; list-style: none;
+  grid-template-columns: 2.6rem minmax(0, 1fr) 4.2rem 5.6rem 1rem;
+}
+.siau-preg > summary::-webkit-details-marker { display: none; }
+.siau-preg > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 16px; }
+.siau-preg > summary > svg { width: 1rem; height: 1rem; color: var(--muted-foreground); transition: rotate var(--duration-signature) var(--ease-signature); }
+.siau-preg[open] > summary > svg { rotate: 180deg; }
+.siau-sello { display: grid; place-items: center; height: 2rem; border-radius: 10px; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; color: var(--siau-tinta); background: linear-gradient(160deg, var(--siau-sup-a), var(--siau-sup-b)); box-shadow: var(--siau-boton); }
+.siau-preg-texto { min-width: 0; }
+.siau-preg-valor span.siau-dif-pos { color: #0B7A27; } .siau-preg-valor span.siau-dif-neg { color: #C40F15; }
+.dark .siau-preg-valor span.siau-dif-pos { color: #34C759; } .dark .siau-preg-valor span.siau-dif-neg { color: #FF5A5F; }
+.siau-preg-enunciado { font-size: 13px; font-weight: 600; line-height: 1.35; color: var(--foreground); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.siau-preg-valor { text-align: right; }
+.siau-preg-valor b { display: block; font-family: var(--font-mono); font-size: 1.15rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1; color: var(--sem-texto); font-variant-numeric: tabular-nums; }
+.siau-preg-valor span { display: inline-flex; align-items: center; gap: 0.3rem; margin-top: 0.3rem; font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-foreground); }
+.siau-preg-cuerpo { padding: 0.2rem 0.9rem 0.95rem calc(2.6rem + 1.7rem); }
+@media (max-width: 760px) {
+  .siau-preg > summary { grid-template-columns: 2.3rem minmax(0, 1fr) auto; row-gap: 0.4rem; }
+  .siau-preg > summary > .siau-preg-n { display: none; }
+  .siau-preg > summary > svg { display: none; }
+  .siau-preg-cuerpo { padding: 0.2rem 0.8rem 0.9rem; }
+}
+.siau-dist { display: flex; gap: 2px; height: 0.5rem; margin-top: 0.45rem; border-radius: 999px; overflow: hidden; background: color-mix(in oklch, var(--foreground) 6%, transparent); }
+.siau-dist > span { display: block; min-width: 2px; transform-origin: left; animation: siau-llenar 0.9s var(--ease-signature) both; }
+.siau-leyenda { display: flex; flex-wrap: wrap; gap: 0.35rem 0.9rem; }
+.siau-leyenda li { display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.06em; color: var(--muted-foreground); }
+.siau-leyenda li i { display: inline-block; flex: none; width: 0.6rem; height: 0.6rem; border-radius: 3px; }
+
+/* ── Cruces (mapa de calor) ── */
+.siau-tabla { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+.siau-tabla th { padding: 0.55rem 0.6rem; white-space: nowrap; font-family: var(--font-mono); font-size: 0.58rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-foreground); border-bottom: 1px solid color-mix(in oklch, var(--foreground) 9%, transparent); }
+.siau-tabla td { padding: 0.35rem 0.6rem; border-bottom: 1px solid color-mix(in oklch, var(--foreground) 5%, transparent); }
+.siau-tabla tbody tr:last-child td { border-bottom: 0; }
+.siau-tabla tbody tr:hover td { background: color-mix(in oklch, var(--primary) 5%, transparent); }
+.siau-tabla .num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.siau-tabla .centro { text-align: center; }
+.siau-celda { display: inline-grid; place-items: center; min-width: 3.5rem; padding: 0.28rem 0.4rem; border-radius: 9px; font-family: var(--font-mono); font-size: 0.74rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--sem-texto); background: color-mix(in oklch, var(--sem) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--sem) 22%, transparent); }
+.siau-celda[data-siau-sem="sin-datos"] { background: transparent; box-shadow: none; }
+.siau-celda-solida { color: #fff; background: var(--sem); box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.35), 0 4px 10px -6px var(--sem); }
+.siau-celda-solida[data-siau-sem="amarillo"] { color: #1A1300; }
+.siau-celda-solida[data-siau-sem="sin-datos"] { color: var(--muted-foreground); background: transparent; box-shadow: none; }
+
+/* ── Sugerencias ── */
+.siau-tema {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.35rem 0.6rem; width: 100%; padding: 0.55rem 0.7rem; border-radius: 13px; cursor: pointer; text-align: left;
+  font-size: 12.5px; color: var(--foreground); transition: background var(--duration-signature-fast), box-shadow var(--duration-signature-fast);
+}
+.siau-tema:hover { background: color-mix(in oklch, var(--foreground) 4%, transparent); }
+.siau-tema:active { box-shadow: var(--siau-presionado); }
+.siau-tema[aria-pressed="true"] { background: linear-gradient(160deg, var(--siau-sup-a), var(--siau-sup-b)); box-shadow: var(--siau-boton); color: var(--siau-tinta); font-weight: 600; }
+.siau-tema:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.siau-tema > b { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; color: var(--siau-tinta); }
+.siau-tema > .siau-pista { grid-column: 1 / -1; }
+.siau-sugerencia {
+  display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; padding: 0.95rem 1rem 0.85rem; border-radius: 18px; border: 1px solid var(--siau-borde);
+  background: linear-gradient(160deg, var(--siau-sup-a), var(--siau-sup-b)); box-shadow: var(--siau-clay-sm);
+  transition: transform var(--duration-signature) var(--ease-signature), box-shadow var(--duration-signature);
+}
+.siau-sugerencia:hover { transform: translateY(-2px); box-shadow: var(--siau-clay-alto); }
+.siau-sugerencia > p { position: relative; padding-left: 1.05rem; font-size: 13px; line-height: 1.55; color: var(--foreground); overflow-wrap: anywhere; }
+.siau-sugerencia > p::before { content: "\201C"; position: absolute; left: -0.1rem; top: -0.35rem; font-family: var(--font-display); font-size: 1.7rem; line-height: 1; color: color-mix(in oklch, var(--primary) 55%, transparent); }
+.siau-sugerencia footer { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem; margin-top: auto; padding-top: 0.55rem; border-top: 1px dashed color-mix(in oklch, var(--foreground) 10%, transparent); font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.06em; color: var(--muted-foreground); }
+.siau-sugerencia footer span { display: inline-flex; align-items: center; gap: 0.3rem; min-width: 0; }
+.siau-sugerencia footer svg { width: 0.75rem; height: 0.75rem; flex: none; }
+.siau-etiqueta-tema { padding: 0.12rem 0.45rem; border-radius: 6px; color: var(--siau-tinta); background: color-mix(in oklch, var(--primary) 10%, transparent); }
+
+/* ── Estación única de exportación ── */
+.siau-estacion { padding: 1.5rem; scroll-margin-top: 5.5rem; outline: none; }
+@media (max-width: 639px) { .siau-estacion { padding: 1rem; border-radius: var(--siau-r-lg); } }
+.siau-estacion[data-foco="true"] { animation: siau-foco 1.8s var(--ease-signature); }
+@keyframes siau-foco {
+  0%, 35% { box-shadow: var(--siau-clay), 0 0 0 4px color-mix(in oklch, var(--primary) 45%, transparent); }
+  100% { box-shadow: var(--siau-clay), 0 0 0 4px transparent; }
+}
+.siau-estacion-icono { display: grid; place-items: center; flex: none; width: 3rem; height: 3rem; border-radius: 16px; color: #fff; background: linear-gradient(160deg, var(--siau-cian-a), var(--siau-cian-b)); box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.45), inset -3px -4px 9px -2px oklch(38% 0.12 245 / 0.45), 0 10px 20px -10px var(--primary); }
+.siau-estacion-icono svg { width: 1.3rem; height: 1.3rem; }
+.siau-estacion-grid { display: grid; gap: 1.1rem; grid-template-columns: minmax(0, 1fr); margin-top: 1.3rem; }
+@media (min-width: 1180px) { .siau-estacion-grid { grid-template-columns: minmax(300px, 350px) minmax(0, 1fr); align-items: start; } }
+.siau-paso { padding: 1rem 1.05rem 1.05rem; border-radius: var(--siau-r-lg); }
+.siau-paso + .siau-paso { margin-top: 0.8rem; }
+.siau-paso-titulo { display: flex; align-items: center; gap: 0.55rem; font-size: 13px; font-weight: 700; color: var(--foreground); }
+.siau-paso-n { display: grid; place-items: center; flex: none; width: 1.55rem; height: 1.55rem; border-radius: 8px; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; color: var(--siau-tinta); background: linear-gradient(160deg, var(--siau-sup-a), var(--siau-sup-b)); box-shadow: var(--siau-boton); }
+.siau-resumen { display: grid; gap: 0.2rem; margin-top: 0.85rem; padding: 0.7rem 0.8rem; border-radius: 13px; border: 1px dashed color-mix(in oklch, var(--primary) 35%, transparent); background: color-mix(in oklch, var(--primary) 5%, transparent); }
+.siau-resumen b { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--foreground); }
+.siau-resumen code { font-family: var(--font-mono); font-size: 0.66rem; color: var(--muted-foreground); overflow-wrap: anywhere; }
+.siau-grupo + .siau-grupo { margin-top: 1.15rem; }
+.siau-grupo-titulo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.7rem; margin-bottom: 0.65rem; padding-left: 0.2rem; }
+.siau-grupo-titulo h3 { font-family: var(--font-display); font-size: 0.92rem; font-weight: 700; color: var(--foreground); }
+.siau-opciones { display: grid; gap: 0.7rem; }
+.siau-opcion {
+  position: relative; display: grid; align-items: center; gap: 0.95rem; min-width: 0; padding: 0.85rem 0.95rem 0.85rem 0.85rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  border-radius: 19px; border: 1px solid var(--siau-borde); color: inherit; text-decoration: none;
+  background: linear-gradient(160deg, var(--siau-sup-a), var(--siau-sup-b)); box-shadow: var(--siau-clay-sm);
+  transition: transform var(--duration-signature) var(--ease-signature), box-shadow var(--duration-signature), border-color var(--duration-signature);
+}
+.siau-opcion:hover { transform: translateY(-2px); border-color: color-mix(in oklch, var(--primary) 35%, transparent); box-shadow: var(--siau-clay-alto); }
+.siau-opcion:active { transform: translateY(1px); box-shadow: var(--siau-presionado); }
+.siau-opcion:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.siau-opcion[data-destacado="true"] { border-color: color-mix(in oklch, var(--primary) 40%, transparent); }
+.siau-opcion-titulo { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.55rem; }
+.siau-opcion-titulo strong { font-size: 13.5px; font-weight: 700; color: var(--foreground); }
+.siau-opcion p { margin-top: 0.25rem; font-size: 12px; line-height: 1.45; color: var(--muted-foreground); }
+.siau-opcion-alcance { display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.4rem; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-foreground); }
+.siau-opcion-alcance svg { width: 0.75rem; height: 0.75rem; flex: none; color: var(--siau-tinta); }
+.siau-para { display: inline-flex; align-items: center; padding: 0.12rem 0.5rem; border-radius: 999px; font-family: var(--font-mono); font-size: 0.56rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--siau-tinta); border: 1px solid color-mix(in oklch, var(--primary) 32%, transparent); background: color-mix(in oklch, var(--primary) 8%, transparent); white-space: nowrap; }
+.siau-descargar {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; height: 2.3rem; padding: 0 0.95rem; border-radius: 12px;
+  font-size: 12.5px; font-weight: 650; color: var(--siau-tinta); white-space: nowrap;
+  background: linear-gradient(160deg, var(--siau-pozo-a), var(--siau-pozo-b)); box-shadow: var(--siau-pozo-sombra);
+  transition: background var(--duration-signature-fast), color var(--duration-signature-fast), box-shadow var(--duration-signature-fast);
+}
+.siau-descargar svg { width: 0.95rem; height: 0.95rem; transition: transform var(--duration-signature) var(--ease-signature); }
+.siau-opcion:hover .siau-descargar, .siau-opcion[data-destacado="true"] .siau-descargar {
+  color: #fff; background: linear-gradient(160deg, var(--siau-cian-a), var(--siau-cian-b));
+  box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.4), inset -2px -3px 7px -2px oklch(38% 0.12 245 / 0.45), 0 8px 16px -8px var(--primary);
+}
+.siau-opcion:hover .siau-descargar svg { transform: translateY(2px); }
+@media (max-width: 639px) {
+  .siau-opcion { grid-template-columns: auto minmax(0, 1fr); }
+  .siau-opcion > .siau-descargar { grid-column: 1 / -1; width: 100%; }
+}
+/* Formato del archivo: ficha de documento con su sigla. */
+.siau-formato {
+  --fmt: var(--primary);
+  position: relative; display: grid; place-items: center; flex: none; width: 3rem; height: 3.35rem; border-radius: 13px;
+  color: var(--fmt); background: color-mix(in oklch, var(--fmt) 11%, var(--siau-pozo-b)); box-shadow: var(--siau-pozo-sombra);
+}
+.siau-formato svg { width: 1.3rem; height: 1.3rem; margin-top: -0.55rem; }
+.siau-formato b { position: absolute; bottom: 0.32rem; padding: 0.06rem 0.32rem; border-radius: 5px; font-family: var(--font-mono); font-size: 0.52rem; font-weight: 800; letter-spacing: 0.08em; color: #fff; background: var(--fmt); }
+.siau-formato[data-formato="pdf"] { --fmt: oklch(56% 0.17 25); }
+.siau-formato[data-formato="xlsx"] { --fmt: oklch(54% 0.13 152); }
+.siau-formato[data-formato="csv"] { --fmt: oklch(55% 0.1 185); }
+.siau-formato[data-formato="docx"] { --fmt: oklch(52% 0.15 258); }
+.dark .siau-formato[data-formato="pdf"] { --fmt: oklch(66% 0.16 25); }
+.dark .siau-formato[data-formato="xlsx"] { --fmt: oklch(66% 0.14 152); }
+.dark .siau-formato[data-formato="csv"] { --fmt: oklch(68% 0.1 185); }
+.dark .siau-formato[data-formato="docx"] { --fmt: oklch(66% 0.13 258); }
+/* Registro de descargas, dentro de la misma estación. */
+.siau-registro { margin-top: 1.1rem; border-radius: var(--siau-r-lg); }
+.siau-registro > summary { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; padding: 0.8rem 1rem; cursor: pointer; list-style: none; }
+.siau-registro > summary::-webkit-details-marker { display: none; }
+.siau-registro > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: var(--siau-r-lg); }
+.siau-registro > summary > svg:last-child { width: 1rem; height: 1rem; flex: none; color: var(--muted-foreground); transition: rotate var(--duration-signature) var(--ease-signature); }
+.siau-registro[open] > summary > svg:last-child { rotate: 180deg; }
+.siau-registro ul { margin: 0 0.6rem 0.6rem; }
+.siau-registro li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.2rem 1rem; align-items: baseline; padding: 0.55rem 0.5rem; font-size: 12.5px; color: var(--foreground); border-top: 1px solid color-mix(in oklch, var(--foreground) 7%, transparent); }
+.siau-registro li span:last-child { font-family: var(--font-mono); font-size: 0.66rem; color: var(--muted-foreground); text-align: right; }
+@media (max-width: 639px) { .siau-registro li { grid-template-columns: minmax(0, 1fr); } .siau-registro li span:last-child { text-align: left; } }
+
+/* Aviso de la ficha de resultados: las descargas viven en el centro SIAU. */
+.siau-aviso {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.2rem; padding: 1.1rem 1.25rem; border-radius: var(--siau-r-lg); border: 1px solid var(--siau-borde);
+  background: linear-gradient(160deg, var(--siau-sup-a), var(--siau-sup-b)); box-shadow: var(--siau-clay-sm);
+}
+.siau-aviso > div { flex: 1 1 280px; min-width: 0; }
+.siau-aviso strong { display: block; font-family: var(--font-display); font-size: 0.98rem; font-weight: 700; color: var(--foreground); }
+.siau-aviso p { margin-top: 0.2rem; font-size: 12.5px; line-height: 1.5; color: var(--muted-foreground); }
+@media (max-width: 639px) { .siau-aviso > .siau-boton { width: 100%; } }
+
+/* Gráficas: ejes en monoespaciada. */
+.siau-grafica .recharts-cartesian-axis-tick-value, .siau-grafica .recharts-label { font-family: var(--font-mono); }
+.siau-grafica .recharts-surface { overflow: visible; }
+.siau-tooltip { display: grid; gap: 0.2rem; padding: 0.55rem 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: color-mix(in oklch, var(--card) 96%, transparent); box-shadow: var(--shadow-2); font-size: 12px; color: var(--foreground); }
+.siau-tooltip p:first-child { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-foreground); }
+.siau-tooltip span { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.siau-tooltip b { font-family: var(--font-mono); font-weight: 600; }
+.siau-tooltip i { display: inline-block; width: 0.55rem; height: 0.55rem; margin-right: 0.35rem; border-radius: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .siau-revelar, .siau-anillo-arco, .siau-pista > span, .siau-dist > span, .siau-estacion[data-foco="true"], .siau-girando { animation: none !important; }
+  .siau-boton:hover, .siau-boton:active, .siau-opcion:hover, .siau-opcion:active, .siau-sugerencia:hover { transform: none; }
+}

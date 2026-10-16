@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { BarChart3, Download, ListChecks, PencilRuler } from "lucide-react";
+import { ArrowRight, BarChart3, Download, ListChecks, PencilRuler } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /*
@@ -181,5 +181,30 @@ export function EncabezadoSeccion({
       </div>
       {accion}
     </div>
+  );
+}
+
+/**
+ * Encuesta SIAU: sus descargas no se repiten en la ficha. Viven en la
+ * estación única de exportación del Centro de datos SIAU (estilos .siau-).
+ */
+export function AvisoExportacionCentralizada({ href = "/encuestas/siau#exportar" }: { href?: string }) {
+  return (
+    <section className="siau-aviso" aria-label="Exportaciones de la encuesta">
+      <span className="siau-estacion-icono" aria-hidden="true">
+        <Download />
+      </span>
+      <div>
+        <strong>Las exportaciones de esta encuesta están centralizadas en el Centro de datos SIAU</strong>
+        <p>
+          Informe PDF, Excel SIHO, datos crudos, PDF de resultados, CSV de respuestas y formato Word: todo en una sola estación, con el periodo y los
+          filtros a la vista.
+        </p>
+      </div>
+      <Link href={href} className="siau-boton siau-boton-primario">
+        Ir a exportar
+        <ArrowRight aria-hidden="true" />
+      </Link>
+    </section>
   );
 }

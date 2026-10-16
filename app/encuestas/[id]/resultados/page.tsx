@@ -22,6 +22,7 @@ import { GraficaEvolucion, GraficaOpciones, GraficaDistribucion } from "@/compon
 import { BotonEnlacePublico } from "@/components/encuestas/boton-enlace-publico";
 import { ETIQUETA_AUDIENCIA, ETIQUETA_ESTADO } from "@/components/encuestas/tarjeta-encuesta";
 import {
+  AvisoExportacionCentralizada,
   BarraPorcentaje,
   CentroExportacion,
   COLOR_SEMAFORO,
@@ -146,38 +147,43 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
         </div>
       </div>
 
-      <CentroExportacion
-        titulo="Descargas de esta encuesta"
-        bajada="Cada archivo se genera en el momento con los datos vigentes. Para exportar una sola pregunta, usa su CSV en la pestaña «Por pregunta»."
-      >
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <TarjetaExporte
-            destacado
-            href={`/api/encuestas/${encuesta.slug}/informe`}
-            Icono={FileText}
-            formato="PDF"
-            titulo="Informe de resultados"
-            detalle="Métricas, gráficas y la tabulación completa por pregunta, con la fecha de generación."
-            pie="Para presentar o radicar"
-          />
-          <TarjetaExporte
-            href={`/api/encuestas/${encuesta.slug}/csv`}
-            Icono={FileSpreadsheet}
-            formato="CSV"
-            titulo="Base de respuestas"
-            detalle="Una fila por respuesta completa y una columna por pregunta, con encuestado, fecha, canal y puntaje."
-            pie="Se abre en Excel"
-          />
-          <TarjetaExporte
-            href={`/api/encuestas/${encuesta.slug}/formato-docx`}
-            Icono={FileType2}
-            formato="DOCX"
-            titulo="Formato oficial en Word"
-            detalle="El instrumento con su encabezado institucional y todas las preguntas, listo para imprimir o archivar."
-            pie="Formato sin diligenciar"
-          />
-        </div>
-      </CentroExportacion>
+      {/* SIAU: una sola estación de exportación, en el Centro de datos SIAU. */}
+      {esSiau ? (
+        <AvisoExportacionCentralizada />
+      ) : (
+        <CentroExportacion
+          titulo="Descargas de esta encuesta"
+          bajada="Cada archivo se genera en el momento con los datos vigentes. Para exportar una sola pregunta, usa su CSV en la pestaña «Por pregunta»."
+        >
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <TarjetaExporte
+              destacado
+              href={`/api/encuestas/${encuesta.slug}/informe`}
+              Icono={FileText}
+              formato="PDF"
+              titulo="Informe de resultados"
+              detalle="Métricas, gráficas y la tabulación completa por pregunta, con la fecha de generación."
+              pie="Para presentar o radicar"
+            />
+            <TarjetaExporte
+              href={`/api/encuestas/${encuesta.slug}/csv`}
+              Icono={FileSpreadsheet}
+              formato="CSV"
+              titulo="Base de respuestas"
+              detalle="Una fila por respuesta completa y una columna por pregunta, con encuestado, fecha, canal y puntaje."
+              pie="Se abre en Excel"
+            />
+            <TarjetaExporte
+              href={`/api/encuestas/${encuesta.slug}/formato-docx`}
+              Icono={FileType2}
+              formato="DOCX"
+              titulo="Formato oficial en Word"
+              detalle="El instrumento con su encabezado institucional y todas las preguntas, listo para imprimir o archivar."
+              pie="Formato sin diligenciar"
+            />
+          </div>
+        </CentroExportacion>
+      )}
 
       <Tabs defaultValue={hayResumen ? "resumen" : "preguntas"}>
         <TabsList className="plan-tabs">
