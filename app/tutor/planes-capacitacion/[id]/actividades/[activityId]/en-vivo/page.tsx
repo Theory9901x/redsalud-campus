@@ -8,15 +8,21 @@ import { firmarTokenJitsi } from "@/lib/jitsi";
 import { SalaVirtual } from "@/components/training-plans/sala-virtual";
 import { PanelEnVivo } from "@/components/training-plans/panel-en-vivo";
 import { etiquetaJornada } from "@/components/training-plans/labels";
+import { jornadaDeEnlace } from "@/lib/jornadas";
 
 /**
  * PANEL DE JORNADA EN VIVO del tutor de área.
  *
  * Una sola pantalla para el rato en que la capacitación está ocurriendo: la
- * videollamada y las cifras de participación juntas, para no tener que
- * alternar entre la llamada y un tablero aparte.
+ * sala en vivo y las cifras de participación juntas, para no tener que
+ * alternar entre la sala y un tablero aparte.
  *
- * El layout depende de la modalidad de la jornada vigente, no de una
+ * La jornada es la del enlace (?s=<token>) o, sin él, la VIGENTE
+ * (resolverJornadaVigente: la que está en curso, si no la próxima, si no la
+ * última sin cerrar). La sala embebida lleva esa jornada, así que lo que
+ * entra por aquí queda registrado en ella, igual que por sus enlaces.
+ *
+ * El layout depende de la modalidad de esa jornada, no de una
  * preferencia: si hay sala virtual, video a la izquierda y tarjetas a la
  * derecha; si la jornada es presencial no hay columna de video y las
  * tarjetas ocupan el ancho, que es igual de útil para ver quién va entrando
@@ -27,10 +33,13 @@ import { etiquetaJornada } from "@/components/training-plans/labels";
  */
 export default async function JornadaEnVivoPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; activityId: string }>;
+  searchParams: Promise<{ s?: string }>;
 }) {
   const { id, activityId } = await params;
+  const { s: tokenJornada } = await searchParams;
   const { session } = await requireTrainingActivityAccess(activityId);
 
   const actividad = await prisma.trainingActivity.findUnique({
@@ -41,20 +50,21 @@ export default async function JornadaEnVivoPage({
       status: true,
       modality: true,
       area: { select: { name: true } },
-      sessions: {
-        where: { status: { not: "CLOSED" } },
-        orderBy: { startsAt: "asc" },
-        take: 1,
-        select: { startsAt: true, endsAt: true, shift: true, modality: true, meetingUrl: true, location: true },
-      },
     },
   });
   if (!actividad) notFound();
 
+  const { jornada: resuelta } = await jornadaDeEnlace(activityId, tokenJornada);
+  const jornada = resuelta
+    ? await prisma.trainingSession.findUnique({
+        where: { id: resuelta.id },
+        select: { id: true, tokenPublico: true, startsAt: true, endsAt: true, modality: true, location: true },
+      })
+    : null;
+
   const metricas = await getActivityLiveMetrics(activityId);
   if (!metricas) notFound();
 
-  const jornada = actividad.sessions[0] ?? null;
   // La modalidad de la JORNADA manda sobre la de la línea del plan: una
   // actividad mixta puede dictarse hoy presencial y la semana entrante
   // virtual, y lo que importa aquí es la de hoy.
@@ -106,7 +116,7 @@ export default async function JornadaEnVivoPage({
             </span>
             {actividad.status === "CLOSED" && (
               <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
-                Jornada cerrada · cifras definitivas
+                Capacitación cerrada · cifras definitivas
               </span>
             )}
           </div>
@@ -120,6 +130,7 @@ export default async function JornadaEnVivoPage({
             displayName={session.user.name ?? "Tutor"}
             subject={actividad.title}
             jwt={tokenSala}
+            sessionId={jornada?.id ?? null}
             esPresentador
             panelDerecho={<PanelEnVivo activityId={activityId} inicial={metricas} conVideo />}
           />

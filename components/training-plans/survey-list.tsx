@@ -29,7 +29,7 @@ export function SurveyList({
       <EmptyState
         icon={ClipboardList}
         title="Sin encuestas todavía"
-        description="Crea la primera con el formulario de abajo."
+        description="Crea la primera con «Nueva encuesta»."
         className="py-10"
       />
     );

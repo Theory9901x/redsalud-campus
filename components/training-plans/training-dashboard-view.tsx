@@ -182,11 +182,11 @@ export function TrainingDashboardView({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-lg font-bold text-foreground">Planes y su cumplimiento</h2>
             <a
-              href="/api/reportes/planes-cumplimiento"
+              href="/api/reportes/planes-cumplimiento/excel"
               className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
               <Download className="h-4 w-4" />
-              Exportar CSV
+              Exportar Excel
             </a>
           </div>
           <div className="surface-panel overflow-hidden">
@@ -239,11 +239,11 @@ export function TrainingDashboardView({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-lg font-bold text-foreground">Resultados de encuestas</h2>
             <a
-              href="/api/reportes/planes-encuestas"
+              href="/api/reportes/planes-encuestas/excel"
               className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
               <Download className="h-4 w-4" />
-              Exportar CSV
+              Exportar Excel
             </a>
           </div>
           <div className="surface-panel overflow-hidden">

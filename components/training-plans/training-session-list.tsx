@@ -221,7 +221,12 @@ export function TrainingSessionList({
               <DeleteEntityButton
                 action={() => onDelete(s.id)}
                 nombre="La jornada"
-                descripcion="Se elimina esta jornada del calendario. La capacitación en el plan sigue existiendo; lo que se registró por sus enlaces se conserva en la capacitación."
+                titulo="¿Eliminar esta jornada?"
+                descripcion={
+                  s.conteo && s.conteo.asistentes + s.conteo.presaber + s.conteo.postsaber + s.conteo.invitados > 0
+                    ? "Esta jornada ya tiene registros por sus enlaces (asistencia, evaluaciones o invitados), así que no se puede borrar: ciérrala en lugar de borrarla."
+                    : "Se elimina esta jornada del calendario y sus enlaces y QR dejan de funcionar. La capacitación sigue en el plan. Solo se borra una jornada sin registros: si ya tiene asistencia, evaluaciones, invitados o conexiones a la sala, se cierra en lugar de borrarse."
+                }
                 size="icon-sm"
               />
             </div>

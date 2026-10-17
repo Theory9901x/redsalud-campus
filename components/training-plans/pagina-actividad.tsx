@@ -438,7 +438,7 @@ export async function PaginaActividad({
           />
           {panelEnVivo && activity.status !== "DRAFT" && (
             <Link
-              href={`${basePath}/${id}/actividades/${activityId}/en-vivo`}
+              href={`${basePath}/${id}/actividades/${activityId}/en-vivo${vigente ? `?s=${encodeURIComponent(vigente.tokenPublico)}` : ""}`}
               className="inline-flex items-center gap-1.5 rounded-[10px] border border-primary/35 bg-primary/8 px-3.5 py-1.5 text-xs font-bold text-primary transition-colors hover:bg-primary/15"
             >
               <Radio className="h-3.5 w-3.5" aria-hidden="true" />

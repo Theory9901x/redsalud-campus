@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { compararAdherencia } from "@/lib/presaber-postsaber";
+import { trimestreActual } from "@/lib/training-plans";
 import type { FaseSesion } from "@prisma/client";
 
 /**
@@ -48,21 +49,71 @@ export async function getSesionPorToken(token: string) {
  * Registra la asistencia de una persona a la sesión. Idempotente: el doble
  * escaneo cae en la restricción única y se responde igual que si fuera la
  * primera vez -a quien escanea dos veces no le interesa el detalle-.
+ *
+ * La asistencia a una jornada ES asistencia a la capacitación: además de la
+ * fila de la jornada (AsistenciaSesion) se deja en firme la de la
+ * capacitación (TrainingAttendance), tenga o no evaluación, que es la que
+ * leen la pestaña «Asistencia», el indicador PIC-ASI-03 y el informe. No
+ * inscribe en ningún curso. `registradoPor` va solo en el registro manual.
  */
 export async function registrarAsistenciaSesion(
   sesionId: string,
   userId: string,
-  medio: "QR" | "MANUAL" | "SALA"
+  medio: "QR" | "MANUAL" | "SALA",
+  registradoPor?: string
 ): Promise<{ yaEstaba: boolean }> {
+  let yaEstaba = false;
   try {
     await prisma.asistenciaSesion.create({ data: { sesionId, userId, medio } });
-    return { yaEstaba: false };
   } catch (error) {
     // P2002 = ya registrada. Cualquier otro error sí es un error.
     if (typeof error === "object" && error && "code" in error && (error as { code?: string }).code === "P2002") {
-      return { yaEstaba: true };
+      yaEstaba = true;
+    } else {
+      throw error;
     }
-    throw error;
+  }
+  // También cuando ya estaba: así se completa la asistencia de quien quedó
+  // registrado en la jornada antes de que existiera este enlace.
+  await asistenciaDeCapacitacionPorJornada(sesionId, userId, medio, registradoPor);
+  return { yaEstaba };
+}
+
+/**
+ * TrainingAttendance (attended = true) de la capacitación de la jornada, en
+ * el trimestre en que ocurre -mismo criterio que la conexión a la sala y la
+ * entrada a la evaluación-. Idempotente (única actividad+persona+trimestre)
+ * y no toca capacitaciones ya CERRADAS: ahí la participación quedó congelada.
+ */
+async function asistenciaDeCapacitacionPorJornada(
+  sesionId: string,
+  userId: string,
+  medio: "QR" | "MANUAL" | "SALA",
+  registradoPor?: string
+) {
+  const sesion = await prisma.trainingSession.findUnique({
+    where: { id: sesionId },
+    select: { activityId: true, activity: { select: { status: true } } },
+  });
+  if (!sesion || sesion.activity.status === "CLOSED") return;
+  const { trimestre } = trimestreActual();
+  const manual = medio === "MANUAL";
+  try {
+    await prisma.trainingAttendance.upsert({
+      where: { activityId_userId_trimestre: { activityId: sesion.activityId, userId, trimestre } },
+      update: { attended: true },
+      create: {
+        activityId: sesion.activityId,
+        userId,
+        attended: true,
+        trimestre,
+        source: manual ? "MANUAL" : "AUTOMATIC",
+        registeredBy: manual ? (registradoPor ?? null) : null,
+      },
+    });
+  } catch (error) {
+    // Dos registros simultáneos de la misma persona (QR + sala): el otro ya la creó.
+    if (!(typeof error === "object" && error && "code" in error && (error as { code?: string }).code === "P2002")) throw error;
   }
 }
 

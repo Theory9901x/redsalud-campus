@@ -100,15 +100,24 @@ function tipoDocumentoSinContexto(doc: { kind?: string | null; fileName: string;
   return "OTRO";
 }
 
-/** El nombre en disco va saneado (sin tildes, con guiones): se recupera un título legible. */
+/**
+ * El nombre en disco va saneado: lib/storage.ts cambia por un guion todo lo
+ * que no sea letra o número sin tilde y le antepone la marca de tiempo
+ * ("Grabación jornada 2026-10-16 22h40.webm" queda
+ * "1787699533394-Grabaci-n-jornada-2026-10-16-22h40.webm"). Aquí se recupera
+ * un título legible sin tocar el archivo: sin prefijo ni extensión, los
+ * guiones vuelven a ser espacios, se reponen las terminaciones "-ión" (ción,
+ * sión, nión, gión…) que el saneado deja como "ci n" -seguidas de espacio o
+ * al final- y la fecha vuelve a llevar sus guiones.
+ */
 export function nombreLegibleDocumento(fileName: string) {
-  const sinExt = fileName.replace(/^\d+-/, "").replace(/\.[a-z0-9]+$/i, "");
+  const sinExt = fileName.replace(/^\d{10,}-/, "").replace(/\.[a-z0-9]{1,5}$/i, "");
   return sinExt
     .replace(/---+/g, " · ")
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ")
-    .replace(/ci n\b/gi, "ción")
-    .replace(/si n\b/gi, "sión")
+    .replace(/([A-Za-zñÑ])([iI]) ([nN])(?![A-Za-z0-9ñÑ])/g, (_m, antes: string, i: string, n: string) => `${antes}${i}${n === "N" ? "Ó" : "ó"}${n}`)
+    .replace(/\b(\d{4}) (\d{2}) (\d{2})\b/g, "$1-$2-$3")
     .trim();
 }
 

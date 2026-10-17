@@ -8,7 +8,7 @@ import { getContextoInforme } from "@/lib/activity-report-contexto";
 import { tituloLegible } from "@/components/training-plans/labels";
 
 /**
- * PDF del informe de la jornada. Con la capacitación abierta sale como
+ * PDF del informe de la capacitación. Con la capacitación abierta sale como
  * PRELIMINAR (en vivo, las cifras siguen cambiando); al cerrarla queda el
  * informe definitivo, congelado.
  *
@@ -51,7 +51,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ acti
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="Informe${data.status === "CLOSED" ? "" : "-PRELIMINAR"}-${contexto?.codigo ?? "jornada"}-${nombre}.pdf"`,
+      "Content-Disposition": `attachment; filename="Informe${data.status === "CLOSED" ? "" : "-PRELIMINAR"}-${contexto?.codigo ?? "capacitacion"}-${nombre}.pdf"`,
     },
   });
 }

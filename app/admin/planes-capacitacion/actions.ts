@@ -179,7 +179,7 @@ export async function bulkImportActivitiesAction(
         planId,
         title: row.title,
         type: row.type,
-        courseId: row.courseId,
+        // La importación nunca vincula cursos: los planes no se atan a cursos.
         startDate: row.startDate,
         endDate: row.endDate,
         targetAudience: row.targetAudience,
@@ -252,7 +252,7 @@ export async function setAttendanceAction(activityId: string, userId: string, at
 
   const activity = await prisma.trainingActivity.findUniqueOrThrow({ where: { id: activityId }, select: { status: true } });
   if (activity.status === "CLOSED") {
-    throw new Error("La jornada ya cerró: la participación está congelada y no admite más cambios.");
+    throw new Error("La capacitación ya cerró: la participación está congelada y no admite más cambios.");
   }
 
   // Se marca en el trimestre que se está revisando (o el que está en curso).
@@ -291,7 +291,7 @@ export async function hideActivityAction(
     select: { status: true, title: true },
   });
   if (activity.status === "CLOSED") {
-    return { error: "Esta jornada ya está cerrada: no hay nada que ocultar." };
+    return { error: "Esta capacitación ya está cerrada: no hay nada que ocultar." };
   }
 
   await prisma.trainingActivity.update({
@@ -355,9 +355,17 @@ export async function closeActivityAction(basePath: string, planId: string, acti
   const cerrado = await errorSiPlanCerrado(planId);
   if (cerrado) throw new Error(cerrado);
 
-  const activity = await prisma.trainingActivity.findUniqueOrThrow({ where: { id: activityId }, select: { status: true } });
+  const activity = await prisma.trainingActivity.findUniqueOrThrow({
+    where: { id: activityId },
+    select: { status: true, plan: { select: { kind: true } } },
+  });
   if (activity.status !== "OPEN") {
-    throw new Error("Solo se puede cerrar una jornada que está abierta.");
+    // Los comités y reuniones reutilizan este cierre: allá es una sesión, no una capacitación.
+    throw new Error(
+      activity.plan.kind === "CAPACITACION"
+        ? "Solo se puede cerrar una capacitación que está abierta."
+        : "Solo se puede cerrar una sesión que está abierta."
+    );
   }
 
   await prisma.trainingActivity.update({ where: { id: activityId }, data: { status: "CLOSED", closedAt: new Date() } });
@@ -369,7 +377,7 @@ export async function closeActivityAction(basePath: string, planId: string, acti
   try {
     await freezeActivityReport(activityId);
   } catch (error) {
-    console.error(`No se pudo congelar el informe de la jornada ${activityId}:`, error);
+    console.error(`No se pudo congelar el informe de la capacitación ${activityId}:`, error);
   }
 
   revalidatePath(`${basePath}/${planId}`);
@@ -399,7 +407,7 @@ export async function reopenActivityAction(
 ): Promise<ReopenActivityState> {
   const session = await requireTutorOrAdmin();
   if (session.user.role !== "ADMIN") {
-    return { error: "Reabrir una jornada cerrada requiere permiso de administrador." };
+    return { error: "Reabrir una capacitación cerrada requiere permiso de administrador." };
   }
 
   const cerrado = await errorSiPlanCerrado(planId);
@@ -407,9 +415,10 @@ export async function reopenActivityAction(
 
   const activity = await prisma.trainingActivity.findUniqueOrThrow({
     where: { id: activityId },
-    select: { status: true, title: true, closedAt: true, reportSnapshotAt: true },
+    select: { status: true, title: true, closedAt: true, reportSnapshotAt: true, plan: { select: { kind: true } } },
   });
-  if (activity.status !== "CLOSED") return { error: "Esta jornada no está cerrada." };
+  const queEs = activity.plan.kind === "CAPACITACION" ? "capacitación" : "sesión";
+  if (activity.status !== "CLOSED") return { error: `Esta ${queEs} no está cerrada.` };
 
   const congelado = await getFrozenActivityReport(activityId);
 
@@ -428,7 +437,7 @@ export async function reopenActivityAction(
     action: "UPDATE",
     entity: "TrainingActivity",
     entityId: activityId,
-    description: `Reabrió la jornada «${activity.title}», cerrada el ${activity.closedAt?.toISOString().slice(0, 10) ?? "—"}.${queDecia}`,
+    description: `Reabrió la ${queEs} «${activity.title}», cerrada el ${activity.closedAt?.toISOString().slice(0, 10) ?? "—"}.${queDecia}`,
   });
 
   revalidatePath(`${basePath}/${planId}`);
@@ -540,7 +549,7 @@ export async function deleteTrainingPlanAction(basePath: string, planId: string)
   return { error: null };
 }
 
-/** Elimina una jornada del plan. Se bloquea si ya tiene asistencia registrada. */
+/** Elimina una capacitación del plan. Se bloquea si ya tiene asistencia registrada. */
 export async function deleteTrainingActivityAction(
   basePath: string,
   planId: string,
@@ -555,7 +564,7 @@ export async function deleteTrainingActivityAction(
     where: { id: activityId },
     select: { title: true, _count: { select: { attendances: { where: { attended: true } } } } },
   });
-  if (!activity) return { error: "La jornada ya no existe." };
+  if (!activity) return { error: "La capacitación ya no existe." };
 
   if (activity._count.attendances > 0) {
     return {
@@ -663,6 +672,26 @@ export async function deleteTrainingSessionAction(
 
   const cerrado = await errorSiPlanCerrado(planId);
   if (cerrado) return { error: cerrado };
+
+  // Borrar la jornada arrastraría su asistencia (AsistenciaSesion cae en
+  // cascada) y dejaría sin jornada intentos, invitados y conexiones: lo
+  // registrado por sus enlaces es evidencia, así que una jornada con
+  // registros no se borra, se cierra.
+  const jornada = await prisma.trainingSession.findUnique({
+    where: { id: sessionId },
+    select: {
+      activityId: true,
+      _count: { select: { asistencias: true, quizAttempts: true, externalParticipants: true, callConnections: true } },
+    },
+  });
+  if (!jornada || jornada.activityId !== activityId) return { error: "La jornada ya no existe." };
+  const c = jornada._count;
+  if (c.asistencias + c.quizAttempts + c.externalParticipants + c.callConnections > 0) {
+    return {
+      error: "Esta jornada ya tiene registros (asistencia, evaluaciones, invitados o conexiones a la sala); ciérrala en lugar de borrarla.",
+    };
+  }
+
   await prisma.trainingSession.delete({ where: { id: sessionId } });
   revalidatePath(`${basePath}/${planId}`);
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
@@ -797,11 +826,11 @@ export async function getPlanCloseBlockers(planId: string): Promise<string[]> {
   const bloqueos: string[] = [];
   const abiertas = actividades.filter((a) => a.status === "OPEN");
   if (abiertas.length > 0) {
-    bloqueos.push(`${abiertas.length} ${abiertas.length === 1 ? "jornada abierta" : "jornadas abiertas"} sin cerrar.`);
+    bloqueos.push(`${abiertas.length} ${abiertas.length === 1 ? "capacitación abierta" : "capacitaciones abiertas"} sin cerrar.`);
   }
   const sesionesAbiertas = actividades.reduce((s, a) => s + a.sessions.length, 0);
   if (sesionesAbiertas > 0) {
-    bloqueos.push(`${sesionesAbiertas} ${sesionesAbiertas === 1 ? "sesión agendada abierta" : "sesiones agendadas abiertas"}.`);
+    bloqueos.push(`${sesionesAbiertas} ${sesionesAbiertas === 1 ? "jornada agendada abierta" : "jornadas agendadas abiertas"}.`);
   }
   const ventanas = actividades.filter(
     (a) =>
@@ -838,7 +867,7 @@ export async function closeTrainingPlanAction(
 
   const observaciones = String(formData.get("observaciones") ?? "").trim();
   if (observaciones.length < 10) {
-    return { error: "Escribe las observaciones de cierre (mínimo 10 caracteres): son la constancia del acta." };
+    return { error: "Escribe las observaciones de cierre (mínimo 10 caracteres): quedan registradas con el cierre del plan." };
   }
 
   await prisma.trainingPlan.update({

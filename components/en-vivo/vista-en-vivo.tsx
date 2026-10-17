@@ -19,7 +19,7 @@ export function VistaEnVivo({ fichas, pestanas }: { fichas: CapacitacionEnVivo[]
         Icono={Radio}
         titulo="Capacitaciones"
         acento="en vivo"
-        descripcion="Las llamadas que están ocurriendo ahora en la institución. No hace falta que te envíen el enlace ni el QR: busca la tuya y entra."
+        descripcion="Las capacitaciones en vivo que están ocurriendo ahora en la institución. No hace falta que te envíen el enlace ni el QR: busca la tuya y entra."
         cifras={[
           { valor: enVivo.length, etiqueta: "En vivo ahora" },
           { valor: enVivo.reduce((s, f) => s + f.conectados, 0), etiqueta: "Personas conectadas" },

@@ -34,8 +34,8 @@ export function ImportScheduleDialog({
         <DialogHeader>
           <DialogTitle>Importar cronograma desde Excel</DialogTitle>
           <DialogDescription>
-            Descarga la plantilla, complétala con las actividades y súbela. Complementa «Agregar actividad»: las
-            filas válidas se crean como actividades, igual que si las agregaras una por una: las que traen título y trimestre o fecha se publican solas.
+            Descarga la plantilla, complétala con las capacitaciones y súbela. Complementa «Agregar capacitación»: las
+            filas válidas se crean como capacitaciones, igual que si las agregaras una por una: las que traen título y trimestre o fecha se publican solas.
           </DialogDescription>
         </DialogHeader>
 
@@ -66,7 +66,7 @@ export function ImportScheduleDialog({
             <div className="space-y-2 rounded-lg border border-border p-3">
               <p className="flex items-center gap-1.5 text-sm font-medium text-success">
                 <CheckCircle2 className="h-4 w-4" />
-                {state.createdCount} {state.createdCount === 1 ? "actividad creada" : "actividades creadas"}
+                {state.createdCount} {state.createdCount === 1 ? "capacitación creada" : "capacitaciones creadas"}
               </p>
               {state.rowErrors && state.rowErrors.length > 0 && (
                 <div className="space-y-1">

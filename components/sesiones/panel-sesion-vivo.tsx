@@ -28,7 +28,7 @@ type Asistente = { nombre: string; documento: string; hora: string; medio: strin
 /**
  * FASE 10 — Panel EN VIVO de una sesión presencial, para el tutor.
  *
- * Controles de fase (avanzar/retroceder, cerrar con acta), contador de
+ * Controles de fase (avanzar/retroceder, cerrar congelando los totales), contador de
  * asistentes en tiempo real (sondeo cada 10 s, suficiente para un
  * auditorio) y registro manual por documento para quien no puede escanear.
  */
@@ -37,11 +37,17 @@ export function PanelSesionVivo({
   faseInicial,
   fichaUrl,
   asistentesIniciales,
+  conActa = false,
 }: {
   sesionId: string;
   faseInicial: FaseSesion;
   fichaUrl: string;
   asistentesIniciales: Asistente[];
+  /**
+   * Comités y reuniones cierran su sesión con ACTA; en un plan de
+   * capacitación no hay actas: la jornada se cierra y congela su registro.
+   */
+  conActa?: boolean;
 }) {
   const router = useRouter();
   const [fase, setFase] = useState<FaseSesion>(faseInicial);
@@ -72,7 +78,15 @@ export function PanelSesionVivo({
   function avanzar() {
     const indice = ORDEN_FASES.indexOf(fase);
     const siguiente = ORDEN_FASES[indice + 1];
-    if (siguiente === "CERRADA" && !confirm("Cerrar la sesión congela su acta de totales. ¿Continuar?")) return;
+    if (
+      siguiente === "CERRADA" &&
+      !confirm(
+        conActa
+          ? "Cerrar la sesión congela su acta de totales. ¿Continuar?"
+          : "Cerrar la jornada congela su registro (asistentes, presaber, postsaber e invitados). ¿Continuar?"
+      )
+    )
+      return;
     startTransition(async () => {
       const r = await avanzarFaseAction(sesionId);
       if (r.error) toast.error(r.error);
@@ -178,7 +192,9 @@ export function PanelSesionVivo({
               >
                 {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
                 {ORDEN_FASES[ORDEN_FASES.indexOf(fase) + 1] === "CERRADA"
-                  ? "Cerrar sesión y congelar acta"
+                  ? conActa
+                    ? "Cerrar sesión y congelar acta"
+                    : "Cerrar jornada y congelar registro"
                   : `Pasar a: ${ETIQUETA_FASE[ORDEN_FASES[ORDEN_FASES.indexOf(fase) + 1]]}`}
               </button>
             </div>

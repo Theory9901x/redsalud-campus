@@ -9,7 +9,7 @@ import type { ContextoInforme, PermanenciaPersona } from "@/lib/activity-report-
 import { tituloLegible } from "@/components/training-plans/labels";
 
 /**
- * INFORME DE LA JORNADA — formato "tablero ejecutivo".
+ * INFORME DE LA CAPACITACIÓN — formato "tablero ejecutivo".
  *
  * Página 1 es para DECIDIR: membrete navy con código del informe, cuatro
  * indicadores principales (cobertura con anillo, permanencia, evolución del
@@ -141,14 +141,14 @@ function Membrete({ data, ctx, generadoPor }: { data: ActivityReportData; ctx: C
           {ctx?.logo && <Image src={ctx.logo} style={{ width: 26, height: 26, objectFit: "contain" }} />}
           <View>
             <Text style={{ fontSize: 8.5, fontWeight: 700, color: C.blanco }}>Red Salud Casanare E.S.E.</Text>
-            <Text style={{ fontFamily: "Courier", fontSize: 6.8, letterSpacing: 1.4, color: "#8FC9E8" }}>RED SALUD TE FORMA · INFORME DE JORNADA</Text>
+            <Text style={{ fontFamily: "Courier", fontSize: 6.8, letterSpacing: 1.4, color: "#8FC9E8" }}>RED SALUD TE FORMA · INFORME DE CAPACITACIÓN</Text>
           </View>
         </View>
         <View style={{ alignItems: "flex-end" }}>
           <Text style={{ fontFamily: "Courier", fontSize: 7.5, color: "#8FC9E8", letterSpacing: 1 }}>{ctx?.codigo ?? "INF"}</Text>
           <View style={{ marginTop: 4, borderWidth: 1, borderColor: "#3E6585", borderRadius: 3, paddingHorizontal: 5, paddingVertical: 2 }}>
             <Text style={{ fontFamily: "Courier", fontSize: 6.8, color: C.blanco, letterSpacing: 1.2 }}>
-              {data.status === "CLOSED" ? "INFORME DEFINITIVO · JORNADA CERRADA" : "INFORME PRELIMINAR · JORNADA EN CURSO"}
+              {data.status === "CLOSED" ? "INFORME DEFINITIVO · CAPACITACIÓN CERRADA" : "INFORME PRELIMINAR · CAPACITACIÓN EN CURSO"}
             </Text>
           </View>
         </View>
@@ -324,7 +324,7 @@ function LecturaRapida({ data, ctx }: { data: ActivityReportData; ctx: ContextoI
       texto: `La permanencia promedio en la sala fue de ${prom} min: ${largos} de ${perm.length} personas estuvieron 30 min o más${cortos ? ` y ${cortos} menos de 10 min` : ""}.`,
     });
   } else {
-    hallazgos.push({ tono: "neutro", texto: "No hay conexiones a la sala virtual registradas (jornada presencial o sin sala integrada)." });
+    hallazgos.push({ tono: "neutro", texto: "No hay conexiones a la sala virtual registradas (capacitación presencial o sin sala integrada)." });
   }
   if (ind.promedioPre !== null && ind.promedioPost !== null) {
     hallazgos.push({
@@ -332,7 +332,7 @@ function LecturaRapida({ data, ctx }: { data: ActivityReportData; ctx: ContextoI
       texto: `El conocimiento pasó de ${ind.promedioPre}% a ${ind.promedioPost}% (${signo(ind.diferencia ?? 0)} pp); ${ind.mejoraron} de ${ind.completaronCiclo} personas que presentaron ambos momentos mejoraron su nota.`,
     });
   } else if (ind.evaluadosPre + ind.evaluadosPost === 0) {
-    hallazgos.push({ tono: "neutro", texto: "No se aplicó la evaluación presaber/postsaber en esta jornada." });
+    hallazgos.push({ tono: "neutro", texto: "No se aplicó la evaluación presaber/postsaber en esta capacitación." });
   }
   if (ind.evaluadosPost > 0) {
     const aprob = pctDe(ind.adherentesPost, ind.evaluadosPost) ?? 0;
@@ -355,7 +355,7 @@ function LecturaRapida({ data, ctx }: { data: ActivityReportData; ctx: ContextoI
     const esc = e.satisfaccion.promedioEscala;
     hallazgos.push({
       tono: f === null ? "neutro" : f >= 85 ? "bien" : f >= 70 ? "neutro" : "alerta",
-      texto: `Satisfacción (${e.respuestas} ${e.respuestas === 1 ? "respuesta" : "respuestas"}): ${f !== null ? `${f}% calificó la jornada como buena o excelente` : "sin pregunta de calificación general"}${esc !== null ? `; promedio ${esc} de ${e.satisfaccion.escalaMax ?? 5} en las preguntas de escala` : ""}.`,
+      texto: `Satisfacción (${e.respuestas} ${e.respuestas === 1 ? "respuesta" : "respuestas"}): ${f !== null ? `${f}% calificó la capacitación como buena o excelente` : "sin pregunta de calificación general"}${esc !== null ? `; promedio ${esc} de ${e.satisfaccion.escalaMax ?? 5} en las preguntas de escala` : ""}.`,
     });
   }
 
@@ -396,7 +396,7 @@ function Graficos({ data, ctx }: { data: ActivityReportData; ctx: ContextoInform
     <View style={[s.cuerpo, s.seccion]} wrap={false}>
       <View style={s.seccionCab}>
         <Text style={s.seccionNum}>02</Text>
-        <Text style={s.seccionTitulo}>Comportamiento de la jornada</Text>
+        <Text style={s.seccionTitulo}>Comportamiento de la capacitación</Text>
         <View style={s.seccionLinea} />
       </View>
       <View style={{ flexDirection: "row", gap: 10 }}>
@@ -494,8 +494,8 @@ function PlanDeAccion({ data, ctx }: { data: ActivityReportData; ctx: ContextoIn
   for (const e of data.encuestas) {
     if (e.satisfaccion?.comentarios.length) acciones.push(`Atender las sugerencias de la encuesta «${e.titulo}»: ${e.satisfaccion.comentarios.slice(0, 3).map((c) => `«${c}»`).join("; ")}.`);
   }
-  if (data.status !== "CLOSED") acciones.push("Cerrar la jornada cuando termine el ciclo: el informe queda congelado como evidencia definitiva y el personal no adherente se registra nominalmente.");
-  if (!acciones.length) acciones.push("Sin acciones pendientes: la jornada cumplió cobertura, aprobación y adherencia. Archivar el informe como evidencia del PIC.");
+  if (data.status !== "CLOSED") acciones.push("Cerrar la capacitación cuando termine el ciclo: el informe queda congelado como evidencia definitiva y el personal no adherente se registra nominalmente.");
+  if (!acciones.length) acciones.push("Sin acciones pendientes: la capacitación cumplió cobertura, aprobación y adherencia. Archivar el informe como evidencia del PIC.");
   return (
     <Seccion n="04" titulo="Plan de acción sugerido">
       {acciones.map((a, i) => (
@@ -504,7 +504,7 @@ function PlanDeAccion({ data, ctx }: { data: ActivityReportData; ctx: ContextoIn
           <Text style={{ flex: 1, fontSize: 8.6, lineHeight: 1.4 }}>{a}</Text>
         </View>
       ))}
-      <Text style={{ fontSize: 7, color: C.muted, marginTop: 4 }}>Generado automáticamente a partir de los datos de la jornada; el área lo valida y lo convierte en plan de mejora si aplica.</Text>
+      <Text style={{ fontSize: 7, color: C.muted, marginTop: 4 }}>Generado automáticamente a partir de los datos de la capacitación; el área lo valida y lo convierte en plan de mejora si aplica.</Text>
     </Seccion>
   );
 }
@@ -696,10 +696,29 @@ function Externos({ data, ctx }: { data: ActivityReportData; ctx: ContextoInform
   );
 }
 
+/** Hasta este número de archivos la tabla de anexos va entera en una sola página. */
+const ANEXOS_SIN_PARTIR = 12;
+
 function EncuestasYEvidencias({ data, evidencia }: { data: ActivityReportData; evidencia?: EvidenciaJornada }) {
   const docs = evidencia?.documentos ?? [];
+  // La tabla de anexos no se parte dejando una fila huérfana en una página
+  // casi vacía: si es corta va entera (y, sin encuestas antes, junto con el
+  // título de la sección); si es larga se puede partir, pero las dos últimas
+  // filas viajan juntas y la cabecera no queda sola al pie de una página.
+  const tablaCorta = docs.length <= ANEXOS_SIN_PARTIR;
+  const fila = (d: (typeof docs)[number], i: number) => (
+    <View key={i} style={[s.tr, i % 2 ? s.trCebra : {}]} wrap={false}>
+      <Text style={[s.td, { flex: 3 }]}>
+        {d.esGrabacion && !/^grabaci[oó]n/i.test(d.nombre) ? "Grabación · " : ""}
+        {d.nombre}
+      </Text>
+      <Text style={[s.td, s.mono, { flex: 0.8 }]}>{d.esGrabacion ? "VIDEO" : d.tipo.split("/").pop()?.toUpperCase() ?? "—"}</Text>
+      <Text style={[s.td, s.mono, { flex: 0.8 }]}>{d.tamanoMB > 0 ? `${d.tamanoMB} MB` : "<0.1 MB"}</Text>
+      <Text style={[s.td, { flex: 1 }]}>{fecha(d.subidoEl)}</Text>
+    </View>
+  );
   return (
-    <Seccion n="10" titulo="Anexos · encuestas y documentos">
+    <Seccion n="10" titulo="Anexos · encuestas y documentos" wrap={!(tablaCorta && docs.length > 0 && data.encuestas.length === 0)}>
       {data.encuestas.length > 0 && (
         <View style={{ gap: 8, marginBottom: 10 }}>
           {data.encuestas.map((e, i) => (
@@ -734,24 +753,21 @@ function EncuestasYEvidencias({ data, evidencia }: { data: ActivityReportData; e
       {docs.length === 0 ? (
         <Text style={s.vacio}>Sin archivos adjuntos. La grabación y los soportes se archivan en los documentos de la capacitación.</Text>
       ) : (
-        <View style={s.tabla}>
-          <View style={[s.tr, { backgroundColor: C.pista }]}>
+        <View style={s.tabla} wrap={!tablaCorta}>
+          <View style={[s.tr, { backgroundColor: C.pista }]} minPresenceAhead={40}>
             <Text style={[s.th, { flex: 3 }]}>Archivo</Text>
             <Text style={[s.th, { flex: 0.8 }]}>Tipo</Text>
             <Text style={[s.th, { flex: 0.8 }]}>Tamaño</Text>
             <Text style={[s.th, { flex: 1 }]}>Archivado</Text>
           </View>
-          {docs.map((d, i) => (
-            <View key={i} style={[s.tr, i % 2 ? s.trCebra : {}]} wrap={false}>
-              <Text style={[s.td, { flex: 3 }]}>
-                {d.esGrabacion ? "Grabación · " : ""}
-                {d.nombre}
-              </Text>
-              <Text style={[s.td, s.mono, { flex: 0.8 }]}>{d.esGrabacion ? "VIDEO" : d.tipo.split("/").pop()?.toUpperCase() ?? "—"}</Text>
-              <Text style={[s.td, s.mono, { flex: 0.8 }]}>{d.tamanoMB > 0 ? `${d.tamanoMB} MB` : "<0.1 MB"}</Text>
-              <Text style={[s.td, { flex: 1 }]}>{fecha(d.subidoEl)}</Text>
-            </View>
-          ))}
+          {tablaCorta ? (
+            docs.map(fila)
+          ) : (
+            <>
+              {docs.slice(0, -2).map(fila)}
+              <View wrap={false}>{docs.slice(-2).map((d, j) => fila(d, docs.length - 2 + j))}</View>
+            </>
+          )}
         </View>
       )}
     </Seccion>
@@ -761,7 +777,7 @@ function EncuestasYEvidencias({ data, evidencia }: { data: ActivityReportData; e
 function Pie({ ctx }: { ctx: ContextoInforme | null }) {
   return (
     <View style={s.pie} fixed>
-      <Text style={[s.etiquetaMono, { fontSize: 6.5 }]}>Red Salud Casanare E.S.E. · RedSalud Te Forma · {ctx?.codigo ?? "Informe de jornada"}</Text>
+      <Text style={[s.etiquetaMono, { fontSize: 6.5 }]}>Red Salud Casanare E.S.E. · RedSalud Te Forma · {ctx?.codigo ?? "Informe de capacitación"}</Text>
       <Text style={[s.etiquetaMono, { fontSize: 6.5 }]} render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`} />
     </View>
   );
@@ -779,7 +795,7 @@ function ActivityReportDocument({
   contexto: ContextoInforme | null;
 }) {
   return (
-    <Document title={`Informe de jornada · ${tituloLegible(data.titulo)}`} author="RedSalud Te Forma" subject={data.plan}>
+    <Document title={`Informe de capacitación · ${tituloLegible(data.titulo)}`} author="RedSalud Te Forma" subject={data.plan}>
       <Page size="A4" style={s.page}>
         <Membrete data={data} ctx={contexto} generadoPor={generatedBy} />
         <IndicadoresPrincipales data={data} ctx={contexto} />

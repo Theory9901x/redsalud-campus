@@ -59,7 +59,7 @@ export async function requireCourseAccess(courseId: string) {
     (a) => a.area?.tutorId === session.user.id || a.plan.tutorId === session.user.id
   );
   if (!course || (course.tutorId !== session.user.id && !gestionaCapacitacion)) {
-    throw new Error("No autorizado: no eres el tutor de este curso.");
+    throw new Error("No autorizado: no tienes acceso a esta evaluación o contenido.");
   }
   return session;
 }

@@ -116,7 +116,7 @@ export function ClosePlanPanel({
               <dd className="font-semibold text-foreground">{resumen.conCurso}</dd>
             </div>
             <div>
-              <dt className="text-xs text-muted-foreground">Jornadas cerradas</dt>
+              <dt className="text-xs text-muted-foreground">Capacitaciones cerradas</dt>
               <dd className="font-semibold text-foreground">{resumen.jornadasCerradas}</dd>
             </div>
             <div>
@@ -149,7 +149,7 @@ export function ClosePlanPanel({
                   required
                   minLength={10}
                   rows={3}
-                  placeholder="Hallazgos, pendientes que pasan a la siguiente vigencia, constancia del cierre…"
+                  placeholder="Hallazgos, pendientes que pasan a la siguiente vigencia, decisiones del cierre…"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>

@@ -1,11 +1,13 @@
 import ExcelJS from "exceljs";
-import { getLinkableCourses } from "@/lib/training-plans";
 import type { TrainingActivityType, CourseAudience } from "@prisma/client";
 
+/**
+ * Plantilla del cronograma: una fila por capacitación del plan. Los planes de
+ * capacitación no se vinculan a cursos, así que la plantilla no trae columnas
+ * de tipo ni de curso.
+ */
 export const IMPORT_TEMPLATE_HEADERS = [
   "Título",
-  "Tipo (Curso de la plataforma / Evento externo)",
-  "Curso vinculado (título exacto o No aplica)",
   "Fecha inicio (DD/MM/AAAA)",
   "Fecha fin (opcional, DD/MM/AAAA)",
   "Dirigido a (Administrativo / Asistencial / Ambos)",
@@ -14,8 +16,6 @@ export const IMPORT_TEMPLATE_HEADERS = [
 
 export const IMPORT_TEMPLATE_EXAMPLE_ROW = [
   "Ejemplo: Inducción institucional (borra esta fila antes de subir)",
-  "Curso de la plataforma",
-  "No aplica",
   "01/09/2026",
   "",
   "Ambos",
@@ -25,7 +25,6 @@ export const IMPORT_TEMPLATE_EXAMPLE_ROW = [
 export type ParsedActivityRow = {
   title: string;
   type: TrainingActivityType;
-  courseId: string | null;
   startDate: Date;
   endDate: Date | null;
   targetAudience: CourseAudience;
@@ -48,6 +47,39 @@ function normalize(value: unknown): string {
   return String(value ?? "").trim();
 }
 
+const sinTildes = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+type Columnas = { titulo: number; tipo: number | null; inicio: number; fin: number; dirigido: number; obligatoria: number };
+
+/** Plantilla actual (5 columnas, sin tipo ni curso). */
+const COLUMNAS_ACTUALES: Columnas = { titulo: 1, tipo: null, inicio: 2, fin: 3, dirigido: 4, obligatoria: 5 };
+/** Plantilla anterior (7 columnas: Título, Tipo, Curso vinculado, Fecha inicio, Fecha fin, Dirigido a, Obligatoria). */
+const COLUMNAS_ANTERIORES: Columnas = { titulo: 1, tipo: 2, inicio: 4, fin: 5, dirigido: 6, obligatoria: 7 };
+
+/**
+ * Ubica las columnas por sus encabezados, para aceptar tanto la plantilla
+ * actual como archivos llenados con la anterior (que traían «Tipo» y «Curso
+ * vinculado»). La columna de curso se IGNORA: la importación nunca vincula
+ * cursos.
+ */
+function columnasDe(encabezados: string[]): Columnas {
+  const buscar = (prueba: (h: string) => boolean) => {
+    const i = encabezados.findIndex((h) => prueba(sinTildes(h)));
+    return i >= 0 ? i + 1 : null;
+  };
+  const titulo = buscar((h) => h.startsWith("titulo"));
+  const inicio = buscar((h) => h.includes("fecha inicio"));
+  const fin = buscar((h) => h.includes("fecha fin"));
+  const dirigido = buscar((h) => h.includes("dirigido"));
+  const obligatoria = buscar((h) => h.includes("obligatori"));
+  if (titulo && inicio && fin && dirigido && obligatoria) {
+    return { titulo, tipo: buscar((h) => h.startsWith("tipo")), inicio, fin, dirigido, obligatoria };
+  }
+  // Sin encabezados reconocibles: se decide por el ancho de la hoja.
+  const anterior = encabezados.length >= 7 || encabezados.some((h) => sinTildes(h).includes("curso"));
+  return anterior ? COLUMNAS_ANTERIORES : COLUMNAS_ACTUALES;
+}
+
 /** Parsea el buffer subido (.xlsx) fila por fila. No aborta el lote entero por una fila mala: junta válidas y errores. */
 export async function parseTrainingScheduleFile(buffer: Buffer): Promise<{ valid: ParsedActivityRow[]; errors: ImportRowError[] }> {
   const workbook = new ExcelJS.Workbook();
@@ -57,8 +89,10 @@ export async function parseTrainingScheduleFile(buffer: Buffer): Promise<{ valid
     return { valid: [], errors: [{ row: 0, message: "El archivo no tiene ninguna hoja." }] };
   }
 
-  const linkableCourses = await getLinkableCourses();
-  const courseByTitle = new Map(linkableCourses.map((c) => [c.title.trim().toLowerCase(), c.id]));
+  const cabecera = sheet.getRow(1);
+  const encabezados: string[] = [];
+  for (let c = 1; c <= Math.max(cabecera.cellCount, 1); c++) encabezados.push(normalize(cabecera.getCell(c).value));
+  const col = columnasDe(encabezados);
 
   const valid: ParsedActivityRow[] = [];
   const errors: ImportRowError[] = [];
@@ -66,33 +100,18 @@ export async function parseTrainingScheduleFile(buffer: Buffer): Promise<{ valid
   sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
     if (rowNumber === 1) return; // encabezados
 
-    const title = normalize(row.getCell(1).value);
+    const title = normalize(row.getCell(col.titulo).value);
     if (!title) return; // fila vacía, se ignora silenciosamente
 
-    const typeRaw = normalize(row.getCell(2).value).toLowerCase();
-    const courseRaw = normalize(row.getCell(3).value);
-    const startRaw = normalize(row.getCell(4).value);
-    const endRaw = normalize(row.getCell(5).value);
-    const audienceRaw = normalize(row.getCell(6).value).toLowerCase();
-    const requiredRaw = normalize(row.getCell(7).value).toLowerCase();
+    const typeRaw = col.tipo ? sinTildes(normalize(row.getCell(col.tipo).value)) : "";
+    const startRaw = normalize(row.getCell(col.inicio).value);
+    const endRaw = normalize(row.getCell(col.fin).value);
+    const audienceRaw = normalize(row.getCell(col.dirigido).value).toLowerCase();
+    const requiredRaw = normalize(row.getCell(col.obligatoria).value).toLowerCase();
 
-    let type: TrainingActivityType;
-    if (typeRaw.includes("curso")) type = "COURSE";
-    else if (typeRaw.includes("evento") || typeRaw.includes("externo")) type = "EXTERNAL_EVENT";
-    else {
-      errors.push({ row: rowNumber, message: `Tipo inválido: "${typeRaw}". Usa "Curso de la plataforma" o "Evento externo".` });
-      return;
-    }
-
-    let courseId: string | null = null;
-    if (type === "COURSE" && courseRaw && courseRaw.toLowerCase() !== "no aplica") {
-      const found = courseByTitle.get(courseRaw.toLowerCase());
-      if (!found) {
-        errors.push({ row: rowNumber, message: `Curso no encontrado: "${courseRaw}". Debe coincidir exactamente con el título de un curso publicado, o usar "No aplica".` });
-        return;
-      }
-      courseId = found;
-    }
+    // Los archivos con la plantilla anterior pueden traer «Evento externo»;
+    // todo lo demás es una capacitación del plan. El curso vinculado no se lee.
+    const type: TrainingActivityType = typeRaw.includes("evento") || typeRaw.includes("externo") ? "EXTERNAL_EVENT" : "COURSE";
 
     const startDate = parseSpanishDate(startRaw);
     if (!startDate) {
@@ -120,7 +139,7 @@ export async function parseTrainingScheduleFile(buffer: Buffer): Promise<{ valid
 
     const isRequired = requiredRaw.startsWith("s") || requiredRaw === "si" || requiredRaw === "sí";
 
-    valid.push({ title, type, courseId, startDate, endDate, targetAudience, isRequired });
+    valid.push({ title, type, startDate, endDate, targetAudience, isRequired });
   });
 
   return { valid, errors };

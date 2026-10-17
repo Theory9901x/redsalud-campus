@@ -8,6 +8,7 @@ import {
   getActivityAttendanceRoster,
 } from "@/lib/training-plans";
 import { getSurveysForPlan, buildSurveyResponseRate } from "@/lib/surveys";
+import { nombreLegibleDocumento } from "@/lib/documentos";
 import { renderTrainingPlanReportPdf, type TrainingPlanReportSections } from "@/lib/training-plan-report-pdf";
 import {
   TRAINING_PLAN_STATUS_LABELS,
@@ -67,7 +68,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   if (secciones.has("documentos")) {
     sections.documentos = plan.documents.map((doc) => ({
-      fileName: doc.fileName,
+      fileName: nombreLegibleDocumento(doc.fileName),
       fileType: doc.fileType,
       dateLabel: DATE_FORMAT.format(doc.createdAt),
       uploader: doc.uploader.fullName,

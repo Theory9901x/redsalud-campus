@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCallConnectionSummaryForActivity } from "@/lib/call-connections";
+import { nombreLegibleDocumento } from "@/lib/documentos";
 
 /**
  * EVIDENCIAS DE LA JORNADA para el informe: los archivos adjuntos (grabación
@@ -18,20 +19,6 @@ export type EvidenciaJornada = {
   conexion: { tramos: number; personas: number; minutosTotales: number; minutosPromedio: number };
 };
 
-/**
- * El nombre guardado lleva el prefijo de tiempo y los guiones que necesita el
- * disco ("1787699533394-Grabacion-jornada-2026-08-25-23h12.webm"). Para un
- * documento que se radica ante un ente de control eso no se lee: aquí se
- * devuelve el nombre en limpio, sin tocar el archivo.
- */
-function nombreLegible(fileName: string): string {
-  return fileName
-    .replace(/^\d{10,}-/, "")
-    .replace(/\.[a-z0-9]+$/i, "")
-    .replace(/-/g, " ")
-    .trim();
-}
-
 export async function getActivityEvidence(activityId: string): Promise<EvidenciaJornada> {
   const [documentos, conexion] = await Promise.all([
     prisma.media.findMany({
@@ -44,7 +31,7 @@ export async function getActivityEvidence(activityId: string): Promise<Evidencia
 
   return {
     documentos: documentos.map((d) => ({
-      nombre: nombreLegible(d.fileName),
+      nombre: nombreLegibleDocumento(d.fileName),
       tipo: d.fileType,
       tamanoMB: Math.round((d.fileSize / (1024 * 1024)) * 10) / 10,
       subidoEl: d.createdAt,

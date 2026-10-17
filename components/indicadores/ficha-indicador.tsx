@@ -556,7 +556,7 @@ function CeldaValor({ codigo, m }: { codigo: CodigoIndicador; m: Medicion }) {
 function fuenteCorta(codigo: CodigoIndicador) {
   switch (codigo) {
     case "PIC-ADH-01":
-      return "mejora pre → post de quienes completaron el ciclo en esa jornada (preliminar mientras siga abierta; definitiva al cerrarla, desde el acta)";
+      return "mejora pre → post de quienes completaron el ciclo en esa capacitación (preliminar mientras siga abierta; definitiva al cerrarla, desde el informe congelado de la capacitación)";
     case "PIC-COB-02":
       return "tiene evaluación presaber / postsaber configurada o no";
     case "PIC-ASI-03":

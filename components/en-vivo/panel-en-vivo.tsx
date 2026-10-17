@@ -172,8 +172,8 @@ export function PanelEnVivo({ fichas }: { fichas: FichaVivo[] }) {
             <p className="font-display text-[0.98rem] font-bold text-foreground">En vivo ahora</p>
             <p className="text-xs text-muted-foreground">
               {enVivo.length === 0
-                ? "Ninguna llamada en este momento"
-                : `${enVivo.length} ${enVivo.length === 1 ? "llamada abierta" : "llamadas abiertas"} · entra a la tuya`}
+                ? "Ninguna sala en vivo en este momento"
+                : `${enVivo.length} ${enVivo.length === 1 ? "sala abierta" : "salas abiertas"} · entra a la tuya`}
             </p>
           </div>
           <span className="grupo-linea" aria-hidden="true" />

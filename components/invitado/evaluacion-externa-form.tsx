@@ -50,8 +50,8 @@ export function EvaluacionExternaForm({
         <h2 className="mt-4 font-display text-2xl font-extrabold text-foreground">Resultado: {score}%</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           {passed
-            ? `Aprobaste la evaluación (mínimo ${passingScore}%). Tu resultado quedó registrado para el informe de la jornada.`
-            : `No alcanzaste el mínimo (${passingScore}%). Tu resultado quedó registrado para el informe de la jornada.`}
+            ? `Aprobaste la evaluación (mínimo ${passingScore}%). Tu resultado quedó registrado para el informe de la capacitación.`
+            : `No alcanzaste el mínimo (${passingScore}%). Tu resultado quedó registrado para el informe de la capacitación.`}
         </p>
         <Link href={volverHref} className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
           <ArrowLeft className="h-4 w-4" /> Volver a la jornada

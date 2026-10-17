@@ -83,7 +83,7 @@ function Kpi({ Icono, valor, etiqueta, detalle, chip }: { Icono: React.Component
  * administrador. Presencial: control de fases en vivo (QR, registro manual).
  * Virtual: el registro completo de la llamada -quién se conectó, cuánto
  * estuvo, la asistencia que quedó en firme y las encuestas- en tablas por
- * columnas, porque esta página ES la constancia de la jornada.
+ * columnas, porque esta página ES el registro de la jornada.
  */
 export async function PaginaSesionVivo({
   sesionId,
@@ -99,7 +99,9 @@ export async function PaginaSesionVivo({
   const sesion = await prisma.trainingSession.findUnique({
     where: { id: sesionId },
     include: {
-      activity: { select: { id: true, title: true, status: true, modality: true, area: { select: { name: true } } } },
+      activity: {
+        select: { id: true, title: true, status: true, modality: true, area: { select: { name: true } }, plan: { select: { kind: true } } },
+      },
       municipio: { select: { nombre: true } },
     },
   });
@@ -107,6 +109,8 @@ export async function PaginaSesionVivo({
   await requireTrainingActivityAccess(sesion.activityId);
 
   const esVirtual = sesion.modality === "VIRTUAL";
+  // Las actas son de los comités y reuniones; en un plan de capacitación la jornada congela su registro.
+  const conActa = sesion.activity.plan.kind !== "CAPACITACION";
   const asistentes = esVirtual ? [] : await getAsistentesSesion(sesionId);
   const snapshot = sesion.cierreSnapshot as unknown as SnapshotSesion | null;
 
@@ -228,9 +232,9 @@ export async function PaginaSesionVivo({
         </div>
       </header>
 
-      {/* Acta congelada, si ya cerró */}
+      {/* Totales congelados, si ya cerró */}
       {snapshot && (
-        <section aria-label="Acta de la sesión" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <section aria-label={conActa ? "Acta de la sesión" : "Registro congelado de la jornada"} className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Kpi Icono={Users2} valor={String(snapshot.asistentes)} etiqueta="Asistentes" chip="bg-primary/12 text-primary" />
           <Kpi Icono={CheckCircle2} valor={String(snapshot.presaberPresentados)} etiqueta="Presaber presentados" chip="bg-primary/12 text-primary" />
           <Kpi Icono={CheckCircle2} valor={String(snapshot.postsaberPresentados)} etiqueta="Postsaber presentados" chip="bg-primary/12 text-primary" />
@@ -269,10 +273,10 @@ export async function PaginaSesionVivo({
                 Conexiones a la sala
               </h2>
               <a
-                href={`/api/planes-capacitacion/sesiones/${sesion.id}/csv`}
+                href={`/api/planes-capacitacion/sesiones/${sesion.id}/excel`}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-border/60 bg-card/70 px-3.5 py-2 text-[12.5px] font-bold text-foreground transition-colors hover:border-primary/40"
               >
-                Exportar corte de la sesión (CSV)
+                Exportar corte de la jornada (Excel)
               </a>
             </div>
             {conexiones.length === 0 ? (
@@ -395,10 +399,10 @@ export async function PaginaSesionVivo({
         <>
           <div className="flex justify-end">
             <a
-              href={`/api/planes-capacitacion/sesiones/${sesion.id}/csv`}
+              href={`/api/planes-capacitacion/sesiones/${sesion.id}/excel`}
               className="inline-flex items-center gap-1.5 rounded-xl border border-border/60 bg-card/70 px-3.5 py-2 text-[12.5px] font-bold text-foreground transition-colors hover:border-primary/40"
             >
-              Exportar corte de la sesión (CSV)
+              Exportar corte de la jornada (Excel)
             </a>
           </div>
 
@@ -406,6 +410,7 @@ export async function PaginaSesionVivo({
             sesionId={sesion.id}
             faseInicial={sesion.fase}
             fichaUrl={`${basePath}/${planId}/actividades/${activityId}/sesion/${sesion.id}/ficha`}
+            conActa={conActa}
             asistentesIniciales={asistentes.map((a) => ({
               nombre: a.user.fullName,
               documento: a.user.documentNumber,

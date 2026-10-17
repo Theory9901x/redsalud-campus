@@ -44,7 +44,7 @@ export async function avanzarFaseAction(sesionId: string): Promise<ResultadoSesi
       action: "UPDATE",
       entity: "TrainingActivity",
       entityId: sesion.activityId,
-      description: `Cerró la sesión presencial con acta congelada: ${snapshot.asistentes} asistentes, presaber ${snapshot.presaberPresentados}, postsaber ${snapshot.postsaberPresentados}`,
+      description: `Cerró la jornada presencial con sus totales congelados: ${snapshot.asistentes} asistentes, presaber ${snapshot.presaberPresentados}, postsaber ${snapshot.postsaberPresentados}`,
     });
   } else {
     await prisma.trainingSession.update({ where: { id: sesionId }, data: { fase: siguiente } });
@@ -68,7 +68,7 @@ export async function registrarAsistenciaManualAction(
   sesionId: string,
   documento: string
 ): Promise<ResultadoSesion & { nombre?: string }> {
-  const { sesion } = await sesionConPermiso(sesionId);
+  const { sesion, usuario } = await sesionConPermiso(sesionId);
   if (sesion.fase === "CERRADA") return { error: "La sesión ya está cerrada." };
 
   const persona = await prisma.user.findUnique({
@@ -78,7 +78,7 @@ export async function registrarAsistenciaManualAction(
   if (!persona) return { error: "Ese documento no está registrado en la plataforma." };
   if (persona.status !== "ACTIVE") return { error: `La cuenta de ${persona.fullName} está inactiva.` };
 
-  const { yaEstaba } = await registrarAsistenciaSesion(sesionId, persona.id, "MANUAL");
+  const { yaEstaba } = await registrarAsistenciaSesion(sesionId, persona.id, "MANUAL", usuario.id);
   return {
     error: null,
     nombre: yaEstaba ? `${persona.fullName} ya estaba registrado.` : `${persona.fullName} registrado.`,

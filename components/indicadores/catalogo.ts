@@ -85,7 +85,7 @@ export const CATALOGO: Record<CodigoIndicador, FichaTecnica> = {
     ],
     unidad: "pp",
     fuente:
-      "Intentos de evaluación con momento presaber/postsaber, por capacitación. En jornadas abiertas se lee en vivo (preliminar); al cerrar, del informe congelado del acta (definitivo): el histórico no cambia aunque se toquen registros después.",
+      "Intentos de evaluación con momento presaber/postsaber, por capacitación. Con la capacitación abierta se lee en vivo (preliminar); al cerrarla, del informe congelado de la capacitación (definitivo): el histórico no cambia aunque se toquen registros después.",
     periodicidad:
       "Cálculo automático y en tiempo real, con corte trimestral según la programación del PIC. Una capacitación se mide desde que alguien completa presaber y postsaber (preliminar) y queda definitiva cuando su responsable la CIERRA; no requiere ningún registro manual.",
     responsable: "Cada área responde por sus capacitaciones; Talento Humano (líder del PIC) consolida. La medición la hace la plataforma.",
