@@ -63,6 +63,10 @@ echo "$nuevo" > "$ESTADO"
 sleep 6
 if curl -fs -o /dev/null http://127.0.0.1:3200/login; then
   echo "▸ en línea sobre $nuevo"
+  # Guardar el estado de PM2 con el NEXT_DIST_DIR nuevo: si el servidor se
+  # reinicia, PM2 resucita desde este volcado. Sin esto vuelve a la carpeta
+  # anterior, que se borra justo abajo, y el sitio queda en 502.
+  pm2 save >/dev/null
   # El anterior ya no lo usa nadie; se conserva el .next original por si hay
   # que volver a mano, pero los alternos sí se limpian.
   [ "$activo" != ".next" ] && rm -rf "$activo" || true
