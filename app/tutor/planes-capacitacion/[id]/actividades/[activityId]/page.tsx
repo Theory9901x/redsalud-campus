@@ -401,7 +401,7 @@ export default async function TutorActividadDetallePage({
           bajada="Satisfacción y evaluación de la jornada."
           accion={
             <Link
-              href={`${BASE_PATH}/${id}/encuestas/nueva?actividad=${activityId}`}
+              href={`/encuestas/nueva?plan=${id}&actividad=${activityId}`}
               className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
             >
               <Plus className="h-4 w-4" />

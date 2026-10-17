@@ -9,7 +9,8 @@ import { FormularioNuevaEncuesta } from "@/components/encuestas/formulario-nueva
  * opcionalmente, su lugar en el sistema: área › plan › capacitación, o una
  * plantilla de la que partir-; todo lo demás se define en el constructor.
  */
-export default async function NuevaEncuestaPage() {
+export default async function NuevaEncuestaPage({ searchParams }: { searchParams: Promise<{ plan?: string; actividad?: string }> }) {
+  const { plan: planInicial, actividad: actividadInicial } = await searchParams;
   const sesion = await requireTutorOrAdmin();
   const esAdmin = sesion.user.role === "ADMIN";
 
@@ -84,6 +85,7 @@ export default async function NuevaEncuestaPage() {
                 plan: a.plan.title,
               }))}
               plantillas={plantillas.map((p) => ({ id: p.id, titulo: p.title }))}
+              inicial={{ planId: planInicial, actividadId: actividadInicial }}
             />
           </div>
         </div>

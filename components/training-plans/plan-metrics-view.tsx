@@ -20,7 +20,7 @@ import type { PlanMetricsData } from "@/lib/plan-metrics";
  * puede leer en una reunión. Cada gráfica solo aparece cuando tiene algo
  * que decir; en su lugar, el vacío explica qué la va a llenar.
  */
-export function PlanMetricsView({ data }: { data: PlanMetricsData }) {
+export function PlanMetricsView({ data, puedeExportar = true }: { data: PlanMetricsData; puedeExportar?: boolean }) {
   const { kpis, porArea, ciclos } = data;
   const hayAdherencia = porArea.some((a) => a.adherencia !== null && a.adherencia > 0);
   const nivelCumplimiento = nivelSemaforo(kpis.cumplimiento);
@@ -54,7 +54,7 @@ export function PlanMetricsView({ data }: { data: PlanMetricsData }) {
             accent="destructive"
           />
         </StaggerGrid>
-        <PlanReportExportDialog planId={data.planId} />
+        {puedeExportar && <PlanReportExportDialog planId={data.planId} />}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

@@ -208,7 +208,7 @@ export default async function AdminPlanCapacitacionDetallePage({
               <h2 className="font-display text-lg font-bold text-foreground">Encuestas</h2>
             </div>
             <Link
-              href={`${BASE_PATH}/${id}/encuestas/nueva`}
+              href={`/encuestas/nueva?plan=${id}`}
               className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
             >
               <Plus className="h-4 w-4" />

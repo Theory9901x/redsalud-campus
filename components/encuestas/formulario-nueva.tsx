@@ -32,16 +32,22 @@ export function FormularioNuevaEncuesta({
   planes,
   actividades,
   plantillas,
+  inicial,
 }: {
   areas: { id: string; nombre: string }[];
   planes: { id: string; titulo: string }[];
   actividades: ActividadOpcion[];
   plantillas: { id: string; titulo: string }[];
+  /** Lugar preseleccionado al llegar desde un plan o una capacitación. */
+  inicial?: { planId?: string; actividadId?: string };
 }) {
   const [estado, accion, pendiente] = useActionState(crearEncuestaAction, estadoInicial);
-  const [areaId, setAreaId] = useState("");
-  const [planId, setPlanId] = useState("");
-  const [actividadId, setActividadId] = useState("");
+  // Al llegar desde una capacitación se preselecciona su lugar: área › plan › capacitación.
+  const actividadInicial = actividades.find((a) => a.id === inicial?.actividadId);
+  const planInicial = actividadInicial?.planId ?? (planes.some((p) => p.id === inicial?.planId) ? inicial?.planId : undefined);
+  const [areaId, setAreaId] = useState(actividadInicial?.areaId ?? "");
+  const [planId, setPlanId] = useState(planInicial ?? "");
+  const [actividadId, setActividadId] = useState(actividadInicial?.id ?? "");
 
   // Planes visibles: los que tienen jornadas del área elegida.
   const planesFiltrados = useMemo(() => {

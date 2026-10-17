@@ -268,7 +268,7 @@ export function TrainingDashboardView({
                   <TableRow key={survey.id}>
                     <TableCell>
                       <Link
-                        href={`${basePath}/${survey.planId}/encuestas/${survey.id}`}
+                        href={`/encuestas/${survey.id}/resultados`}
                         className="font-medium text-foreground hover:underline"
                       >
                         {survey.title}

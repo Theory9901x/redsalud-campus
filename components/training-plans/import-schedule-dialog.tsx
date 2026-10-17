@@ -35,7 +35,7 @@ export function ImportScheduleDialog({
           <DialogTitle>Importar cronograma desde Excel</DialogTitle>
           <DialogDescription>
             Descarga la plantilla, complétala con las actividades y súbela. Complementa «Agregar actividad»: las
-            filas válidas se crean como actividades en borrador, igual que si las agregaras una por una.
+            filas válidas se crean como actividades, igual que si las agregaras una por una: las que traen título y trimestre o fecha se publican solas.
           </DialogDescription>
         </DialogHeader>
 

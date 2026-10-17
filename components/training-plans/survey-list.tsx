@@ -40,7 +40,7 @@ export function SurveyList({
       {surveys.map((survey) => (
         <Link
           key={survey.id}
-          href={`${basePath}/${planId}/encuestas/${survey.id}`}
+          href={`/encuestas/${survey.id}/resultados`}
           className="surface surface-hover flex flex-wrap items-center justify-between gap-3 p-4"
         >
           <div className="min-w-0 space-y-1">

@@ -111,7 +111,7 @@ export function ActivityLifecycleActions({
               Desde este momento la participación queda congelada: los estudiantes ya no podrán responder la
               evaluación ni se admitirán más registros de asistencia. Los indicadores quedan definitivos, el informe
               se guarda tal como está en este momento y el personal que no respondió se registra nominalmente para
-              seguimiento de RRHH. Si te equivocas, solo un administrador puede reabrirla.
+              seguimiento de RRHH. Si la capacitación está programada en varios trimestres, se cierra en todos: ciérrala cuando termine el último. Si te equivocas, solo un administrador puede reabrirla.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

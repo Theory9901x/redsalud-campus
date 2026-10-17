@@ -238,9 +238,13 @@ export default async function TutorPlanCapacitacionDetallePage({
             <h2 className="font-display text-lg font-bold text-foreground">Documentos del plan</h2>
           </div>
           <TrainingDocumentList documents={plan.documents} />
-          <div className="surface p-4">
-            <TrainingDocumentUploadForm action={uploadDocumentAction} />
-          </div>
+          {puedeEditarPlan ? (
+            <div className="surface p-4">
+              <TrainingDocumentUploadForm action={uploadDocumentAction} />
+            </div>
+          ) : (
+            <p className="text-[12.5px] text-muted-foreground">Los documentos del plan los carga su responsable. Los de tu área se suben en cada capacitación.</p>
+          )}
         </TabsContent>
 
         <TabsContent value="asistencia" className="pt-4">
@@ -255,7 +259,7 @@ export default async function TutorPlanCapacitacionDetallePage({
             </div>
             {puedeEditarPlan && (
               <Link
-                href={`${BASE_PATH}/${id}/encuestas/nueva`}
+                href={`/encuestas/nueva?plan=${id}`}
                 className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
               >
                 <Plus className="h-4 w-4" />
@@ -267,7 +271,7 @@ export default async function TutorPlanCapacitacionDetallePage({
         </TabsContent>
 
         <TabsContent value="metricas" className="pt-4">
-          {metricas && <PlanMetricsView data={metricas} />}
+          {metricas && <PlanMetricsView data={metricas} puedeExportar={puedeEditarPlan} />}
         </TabsContent>
       </Tabs>
     </div>
