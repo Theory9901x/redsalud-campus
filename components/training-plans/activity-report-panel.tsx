@@ -28,11 +28,12 @@ export function ActivityReportPanel({
       <div className="min-w-0">
         <h2 className="flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-foreground">
           <FileText className="h-4 w-4 text-primary" aria-hidden="true" />
-          Informe de la jornada{trimestre ? ` · Trimestre ${["I", "II", "III", "IV"][trimestre - 1]}` : ""}
+          Informe de la capacitación{trimestre ? ` · Trimestre ${["I", "II", "III", "IV"][trimestre - 1]}` : ""}
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Métricas completas de adherencia: presaber y postsaber sobre el total de encuestados, resultados por persona,
-          acierto por pregunta, lista de asistencia y encuestas.
+          Se genera automático con todos los datos de la capacitación: indicadores (asistencia, adherencia, presaber y
+          postsaber), el detalle de cada jornada, resultados por persona, acierto por pregunta, encuestas y, como anexos,
+          los documentos cargados.
         </p>
       </div>
       {disponible ? (

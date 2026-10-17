@@ -373,7 +373,7 @@ export async function PaginaActividad({
       contenido: (
         <SeccionActividad
           titulo="Encuestas de esta capacitación"
-          bajada="Satisfacción y evaluación de la jornada."
+          bajada="Encuesta de satisfacción de la capacitación. Es opcional: aplícala solo si el área así lo quiere."
           accion={
             <Link href={`/encuestas/nueva?plan=${id}&actividad=${activityId}`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
               <Plus className="h-4 w-4" />

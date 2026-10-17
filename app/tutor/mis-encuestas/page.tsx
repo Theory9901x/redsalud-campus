@@ -47,7 +47,7 @@ export default async function TutorMisEncuestasPage() {
         Icono={Radio}
         titulo="Evaluaciones"
         acento="en vivo"
-        descripcion="Quién está presentando el presaber o el postsaber ahora mismo y quién ya terminó, en las capacitaciones de tus áreas; más la actividad de tus cursos y las respuestas a tus encuestas."
+        descripcion="Quién está presentando el presaber o el postsaber ahora mismo y quién ya terminó, en las capacitaciones de tus áreas, y las respuestas a tus encuestas."
         cifras={[
           { valor: evaluaciones.length, etiqueta: "Ventanas abiertas", detalle: "Presaber / postsaber" },
           { valor: totalEnProgreso, etiqueta: "Presentando ahora" },
@@ -68,7 +68,7 @@ export default async function TutorMisEncuestasPage() {
           Corte <b>{etiquetaHora(ahora)}</b>
         </span>
         <span>
-          <b>{totalEnProgreso}</b> presentando · <b>{cursos.enProgreso.length}</b> en cursos · <b>{totalRespuestas}</b> respuestas a encuestas
+          <b>{totalEnProgreso}</b> presentando · <b>{totalRespuestas}</b> respuestas a encuestas
         </span>
       </div>
 
@@ -174,10 +174,10 @@ export default async function TutorMisEncuestasPage() {
         </PanelTutor>
 
         <div className="space-y-5 xl:col-span-4">
-          {/* ── Evaluaciones de los cursos que dicta ── */}
-          <PanelTutor indice="02" titulo="Tus cursos · en vivo" bajada="Intentos abiertos (últimas 2 h) y últimos resultados." style={escalon(3)}>
+          {/* ── Actividad reciente en las evaluaciones de sus capacitaciones ── */}
+          <PanelTutor indice="02" titulo="Actividad reciente" bajada="Evaluaciones de tus capacitaciones: intentos abiertos (últimas 2 h) y últimos resultados." style={escalon(3)}>
             {cursos.enProgreso.length === 0 && cursos.terminados.length === 0 ? (
-              <VacioCompacto Icono={BookOpen}>Sin actividad reciente en las evaluaciones de tus cursos.</VacioCompacto>
+              <VacioCompacto Icono={BookOpen}>Sin actividad reciente en las evaluaciones de tus capacitaciones.</VacioCompacto>
             ) : (
               <div className="space-y-3">
                 <div>
