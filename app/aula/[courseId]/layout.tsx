@@ -1,4 +1,7 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getAulaData } from "@/lib/aula";
 import { AulaSidebar } from "@/components/aula/aula-sidebar";
@@ -19,6 +22,35 @@ export default async function AulaLayout({
   if (!data) redirect("/no-autorizado");
 
   const lessonCount = data.modules.reduce((total, m) => total + m.lessons.length, 0);
+
+  // Evaluación presaber/postsaber de una capacitación del plan: su
+  // contenedor interno NO es un curso. Sin cabecera del aula, sin temario y
+  // sin constancia: solo la evaluación, con la vuelta al plan.
+  if (data.course.esContenedorCapacitacion) {
+    const actividad = await prisma.trainingActivity.findFirst({
+      where: { courseId },
+      select: { planId: true, area: { select: { name: true } } },
+    });
+    return (
+      <div className="accent-student aula-canvas flex min-h-screen flex-col">
+        <div className="mx-auto w-full max-w-[1200px] px-4 pt-5 sm:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Link
+              href={actividad ? `/mis-capacitaciones/${actividad.planId}` : "/mis-capacitaciones"}
+              className="flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Mis capacitaciones
+            </Link>
+            <p className="font-mono text-[10.5px] font-bold uppercase tracking-[0.16em] text-primary">
+              Capacitación{actividad?.area ? ` · ${actividad.area.name}` : ""} · Evaluación presaber / postsaber
+            </p>
+          </div>
+        </div>
+        <main className="mx-auto w-full min-w-0 max-w-[1200px] flex-1 px-4 py-4 pb-8 sm:px-6">{children}</main>
+      </div>
+    );
+  }
 
   return (
     // aula-canvas: lienzo con blobs de marca desenfocados para que las

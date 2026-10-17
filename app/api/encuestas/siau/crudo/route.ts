@@ -12,6 +12,8 @@ export async function GET(request: Request) {
   } catch {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
+  // La encuesta SIAU es del área de Atención al Usuario, no de los tutores de área.
+  if (sesion.user.role === "TUTOR") return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   const url = new URL(request.url);
   const periodo = leerPeriodo(url.searchParams);
   if (!periodo) return NextResponse.json({ error: "Periodo inválido." }, { status: 400 });

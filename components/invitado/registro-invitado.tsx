@@ -19,11 +19,17 @@ export function RegistroInvitado({
   action,
   titulo,
   reunionAbierta = false,
+  jornada,
+  inicial,
 }: {
   action: (state: RegistroInvitadoState, formData: FormData) => Promise<RegistroInvitadoState>;
   titulo: string;
   /** Reunión abierta: se pide nombre completo y CARGO (no empresa). */
   reunionAbierta?: boolean;
+  /** Fecha y hora de la jornada a la que se registra (ya formateadas). */
+  jornada?: string | null;
+  /** Datos de un registro anterior en otra jornada de la misma capacitación. */
+  inicial?: { fullName: string; company: string } | null;
 }) {
   const [state, formAction, pendiente] = useActionState(action, INICIAL);
 
@@ -33,6 +39,7 @@ export function RegistroInvitado({
         {reunionAbierta ? "Registro de asistencia" : "Acceso para invitados externos"}
       </span>
       <h1 className="mt-3 font-display text-xl font-extrabold leading-snug text-foreground">{titulo}</h1>
+      {jornada && <p className="mt-1 text-[13px] font-semibold text-primary">Jornada del {jornada}</p>}
       <p className="mt-2 text-sm text-muted-foreground">
         {reunionAbierta
           ? "Escribe tu nombre completo y tu cargo para entrar a la reunión. Con eso quedas en la lista de asistencia."
@@ -44,7 +51,7 @@ export function RegistroInvitado({
           <Label htmlFor="fullName">Nombre completo</Label>
           <div className="relative">
             <UserPlus className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input id="fullName" name="fullName" required placeholder="Ej. María Fernanda Gutiérrez" className="pl-9" />
+            <Input id="fullName" name="fullName" required defaultValue={inicial?.fullName} placeholder="Ej. María Fernanda Gutiérrez" className="pl-9" />
           </div>
         </div>
         <div className="space-y-1.5">
@@ -55,7 +62,7 @@ export function RegistroInvitado({
             ) : (
               <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             )}
-            <Input id="company" name="company" required placeholder={reunionAbierta ? "Ej. Auxiliar de enfermería" : "Ej. IPS Salud Total"} className="pl-9" />
+            <Input id="company" name="company" required defaultValue={inicial?.company} placeholder={reunionAbierta ? "Ej. Auxiliar de enfermería" : "Ej. IPS Salud Total"} className="pl-9" />
           </div>
         </div>
 

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { estadoPresaber, estadoPostsaber, cicloEsAutomatico } from "@/lib/presaber-postsaber";
 import { ensureEnrollment, AVISO_POR_BLOQUEO } from "@/lib/training-plans";
 import { registrarAsistenciaSesion } from "@/lib/sesiones-presenciales";
+import { jornadaDeEnlace, jornadaCerrada, jornadaEnCurso, COOKIE_JORNADA, DURACION_COOKIE_JORNADA_S } from "@/lib/jornadas";
 
 /**
  * Enlaces cortos y ESTABLES de cada capacitación del plan, pensados para
@@ -17,6 +18,11 @@ import { registrarAsistenciaSesion } from "@/lib/sesiones-presenciales";
  * del escaneo, contra lo que exista en ese instante. Un cartel impreso en
  * enero sigue sirviendo en octubre aunque el área haya cambiado la sala de
  * Meet o rehecho su evaluación.
+ *
+ * ACCESOS POR JORNADA: cada jornada tiene su propio juego de enlaces, que
+ * llevan `?s=<token de la jornada>`. Lo que entra por ellos -asistencia,
+ * intentos, conexiones- queda en ESA jornada. Sin `?s=` (QR generales ya
+ * impresos) se resuelve a la jornada vigente (lib/jornadas).
  */
 export async function GET(
   request: Request,
@@ -26,11 +32,9 @@ export async function GET(
   // Detrás del proxy (nginx) el origin de la petición es localhost:3200;
   // los redirects deben salir con el dominio público, no con el interno.
   const base = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
-  // FASE 10: cuando el enlace viene de la página de una sesión presencial
-  // (/s/<token> añade ?s=<token>), la FASE de esa sesión manda: presaber
-  // solo en fase PRESABER, postsaber solo en POSTSABER. Sin el parámetro,
-  // el comportamiento virtual queda exactamente como estaba.
-  const tokenSesion = new URL(request.url).searchParams.get("s");
+  // Enlace de UNA jornada: ?s=<token de la jornada> (los genera la tarjeta
+  // de cada jornada y la puerta /s/<token>). Sin él, enlace general.
+  const tokenPedido = new URL(request.url).searchParams.get("s");
 
   if (!["meet", "presaber", "postsaber"].includes(destino)) {
     return NextResponse.redirect(`${base}/mis-capacitaciones`);
@@ -46,15 +50,26 @@ export async function GET(
       presaberClosedAt: true,
       postsaberOpenedAt: true,
       postsaberClosedAt: true,
-      sessions: {
-        where: { meetingUrl: { not: null }, status: { not: "CLOSED" } },
-        orderBy: { startsAt: "asc" },
-        take: 1,
-        select: { meetingUrl: true },
-      },
     },
   });
   if (!actividad) return NextResponse.redirect(`${base}/mis-capacitaciones`);
+
+  // La jornada del enlace: la del token, o -enlace general- la vigente.
+  const { jornada, explicita } = await jornadaDeEnlace(activityId, tokenPedido);
+  const tokenSesion = jornada?.tokenPublico ?? null;
+  /** Redirige dejando la cookie que atribuye a ESTA jornada lo que la persona haga después. */
+  const conJornada = (url: string) => {
+    const res = NextResponse.redirect(url);
+    if (jornada) {
+      res.cookies.set(COOKIE_JORNADA(activityId), jornada.id, {
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: DURACION_COOKIE_JORNADA_S,
+        path: "/",
+      });
+    }
+    return res;
+  };
 
   // ---- Meet: no exige sesión iniciada -------------------------------------
   // El enlace de la sala ya es semipúblico -está proyectado en el mismo
@@ -62,10 +77,12 @@ export async function GET(
   // reunión que empieza ya. La asistencia con identidad la registra la
   // evaluación, no la sala.
   if (destino === "meet") {
-    // Sin jornada agendada con enlace propio, el destino natural es la sala
-    // integrada de la capacitación: existe siempre y se crea sola al entrar.
-    const url = actividad.sessions[0]?.meetingUrl;
-    return NextResponse.redirect(url ?? `${base}/sala/${activityId}`);
+    // La jornada con sala externa propia (Meet, Teams) va a ella; si no, a la
+    // sala integrada de la capacitación, con la jornada en el enlace para que
+    // cada conexión quede en ESA jornada.
+    const externa = jornada?.meetingUrl && !jornada.meetingUrl.includes(`/sala/${activityId}`) ? jornada.meetingUrl : null;
+    if (externa) return conJornada(externa);
+    return conJornada(`${base}/sala/${activityId}${tokenSesion ? `?s=${tokenSesion}` : ""}`);
   }
 
   // ---- Presaber / postsaber: cada enlace responde por SU momento ----------
@@ -87,33 +104,34 @@ export async function GET(
     return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}?aviso=${aviso}`);
   }
 
-  // ---- Gate por FASE de la sesión presencial (server-side) ---------------
-  let sesionPresencial: { id: string; fase: string } | null = null;
-  if (tokenSesion && (destino === "presaber" || destino === "postsaber")) {
-    sesionPresencial = await prisma.trainingSession.findUnique({
-      where: { tokenPublico: tokenSesion },
-      select: { id: true, fase: true },
-    });
+  // ---- Gate por FASE de la jornada (server-side) --------------------------
+  // Solo con el enlace PROPIO de la jornada. Si el tutor está conduciendo la
+  // jornada por fases (presaber → capacitación → postsaber), la fase manda:
+  // pedir el postsaber en fase presaber (o cualquier otro salto) rebota a la
+  // puerta de la jornada, que muestra lo que SÍ está abierto ahora. En fase
+  // REGISTRO -jornada que no se conduce por fases, p. ej. virtual- rige el
+  // ciclo normal de la capacitación. Jornada cerrada: no admite registros.
+  if (explicita && jornada) {
     const faseEsperada = destino === "presaber" ? "PRESABER" : "POSTSABER";
-    if (sesionPresencial && sesionPresencial.fase !== faseEsperada) {
-      // La fase la controla el tutor: pedir el postsaber en fase presaber
-      // (o cualquier otro salto) rebota a la página de la sesión, que
-      // muestra lo que SÍ está abierto en este momento.
-      return NextResponse.redirect(`${base}/s/${tokenSesion}`);
+    const conducidaPorFases = jornada.fase === "PRESABER" || jornada.fase === "CAPACITACION" || jornada.fase === "POSTSABER";
+    if (jornadaCerrada(jornada) || (conducidaPorFases && jornada.fase !== faseEsperada)) {
+      return NextResponse.redirect(`${base}/s/${jornada.tokenPublico}`);
     }
   }
 
   const session = await auth();
   if (!session?.user) {
-    const destinoConSesion = tokenSesion ? `/c/${activityId}/${destino}?s=${tokenSesion}` : `/c/${activityId}/${destino}`;
+    const destinoConSesion = tokenPedido ? `/c/${activityId}/${destino}?s=${tokenPedido}` : `/c/${activityId}/${destino}`;
     return NextResponse.redirect(`${base}/login?callbackUrl=${encodeURIComponent(destinoConSesion)}`);
   }
 
-  // Entrar a la evaluación desde una sesión presencial registra la
-  // asistencia a ESA sesión si aún no estaba (regla de la Fase 10: quien
-  // llega directo al postsaber no se queda sin asistencia). Idempotente.
-  if (sesionPresencial) {
-    await registrarAsistenciaSesion(sesionPresencial.id, session.user.id, "QR").catch(() => null);
+  // Entrar a la evaluación por el enlace de una jornada registra la
+  // asistencia a ESA jornada si aún no estaba (quien llega directo al
+  // postsaber no se queda sin asistencia). Idempotente. Con el enlace
+  // general solo si la jornada vigente está ocurriendo: presentar el
+  // presaber días antes no es haber asistido.
+  if (jornada && !jornadaCerrada(jornada) && (explicita || jornadaEnCurso(jornada))) {
+    await registrarAsistenciaSesion(jornada.id, session.user.id, "QR").catch(() => null);
   }
 
   // Modo AUTOMÁTICO: el momento depende del recorrido de ESTA persona, así
@@ -153,6 +171,7 @@ export async function GET(
 
   // El destino final es la evaluación; qué momento corre (presaber,
   // postsaber, ninguno) lo decide la propia página con sus ventanas, con
-  // los avisos que ya explican cada caso.
-  return NextResponse.redirect(`${base}/aula/${entrada.courseId}/quiz/${entrada.quizId}`);
+  // los avisos que ya explican cada caso. La cookie de jornada atribuye el
+  // intento a la jornada del enlace.
+  return conJornada(`${base}/aula/${entrada.courseId}/quiz/${entrada.quizId}`);
 }

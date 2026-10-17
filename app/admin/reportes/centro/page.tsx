@@ -95,7 +95,7 @@ export default async function CentroDatosPage({
     actividadEnTiempo(filtros),
     prisma.municipio.findMany({ where: { isActive: true }, orderBy: { nombre: "asc" }, select: { id: true, nombre: true } }),
     prisma.cargo.findMany({ where: { isActive: true }, orderBy: { nombre: "asc" }, select: { id: true, nombre: true } }),
-    prisma.course.findMany({ orderBy: { title: "asc" }, select: { id: true, title: true } }),
+    prisma.course.findMany({ where: { esContenedorCapacitacion: false }, orderBy: { title: "asc" }, select: { id: true, title: true } }),
   ]);
 
   const ingresaron = acceso.totalActivos - acceso.nuncaIngresaron;

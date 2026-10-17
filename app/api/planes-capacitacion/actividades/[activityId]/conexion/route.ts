@@ -20,7 +20,7 @@ import { registrarConexionLlamada } from "@/lib/call-connections";
 export async function POST(request: Request, { params }: { params: Promise<{ activityId: string }> }) {
   const { activityId } = await params;
 
-  let body: { joinedAt?: string; leftAt?: string; displayName?: string; externalParticipantId?: string };
+  let body: { joinedAt?: string; leftAt?: string; displayName?: string; externalParticipantId?: string; sessionId?: string };
   try {
     body = await request.json();
   } catch {
@@ -41,6 +41,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ act
       displayName: body.displayName,
       joinedAt: new Date(body.joinedAt),
       leftAt: new Date(body.leftAt),
+      sessionId: typeof body.sessionId === "string" ? body.sessionId : null,
     });
   } catch (error) {
     console.error("No se pudo registrar un tramo de conexión a la videollamada", error);

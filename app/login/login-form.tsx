@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, HelpCircle, ShieldCheck, KeyRound } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,11 @@ const initialState: LoginState = { error: null };
 export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Enlaces de capacitación (/c/...): navegación completa, no interna.
+  useEffect(() => {
+    if (state.irA) window.location.assign(state.irA);
+  }, [state.irA]);
 
   return (
     <div className="relative w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">

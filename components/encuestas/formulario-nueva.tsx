@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useActionState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Info, Loader2, Sparkles } from "lucide-react";
 import { crearEncuestaAction, type EstadoAccion } from "@/app/encuestas/acciones-constructor";
 import { ETIQUETA_AUDIENCIA } from "@/components/encuestas/tarjeta-encuesta";
 
@@ -26,6 +26,10 @@ export type ActividadOpcion = {
  * Adscripción en cascada Área › Plan › Capacitación: la misma trazabilidad
  * del resto del sistema. El área solo FILTRA; lo que se guarda es el plan
  * (encuesta del plan completo) o la capacitación (que define su plan).
+ *
+ * `modo="satisfaccion"` (tutor): la encuesta es la de satisfacción de UNA
+ * capacitación de su área -obligatoria la capacitación, opcional la
+ * encuesta- y el título se propone a partir de ella.
  */
 export function FormularioNuevaEncuesta({
   areas,
@@ -33,6 +37,7 @@ export function FormularioNuevaEncuesta({
   actividades,
   plantillas,
   inicial,
+  modo = "libre",
 }: {
   areas: { id: string; nombre: string }[];
   planes: { id: string; titulo: string }[];
@@ -40,7 +45,10 @@ export function FormularioNuevaEncuesta({
   plantillas: { id: string; titulo: string }[];
   /** Lugar preseleccionado al llegar desde un plan o una capacitación. */
   inicial?: { planId?: string; actividadId?: string };
+  /** "satisfaccion": encuesta de satisfacción de una capacitación (tutor de área). */
+  modo?: "libre" | "satisfaccion";
 }) {
+  const satisfaccion = modo === "satisfaccion";
   const [estado, accion, pendiente] = useActionState(crearEncuestaAction, estadoInicial);
   // Al llegar desde una capacitación se preselecciona su lugar: área › plan › capacitación.
   const actividadInicial = actividades.find((a) => a.id === inicial?.actividadId);
@@ -48,6 +56,14 @@ export function FormularioNuevaEncuesta({
   const [areaId, setAreaId] = useState(actividadInicial?.areaId ?? "");
   const [planId, setPlanId] = useState(planInicial ?? "");
   const [actividadId, setActividadId] = useState(actividadInicial?.id ?? "");
+  // En satisfacción el título se propone con la capacitación elegida, hasta
+  // que la persona lo escriba a su gusto.
+  const tituloPropuesto = (id: string) => {
+    const a = actividades.find((x) => x.id === id);
+    return a ? `Satisfacción de la capacitación · ${a.titulo}`.slice(0, 180) : "Satisfacción de la capacitación";
+  };
+  const [titulo, setTitulo] = useState(satisfaccion ? tituloPropuesto(actividadInicial?.id ?? "") : "");
+  const [tituloEditado, setTituloEditado] = useState(false);
 
   // Planes visibles: los que tienen jornadas del área elegida.
   const planesFiltrados = useMemo(() => {
@@ -69,15 +85,40 @@ export function FormularioNuevaEncuesta({
     // La capacitación define su plan: se refleja para que se VEA la cadena.
     const actividad = actividades.find((a) => a.id === id);
     if (actividad) setPlanId(actividad.planId);
+    if (satisfaccion && !tituloEditado) setTitulo(tituloPropuesto(id));
   }
 
   return (
     <form action={accion} className="space-y-5">
+      {satisfaccion && (
+        <p className="flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 text-[12.5px] leading-snug text-foreground/85">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          <span>
+            <b className="font-semibold">Es opcional.</b> La encuesta de satisfacción se crea solo si el área así lo desea; la capacitación
+            funciona igual sin ella. Queda adscrita a la capacitación que elijas.
+          </span>
+        </p>
+      )}
       <div className="space-y-1.5">
         <label htmlFor="title" className="text-[13px] font-semibold text-foreground">
           Título <span className="text-destructive">*</span>
         </label>
-        <input id="title" name="title" required minLength={5} placeholder="Encuesta de satisfacción de…" className={campo} />
+        {satisfaccion ? (
+          <input
+            id="title"
+            name="title"
+            required
+            minLength={5}
+            value={titulo}
+            onChange={(e) => {
+              setTitulo(e.target.value);
+              setTituloEditado(true);
+            }}
+            className={campo}
+          />
+        ) : (
+          <input id="title" name="title" required minLength={5} placeholder="Encuesta de satisfacción de…" className={campo} />
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -88,7 +129,11 @@ export function FormularioNuevaEncuesta({
           id="description"
           name="description"
           rows={3}
-          placeholder="Qué mide y a quién va dirigida (se muestra en la portada del formulario)."
+          placeholder={
+            satisfaccion
+              ? "Ej. Cuéntanos cómo te pareció la capacitación: tu opinión nos ayuda a mejorarla."
+              : "Qué mide y a quién va dirigida (se muestra en la portada del formulario)."
+          }
           className="w-full resize-y rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary/60"
         />
       </div>
@@ -132,7 +177,15 @@ export function FormularioNuevaEncuesta({
       {/* Adscripción: área › plan › capacitación */}
       <fieldset className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
         <legend className="px-1 text-[13px] font-semibold text-foreground">
-          Adscripción <span className="font-normal text-muted-foreground">(opcional)</span>
+          {satisfaccion ? (
+            <>
+              Capacitación de tu área <span className="text-destructive">*</span>
+            </>
+          ) : (
+            <>
+              Adscripción <span className="font-normal text-muted-foreground">(opcional)</span>
+            </>
+          )}
         </legend>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -150,7 +203,7 @@ export function FormularioNuevaEncuesta({
               }}
               className={campo}
             >
-              <option value="">Todas las áreas</option>
+              <option value="">{satisfaccion ? "Todas mis áreas" : "Todas las áreas"}</option>
               {areas.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.nombre}
@@ -173,7 +226,7 @@ export function FormularioNuevaEncuesta({
               }}
               className={campo}
             >
-              <option value="">Sin plan (institucional)</option>
+              <option value="">{satisfaccion ? "Todos los planes" : "Sin plan (institucional)"}</option>
               {planesFiltrados.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.titulo}
@@ -192,9 +245,12 @@ export function FormularioNuevaEncuesta({
             name="trainingActivityId"
             value={actividadId}
             onChange={(e) => elegirActividad(e.target.value)}
+            required={satisfaccion}
             className={campo}
           >
-            <option value="">{planId ? "Todo el plan (sin jornada concreta)" : "Ninguna"}</option>
+            <option value="" disabled={satisfaccion}>
+              {satisfaccion ? "Elige la capacitación" : planId ? "Todo el plan (sin jornada concreta)" : "Ninguna"}
+            </option>
             {actividadesFiltradas.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.titulo} · {a.plan}
@@ -202,8 +258,9 @@ export function FormularioNuevaEncuesta({
             ))}
           </select>
           <p className="text-[11.5px] leading-snug text-muted-foreground">
-            Con capacitación, los resultados alimentan la medición de esa jornada; solo con plan, la del plan
-            completo; sin ninguno, queda como encuesta institucional suelta.
+            {satisfaccion
+              ? "Los resultados se consultan en Encuestas, adscritos a esa capacitación como su medición de satisfacción."
+              : "Con capacitación, los resultados alimentan la medición de esa jornada; solo con plan, la del plan completo; sin ninguno, queda como encuesta institucional suelta."}
           </p>
         </div>
       </fieldset>

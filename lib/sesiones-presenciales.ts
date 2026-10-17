@@ -52,7 +52,7 @@ export async function getSesionPorToken(token: string) {
 export async function registrarAsistenciaSesion(
   sesionId: string,
   userId: string,
-  medio: "QR" | "MANUAL"
+  medio: "QR" | "MANUAL" | "SALA"
 ): Promise<{ yaEstaba: boolean }> {
   try {
     await prisma.asistenciaSesion.create({ data: { sesionId, userId, medio } });
@@ -106,6 +106,8 @@ export type SnapshotSesion = {
   asistentes: number;
   presaberPresentados: number;
   postsaberPresentados: number;
+  /** Invitados externos registrados por el enlace de esta jornada (ausente en actas previas). */
+  invitados?: number;
   promedioPre: number | null;
   promedioPost: number | null;
   diferencia: number | null;
@@ -135,15 +137,16 @@ export async function cerrarSesionConSnapshot(sesionId: string): Promise<Snapsho
   let promedioPre: number | null = null;
   let promedioPost: number | null = null;
 
-  // El corte de la sesión mide a QUIENES ASISTIERON a esta sesión, no a toda
-  // la actividad: es justo el análisis "por sesión" que pide la Fase 10.
-  if (sesion.activity.courseId && idsAsistentes.length > 0) {
+  // El corte de la sesión mide lo de ESTA jornada: los intentos presentados
+  // por sus enlaces (sessionId) y, para los registros previos a los accesos
+  // por jornada, los intentos sin jornada de quienes asistieron a ella.
+  if (sesion.activity.courseId) {
     const intentos = await prisma.quizAttempt.findMany({
       where: {
-        userId: { in: idsAsistentes },
         finishedAt: { not: null },
         moment: { not: null },
         quiz: { courseId: sesion.activity.courseId, moduleId: null },
+        OR: [{ sessionId: sesionId }, ...(idsAsistentes.length > 0 ? [{ sessionId: null, userId: { in: idsAsistentes } }] : [])],
       },
       select: { userId: true, moment: true, score: true },
     });
@@ -168,10 +171,13 @@ export async function cerrarSesionConSnapshot(sesionId: string): Promise<Snapsho
   const comparacion =
     promedioPre !== null && promedioPost !== null ? compararAdherencia(promedioPre, promedioPost) : null;
 
+  const invitados = await prisma.externalParticipant.count({ where: { sessionId: sesionId } });
+
   const snapshot: SnapshotSesion = {
     asistentes,
     presaberPresentados,
     postsaberPresentados,
+    invitados,
     promedioPre,
     promedioPost,
     diferencia: comparacion?.diferencia ?? null,

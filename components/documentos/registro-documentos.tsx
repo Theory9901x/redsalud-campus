@@ -1,6 +1,6 @@
 import { Download, ExternalLink, Video } from "lucide-react";
 import { IconoArchivo } from "@/components/documentos/icono-archivo";
-import { FORMATOS, TIPOS_DOCUMENTO, formatoDe, nombreLegibleDocumento, tamanoLegible, tipoDocumentoDe } from "@/lib/documentos";
+import { FORMATOS, TIPOS_DOCUMENTO, formatoDe, nombreLegibleDocumento, tamanoLegible, tipoDocumentoDe, type ContextoDocumento } from "@/lib/documentos";
 import { cn } from "@/lib/utils";
 
 export type DocumentoRegistro = {
@@ -26,24 +26,30 @@ const h = (d: Date) => HORA.format(d).replace(/\s/g, " ");
  * del formato, tipo documental (qué es), descripción, formato y tamaño,
  * fecha y quién lo cargó, con ver y descargar. Las grabaciones se
  * reproducen arriba, dentro de la plataforma.
+ *
+ * `contexto` (por defecto "capacitacion", el de planes y capacitaciones):
+ * un tipo que no aplica ahí -un "ACTA" viejo en una capacitación- se lee
+ * como «Otro documento». Comités y reuniones pasan el suyo.
  */
 export function RegistroDocumentos({
   documentos,
   vacio = "Sin documentos todavía.",
   reproducirGrabaciones = true,
   compacto = false,
+  contexto = "capacitacion",
 }: {
   documentos: DocumentoRegistro[];
   vacio?: string;
   reproducirGrabaciones?: boolean;
   compacto?: boolean;
+  contexto?: ContextoDocumento;
 }) {
   if (documentos.length === 0) {
     return <div className="doc-vacio">{vacio}</div>;
   }
   const grabaciones = reproducirGrabaciones ? documentos.filter((d) => formatoDe(d.fileType, d.fileName) === "video") : [];
   const porTipo = documentos.reduce<Record<string, number>>((m, d) => {
-    const t = tipoDocumentoDe(d);
+    const t = tipoDocumentoDe(d, contexto);
     m[t] = (m[t] ?? 0) + 1;
     return m;
   }, {});
@@ -95,7 +101,7 @@ export function RegistroDocumentos({
           <tbody>
             {documentos.map((d) => {
               const formato = formatoDe(d.fileType, d.fileName);
-              const tipo = tipoDocumentoDe(d);
+              const tipo = tipoDocumentoDe(d, contexto);
               return (
                 <tr key={d.id}>
                   <td>

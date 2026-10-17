@@ -21,7 +21,8 @@ export default async function AdminCursosPage({
   const pageSize = parsePageSize(pageSizeParam);
   const page = Math.max(1, Number(pageParam) || 1);
 
-  const where: Prisma.CourseWhereInput = {};
+  // Las evaluaciones internas de las capacitaciones del plan no son cursos.
+  const where: Prisma.CourseWhereInput = { esContenedorCapacitacion: false };
   if (q) where.title = { contains: q, mode: "insensitive" };
   if (categoria) where.categoryId = categoria;
   if (estado) where.status = estado as CourseStatus;

@@ -67,7 +67,7 @@ export function PlanHero({
             </Link>
             <Link href={`${basePath}/${plan.id}/conexiones`} className="enlace-hero">
               <PhoneCall className="h-4 w-4" aria-hidden="true" />
-              Conexiones a llamada
+              Conexiones a la sala
             </Link>
           </>
         }

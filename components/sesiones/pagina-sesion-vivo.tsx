@@ -121,7 +121,9 @@ export async function PaginaSesionVivo({
   const [tramos, asistenciaVentana, encuestas] = esVirtual
     ? await Promise.all([
         prisma.callConnectionLog.findMany({
-          where: { activityId, joinedAt: { gte: desde, lte: hasta } },
+          // Lo que entró por la sala de ESTA jornada; los tramos previos a los
+          // accesos por jornada (sin jornada) se ubican por la franja horaria.
+          where: { activityId, OR: [{ sessionId: sesion.id }, { sessionId: null, joinedAt: { gte: desde, lte: hasta } }] },
           orderBy: { joinedAt: "asc" },
           select: {
             displayName: true,
@@ -254,7 +256,7 @@ export async function PaginaSesionVivo({
         <>
           {/* -------- Registro de la jornada virtual -------- */}
           <section aria-label="Indicadores de la jornada" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <Kpi Icono={PhoneCall} valor={String(conexiones.length)} etiqueta="Personas conectadas a la llamada" chip="bg-primary/12 text-primary" />
+            <Kpi Icono={PhoneCall} valor={String(conexiones.length)} etiqueta="Personas conectadas a la sala" chip="bg-primary/12 text-primary" />
             <Kpi Icono={Timer} valor={totalSegundos > 0 ? formatoDuracion(totalSegundos) : "0 min"} etiqueta="Tiempo conectado acumulado" chip="bg-success/15 text-success" />
             <Kpi Icono={Users2} valor={String(asistenciaVentana.length)} etiqueta="Asistencias en firme" chip="bg-primary/12 text-primary" />
             <Kpi Icono={UserPlus} valor={String(externosConectados)} etiqueta="Invitados externos conectados" chip="bg-warning/18 text-warning-foreground" />
@@ -264,7 +266,7 @@ export async function PaginaSesionVivo({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight text-foreground">
                 <PhoneCall className="h-4 w-4 text-primary" aria-hidden="true" />
-                Conexiones a la llamada
+                Conexiones a la sala
               </h2>
               <a
                 href={`/api/planes-capacitacion/sesiones/${sesion.id}/csv`}
@@ -276,7 +278,7 @@ export async function PaginaSesionVivo({
             {conexiones.length === 0 ? (
               <p className="surface p-4 text-sm text-muted-foreground">
                 Nadie se ha conectado a la sala en la franja de esta jornada. Los tramos se registran cuando cada
-                persona sale de la llamada o cierra la pestaña.
+                persona sale de la sala o cierra la pestaña.
               </p>
             ) : (
               <Tabla columnas={["#", "Participante", "Documento", "Primer ingreso", "Última salida", "Tiempo conectado", "Ingresos"]}>

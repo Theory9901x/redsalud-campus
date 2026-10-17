@@ -86,7 +86,7 @@ function Resumen({ input }: { input: AreaReportInput }) {
         Capacitaciones: <Text style={styles.metaValue}>{input.cobertura.total}</Text>
       </Text>
       <Text style={styles.metaItem}>
-        Con contenido montado:{" "}
+        Con evaluación presaber / postsaber:{" "}
         <Text style={styles.metaValue}>
           {input.cobertura.conContenido}
           {pct !== null ? ` (${pct}%)` : ""}
@@ -109,7 +109,7 @@ function Capacitaciones({ rows }: { rows: AreaReportInput["capacitaciones"] }) {
             <Text style={styles.th}>Programa</Text>
             <Text style={styles.th}>Programación</Text>
             <Text style={styles.th}>Estado</Text>
-            <Text style={[styles.th, { flex: 1.4 }]}>Curso</Text>
+            <Text style={[styles.th, { flex: 1.4 }]}>Evaluación</Text>
             <Text style={[styles.th, { flex: 0.8 }]}>Adherencia</Text>
           </View>
           {rows.map((row, i) => (
@@ -119,7 +119,7 @@ function Capacitaciones({ rows }: { rows: AreaReportInput["capacitaciones"] }) {
               <Text style={styles.td}>{row.programacion}</Text>
               <Text style={styles.td}>{row.status}</Text>
               <Text style={row.course ? [styles.td, { flex: 1.4 }] : [styles.td, { flex: 1.4 }, { color: COLORS.warning }]}>
-                {row.course ?? "Sin contenido todavía"}
+                {row.course ? "Presaber / postsaber" : "Sin evaluación todavía"}
               </Text>
               <Text style={[styles.td, { flex: 0.8 }]}>{row.adherencia !== null ? `${row.adherencia}%` : "—"}</Text>
             </View>

@@ -99,10 +99,15 @@ export default async function MiCapacitacionDetallePage({
   const filas: FilaCronograma[] = aplicables.map((a) => {
     const avance = a.courseId ? progresoPorCurso.get(a.courseId) : undefined;
     const cyc = a.courseId ? ciclo.get(a.courseId) : undefined;
-    const conContenido = !!avance;
+    // "Con contenido" = la capacitación tiene evaluación presaber/postsaber.
+    // El avance es el ciclo de ESTA persona, no el de un curso.
+    const conContenido = !!cyc;
     const inscrito = !!avance?.enrollment;
-    const completada = avance?.enrollment?.status === "COMPLETED";
-    const progreso = inscrito ? avance!.enrollment!.progressPercentage : null;
+    const completada = !!cyc?.presaberDone && !!cyc?.postsaberDone;
+    const progreso = cyc && (cyc.presaberDone || cyc.postsaberDone) ? (cyc.presaberDone ? 50 : 0) + (cyc.postsaberDone ? 50 : 0) : null;
+    // Material propio (capacitaciones antiguas con presentaciones montadas):
+    // se puede volver a ver. La evaluación interna no tiene "contenido".
+    const conMaterial = !!avance && !avance.course.esContenedorCapacitacion;
 
     // Modo AUTOMÁTICO (por defecto): presaber siempre disponible hasta
     // presentarlo; el postsaber se habilita solo al presentar el presaber.
@@ -143,8 +148,8 @@ export default async function MiCapacitacionDetallePage({
               ? ("Cerrado" as const)
               : ("Bloqueado" as const);
 
-    // Sin curso ("No aplica") no es una falta: es una jornada programada que
-    // se mide por asistencia.
+    // Sin evaluación no es una falta: es una jornada programada que se mide
+    // por asistencia.
     const estadoGeneral: FilaCronograma["estadoGeneral"] = !conContenido
       ? "Programada"
       : completada
@@ -165,15 +170,15 @@ export default async function MiCapacitacionDetallePage({
     let accion: FilaCronograma["accion"] = null;
     if (conContenido) {
       if (jornadaCerrada) {
-        accion = inscrito ? { tipo: "enlace", etiqueta: "Ver contenido", href: `/aula/${a.courseId}` } : null;
+        accion = inscrito && conMaterial ? { tipo: "enlace", etiqueta: "Ver material", href: `/aula/${a.courseId}` } : null;
       } else if (presaber === "Disponible") {
         accion = { tipo: "entrar", etiqueta: "Presentar presaber", activityId: a.id };
       } else if (postsaber === "Disponible") {
         accion = { tipo: "entrar", etiqueta: "Presentar postsaber", activityId: a.id };
       } else if (completada) {
-        accion = { tipo: "enlace", etiqueta: "Ver de nuevo", href: `/aula/${a.courseId}` };
+        accion = conMaterial ? { tipo: "enlace", etiqueta: "Ver material", href: `/aula/${a.courseId}` } : null;
       } else {
-        accion = { tipo: "entrar", etiqueta: progreso && progreso > 0 ? "Continuar" : "Empezar", activityId: a.id };
+        accion = conMaterial ? { tipo: "entrar", etiqueta: progreso && progreso > 0 ? "Continuar" : "Ver material", activityId: a.id } : null;
       }
     }
 
@@ -372,7 +377,7 @@ export default async function MiCapacitacionDetallePage({
                 <EmptyState
                   icon={CheckCircle2}
                   title="Aún no respondes ninguna"
-                  description="Las que respondas quedarán aquí como constancia."
+                  description="Las que respondas quedarán aquí."
                   className="py-10"
                 />
               ) : (

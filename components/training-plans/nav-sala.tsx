@@ -34,7 +34,7 @@ export function NavSala({ archivosHref, conGrabacion }: { archivosHref: string; 
 
   const items: Item[] = [
     { clave: "resumen", etiqueta: "Resumen", icono: Home, ancla: "informe" },
-    { clave: "llamada", etiqueta: "Llamada", icono: PhoneCall, ancla: "llamada" },
+    { clave: "llamada", etiqueta: "Sala", icono: PhoneCall, ancla: "llamada" },
     { clave: "participantes", etiqueta: "Participantes", icono: Users, comando: "abrirParticipantes" },
     { clave: "chat", etiqueta: "Chat", icono: MessageCircle, comando: "enfocarChat" },
     { clave: "bitacora", etiqueta: "Bitácora", icono: Activity, comando: "abrirBitacora" },

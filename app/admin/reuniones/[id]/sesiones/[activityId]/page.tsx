@@ -12,7 +12,7 @@ import {
 } from "@/app/admin/reuniones/actions";
 import { VistaActividad, SeccionActividad, type PestanaActividad } from "@/components/training-plans/vista-actividad";
 import { ActivityQrPanel, type EnlaceQr } from "@/components/training-plans/activity-qr-panel";
-import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
+import { RegistroDocumentos } from "@/components/documentos/registro-documentos";
 import { etiquetaJornada } from "@/components/training-plans/labels";
 import { AccionesSesion, FormularioActa, SubirActaFirmada } from "@/components/reuniones/formularios";
 import { EmptyState } from "@/components/brand/empty-state";
@@ -122,7 +122,11 @@ export default async function SesionReunionPage({ params }: { params: Promise<{ 
               </div>
             </SeccionActividad>
             <SeccionActividad titulo="Documentos de la sesión">
-              <TrainingDocumentList documents={d.documentos} />
+              <RegistroDocumentos
+                documentos={d.documentos}
+                contexto="reunion"
+                vacio="Sin documentos todavía. Sube el primero con el formulario de abajo: indica qué documento es y una descripción corta."
+              />
             </SeccionActividad>
           </div>
         </div>

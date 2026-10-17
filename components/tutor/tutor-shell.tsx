@@ -5,13 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowLeft,
-  BookOpen,
   CalendarRange,
-  Award,
   ClipboardCheck,
-  Layers,
   LayoutDashboard,
   MessageSquareText,
+  Radio,
   Users,
 } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/topbar";
@@ -23,9 +21,12 @@ import { AppSidebar, type GrupoNav } from "@/components/shell/app-sidebar";
  * permanente y franja de acento superior que distingue el área a simple
  * vista. Misma familia visual que el resto del chrome, distinta firma.
  *
- * El menú va en el orden del trabajo real de un tutor de área: primero el
- * PLAN (sus capacitaciones, lo que evalúa y lo que pregunta), luego las
- * PERSONAS (quién avanza, constancias) y por último los CURSOS que dicta.
+ * El tutor es un ÁREA con capacitaciones estipuladas en el Plan
+ * Institucional de Capacitaciones (lo genera Talento Humano en concertación
+ * con los procesos). Su menú es solo eso: el PLAN de su área -sus
+ * capacitaciones, lo que evalúa y la satisfacción que quiera medir- y las
+ * PERSONAS que participan en ellas. Sin cursos, catálogo ni constancias: las
+ * áreas no revisan inducción/reinducción y el plan no genera constancias.
  */
 const NAV_GROUPS: GrupoNav[] = [
   {
@@ -35,27 +36,19 @@ const NAV_GROUPS: GrupoNav[] = [
   {
     label: "Plan de capacitación",
     items: [
-      { href: "/tutor/planes-capacitacion", label: "Planes de capacitación", icon: CalendarRange },
+      { href: "/tutor/planes-capacitacion", label: "Planes de capacitación", icon: CalendarRange, excluir: ["/tutor/planes-capacitacion/en-vivo"] },
+      { href: "/tutor/planes-capacitacion/en-vivo", label: "En vivo", icon: Radio },
       // Vista de OBSERVACIÓN, no de acción: el tutor abre las ventanas del
       // ciclo, no las presenta, así que aquí ve en vivo quién está
       // presentando y quién terminó -no la pantalla del estudiante-.
       { href: "/tutor/mis-encuestas", label: "Evaluaciones en vivo", icon: ClipboardCheck },
+      // Solo las encuestas de satisfacción de sus capacitaciones (nunca la SIAU).
       { href: "/encuestas", label: "Encuestas", icon: MessageSquareText },
     ],
   },
   {
     label: "Personas",
-    items: [
-      { href: "/tutor/inscritos", label: "Inscritos y progreso", icon: Users },
-      { href: "/tutor/certificados", label: "Constancias", icon: Award },
-    ],
-  },
-  {
-    label: "Cursos",
-    items: [
-      { href: "/tutor/cursos", label: "Mis cursos", icon: BookOpen },
-      { href: "/cursos", label: "Catálogo institucional", icon: Layers },
-    ],
+    items: [{ href: "/tutor/inscritos", label: "Participantes", icon: Users }],
   },
 ];
 
@@ -64,10 +57,7 @@ const BREADCRUMBS: [string, string][] = [
   ["/tutor/planes-capacitacion", "Plan · Planes de capacitación"],
   ["/tutor/mis-encuestas", "Plan · Evaluaciones en vivo"],
   ["/encuestas", "Plan · Encuestas"],
-  ["/tutor/inscritos", "Personas · Inscritos y progreso"],
-  ["/tutor/certificados", "Personas · Constancias"],
-  ["/tutor/cursos", "Cursos · Mis cursos"],
-  ["/cursos", "Cursos · Catálogo institucional"],
+  ["/tutor/inscritos", "Personas · Participantes"],
   ["/tutor", "Centro de mando"],
 ];
 

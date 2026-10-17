@@ -1,3 +1,4 @@
+import { actividadesConEvaluacion } from "@/lib/evaluacion-capacitacion";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CalendarRange, User, FileText, ClipboardList, Plus, Info, UsersRound, BarChart3 } from "lucide-react";
@@ -5,7 +6,6 @@ import { requireTrainingPlanRead } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import {
   getTrainingPlanDetail,
-  getLinkableCourses,
   getSessionsForPlan,
   getPlanAdherenceSummary,
   getAdherenciaPorTrimestre,
@@ -49,13 +49,10 @@ export default async function TutorPlanCapacitacionDetallePage({
   const { id } = await params;
   const sesion = await requireTrainingPlanRead(id);
 
-  const [plan, courses, surveys] = await Promise.all([
-    getTrainingPlanDetail(id),
-    getLinkableCourses(),
-    getSurveysForPlan(id),
-  ]);
+  const [plan, surveys] = await Promise.all([getTrainingPlanDetail(id), getSurveysForPlan(id)]);
   const sessions = await getSessionsForPlan(id);
   if (!plan) notFound();
+  const conEvaluacion = await actividadesConEvaluacion(plan.activities);
 
   // El área entra a consultar y a gestionar SUS capacitaciones; el plan en sí
   // -agregar líneas, importar el cronograma- lo maneja quien responde por él.
@@ -129,7 +126,7 @@ export default async function TutorPlanCapacitacionDetallePage({
           estado={plan.status}
           resumen={{
             totalActividades: plan.activities.length,
-            conCurso: plan.activities.filter((a) => a.courseId).length,
+            conCurso: conEvaluacion.size,
             jornadasCerradas: plan.activities.filter((a) => a.status === "CLOSED").length,
             cumplimiento: adherenceSummary.overallPercentage,
           }}
@@ -166,11 +163,11 @@ export default async function TutorPlanCapacitacionDetallePage({
               <div className="flex flex-wrap items-center gap-2">
                 <ImportScheduleDialog action={importScheduleAction} />
                 <PanelDeslizable
-                  etiqueta="Nueva actividad"
-                  titulo="Nueva actividad del cronograma"
+                  etiqueta="Nueva capacitación"
+                  titulo="Nueva capacitación del cronograma"
                   descripcion="Una línea nueva del plan. Para cargar el PIC completo usa «Importar desde Excel»."
                 >
-                  <TrainingActivityForm action={addActivityAction} courses={courses} />
+                  <TrainingActivityForm action={addActivityAction} />
                 </PanelDeslizable>
               </div>
             </div>

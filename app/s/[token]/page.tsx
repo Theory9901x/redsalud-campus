@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { CalendarClock, MapPin, User2 } from "lucide-react";
+import Link from "next/link";
+import { CalendarClock, MapPin, User2, Video, FileQuestion, ClipboardCheck, UserPlus, Lock } from "lucide-react";
 import { getSesionPorToken, getEstadoPersonaEnSesion, ETIQUETA_FASE } from "@/lib/sesiones-presenciales";
 import { getPersonaIdentificada } from "@/app/s/[token]/acciones";
 import { PantallaSesion } from "@/components/sesiones/pantalla-sesion";
@@ -27,7 +28,13 @@ export default async function SesionPublicaPage({ params }: { params: Promise<{ 
   const sesion = await getSesionPorToken(token);
   if (!sesion) notFound();
 
-  const persona = await getPersonaIdentificada(token);
+  // JORNADA VIRTUAL: esta página es la PUERTA de la jornada -sala, presaber y
+  // postsaber-, cada botón con el token de la jornada para que todo quede en
+  // ella. La sala ya pide la cuenta; no hace falta identificarse aquí.
+  const puertaVirtual = sesion.modality === "VIRTUAL";
+  const cerradaJornada = sesion.status === "CLOSED" || sesion.fase === "CERRADA";
+
+  const persona = puertaVirtual ? null : await getPersonaIdentificada(token);
   const estadoPersona = persona
     ? await getEstadoPersonaEnSesion({ id: sesion.id, activity: { courseId: sesion.activity.courseId } }, persona.id)
     : null;
@@ -64,10 +71,18 @@ export default async function SesionPublicaPage({ params }: { params: Promise<{ 
           </div>
           <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-[12px] font-bold text-primary">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" aria-hidden="true" />
-            {ETIQUETA_FASE[sesion.fase]}
+            {puertaVirtual ? (cerradaJornada ? "Jornada cerrada" : "Jornada virtual") : ETIQUETA_FASE[sesion.fase]}
           </span>
         </header>
 
+        {puertaVirtual ? (
+          <PuertaVirtual
+            token={token}
+            activityId={sesion.activity.id}
+            conEvaluacion={!!sesion.activity.courseId}
+            cerrada={cerradaJornada}
+          />
+        ) : (
         <PantallaSesion
           token={token}
           fase={sesion.fase}
@@ -76,7 +91,71 @@ export default async function SesionPublicaPage({ params }: { params: Promise<{ 
           persona={persona}
           estado={estadoPersona}
         />
+        )}
       </div>
     </main>
+  );
+}
+
+/** Puerta de una jornada VIRTUAL: un botón por destino, todos con el token de la jornada. */
+function PuertaVirtual({
+  token,
+  activityId,
+  conEvaluacion,
+  cerrada,
+}: {
+  token: string;
+  activityId: string;
+  conEvaluacion: boolean;
+  cerrada: boolean;
+}) {
+  if (cerrada) {
+    return (
+      <div className="surface-lumen mt-4 p-8 text-center">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+          <Lock className="h-6 w-6" aria-hidden="true" />
+        </span>
+        <h2 className="mt-4 font-display text-xl font-extrabold tracking-tight text-foreground">Jornada cerrada</h2>
+        <p className="mt-1 text-[13px] text-muted-foreground">Esta jornada ya terminó: no admite nuevos registros.</p>
+      </div>
+    );
+  }
+  const q = `?s=${encodeURIComponent(token)}`;
+  const botones = [
+    { href: `/c/${activityId}/meet${q}`, etiqueta: "Entrar a la sala", Icono: Video, principal: true },
+    ...(conEvaluacion
+      ? [
+          { href: `/c/${activityId}/presaber${q}`, etiqueta: "Presentar presaber", Icono: FileQuestion, principal: false },
+          { href: `/c/${activityId}/postsaber${q}`, etiqueta: "Presentar postsaber", Icono: ClipboardCheck, principal: false },
+        ]
+      : []),
+  ];
+  return (
+    <div className="mt-4 flex flex-1 flex-col gap-3">
+      {botones.map((b) => (
+        <a
+          key={b.href}
+          href={b.href}
+          className={
+            b.principal
+              ? "flex min-h-[84px] w-full items-center justify-center gap-3 rounded-3xl bg-gradient-to-r from-primary to-success text-lg font-extrabold text-white shadow-xl shadow-primary/30 transition-transform active:scale-[0.98]"
+              : "surface-lumen flex min-h-[64px] w-full items-center justify-center gap-2.5 text-[15px] font-bold text-foreground transition-colors hover:text-primary"
+          }
+        >
+          <b.Icono className="h-5 w-5" aria-hidden="true" />
+          {b.etiqueta}
+        </a>
+      ))}
+      <p className="px-2 text-center text-[11.5px] leading-snug text-muted-foreground">
+        Te pedirá iniciar sesión con tu cuenta institucional. Tu asistencia y tus evaluaciones quedan en esta jornada.
+      </p>
+      <Link
+        href={`/invitado/${activityId}${q}`}
+        className="mx-auto mt-1 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-primary hover:underline"
+      >
+        <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
+        ¿Vienes de otra entidad? Entra como invitado
+      </Link>
+    </div>
   );
 }

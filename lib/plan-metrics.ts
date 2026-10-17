@@ -1,3 +1,4 @@
+import { actividadesConEvaluacion } from "@/lib/evaluacion-capacitacion";
 import {
   getTrainingPlanDetail,
   getPlanAdherenceSummary,
@@ -22,9 +23,11 @@ export async function getPlanMetricsData(planId: string, areaIds: string[] | nul
     ? { ...planCompleto, activities: planCompleto.activities.filter((a) => a.area && areaIds.includes(a.area.id)) }
     : planCompleto;
 
-  const [adherenceSummary, surveys] = await Promise.all([
+  const [adherenceSummary, surveys, conEvaluacion] = await Promise.all([
     getPlanAdherenceSummary({ targetDepartment: plan.targetDepartment, activities: plan.activities }),
     getSurveysForPlan(planId),
+    // Cobertura = capacitaciones con evaluación presaber/postsaber configurada.
+    actividadesConEvaluacion(plan.activities),
   ]);
   const adherenciaPorActividad = new Map(
     adherenceSummary.perActivity.map((a) => [a.activityId, a])
@@ -57,7 +60,7 @@ export async function getPlanMetricsData(planId: string, areaIds: string[] | nul
       adherenciaN: 0,
     };
     area.total += 1;
-    if (a.courseId) area.conContenido += 1;
+    if (conEvaluacion.has(a.id)) area.conContenido += 1;
     if (a.status === "DRAFT") area.draft += 1;
     else if (a.status === "OPEN") area.open += 1;
     else area.closed += 1;
@@ -96,7 +99,7 @@ export async function getPlanMetricsData(planId: string, areaIds: string[] | nul
     });
   }
 
-  const conContenido = plan.activities.filter((a) => a.courseId).length;
+  const conContenido = conEvaluacion.size;
 
   return {
     planId,

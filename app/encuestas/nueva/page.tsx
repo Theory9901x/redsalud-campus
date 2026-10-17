@@ -3,16 +3,22 @@ import { ArrowLeft, ClipboardList } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { FormularioNuevaEncuesta } from "@/components/encuestas/formulario-nueva";
+import { CODIGO_SIAU } from "@/lib/encuestas/metrics";
 
 /**
  * Crear una encuesta. El formulario pide lo mínimo -título, audiencia y,
  * opcionalmente, su lugar en el sistema: área › plan › capacitación, o una
  * plantilla de la que partir-; todo lo demás se define en el constructor.
+ *
+ * Para el TUTOR (un área del plan) es siempre la encuesta de «Satisfacción
+ * de la capacitación», adscrita a una capacitación de su área y opcional: la
+ * crea solo si el área lo desea. Nunca ve las plantillas de la SIAU.
  */
 export default async function NuevaEncuestaPage({ searchParams }: { searchParams: Promise<{ plan?: string; actividad?: string }> }) {
   const { plan: planInicial, actividad: actividadInicial } = await searchParams;
   const sesion = await requireTutorOrAdmin();
   const esAdmin = sesion.user.role === "ADMIN";
+  const deMiArea = { OR: [{ area: { tutorId: sesion.user.id } }, { plan: { tutorId: sesion.user.id } }] };
 
   // Un tutor solo ve sus áreas y lo que cuelga de ellas; el administrador,
   // todo. Es la misma trazabilidad área › plan › capacitación del resto
@@ -26,7 +32,7 @@ export default async function NuevaEncuestaPage({ searchParams }: { searchParams
     prisma.trainingActivity.findMany({
       where: esAdmin
         ? { status: { not: "CLOSED" } }
-        : { status: { not: "CLOSED" }, area: { tutorId: sesion.user.id } },
+        : { status: { not: "CLOSED" }, plan: { kind: "CAPACITACION" }, ...deMiArea },
       select: {
         id: true,
         title: true,
@@ -39,13 +45,13 @@ export default async function NuevaEncuestaPage({ searchParams }: { searchParams
   ]);
 
   const planes = await prisma.trainingPlan.findMany({
-    where: esAdmin ? {} : { activities: { some: { area: { tutorId: sesion.user.id } } } },
+    where: esAdmin ? {} : { kind: "CAPACITACION", activities: { some: { status: { not: "CLOSED" }, ...deMiArea } } },
     select: { id: true, title: true },
     orderBy: { title: "asc" },
   });
 
   const plantillas = await prisma.survey.findMany({
-    where: { isTemplate: true },
+    where: esAdmin ? { isTemplate: true } : { isTemplate: true, NOT: { code: { startsWith: CODIGO_SIAU } } },
     select: { id: true, title: true },
     orderBy: { title: "asc" },
   });
@@ -66,10 +72,12 @@ export default async function NuevaEncuestaPage({ searchParams }: { searchParams
           Módulo de encuestas · Paso 1 de 2
         </p>
         <h1 className="mt-2 font-display text-[clamp(1.6rem,3.2vw,2rem)] font-bold leading-tight tracking-tight text-foreground">
-          Nueva encuesta
+          {esAdmin ? "Nueva encuesta" : "Satisfacción de la capacitación"}
         </h1>
         <p className="mt-1.5 text-[14px] leading-relaxed text-muted-foreground">
-          Define lo esencial; los bloques y las preguntas se arman en el constructor.
+          {esAdmin
+            ? "Define lo esencial; los bloques y las preguntas se arman en el constructor."
+            : "Opcional: créala solo si el área así lo desea, para conocer cómo valoraron la capacitación quienes asistieron. Elige la capacitación; los bloques y las preguntas se arman en el constructor."}
         </p>
 
         <div className="barra-modulo mt-6">
@@ -86,6 +94,7 @@ export default async function NuevaEncuestaPage({ searchParams }: { searchParams
               }))}
               plantillas={plantillas.map((p) => ({ id: p.id, titulo: p.title }))}
               inicial={{ planId: planInicial, actividadId: actividadInicial }}
+              modo={esAdmin ? "libre" : "satisfaccion"}
             />
           </div>
         </div>

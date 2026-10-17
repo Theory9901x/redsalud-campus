@@ -2,18 +2,13 @@ import Link from "next/link";
 import {
   Activity as ActivityIcon,
   ArrowUpRight,
-  Award,
-  BookOpen,
   CalendarRange,
-  CheckCircle2,
   ClipboardCheck,
   FileDown,
-  GraduationCap,
   LayoutDashboard,
   Radio,
   Sparkles,
   UserCheck,
-  UserPlus,
   Users,
 } from "lucide-react";
 import { requireSession } from "@/lib/auth-helpers";
@@ -30,7 +25,6 @@ import {
   nivelSemaforo,
   tituloLegible,
 } from "@/components/training-plans/labels";
-import { COURSE_STATUS_LABELS } from "@/components/cursos/labels";
 import { ColaAccion, EnlacePanel, Medidor, PanelTutor, VacioCompacto } from "@/components/tutor/centro-mando";
 import { PulsoSemanal, type PuntoPulso } from "@/components/tutor/pulso-semanal";
 
@@ -39,13 +33,14 @@ export const dynamic = "force-dynamic";
 const DIA = 24 * 60 * 60 * 1000;
 const ROMANO = ["I", "II", "III", "IV"];
 
-const ICONO_FEED: Record<EventoFeed["tipo"], typeof UserPlus> = {
+const ICONO_FEED: Record<EventoFeed["tipo"], typeof UserCheck> = {
   asistencia: UserCheck,
   evaluacion: ClipboardCheck,
-  inscripcion: UserPlus,
-  finalizacion: CheckCircle2,
-  constancia: Award,
 };
+
+/** Quién es el tutor, en una línea: un área dentro del PIC, no un docente de cursos. */
+const ROL_TUTOR =
+  "Gestionas las capacitaciones de tu área en el Plan Institucional de Capacitaciones, concertado por Talento Humano con los procesos.";
 
 const diaMes = (f: Date) => {
   const p = etiquetaDiaMes(f);
@@ -57,7 +52,8 @@ const diaMes = (f: Date) => {
  * para los tutores de área, cuyo trabajo es el PLAN) y una gráfica vacía.
  * Ahora responde lo que el tutor necesita al entrar: qué tengo que hacer hoy,
  * cómo va el trimestre, quién está participando y qué ya puedo radicar.
- * Todo sale de lib/tutor-dashboard.ts, acotado a sus áreas y sus cursos.
+ * Todo sale de lib/tutor-dashboard.ts, acotado a las capacitaciones de sus
+ * áreas en el Plan Institucional (sin cursos ni constancias).
  */
 export default async function TutorDashboardPage() {
   const session = await requireSession("/tutor");
@@ -66,16 +62,12 @@ export default async function TutorDashboardPage() {
 
   const nombre = session.user.name?.split(" ")[0] ?? "Tutor";
   const tienePlan = d.kpis.aCargo > 0;
-  const tieneCursos = d.cursos.length > 0;
   const tNombre = nombreTrimestre(d.trimestre, false);
   const diasTotales = Math.round((d.rango.hasta.getTime() - d.rango.desde.getTime()) / DIA);
   const diaActual = Math.min(diasTotales, Math.floor((ahora.getTime() - d.rango.desde.getTime()) / DIA) + 1);
   const diasRestantes = Math.max(0, diasTotales - diaActual);
   const enVivoMios = d.enVivo.filter((c) => c.estado === "EN_VIVO").length;
   const sinJornada = d.kpis.delTrimestre - d.kpis.conJornada;
-
-  const totInscritos = d.cursos.reduce((s, c) => s + c.inscritos, 0);
-  const totCompletados = d.cursos.reduce((s, c) => s + c.completados, 0);
 
   const pulso: PuntoPulso[] = d.semanas.map((s) => ({
     etiqueta: diaMes(s.desde),
@@ -87,17 +79,22 @@ export default async function TutorDashboardPage() {
   const totalEvaluaciones = d.semanas.reduce((s, x) => s + x.evaluaciones, 0);
   const semanaPico = d.semanas.reduce((m, x) => (x.asistencias + x.evaluaciones > m.asistencias + m.evaluaciones ? x : m), d.semanas[0]);
 
-  const descripcion = tienePlan ? (
+  const descripcion = (
     <>
-      Hola, {nombre}. Respondes por{" "}
-      <b className="font-semibold text-white">{d.areas.length ? d.areas.map((a) => a.name).join(" · ") : "tu plan"}</b>: {d.kpis.aCargo}{" "}
-      {d.kpis.aCargo === 1 ? "capacitación" : "capacitaciones"} del {d.anio}. Quedan <b className="font-semibold text-white">{diasRestantes} días</b> del{" "}
-      {tNombre}.
-    </>
-  ) : (
-    <>
-      Hola, {nombre}. No tienes áreas del Plan Institucional de Capacitaciones a cargo: aquí ves el pulso de los cursos que dictas y lo que
-      requiere tu atención.
+      <span className="mb-1.5 block text-white/85">{ROL_TUTOR}</span>
+      {tienePlan ? (
+        <>
+          Hola, {nombre}. Respondes por{" "}
+          <b className="font-semibold text-white">{d.areas.length ? d.areas.map((a) => a.name).join(" · ") : "tu plan"}</b>: {d.kpis.aCargo}{" "}
+          {d.kpis.aCargo === 1 ? "capacitación" : "capacitaciones"} del {d.anio}. Quedan <b className="font-semibold text-white">{diasRestantes} días</b> del{" "}
+          {tNombre}.
+        </>
+      ) : (
+        <>
+          Hola, {nombre}. Todavía no tienes capacitaciones del {d.anio} asignadas a tu área: aparecerán aquí cuando Talento Humano las programe en el
+          plan.
+        </>
+      )}
     </>
   );
 
@@ -106,8 +103,8 @@ export default async function TutorDashboardPage() {
       <ModuloHero
         eyebrow={tienePlan ? `Centro de mando · ${d.areas.length === 1 ? `Área ${d.areas[0].name}` : "Tutor de área"}` : "Centro de mando · Tutor"}
         Icono={LayoutDashboard}
-        titulo={tienePlan ? "Tu operación del" : "Tus cursos,"}
-        acento={tienePlan ? `trimestre ${ROMANO[d.trimestre - 1]}` : "en tiempo real"}
+        titulo={tienePlan ? "Tu operación del" : "Las capacitaciones"}
+        acento={tienePlan ? `trimestre ${ROMANO[d.trimestre - 1]}` : "de tu área"}
         descripcion={descripcion}
         marca={tienePlan ? `T${d.trimestre}` : undefined}
         lateral={
@@ -118,7 +115,7 @@ export default async function TutorDashboardPage() {
             </div>
           ) : undefined
         }
-        columnasCifras={tienePlan ? 6 : 4}
+        columnasCifras={tienePlan ? 6 : undefined}
         cifras={
           tienePlan
             ? [
@@ -142,26 +139,14 @@ export default async function TutorDashboardPage() {
                 { valor: d.kpis.evaluacionesAbiertas, etiqueta: "Evaluaciones abiertas", detalle: "Presaber / postsaber" },
                 { valor: d.kpis.asistieronTrimestre, etiqueta: `Asistieron T${d.trimestre}`, detalle: "Personas distintas" },
               ]
-            : [
-                { valor: d.cursos.length, etiqueta: "Cursos", detalle: `${d.cursos.filter((c) => c.estado === "PUBLISHED").length} de ${d.cursos.length} publicados` },
-                { valor: totInscritos, etiqueta: "Inscritos" },
-                { valor: totCompletados, etiqueta: "Completaron", detalle: totInscritos ? `${Math.round((totCompletados / totInscritos) * 100)} % de finalización` : undefined },
-                { valor: d.constanciasMes, etiqueta: "Constancias del mes" },
-              ]
+            : []
         }
         acciones={
           <>
-            {tienePlan ? (
-              <Link href="/tutor/planes-capacitacion" className="boton-hero">
-                <CalendarRange className="h-4 w-4" aria-hidden="true" />
-                Mis planes
-              </Link>
-            ) : (
-              <Link href="/tutor/cursos" className="boton-hero">
-                <BookOpen className="h-4 w-4" aria-hidden="true" />
-                Mis cursos
-              </Link>
-            )}
+            <Link href="/tutor/planes-capacitacion" className="boton-hero">
+              <CalendarRange className="h-4 w-4" aria-hidden="true" />
+              Mis planes
+            </Link>
             <Link href="/tutor/planes-capacitacion/en-vivo" className="enlace-hero">
               <Radio className="h-4 w-4" aria-hidden="true" />
               En vivo
@@ -228,7 +213,7 @@ export default async function TutorDashboardPage() {
         >
           {d.cola.length === 0 ? (
             <VacioCompacto Icono={Sparkles}>
-              <b className="font-semibold text-foreground">Todo al día.</b> No hay jornadas por agendar, ventanas abiertas ni alertas en tus cursos.
+              <b className="font-semibold text-foreground">Todo al día.</b> No hay jornadas por agendar, ventanas abiertas ni informes pendientes.
             </VacioCompacto>
           ) : (
             <ColaAccion grupos={d.cola} />
@@ -362,7 +347,7 @@ export default async function TutorDashboardPage() {
           <PanelTutor
             indice="04"
             titulo={`Adherencia del ${tNombre}`}
-            bajada="Por capacitación, de la más rezagada a la más avanzada. Con curso: quienes lo completaron; sin curso: asistencia registrada."
+            bajada="Por capacitación, de la más rezagada a la más avanzada: personas de la audiencia con asistencia registrada en el trimestre."
             className="xl:col-span-8"
             style={escalon(5)}
             accion={
@@ -382,7 +367,6 @@ export default async function TutorDashboardPage() {
                     <tr>
                       <th>Capacitación</th>
                       <th>Jornada</th>
-                      <th>Medición</th>
                       <th className="w-[30%]">Adherencia</th>
                       <th>Estado</th>
                     </tr>
@@ -407,9 +391,6 @@ export default async function TutorDashboardPage() {
                             ) : (
                               <span className="chip-dato chip-dato-alerta">Sin agendar</span>
                             )}
-                          </td>
-                          <td className="whitespace-nowrap">
-                            <span className="chip-dato">{f.fuente === "AUTOMATIC" ? "Curso" : "Asistencia"}</span>
                           </td>
                           <td>
                             <div className="flex items-center gap-2.5">
@@ -444,7 +425,7 @@ export default async function TutorDashboardPage() {
           >
             {d.evaluaciones.length === 0 ? (
               <VacioCompacto Icono={ClipboardCheck}>
-                Ninguna abierta. Las capacitaciones con curso y evaluación final abren su ciclo desde la ficha.
+                Ninguna abierta. Cada capacitación abre su presaber y su postsaber desde la ficha.
               </VacioCompacto>
             ) : (
               <ul className="space-y-1">
@@ -510,12 +491,12 @@ export default async function TutorDashboardPage() {
         <PanelTutor
           indice={tienePlan ? "07" : "02"}
           titulo="Actividad reciente"
-          bajada="Asistencias, evaluaciones, inscripciones y constancias, lo último primero."
+          bajada="Asistencias y evaluaciones en tus capacitaciones, lo último primero."
           className={tienePlan ? "xl:col-span-5" : "xl:col-span-12"}
           style={escalon(8)}
         >
           {d.feed.length === 0 ? (
-            <VacioCompacto Icono={ActivityIcon}>Sin movimiento todavía. Aquí aparece cada asistencia, evaluación o inscripción en lo tuyo.</VacioCompacto>
+            <VacioCompacto Icono={ActivityIcon}>Sin movimiento todavía. Aquí aparece cada asistencia o evaluación en tus capacitaciones.</VacioCompacto>
           ) : (
             <ol className="tut-feed space-y-2.5">
               {d.feed.slice(0, 8).map((e, i) => {
@@ -544,70 +525,6 @@ export default async function TutorDashboardPage() {
         </PanelTutor>
       </div>
 
-      {/* ── Cursos que dicta (solo si tiene) ── */}
-      {tieneCursos && (
-        <PanelTutor
-          indice={tienePlan ? "08" : "03"}
-          titulo="Tus cursos"
-          bajada="Inscripción, finalización y constancias de los cursos que dictas."
-          style={escalon(9)}
-          accion={
-            <div className="flex flex-wrap gap-2">
-              <EnlacePanel href="/tutor/inscritos">Inscritos</EnlacePanel>
-              <EnlacePanel href="/tutor/certificados">Constancias</EnlacePanel>
-            </div>
-          }
-        >
-          <ul className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
-            {d.cursos.map((c) => {
-              const nivel = nivelSemaforo(c.finalizacion);
-              return (
-                <li key={c.id} className="tut-curso">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] border border-primary/25 bg-primary/8 text-primary">
-                      <GraduationCap className="h-4.5 w-4.5" aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0">
-                      <Link href={`/tutor/cursos/${c.id}`} className="line-clamp-2 text-[13.5px] font-semibold leading-snug text-foreground hover:text-primary">
-                        {c.titulo}
-                      </Link>
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <PildoraEstado estado={c.estado === "PUBLISHED" ? "ACTIVE" : c.estado === "DRAFT" ? "DRAFT" : "CLOSED"}>{COURSE_STATUS_LABELS[c.estado]}</PildoraEstado>
-                        <span className="chip-dato">{c.lecciones} lecciones</span>
-                        {c.delPlan && <span className="chip-dato chip-dato-primario">PIC</span>}
-                        {c.estancados > 0 && <span className="chip-dato chip-dato-alerta">{c.estancados} sin avanzar</span>}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="tut-cifras" style={{ ["--cols" as string]: 3 }}>
-                    <div>
-                      <b>{c.inscritos}</b>
-                      <span>Inscritos</span>
-                    </div>
-                    <div>
-                      <b>{c.completados}</b>
-                      <span>Completaron</span>
-                    </div>
-                    <div>
-                      <b>{c.constancias}</b>
-                      <span>Constancias</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2.5">
-                      <Medidor valor={c.finalizacion} nivel={nivel} className="flex-1" />
-                      <span className="tut-nivel w-10 text-right text-[12px]" data-nivel={nivel}>
-                        {c.finalizacion === null ? "—" : `${c.finalizacion}%`}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Finalización</p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </PanelTutor>
-      )}
     </div>
   );
 }

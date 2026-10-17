@@ -6,6 +6,7 @@ import { requireTutorOrAdmin, requireSurveyAccess } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { registrarAuditoria } from "@/lib/audit";
 import { generarCodigoEncuesta, generarSlug } from "@/lib/encuestas/consultas";
+import { CODIGO_SIAU } from "@/lib/encuestas/metrics";
 import { admiteClave, esTipoDeOpcion, leerConfig, type ConfigPregunta } from "@/lib/encuestas/tipos";
 import type { SurveyAudience, SurveyQuestionType } from "@prisma/client";
 
@@ -52,13 +53,25 @@ export async function crearEncuestaAction(_prev: EstadoAccion, formData: FormDat
   // Trazabilidad: la encuesta puede colgar de una capacitación concreta
   // (que define su plan, para que no queden en contradicción) o solo del
   // plan, cuando mide la satisfacción del plan completo.
+  // El tutor (un área del plan) solo crea la encuesta de SATISFACCIÓN de una
+  // de sus capacitaciones: siempre adscrita a ella y nunca desde la SIAU.
+  const esTutor = sesion.user.role === "TUTOR";
+  if (esTutor && !trainingActivityId) return { error: "Elige la capacitación de tu área cuya satisfacción quieres medir." };
+  if (esTutor && desdePlantilla) {
+    const plantilla = await prisma.survey.findUnique({ where: { id: desdePlantilla }, select: { code: true, isTemplate: true } });
+    if (!plantilla?.isTemplate || plantilla.code.startsWith(CODIGO_SIAU)) return { error: "Esa plantilla no está disponible para las capacitaciones." };
+  }
+
   let trainingPlanId: string | null = null;
   if (trainingActivityId) {
     const actividad = await prisma.trainingActivity.findUnique({
       where: { id: trainingActivityId },
-      select: { planId: true },
+      select: { planId: true, area: { select: { tutorId: true } }, plan: { select: { tutorId: true } } },
     });
     if (!actividad) return { error: "La capacitación elegida no existe." };
+    if (esTutor && actividad.area?.tutorId !== sesion.user.id && actividad.plan.tutorId !== sesion.user.id) {
+      return { error: "Solo puedes crear encuestas para las capacitaciones de tu área." };
+    }
     trainingPlanId = actividad.planId;
   } else if (planElegido) {
     const plan = await prisma.trainingPlan.findUnique({ where: { id: planElegido }, select: { id: true } });

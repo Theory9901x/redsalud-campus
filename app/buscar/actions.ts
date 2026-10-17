@@ -35,13 +35,15 @@ const SECCIONES: Record<string, { titulo: string; detalle: string; href: string 
     { titulo: "Bitácora", detalle: "Trazabilidad de cambios", href: "/admin/bitacora" },
     { titulo: "Configuración", detalle: "Datos de la institución", href: "/admin/configuracion" },
   ],
+  // El tutor es un área del Plan Institucional de Capacitaciones: sin
+  // cursos, catálogo ni constancias.
   TUTOR: [
-    { titulo: "Panel", detalle: "Resumen de tus cursos", href: "/tutor" },
-    { titulo: "Mis cursos", detalle: "Contenido que dictas", href: "/tutor/cursos" },
-    { titulo: "Planes de capacitación", detalle: "Programación", href: "/tutor/planes-capacitacion" },
-    { titulo: "Inscritos y progreso", detalle: "Quién avanza y quién no", href: "/tutor/inscritos" },
-    { titulo: "Constancias", detalle: "Emitidas en tus cursos", href: "/tutor/certificados" },
-    { titulo: "Catálogo institucional", detalle: "Todos los cursos", href: "/cursos" },
+    { titulo: "Centro de mando", detalle: "Las capacitaciones de tu área", href: "/tutor" },
+    { titulo: "Planes de capacitación", detalle: "Programación del área", href: "/tutor/planes-capacitacion" },
+    { titulo: "En vivo", detalle: "Jornadas en curso", href: "/tutor/planes-capacitacion/en-vivo" },
+    { titulo: "Evaluaciones en vivo", detalle: "Presaber y postsaber", href: "/tutor/mis-encuestas" },
+    { titulo: "Encuestas", detalle: "Satisfacción de tus capacitaciones", href: "/encuestas" },
+    { titulo: "Participantes", detalle: "Asistencia y evaluaciones por capacitación", href: "/tutor/inscritos" },
   ],
   STUDENT: [
     { titulo: "Dashboard", detalle: "Tu resumen", href: "/inicio" },
@@ -82,16 +84,16 @@ export async function buscarGlobal(consulta: string): Promise<ResultadoBusqueda[
   // una lista vacía y le enseña al usuario qué hay sin tener que adivinar.
   if (q.length < 2) return secciones;
 
-  const cursos = await prisma.course.findMany({
+  // El tutor no gestiona cursos: su espacio es el plan de su área.
+  const cursos = esTutor ? [] : await prisma.course.findMany({
     where: {
       title: { contains: q, mode: "insensitive" },
-      // Un admin ve todo; un tutor, además de lo publicado, sus propios
-      // borradores —no los de otros—; un estudiante, solo lo publicado.
+      // La evaluación interna de una capacitación del plan nunca es un curso.
+      esContenedorCapacitacion: false,
+      // Un admin ve todo; un estudiante, solo lo publicado.
       ...(esAdmin
         ? {}
-        : esTutor
-          ? { OR: [{ status: "PUBLISHED" }, { tutorId: session.user.id }] }
-          : // El estudiante no busca contenido del PLAN aquí: ese vive en
+        : // El estudiante no busca contenido del PLAN aquí: ese vive en
             // "Mis capacitaciones" y se abre desde su cronograma.
             { status: "PUBLISHED", trainingActivities: { none: {} } }),
     },
@@ -125,7 +127,7 @@ export async function buscarGlobal(consulta: string): Promise<ResultadoBusqueda[
       titulo: c.title,
       detalle: c.status === "PUBLISHED" ? "Curso publicado" : "Curso en borrador",
       // Un gestor va a editarlo; un estudiante, a verlo.
-      href: esAdmin ? `/admin/cursos/${c.id}` : esTutor ? `/tutor/cursos/${c.id}` : `/cursos/${c.slug}`,
+      href: esAdmin ? `/admin/cursos/${c.id}` : `/cursos/${c.slug}`,
       grupo: "Cursos" as const,
     })),
     ...personas.map((p) => ({

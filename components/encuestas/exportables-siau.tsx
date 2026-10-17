@@ -137,12 +137,12 @@ export function ExportablesSiau({
       alcance: "Histórico completo · sin filtros",
     },
     {
-      href: `/api/encuestas/${slug}/csv`,
+      href: `/api/encuestas/${slug}/csv?formato=xlsx`,
       Icono: Sheet,
-      formato: "csv",
+      formato: "xlsx",
       titulo: "Base de respuestas",
       para: "Soporte documental",
-      detalle: "Una fila por respuesta completa y una columna por pregunta, con fecha, canal y puntaje. Se abre en Excel.",
+      detalle: "Una fila por respuesta completa y una columna por pregunta, con fecha, canal y puntaje, en Excel.",
       alcance: "Histórico completo · sin filtros",
     },
     {

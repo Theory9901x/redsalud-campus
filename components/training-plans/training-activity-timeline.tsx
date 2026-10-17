@@ -204,7 +204,7 @@ export function TrainingActivityTimeline({
             <p className="text-xs text-muted-foreground">
               {grupo.items.length} {grupo.items.length === 1 ? "capacitación" : "capacitaciones"}
               {" · "}
-              {[conContenido > 0 && `${conContenido} con curso`, porAsistencia > 0 && `${porAsistencia} por asistencia`].filter(Boolean).join(" · ")}
+              {[conContenido > 0 && `${conContenido} con evaluación presaber / postsaber`, porAsistencia > 0 && `${porAsistencia} solo por asistencia`].filter(Boolean).join(" · ")}
             </p>
             </div>
             <span className="grupo-linea" aria-hidden="true" />
@@ -264,18 +264,11 @@ export function TrainingActivityTimeline({
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {activity.course ? (
-                        <>
-                          Curso:{" "}
-                          <Link href={`/cursos/${activity.course.slug}`} target="_blank" className="text-primary hover:underline">
-                            {activity.course.title}
-                          </Link>
-                        </>
-                      ) : activity.type === "EXTERNAL_EVENT" ? (
-                        TRAINING_ACTIVITY_TYPE_LABELS.EXTERNAL_EVENT
-                      ) : (
-                        "Sin curso (no aplica) · adherencia por asistencia"
-                      )}
+                      {activity.course
+                        ? "Evaluación presaber / postsaber"
+                        : activity.type === "EXTERNAL_EVENT"
+                          ? TRAINING_ACTIVITY_TYPE_LABELS.EXTERNAL_EVENT
+                          : "Sin evaluación · se mide por asistencia"}
                       {" · "}
                       {COURSE_AUDIENCE_LABELS[activity.targetAudience]}
                       {activity.responsibleLabel && (

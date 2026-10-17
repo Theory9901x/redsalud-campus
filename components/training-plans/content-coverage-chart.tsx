@@ -18,7 +18,7 @@ export function ContentCoverageChart({ conContenido, sinContenido }: { conConten
   }
 
   const datos = [
-    { key: "conContenido", label: "Con contenido", value: conContenido },
+    { key: "conContenido", label: "Con evaluación", value: conContenido },
     { key: "sinContenido", label: "Sin contenido todavía", value: sinContenido },
   ].filter((d) => d.value > 0);
 

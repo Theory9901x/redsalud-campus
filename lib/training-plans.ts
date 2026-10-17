@@ -9,6 +9,7 @@ import {
 } from "@/lib/presaber-postsaber";
 import type { Prisma, Role, CourseAudience, TrainingActivityStatus, AttendanceSource, PlanKind } from "@prisma/client";
 import { veComoAdmin } from "@/lib/roles";
+import { actividadesConEvaluacion } from "@/lib/evaluacion-capacitacion";
 
 /**
  * ADMIN ve todos los planes. Un TUTOR ve los que responde y, además, aquellos
@@ -145,10 +146,7 @@ export async function getStudentPlansOverview(userId: string) {
   const courseIds = [
     ...new Set(planes.flatMap((p) => p.activities.map((a) => a.courseId).filter((x): x is string => !!x))),
   ];
-  const [progresoPorCurso, ciclo] = await Promise.all([
-    getStudentCourseProgress(courseIds, userId),
-    getStudentCycleInfo(courseIds, userId),
-  ]);
+  const ciclo = await getStudentCycleInfo(courseIds, userId);
 
   const ahora = new Date();
 
@@ -164,13 +162,15 @@ export async function getStudentPlansOverview(userId: string) {
     const avances: number[] = [];
 
     for (const a of aplicables) {
-      const avance = a.courseId ? progresoPorCurso.get(a.courseId) : undefined;
-      if (!avance) continue;
-      conContenido += 1;
-      if (avance.enrollment) avances.push(avance.enrollment.progressPercentage);
-      if (avance.enrollment?.status === "COMPLETED") completadas += 1;
-
+      // Con evaluación presaber/postsaber: el avance es el ciclo de ESTA
+      // persona (presaber = mitad, postsaber = la otra mitad). Ya no es "el
+      // avance en un curso": las capacitaciones no son cursos.
       const cyc = a.courseId ? ciclo.get(a.courseId) : undefined;
+      if (!cyc) continue;
+      conContenido += 1;
+      if (cyc.presaberDone || cyc.postsaberDone) avances.push((cyc.presaberDone ? 50 : 0) + (cyc.postsaberDone ? 50 : 0));
+      if (cyc.presaberDone && cyc.postsaberDone) completadas += 1;
+
       const automatico = cicloEsAutomatico(a);
       const congelado = a.status === "CLOSED";
       if (!congelado && cyc) {
@@ -239,7 +239,7 @@ export async function getStudentCourseProgress(courseIds: string[], userId: stri
   const [courses, enrollments] = await Promise.all([
     prisma.course.findMany({
       where: { id: { in: courseIds }, status: "PUBLISHED" },
-      select: { id: true, title: true, slug: true, shortDescription: true, imageUrl: true, durationHours: true },
+      select: { id: true, title: true, slug: true, shortDescription: true, imageUrl: true, durationHours: true, esContenedorCapacitacion: true },
     }),
     prisma.enrollment.findMany({
       where: { userId, courseId: { in: courseIds }, status: { not: "CANCELLED" } },
@@ -306,7 +306,7 @@ export async function getTrainingActivityDetail(activityId: string) {
   return prisma.trainingActivity.findUnique({
     where: { id: activityId },
     include: {
-      plan: { select: { id: true, title: true, year: true, tutorId: true, targetDepartment: true, kind: true } },
+      plan: { select: { id: true, title: true, year: true, tutorId: true, targetDepartment: true, kind: true, status: true } },
       course: { select: { id: true, title: true, slug: true } },
       area: { select: { id: true, name: true } },
       responsibleUser: { select: { id: true, fullName: true, username: true } },
@@ -336,13 +336,15 @@ export async function getAreaCoverageBreakdown() {
       name: true,
       tutorId: true,
       tutor: { select: { fullName: true } },
-      activities: { select: { courseId: true } },
+      activities: { select: { id: true, courseId: true } },
     },
   });
+  // "Con contenido" = con evaluación presaber/postsaber configurada.
+  const conEvaluacion = await actividadesConEvaluacion(areas.flatMap((a) => a.activities));
 
   return areas.map((a) => {
     const total = a.activities.length;
-    const conContenido = a.activities.filter((x) => x.courseId).length;
+    const conContenido = a.activities.filter((x) => conEvaluacion.has(x.id)).length;
     return {
       id: a.id,
       name: a.name,
@@ -977,6 +979,8 @@ export async function getExternosDeActividad(activityId: string, filtro?: Filtro
       fullName: true,
       company: true,
       createdAt: true,
+      sessionId: true,
+      session: { select: { startsAt: true } },
       attempts: { select: { moment: true, score: true, passed: true } },
     },
   });
@@ -984,6 +988,8 @@ export async function getExternosDeActividad(activityId: string, filtro?: Filtro
     fullName: e.fullName,
     company: e.company,
     registradoEl: e.createdAt,
+    sessionId: e.sessionId,
+    jornadaInicio: e.session?.startsAt ?? null,
     presaber: e.attempts.find((a) => a.moment === "PRESABER")?.score ?? null,
     postsaber: e.attempts.find((a) => a.moment === "POSTSABER")?.score ?? null,
   }));
@@ -1305,7 +1311,7 @@ export type MotivoBloqueoEntrada =
   | "SIN_EVALUACION";
 
 export type ResultadoEntrada =
-  | { ok: true; courseId: string; quizId: string | null }
+  | { ok: true; courseId: string; quizId: string | null; esContenedor: boolean }
   | { ok: false; motivo: MotivoBloqueoEntrada; planId: string };
 
 /** El aviso del cronograma que le corresponde a cada bloqueo (AVISOS_QR). */
@@ -1341,6 +1347,7 @@ export async function ensureEnrollment(userId: string, activityId: string): Prom
       targetAudience: true,
       audienceCommitteePlanId: true,
       plan: { select: { id: true, targetDepartment: true, kind: true } },
+      course: { select: { esContenedorCapacitacion: true } },
     },
   });
   if (!actividad) return { ok: false, motivo: "SIN_CONTENIDO", planId: "" };
@@ -1379,7 +1386,7 @@ export async function ensureEnrollment(userId: string, activityId: string): Prom
     select: { id: true },
   });
 
-  return { ok: true, courseId: actividad.courseId, quizId: quiz?.id ?? null };
+  return { ok: true, courseId: actividad.courseId, quizId: quiz?.id ?? null, esContenedor: !!actividad.course?.esContenedorCapacitacion };
 }
 
 export type ActivityLiveMetrics = {
@@ -1496,7 +1503,6 @@ export async function getPlanAttendanceOverview(planId: string, areaIds: string[
   const actividades = await prisma.trainingActivity.findMany({
     where: {
       planId,
-      courseId: { not: null },
       ...(areaIds ? { areaId: { in: areaIds } } : {}),
     },
     orderBy: [{ area: { sortOrder: "asc" } }, { title: "asc" }],
@@ -1509,8 +1515,8 @@ export async function getPlanAttendanceOverview(planId: string, areaIds: string[
   });
   if (actividades.length === 0) return [];
 
-  const courseIds = actividades.map((a) => a.courseId!);
-  const [asistencias, quizzes, inscripciones] = await Promise.all([
+  const courseIds = actividades.map((a) => a.courseId).filter((x): x is string => !!x);
+  const [asistencias, quizzes] = await Promise.all([
     prisma.trainingAttendance.findMany({
       where: { activityId: { in: actividades.map((a) => a.id) }, attended: true },
       select: {
@@ -1524,10 +1530,6 @@ export async function getPlanAttendanceOverview(planId: string, areaIds: string[
       where: { courseId: { in: courseIds }, moduleId: null },
       select: { id: true, courseId: true },
     }),
-    prisma.enrollment.findMany({
-      where: { courseId: { in: courseIds }, status: "COMPLETED" },
-      select: { courseId: true, userId: true },
-    }),
   ]);
 
   const quizPorCurso = new Map(quizzes.map((q) => [q.courseId!, q.id]));
@@ -1538,20 +1540,13 @@ export async function getPlanAttendanceOverview(planId: string, areaIds: string[
       finishedAt: { not: null },
       score: { not: null },
     },
-    select: { quizId: true, moment: true, user: { select: { id: true, fullName: true, documentNumber: true } } },
+    select: { quizId: true, moment: true, passed: true, user: { select: { id: true, fullName: true, documentNumber: true } } },
   });
-  const completadosPorCurso = new Map<string, Set<string>>();
-  for (const e of inscripciones) {
-    const set = completadosPorCurso.get(e.courseId) ?? new Set<string>();
-    set.add(e.userId);
-    completadosPorCurso.set(e.courseId, set);
-  }
 
   return actividades.map((act) => {
-    const quizId = quizPorCurso.get(act.courseId!);
-    const suyos = intentos.filter((i) => i.quizId === quizId);
+    const quizId = act.courseId ? quizPorCurso.get(act.courseId) : undefined;
+    const suyos = quizId ? intentos.filter((i) => i.quizId === quizId) : [];
     const asistenciaSuya = asistencias.filter((x) => x.activityId === act.id);
-    const completados = completadosPorCurso.get(act.courseId!) ?? new Set<string>();
 
     // Una fila por persona: la unión de quien asistió, quien presentó algo y
     // quien completó -alguien puede aparecer por cualquiera de las tres vías-.
@@ -1575,10 +1570,11 @@ export async function getPlanAttendanceOverview(planId: string, areaIds: string[
     for (const i of suyos) {
       const p = asegurar(i.user);
       if (i.moment === "PRESABER") p.presaber = true;
-      else p.postsaber = true;
-    }
-    for (const [userId, p] of personas) {
-      if (completados.has(userId)) p.completado = true;
+      else {
+        p.postsaber = true;
+        // "Completado" = aprobó el postsaber (ya no "completó el curso").
+        if (i.passed) p.completado = true;
+      }
     }
 
     return {
@@ -1758,9 +1754,11 @@ type ActivityForAdherence = {
 };
 
 /**
- * Con curso vinculado: adherencia automática desde Enrollment.status = COMPLETED
- * (sin captura manual). Sin curso (evento externo o "No aplica"): adherencia
- * desde el registro manual de asistencia (TrainingAttendance).
+ * Adherencia de una capacitación = ASISTENCIA sobre la población objetivo
+ * (personas distintas con asistencia registrada: conexión a la sala, enlace
+ * de la jornada, evaluación o registro manual). Ya no depende de "completar
+ * un curso": las capacitaciones no son cursos. El conocimiento (presaber →
+ * postsaber) es la métrica del ciclo, aparte (PIC-ADH-01).
  */
 export async function getActivityAdherence(activity: ActivityForAdherence, filtro?: FiltroTrimestre | null): Promise<ActivityAdherence> {
   // Dos CONTEOS, no dos listas. Antes se traían los ids de toda la audiencia
@@ -1773,25 +1771,16 @@ export async function getActivityAdherence(activity: ActivityForAdherence, filtr
 
   const [totalExpected, adherentCount] = await Promise.all([
     contarAudiencia(activity),
-    activity.courseId
-      ? prisma.enrollment.count({
-          where: {
-            courseId: activity.courseId,
-            status: "COMPLETED",
-            user: audiencia,
-            ...(filtro ? { completedAt: enVentana(filtro) } : {}),
-          },
-        })
-      : personasConAsistencia({
-          activityId: activity.id,
-          attended: true,
-          user: audiencia,
-          ...(filtro ? { trimestre: filtro.trimestre } : {}),
-        }),
+    personasConAsistencia({
+      activityId: activity.id,
+      attended: true,
+      user: audiencia,
+      ...(filtro ? { trimestre: filtro.trimestre } : {}),
+    }),
   ]);
 
   return {
-    source: activity.courseId ? "AUTOMATIC" : "MANUAL",
+    source: "AUTOMATIC",
     totalExpected,
     adherentCount,
     percentage: totalExpected > 0 ? Math.round((adherentCount / totalExpected) * 100) : 0,

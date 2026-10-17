@@ -9,9 +9,8 @@ import {
   Video,
   CalendarClock,
   ClipboardCheck,
-  GraduationCap,
-  BookOpen,
-  Award,
+  Radio,
+  CalendarRange,
   ArrowRight,
   ExternalLink,
   Loader2,
@@ -385,10 +384,9 @@ export function CronogramaEstudiante({
         <section className="barra-modulo space-y-2.5 p-5">
           <h2 className="mono-label">Accesos rápidos</h2>
           {[
-            { icono: BookOpen, titulo: "Mis cursos", detalle: "Continúa donde ibas", href: "/mi-aula", chip: "bg-primary/15 text-primary" },
-            { icono: Award, titulo: "Mis constancias", detalle: "Descárgalas en PDF", href: "/mis-certificados", chip: "bg-[var(--accent)]/15 text-[var(--accent)]" },
             { icono: ClipboardCheck, titulo: "Evaluaciones", detalle: "Presaber, postsaber y encuestas", href: "/evaluaciones", chip: "bg-success/15 text-success" },
-            { icono: GraduationCap, titulo: "Catálogo", detalle: "Explora la oferta", href: "/cursos", chip: "bg-warning/15 text-warning-foreground" },
+            { icono: Radio, titulo: "Capacitaciones en vivo", detalle: "Salas abiertas ahora", href: "/mis-capacitaciones/en-vivo", chip: "bg-primary/15 text-primary" },
+            { icono: CalendarRange, titulo: "Mis capacitaciones", detalle: "Todos mis planes", href: "/mis-capacitaciones", chip: "bg-warning/15 text-warning-foreground" },
           ].map((a) => (
             <Link key={a.href} href={a.href} className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-accent/10">
               <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", a.chip)}>

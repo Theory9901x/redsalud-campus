@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { targetAudienceUserWhere, rangoTrimestre, type ActivityReportData } from "@/lib/training-plans";
 import type { CourseAudience } from "@prisma/client";
+import { actividadesConEvaluacion } from "@/lib/evaluacion-capacitacion";
 
 export { semaforo, UMBRAL_VERDE, UMBRAL_AMARILLO, type Semaforo } from "@/lib/semaforo-indicadores";
 
@@ -23,7 +24,8 @@ export { semaforo, UMBRAL_VERDE, UMBRAL_AMARILLO, type Semaforo } from "@/lib/se
  *    cerrarla, el dato queda DEFINITIVO (se lee del informe congelado del
  *    acta). El consolidado es el promedio de la variación por persona de
  *    todas las capacitaciones medidas, con la misma fórmula de siempre.
- * 2. Cobertura de contenido: capacitación con curso montado (1) o sin él (0).
+ * 2. Cobertura de evaluación: capacitación con su evaluación presaber /
+ *    postsaber configurada -activa y con al menos una pregunta- (1) o sin ella (0).
  * 3. Asistencia efectiva: personas con asistencia registrada frente a la
  *    audiencia objetivo de la capacitación.
  *
@@ -228,12 +230,13 @@ export async function getPlanIndicators(planId: string, areaIds: string[] | null
   // congelados en un acta se leen en vivo.
   const cursosEnVivo = [...new Set(actividades.filter((a) => a.courseId && !a.reportSnapshot).map((a) => a.courseId!))];
 
-  const [conteosAudiencia, integrantes, asistencias, sesiones, quizzes] = await Promise.all([
+  const [conteosAudiencia, integrantes, asistencias, sesiones, quizzes, conEvaluacion] = await Promise.all([
     Promise.all(audiencias.map(async (a) => [a, await prisma.user.count({ where: targetAudienceUserWhere(plan.targetDepartment, a) })] as const)).then((xs) => new Map(xs)),
     comites.length ? prisma.committeeMember.findMany({ where: { planId: { in: comites } }, select: { planId: true, userId: true } }) : Promise.resolve([]),
     prisma.trainingAttendance.findMany({ where: { activityId: { in: ids }, attended: true }, select: { activityId: true, userId: true, trimestre: true } }),
     prisma.trainingSession.findMany({ where: { activityId: { in: ids } }, orderBy: { startsAt: "asc" }, select: { activityId: true, startsAt: true } }),
     cursosEnVivo.length ? prisma.quiz.findMany({ where: { courseId: { in: cursosEnVivo }, moduleId: null }, select: { id: true, courseId: true } }) : Promise.resolve([]),
+    actividadesConEvaluacion(actividades),
   ]);
 
   // Una evaluación final por curso (la primera, como findFirst en computeCycleResults).
@@ -310,7 +313,7 @@ export async function getPlanIndicators(planId: string, areaIds: string[] | null
       estado: a.closedAt ? "cerrada" : a.status === "OPEN" || a.enabledAt ? "abierta" : "borrador",
       cerradaEl: a.closedAt,
       jornada: primeraJornada.get(a.id) ?? null,
-      conContenido: a.courseId !== null,
+      conContenido: conEvaluacion.has(a.id),
       audiencia: a.audienceCommitteePlanId ? (tamanoComite.get(a.audienceCommitteePlanId) ?? 0) : (conteosAudiencia.get(a.targetAudience) ?? 0),
       asistentes: asistentesAnual.get(a.id)?.size ?? 0,
       asistentesPorTrimestre,

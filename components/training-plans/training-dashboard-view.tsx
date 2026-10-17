@@ -89,7 +89,7 @@ export function TrainingDashboardView({
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <LayoutGrid className="h-4 w-4 text-primary" />
-            <h2 className="font-display text-lg font-bold text-foreground">Cobertura de contenido por área</h2>
+            <h2 className="font-display text-lg font-bold text-foreground">Cobertura de evaluación por área</h2>
           </div>
           <p className="text-sm text-muted-foreground">
             De las {totalCapacitaciones} capacitaciones del plan institucional, {totalConContenido} ya tienen
@@ -103,7 +103,7 @@ export function TrainingDashboardView({
                   <TableRow>
                     <TableHead>Área</TableHead>
                     <TableHead>Responsable</TableHead>
-                    <TableHead className="text-center">Con contenido</TableHead>
+                    <TableHead className="text-center">Con evaluación</TableHead>
                     <TableHead className="text-center">Cobertura</TableHead>
                     <TableHead className="text-center">Informe</TableHead>
                   </TableRow>

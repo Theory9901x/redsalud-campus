@@ -23,6 +23,7 @@ import { ThemeToggle } from "@/components/brand/theme-toggle";
 import { getMomentoParaUsuario } from "@/lib/training-plans";
 import { firmarTokenJitsi } from "@/lib/jitsi";
 import { etiquetaJornada } from "@/components/training-plans/labels";
+import { jornadaDeEnlace } from "@/lib/jornadas";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 
 /**
@@ -35,10 +36,18 @@ import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
  * ingreso a la sala registra su ASISTENCIA automáticamente, igual que
  * ocurre al abrir la evaluación.
  */
-export default async function SalaVirtualPage({ params }: { params: Promise<{ activityId: string }> }) {
+export default async function SalaVirtualPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ activityId: string }>;
+  searchParams: Promise<{ s?: string }>;
+}) {
   const { activityId } = await params;
+  const { s: tokenJornada } = await searchParams;
   const session = await auth();
-  if (!session?.user) redirect(`/login?callbackUrl=${encodeURIComponent(`/sala/${activityId}`)}`);
+  const aqui = `/sala/${activityId}${tokenJornada ? `?s=${encodeURIComponent(tokenJornada)}` : ""}`;
+  if (!session?.user) redirect(`/login?callbackUrl=${encodeURIComponent(aqui)}`);
 
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
@@ -56,15 +65,14 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
       responsibleUser: { select: { fullName: true } },
       area: { select: { name: true, tutorId: true, tutor: { select: { fullName: true } } } },
       plan: { select: { id: true, title: true, tutorId: true, kind: true } },
-      sessions: {
-        where: { status: { not: "CLOSED" } },
-        orderBy: { startsAt: "asc" },
-        take: 1,
-        select: { startsAt: true, endsAt: true },
-      },
     },
   });
   if (!actividad) notFound();
+
+  // La jornada de esta sala: la del enlace (?s=) o, con el enlace general, la
+  // vigente. Cada conexión queda en ella.
+  const { jornada } = await jornadaDeEnlace(activityId, tokenJornada);
+  const sufijoJornada = jornada ? `?s=${jornada.tokenPublico}` : "";
 
   const profesional =
     actividad.area?.tutor?.fullName ?? actividad.responsibleUser?.fullName ?? actividad.responsibleLabel ?? "—";
@@ -111,7 +119,7 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
   const jitsiDomain = process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si";
   // En una REUNIÓN ABIERTA cualquiera inicia la sala; en el resto, solo el anfitrión.
   const tokenSala = esPersonal || actividad.plan.kind === "REUNION" ? await firmarTokenJitsi(session.user.name ?? "Participante") : null;
-  const proximaJornada = actividad.sessions[0] ? etiquetaJornada(actividad.sessions[0]) : null;
+  const proximaJornada = jornada ? etiquetaJornada(jornada) : null;
   const nombre = session.user.name ?? "Participante";
   const inicialesUsuario = nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
 
@@ -177,6 +185,7 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
               domain={jitsiDomain}
               roomName={`RedSaludTeForma-${actividad.id}`}
               activityId={actividad.id}
+              sessionId={jornada?.id ?? null}
               displayName={nombre}
               subject={actividad.title}
               jwt={tokenSala}
@@ -197,7 +206,7 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
                       <span className="text-xs font-semibold text-success">Presentado</span>
                     ) : m.activo ? (
                       <AbrirEvaluacionPopup
-                        href={`/c/${actividad.id}/${m.etiqueta === "Presaber" ? "presaber" : "postsaber"}`}
+                        href={`/c/${actividad.id}/${m.etiqueta === "Presaber" ? "presaber" : "postsaber"}${sufijoJornada}`}
                         etiqueta={`Presentar ${m.etiqueta.toLowerCase()}`}
                       />
                     ) : (
@@ -206,7 +215,7 @@ export default async function SalaVirtualPage({ params }: { params: Promise<{ ac
                   </div>
                 ))}
                 <p className="text-[11px] leading-snug text-muted-foreground">
-                  Se abre en una ventana aparte: no te saca de la llamada.
+                  Se abre en una ventana aparte: no te saca de la sala.
                 </p>
               </section>
             )}

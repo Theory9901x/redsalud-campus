@@ -43,8 +43,22 @@ export async function requireCourseAccess(courseId: string) {
   const session = await requireTutorOrAdmin();
   if (veComoAdmin(session.user.role)) return session;
 
-  const course = await prisma.course.findUnique({ where: { id: courseId }, select: { tutorId: true } });
-  if (!course || course.tutorId !== session.user.id) {
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: {
+      tutorId: true,
+      // La evaluación de una capacitación del plan la edita quien gestiona
+      // la capacitación (tutor del área o responsable del plan), aunque el
+      // contenedor o el curso vinculado figure a nombre de otra persona.
+      trainingActivities: {
+        select: { area: { select: { tutorId: true } }, plan: { select: { tutorId: true } } },
+      },
+    },
+  });
+  const gestionaCapacitacion = course?.trainingActivities.some(
+    (a) => a.area?.tutorId === session.user.id || a.plan.tutorId === session.user.id
+  );
+  if (!course || (course.tutorId !== session.user.id && !gestionaCapacitacion)) {
     throw new Error("No autorizado: no eres el tutor de este curso.");
   }
   return session;

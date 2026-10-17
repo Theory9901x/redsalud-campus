@@ -249,6 +249,13 @@ model Course {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   publishedAt      DateTime?
+  /**
+   * Contenedor INTERNO de la evaluación presaber/postsaber de una
+   * capacitación del plan: el área arma su evaluación desde la capacitación
+   * y por debajo se reutiliza el motor de cuestionarios. Nunca se lista como
+   * curso (catálogo, «Mis cursos», búsqueda, listados de admin y tutor).
+   */
+  esContenedorCapacitacion Boolean @default(false)
 
   modules      CourseModule[]
   quizzes      Quiz[]
@@ -258,6 +265,7 @@ model Course {
 
   @@index([status, courseType])
   @@index([status, targetAudience])
+  @@index([esContenedorCapacitacion])
   // Todo el panel del tutor filtra sus cursos por tutorId.
   @@index([tutorId])
 }
@@ -474,9 +482,18 @@ model QuizAttempt {
    */
   moment EvaluationMoment?
 
+  /**
+   * Jornada por cuyo enlace se presentó el intento (/c/...?s=<token> o el
+   * enlace general resuelto a la jornada vigente). Null en intentos previos
+   * a los accesos por jornada y en cualquier evaluación fuera del plan.
+   */
+  sessionId String?
+  session   TrainingSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
   answers QuizAnswer[]
 
   @@unique([userId, quizId, attemptNumber])
+  @@index([sessionId])
 }
 
 enum EvaluationMoment {
@@ -1025,6 +1042,10 @@ model TrainingSession {
   cerradaEl      DateTime?
 
   asistencias AsistenciaSesion[]
+  /** Lo que se registró por los enlaces de ESTA jornada. */
+  externalParticipants ExternalParticipant[]
+  callConnections      CallConnectionLog[]
+  quizAttempts         QuizAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1071,11 +1092,15 @@ model ExternalParticipant {
   fullName   String
   company    String
   createdAt  DateTime         @default(now())
+  /** Jornada por cuyo enlace se registró. Null = registro previo a los accesos por jornada. */
+  sessionId  String?
+  session    TrainingSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
   attempts ExternalAttempt[]
   callConnections CallConnectionLog[]
 
   @@index([activityId])
+  @@index([sessionId])
 }
 
 /**
@@ -1171,9 +1196,13 @@ model CallConnectionLog {
   leftAt          DateTime
   durationSeconds Int
   createdAt       DateTime @default(now())
+  /** Jornada de la sala a la que se conectó (enlace de la jornada o jornada vigente). */
+  sessionId String?
+  session   TrainingSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
   @@index([activityId])
   @@index([userId])
+  @@index([sessionId])
 }
 
 // ------------------------------------------------------------------

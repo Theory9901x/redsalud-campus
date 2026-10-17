@@ -24,9 +24,16 @@ async function questionQuizInfo(questionId: string) {
   return { quizId: question.quizId, courseId: question.quiz.courseId };
 }
 
-function revalidateCourse(courseId: string) {
+async function revalidateCourse(courseId: string) {
   revalidatePath(`/admin/cursos/${courseId}`);
   revalidatePath(`/tutor/cursos/${courseId}`);
+  // La evaluación de una capacitación del plan se edita desde la propia
+  // capacitación: su página también debe refrescarse.
+  const actividades = await prisma.trainingActivity.findMany({ where: { courseId }, select: { id: true, planId: true } });
+  for (const a of actividades) {
+    revalidatePath(`/admin/planes-capacitacion/${a.planId}/actividades/${a.id}`);
+    revalidatePath(`/tutor/planes-capacitacion/${a.planId}/actividades/${a.id}`);
+  }
 }
 
 function parseQuizForm(formData: FormData) {
@@ -84,7 +91,7 @@ export async function createQuizAction(
     },
   });
 
-  revalidateCourse(courseId);
+  await revalidateCourse(courseId);
   return { error: null, success: true };
 }
 
@@ -131,7 +138,7 @@ export async function updateQuizAction(
     },
   });
 
-  revalidateCourse(courseId);
+  await revalidateCourse(courseId);
   return { error: null, success: true };
 }
 
@@ -140,7 +147,7 @@ export async function deleteQuizAction(quizId: string) {
   await requireCourseAccess(courseId);
 
   await prisma.quiz.delete({ where: { id: quizId } });
-  revalidateCourse(courseId);
+  await revalidateCourse(courseId);
 }
 
 function parseQuestionForm(formData: FormData) {
@@ -232,7 +239,7 @@ export async function createQuestionAction(
     },
   });
 
-  revalidateCourse(courseId);
+  await revalidateCourse(courseId);
   return { error: null, success: true };
 }
 
@@ -282,7 +289,7 @@ export async function updateQuestionAction(
     }),
   ]);
 
-  revalidateCourse(courseId);
+  await revalidateCourse(courseId);
   return { error: null, success: true };
 }
 
@@ -291,7 +298,7 @@ export async function deleteQuestionAction(questionId: string) {
   await requireCourseAccess(courseId);
 
   await prisma.question.delete({ where: { id: questionId } });
-  revalidateCourse(courseId);
+  await revalidateCourse(courseId);
 }
 
 export async function reorderQuestionsAction(quizId: string, orderedQuestionIds: string[]) {
@@ -312,5 +319,5 @@ export async function reorderQuestionsAction(quizId: string, orderedQuestionIds:
     ...orderedQuestionIds.map((id, index) => prisma.question.update({ where: { id }, data: { sortOrder: index } })),
   ]);
 
-  revalidateCourse(courseId);
+  await revalidateCourse(courseId);
 }

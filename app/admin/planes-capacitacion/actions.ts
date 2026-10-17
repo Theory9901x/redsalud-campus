@@ -9,7 +9,6 @@ import { saveTrainingPlanDocument, saveTrainingActivityDocument, fichaDesdeFormu
 import { trainingPlanSchema, trainingActivitySchema, trainingSessionSchema } from "@/lib/validations/training-plan";
 import { estadoPresaber, estadoPostsaber, puedeHabilitarPostsaber } from "@/lib/presaber-postsaber";
 import {
-  getLinkableCoursesForUser,
   freezeActivityReport,
   getFrozenActivityReport,
   sincronizarVisibilidadDelPlan,
@@ -18,6 +17,23 @@ import {
 import { Prisma } from "@prisma/client";
 import { parseTrainingScheduleFile, type ImportRowError } from "@/lib/training-plan-import";
 import { registrarAuditoria } from "@/lib/audit";
+import { crearEvaluacionCapacitacion } from "@/lib/evaluacion-capacitacion";
+import { TIPOS_POR_CONTEXTO } from "@/lib/documentos";
+
+/**
+ * Ficha del documento de un plan o una capacitación: un plan de
+ * capacitaciones no levanta acta ni resolución (son de comités y reuniones),
+ * así que esos tipos se rechazan aquí, no solo en el desplegable.
+ */
+function fichaDeCapacitacion(
+  formData: FormData
+): { error: string } | { ficha: ReturnType<typeof fichaDesdeFormulario> } {
+  const ficha = fichaDesdeFormulario(formData);
+  if (ficha.kind && !(TIPOS_POR_CONTEXTO.capacitacion as readonly string[]).includes(ficha.kind)) {
+    return { error: "Ese tipo de documento no aplica a una capacitación (las actas y resoluciones son de los comités)." };
+  }
+  return { ficha };
+}
 
 export type TrainingPlanFormState = { error: string | null };
 export type TrainingActivityFormState = { error: string | null };
@@ -96,8 +112,8 @@ export async function createTrainingActivityAction(
 
   const parsed = trainingActivitySchema.safeParse({
     title: formData.get("title"),
-    type: formData.get("type"),
-    courseId: formData.get("courseId") ?? "",
+    type: formData.get("type") ?? "COURSE",
+    courseId: "",
     startDate: formData.get("startDate"),
     endDate: formData.get("endDate") ?? "",
     targetAudience: formData.get("targetAudience"),
@@ -114,7 +130,9 @@ export async function createTrainingActivityAction(
       planId,
       title: data.title,
       type: data.type,
-      courseId: data.type === "COURSE" ? data.courseId || null : null,
+      // Las capacitaciones no se amarran a cursos: su evaluación presaber /
+      // postsaber se arma dentro de la capacitación.
+      courseId: null,
       startDate: new Date(data.startDate),
       endDate: data.endDate ? new Date(data.endDate) : null,
       targetAudience: data.targetAudience,
@@ -192,7 +210,9 @@ export async function uploadTrainingPlanDocumentAction(
     return { error: "Selecciona un archivo." };
   }
 
-  await saveTrainingPlanDocument(file, planId, session.user.id, fichaDesdeFormulario(formData));
+  const leida = fichaDeCapacitacion(formData);
+  if ("error" in leida) return { error: leida.error };
+  await saveTrainingPlanDocument(file, planId, session.user.id, leida.ficha);
 
   revalidatePath(`${basePath}/${planId}`);
   return { error: null };
@@ -215,7 +235,9 @@ export async function uploadTrainingActivityDocumentAction(
     return { error: "Selecciona un archivo." };
   }
 
-  await saveTrainingActivityDocument(file, activityId, session.user.id, fichaDesdeFormulario(formData));
+  const leida = fichaDeCapacitacion(formData);
+  if ("error" in leida) return { error: leida.error };
+  await saveTrainingActivityDocument(file, activityId, session.user.id, leida.ficha);
 
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
   return { error: null };
@@ -414,64 +436,33 @@ export async function reopenActivityAction(
   return { error: null };
 }
 
-export type LinkCourseState = { error: string | null };
+export type DeleteState = { error: string | null };
 
 /**
- * Engancha una capacitación del plan al curso que la desarrolla.
- *
- * Es lo que convierte "sin contenido todavía" en una capacitación completa:
- * hasta este punto un área podía subir su presentación y armar su evaluación
- * como curso, pero no había forma de decirle a SU línea del PIC cuál de sus
- * cursos era. Solo yo podía hacerlo, por script.
- *
- * No exige que el curso esté vacío de asignación: un curso ya puede tener
- * estudiantes inscritos por otra vía y de todas formas ser "el" contenido de
- * esta línea del plan.
+ * Crea la evaluación presaber/postsaber de la capacitación, para que el área
+ * la arme aquí mismo (preguntas, mínimo para aprobar, intentos). Sin cursos:
+ * por debajo vive en un contenedor interno que nunca se lista como curso.
  */
-export async function linkCourseToActivityAction(
-  basePath: string,
-  planId: string,
-  activityId: string,
-  _prevState: LinkCourseState,
-  formData: FormData
-): Promise<LinkCourseState> {
-  const { session } = await requireTrainingActivityAccess(activityId);
-
-  const cerrado = await errorSiPlanCerrado(planId);
-  if (cerrado) return { error: cerrado };
-
-  const courseId = String(formData.get("courseId") ?? "").trim();
-  if (!courseId) return { error: "Elige un curso." };
-
-  const opciones = await getLinkableCoursesForUser(session.user.role, session.user.id);
-  if (!opciones.some((c) => c.id === courseId)) {
-    return { error: "Ese curso no está disponible para vincular." };
-  }
-
-  await prisma.trainingActivity.update({ where: { id: activityId }, data: { courseId } });
-
-  revalidatePath(`${basePath}/${planId}`);
-  revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
-  return { error: null };
-}
-
-/** Deshace el enganche: la capacitación vuelve a "sin contenido todavía". */
-export async function unlinkCourseFromActivityAction(
+export async function crearEvaluacionCapacitacionAction(
   basePath: string,
   planId: string,
   activityId: string
 ): Promise<{ error: string | null }> {
-  await requireTrainingActivityAccess(activityId);
-
+  const { session } = await requireTrainingActivityAccess(activityId);
   const cerrado = await errorSiPlanCerrado(planId);
   if (cerrado) return { error: cerrado };
-  await prisma.trainingActivity.update({ where: { id: activityId }, data: { courseId: null } });
-  revalidatePath(`${basePath}/${planId}`);
+
+  await crearEvaluacionCapacitacion(activityId, session.user.id);
+  await registrarAuditoria({
+    userId: session.user.id,
+    action: "CREATE",
+    entity: "TrainingActivity",
+    entityId: activityId,
+    description: "Creó la evaluación presaber/postsaber de la capacitación.",
+  });
   revalidatePath(`${basePath}/${planId}/actividades/${activityId}`);
   return { error: null };
 }
-
-export type DeleteState = { error: string | null };
 
 /**
  * Edita un plan de capacitación. Solo cambia sus datos: las actividades,
@@ -708,7 +699,7 @@ export async function openPresaberAction(
   if (cerrado) return { error: cerrado };
   const actividad = await actividadConVentanas(activityId);
 
-  if (!actividad.courseId) return { error: "Esta capacitación no tiene curso vinculado todavía." };
+  if (!actividad.courseId) return { error: "Esta capacitación todavía no tiene evaluación presaber / postsaber." };
   if (estadoPresaber(actividad) !== "NO_CONFIGURADO") {
     return { error: "El presaber ya se habilitó antes." };
   }

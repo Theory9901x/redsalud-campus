@@ -109,6 +109,7 @@ export function SalaVirtual({
   subject,
   jwt,
   externalParticipantId,
+  sessionId,
   esPresentador = false,
   grabacion,
   panelDerecho,
@@ -120,6 +121,8 @@ export function SalaVirtual({
   subject: string;
   jwt?: string | null;
   externalParticipantId?: string;
+  /** Jornada de esta sala: cada tramo de conexión queda en ella (y su asistencia). */
+  sessionId?: string | null;
   /** Quien expone (tutor/admin): se marca en la lista de participantes. */
   esPresentador?: boolean;
   /** Control de grabación (solo personal), se pinta en su tarjeta al pie. */
@@ -197,6 +200,7 @@ export function SalaVirtual({
         leftAt: new Date().toISOString(),
         displayName,
         ...(externalParticipantId ? { externalParticipantId } : {}),
+        ...(sessionId ? { sessionId } : {}),
       });
       navigator.sendBeacon?.(
         `/api/planes-capacitacion/actividades/${activityId}/conexion`,
@@ -406,7 +410,7 @@ export function SalaVirtual({
       api?.dispose();
       apiRef.current = null;
     };
-  }, [domain, roomName, activityId, displayName, subject, jwt, externalParticipantId, reintento, registrar]);
+  }, [domain, roomName, activityId, displayName, subject, jwt, externalParticipantId, sessionId, reintento, registrar]);
 
   // Comandos desde fuera (barra lateral de la sala).
   useEffect(() => {
@@ -479,7 +483,7 @@ export function SalaVirtual({
           )}
           {error && (
             <div className="absolute inset-0 z-10 flex items-center justify-center px-6 text-center text-sm text-white/80">
-              No se pudo cargar el módulo de videollamada. Verifica tu conexión e intenta de nuevo.
+              No se pudo cargar la sala. Verifica tu conexión e intenta de nuevo.
             </div>
           )}
           {salio && (

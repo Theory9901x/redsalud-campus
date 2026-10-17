@@ -44,7 +44,7 @@ export default async function EditarUsuarioPage({
           include: { course: { select: { title: true } } },
         })
       : Promise.resolve([]),
-    isStudent ? prisma.course.findMany({ orderBy: { title: "asc" }, select: { id: true, title: true } }) : Promise.resolve([]),
+    isStudent ? prisma.course.findMany({ where: { esContenedorCapacitacion: false }, orderBy: { title: "asc" }, select: { id: true, title: true } }) : Promise.resolve([]),
   ]);
 
   const boundAction = updateUserAction.bind(null, user.id);

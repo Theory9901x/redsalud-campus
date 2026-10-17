@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { momentoParaPersona, cicloEsAutomatico } from "@/lib/presaber-postsaber";
+import { jornadaCerrada } from "@/lib/jornadas";
 
 /**
  * Acciones del ACCESO EXTERNO (/invitado): gente de fuera de la entidad que
@@ -20,6 +21,8 @@ export type RegistroInvitadoState = { error: string | null };
 
 export async function registrarInvitadoAction(
   activityId: string,
+  /** Jornada del enlace (o la vigente): el invitado queda registrado en ella. */
+  sessionId: string | null,
   _prev: RegistroInvitadoState,
   formData: FormData
 ): Promise<RegistroInvitadoState> {
@@ -40,8 +43,20 @@ export async function registrarInvitadoAction(
   if (!actividad) return { error: "Esta capacitación no existe." };
   if (actividad.status === "CLOSED") return { error: "Esta jornada ya fue cerrada por el área." };
 
+  let jornadaId: string | null = null;
+  if (sessionId) {
+    const jornada = await prisma.trainingSession.findUnique({
+      where: { id: sessionId },
+      select: { id: true, activityId: true, status: true, fase: true },
+    });
+    if (jornada && jornada.activityId === activityId) {
+      if (jornadaCerrada(jornada)) return { error: "Esta jornada ya fue cerrada por el área." };
+      jornadaId = jornada.id;
+    }
+  }
+
   const participante = await prisma.externalParticipant.create({
-    data: { activityId, fullName, company },
+    data: { activityId, fullName, company, sessionId: jornadaId },
     select: { id: true },
   });
 
@@ -64,7 +79,14 @@ export async function getParticipanteDeCookie(activityId: string) {
   if (!id) return null;
   const participante = await prisma.externalParticipant.findUnique({
     where: { id },
-    select: { id: true, fullName: true, company: true, activityId: true, attempts: { select: { moment: true, score: true, passed: true } } },
+    select: {
+      id: true,
+      fullName: true,
+      company: true,
+      activityId: true,
+      sessionId: true,
+      attempts: { select: { moment: true, score: true, passed: true } },
+    },
   });
   if (!participante || participante.activityId !== activityId) return null;
   return participante;

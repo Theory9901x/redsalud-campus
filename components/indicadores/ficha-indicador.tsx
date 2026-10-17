@@ -558,7 +558,7 @@ function fuenteCorta(codigo: CodigoIndicador) {
     case "PIC-ADH-01":
       return "mejora pre → post de quienes completaron el ciclo en esa jornada (preliminar mientras siga abierta; definitiva al cerrarla, desde el acta)";
     case "PIC-COB-02":
-      return "tiene curso vinculado (con contenido) o no";
+      return "tiene evaluación presaber / postsaber configurada o no";
     case "PIC-ASI-03":
       return "personas con asistencia registrada sobre la audiencia objetivo de esa capacitación";
   }

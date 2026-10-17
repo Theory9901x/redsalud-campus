@@ -102,11 +102,11 @@ export function ActivityLifecycleActions({
       <AlertDialog>
         <AlertDialogTrigger data-escritura render={<Button type="button" size="sm" variant="destructive" className="gap-1.5" />}>
           <Lock className="h-4 w-4" />
-          Cerrar jornada
+          Cerrar capacitación
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Cerrar esta jornada?</AlertDialogTitle>
+            <AlertDialogTitle>¿Cerrar esta capacitación?</AlertDialogTitle>
             <AlertDialogDescription>
               Desde este momento la participación queda congelada: los estudiantes ya no podrán responder la
               evaluación ni se admitirán más registros de asistencia. Los indicadores quedan definitivos, el informe
@@ -120,7 +120,7 @@ export function ActivityLifecycleActions({
               onClick={() => onClose()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Cerrar jornada
+              Cerrar capacitación
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -133,20 +133,20 @@ export function ActivityLifecycleActions({
     <div className="flex flex-col items-end gap-2" data-escritura>
       <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         <Lock className="h-3.5 w-3.5" />
-        Jornada cerrada{closedAtLabel ? ` · ${closedAtLabel}` : ""}
+        Capacitación cerrada{closedAtLabel ? ` · ${closedAtLabel}` : ""}
       </span>
 
       {puedeReabrir && (
         <AlertDialog>
           <AlertDialogTrigger data-escritura render={<Button type="button" size="sm" variant="outline" className="gap-1.5" disabled={reabriendo} />}>
             {reabriendo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Unlock className="h-3.5 w-3.5" />}
-            Reabrir jornada
+            Reabrir capacitación
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>¿Reabrir esta jornada?</AlertDialogTitle>
+              <AlertDialogTitle>¿Reabrir esta capacitación?</AlertDialogTitle>
               <AlertDialogDescription>
-                La jornada vuelve a admitir participación: los estudiantes podrán presentar la evaluación y se
+                La capacitación vuelve a admitir participación: los estudiantes podrán presentar la evaluación y se
                 seguirá registrando asistencia. El informe que quedó guardado al cerrarla se descarta y las cifras
                 vuelven a calcularse en vivo; lo que decía queda anotado en la bitácora. Cuando termines, vuelve a
                 cerrarla para que el informe quede definitivo.
@@ -159,11 +159,11 @@ export function ActivityLifecycleActions({
                   iniciarReapertura(async () => {
                     const r = await onReopen();
                     if (r.error) toast.error(r.error);
-                    else toast.success("Jornada reabierta. Recuerda cerrarla de nuevo al terminar.");
+                    else toast.success("Capacitación reabierta. Recuerda cerrarla de nuevo al terminar.");
                   })
                 }
               >
-                Reabrir jornada
+                Reabrir capacitación
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

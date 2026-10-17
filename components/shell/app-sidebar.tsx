@@ -17,6 +17,8 @@ export type ItemNav = {
   match?: string;
   /** Fragmento que debe coincidir, para distinguir dos enlaces a la misma ruta. */
   hash?: string;
+  /** Subrutas que tienen su propia entrada en el menú: con ellas, esta no se marca. */
+  excluir?: string[];
 };
 
 export type GrupoNav = { label: string | null; items: ItemNav[] };
@@ -65,6 +67,7 @@ export function AppSidebar({
   const estaActivo = (item: ItemNav) => {
     const ruta = item.match ?? item.href;
     if (item.hash !== undefined) return pathname === ruta && hash === item.hash;
+    if (item.excluir?.some((r) => pathname.startsWith(r))) return false;
     return item.exact ? pathname === ruta : pathname.startsWith(ruta);
   };
 

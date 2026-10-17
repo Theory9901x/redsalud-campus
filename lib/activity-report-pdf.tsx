@@ -73,7 +73,7 @@ const prom = (xs: (number | null)[]) => {
 };
 const ROMANO = ["I", "II", "III", "IV"];
 const MODALIDAD: Record<string, string> = { VIRTUAL: "Virtual", PRESENCIAL: "Presencial", MIXTA: "Mixta" };
-const TIPO: Record<string, string> = { COURSE: "Curso", EXTERNAL_EVENT: "Evento / jornada", WORKSHOP: "Taller", OTHER: "Otra" };
+const TIPO: Record<string, string> = { COURSE: "Capacitación", EXTERNAL_EVENT: "Evento / jornada", WORKSHOP: "Taller", OTHER: "Otra" };
 
 /* ───────────────────────── piezas gráficas ───────────────────────── */
 
@@ -270,12 +270,13 @@ function FranjaMetricas({ data, ctx }: { data: ActivityReportData; ctx: Contexto
   const perm = ctx?.permanencia ?? [];
   const totalMin = perm.reduce((a, p) => a + p.minutos, 0);
   const celdas: [string, string][] = [
-    [ctx?.adherencia.automatica ? "Completó curso" : "Adherencia", ctx ? `${ctx.adherencia.porcentaje}%` : "—"],
+    ["Asistencia", ctx ? `${ctx.cobertura.porcentaje}%` : "—"],
     ["Asistentes", String(ind.asistentes)],
     ["En la sala", String(perm.length)],
     ["Tiempo", totalMin >= 60 ? `${Math.floor(totalMin / 60)}h ${totalMin % 60}m` : `${totalMin}m`],
     ["Jornadas", String(ctx?.jornadas.length ?? 0)],
     ["Pre y post", String(ind.completaronCiclo)],
+    ["Aprobó post", ind.evaluadosPost ? `${pctDe(ind.adherentesPost, ind.evaluadosPost)}%` : "—"],
     ["Mejoraron", ind.completaronCiclo ? `${pctDe(ind.mejoraron, ind.completaronCiclo)}%` : "—"],
     ["Externos", String(data.externos.length)],
     ["Satisfacción", (() => { const f = prom(data.encuestas.map((e) => e.satisfaccion?.favorable ?? null)); return f === null ? "—" : `${f}%`; })()],
@@ -307,10 +308,11 @@ function LecturaRapida({ data, ctx }: { data: ActivityReportData; ctx: ContextoI
       texto: `Asistió el ${cob.porcentaje}% de ${cob.audienciaComite ? "los integrantes" : "la población objetivo"} (${cob.asistieron} de ${cob.convocados}).${cob.otrosAsistieron > 0 ? ` Además asistieron ${cob.otrosAsistieron} ${cob.otrosAsistieron === 1 ? "persona" : "personas"} que no hacen parte de esa población: figuran en la lista de asistencia, pero no cuentan para la cobertura ni la adherencia.` : ""}`,
     });
   }
-  if (ctx?.adherencia.automatica && ctx.adherencia.esperados > 0) {
+  if (ctx && ctx.jornadas.length > 1) {
+    const conRegistro = ctx.jornadas.filter((j) => j.asistentes + j.invitados > 0).length;
     hallazgos.push({
-      tono: ctx.adherencia.porcentaje >= 70 ? "bien" : ctx.adherencia.porcentaje >= 40 ? "neutro" : "alerta",
-      texto: `Adherencia del curso vinculado: ${ctx.adherencia.porcentaje}% (${ctx.adherencia.adherentes} de ${ctx.adherencia.esperados} completaron el curso). En capacitaciones con curso, la adherencia se mide por curso completado, no por asistencia.`,
+      tono: "neutro",
+      texto: `Se dictó en ${ctx.jornadas.length} jornadas${conRegistro < ctx.jornadas.length ? ` (${conRegistro} con registros por sus enlaces)` : ""}; el detalle de asistentes, presaber, postsaber e invitados de cada una está en «Jornadas dictadas».`,
     });
   }
   if (perm.length > 0) {
@@ -484,10 +486,7 @@ function PlanDeAccion({ data, ctx }: { data: ActivityReportData; ctx: ContextoIn
   const sinPost = ind.evaluadosPre - ind.completaronCiclo;
   if (sinPost > 0) acciones.push(`Gestionar el postsaber de ${sinPost} ${sinPost === 1 ? "persona que presentó" : "personas que presentaron"} el presaber y aún no cierran su ciclo (el postsaber ya está habilitado para ellas).`);
   if (ind.evaluadosPost > 0 && ind.adherentesPost < ind.evaluadosPost) {
-    acciones.push(`Acompañar a ${ind.evaluadosPost - ind.adherentesPost} ${ind.evaluadosPost - ind.adherentesPost === 1 ? "persona que no alcanzó" : "personas que no alcanzaron"} el mínimo del ${data.passingScore}% en el postsaber: tienen intentos disponibles en el curso.`);
-  }
-  if (ctx?.adherencia.automatica && ctx.adherencia.esperados > 0 && ctx.adherencia.porcentaje < 85) {
-    acciones.push(`Llevar la adherencia del curso del ${ctx.adherencia.porcentaje}% al 85% (meta institucional): faltan ${Math.max(0, Math.ceil(ctx.adherencia.esperados * 0.85) - ctx.adherencia.adherentes)} personas por completar el curso.`);
+    acciones.push(`Acompañar a ${ind.evaluadosPost - ind.adherentesPost} ${ind.evaluadosPost - ind.adherentesPost === 1 ? "persona que no alcanzó" : "personas que no alcanzaron"} el mínimo del ${data.passingScore}% en el postsaber: pueden volver a presentarlo si les quedan intentos.`);
   }
   const perm = ctx?.permanencia ?? [];
   const cortos = perm.filter((p) => p.minutos < 10).length;
@@ -638,7 +637,11 @@ function Jornadas({ ctx }: { ctx: ContextoInforme | null }) {
           <Text style={[s.th, { flex: 1.4 }]}>Fecha</Text>
           <Text style={[s.th, { flex: 1.4 }]}>Horario</Text>
           <Text style={[s.th, { flex: 1 }]}>Modalidad</Text>
-          <Text style={[s.th, { flex: 1 }]}>Estado</Text>
+          <Text style={[s.th, { flex: 0.9 }]}>Estado</Text>
+          <Text style={[s.th, { flex: 0.8 }]}>Asist.</Text>
+          <Text style={[s.th, { flex: 0.7 }]}>Pre</Text>
+          <Text style={[s.th, { flex: 0.7 }]}>Post</Text>
+          <Text style={[s.th, { flex: 0.8 }]}>Invit.</Text>
         </View>
         {ctx.jornadas.map((j, i) => (
           <View key={i} style={[s.tr, i % 2 ? s.trCebra : {}]} wrap={false}>
@@ -648,10 +651,17 @@ function Jornadas({ ctx }: { ctx: ContextoInforme | null }) {
               {j.fin ? ` – ${FMT_HORA.format(j.fin)}` : ""}
             </Text>
             <Text style={[s.td, { flex: 1 }]}>{MOD[j.modalidad] ?? j.modalidad}</Text>
-            <Text style={[s.td, { flex: 1 }]}>{EST[j.estado] ?? j.estado}</Text>
+            <Text style={[s.td, { flex: 0.9 }]}>{EST[j.estado] ?? j.estado}</Text>
+            <Text style={[s.td, s.mono, { flex: 0.8 }]}>{j.asistentes}</Text>
+            <Text style={[s.td, s.mono, { flex: 0.7 }]}>{j.presaber}</Text>
+            <Text style={[s.td, s.mono, { flex: 0.7 }]}>{j.postsaber}</Text>
+            <Text style={[s.td, s.mono, { flex: 0.8 }]}>{j.invitados}</Text>
           </View>
         ))}
       </View>
+      <Text style={{ fontSize: 7, color: C.muted, marginTop: 5 }}>
+        Cada jornada tiene sus propios enlaces y QR: asistentes, presaber, postsaber e invitados son lo registrado por los enlaces de esa jornada.
+      </Text>
     </Seccion>
   );
 }
@@ -680,7 +690,7 @@ function Externos({ data, ctx }: { data: ActivityReportData; ctx: ContextoInform
         ))}
       </View>
       <Text style={{ fontSize: 7, color: C.muted, marginTop: 5 }}>
-        Población externa registrada por el enlace público de invitados: no se mezcla con la adherencia del personal propio.
+        Población externa registrada por el enlace de invitados de cada jornada: no se mezcla con la adherencia del personal propio.
       </Text>
     </Seccion>
   );
@@ -689,7 +699,7 @@ function Externos({ data, ctx }: { data: ActivityReportData; ctx: ContextoInform
 function EncuestasYEvidencias({ data, evidencia }: { data: ActivityReportData; evidencia?: EvidenciaJornada }) {
   const docs = evidencia?.documentos ?? [];
   return (
-    <Seccion n="10" titulo="Encuestas y evidencias">
+    <Seccion n="10" titulo="Anexos · encuestas y documentos">
       {data.encuestas.length > 0 && (
         <View style={{ gap: 8, marginBottom: 10 }}>
           {data.encuestas.map((e, i) => (

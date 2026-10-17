@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { publicUploadDiskPath } from "@/lib/storage";
+import { getConteosPorJornada } from "@/lib/jornadas";
 import { audienciaDeActividad, getActivityAdherence, getActivityAttendanceCounts, type FiltroTrimestre } from "@/lib/training-plans";
 
 /**
@@ -9,8 +10,9 @@ import { audienciaDeActividad, getActivityAdherence, getActivityAttendanceCounts
  * hace falta para LEER la jornada, no solo para listarla:
  *
  *  - la cobertura contra la población objetivo (convocados / integrantes),
- *  - la permanencia REAL de cada persona en la llamada (suma de sus tramos),
- *  - las jornadas dictadas y el logo institucional para el membrete.
+ *  - la permanencia REAL de cada persona en la sala (suma de sus tramos),
+ *  - las jornadas dictadas, con lo registrado por los enlaces de cada una,
+ *    y el logo institucional para el membrete.
  *
  * Se lee en vivo al generar el PDF (igual que las evidencias): la grabación
  * y las conexiones pueden completarse después del cierre.
@@ -23,7 +25,17 @@ export type ContextoInforme = {
   cobertura: { convocados: number; asistieron: number; porcentaje: number; otrosAsistieron: number; audienciaComite: boolean };
   adherencia: { porcentaje: number; adherentes: number; esperados: number; automatica: boolean };
   permanencia: PermanenciaPersona[];
-  jornadas: { inicio: Date; fin: Date | null; modalidad: string; estado: string }[];
+  /** Cada jornada con lo registrado por SUS enlaces (asistentes, presaber, postsaber, invitados). */
+  jornadas: {
+    inicio: Date;
+    fin: Date | null;
+    modalidad: string;
+    estado: string;
+    asistentes: number;
+    presaber: number;
+    postsaber: number;
+    invitados: number;
+  }[];
   trimestres: number[];
   modalidad: string;
 };
@@ -42,12 +54,13 @@ export async function getContextoInforme(activityId: string, filtro?: FiltroTrim
       sessions: {
         where: filtro ? { startsAt: { gte: filtro.desde, lt: filtro.hasta } } : {},
         orderBy: { startsAt: "asc" },
-        select: { startsAt: true, endsAt: true, modality: true, status: true },
+        select: { id: true, startsAt: true, endsAt: true, modality: true, status: true },
       },
     },
   });
   if (!actividad) return null;
   const delTrimestre = filtro ? { trimestre: filtro.trimestre } : {};
+  const conteosJornada = await getConteosPorJornada(actividad.sessions.map((s) => s.id));
 
   const [adherencia, conteos, asistieronDeLaPoblacion, asistieronTodos, grupos, ajustes] = await Promise.all([
     getActivityAdherence(actividad, filtro),
@@ -107,10 +120,24 @@ export async function getContextoInforme(activityId: string, filtro?: FiltroTrim
       porcentaje: adherencia.percentage,
       adherentes: adherencia.adherentCount,
       esperados: adherencia.totalExpected,
-      automatica: adherencia.source === "AUTOMATIC",
+      // La adherencia es asistencia sobre la población objetivo; ya no existe
+      // la variante "por curso completado".
+      automatica: false,
     },
     permanencia: [...porPersona.values()].sort((a, b) => b.minutos - a.minutos),
-    jornadas: actividad.sessions.map((s) => ({ inicio: s.startsAt, fin: s.endsAt, modalidad: s.modality, estado: s.status })),
+    jornadas: actividad.sessions.map((s) => {
+      const c = conteosJornada.get(s.id);
+      return {
+        inicio: s.startsAt,
+        fin: s.endsAt,
+        modalidad: s.modality,
+        estado: s.status,
+        asistentes: c?.asistentes ?? 0,
+        presaber: c?.presaber ?? 0,
+        postsaber: c?.postsaber ?? 0,
+        invitados: c?.invitados ?? 0,
+      };
+    }),
     trimestres: filtro ? [filtro.trimestre] : actividad.quarters,
     modalidad: actividad.modality,
   };

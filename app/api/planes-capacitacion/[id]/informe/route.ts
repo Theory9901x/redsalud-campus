@@ -6,7 +6,6 @@ import {
   buildAdherenceBarData,
   buildActivityStatusCounts,
   getActivityAttendanceRoster,
-  getActivityCompletionRoster,
 } from "@/lib/training-plans";
 import { getSurveysForPlan, buildSurveyResponseRate } from "@/lib/surveys";
 import { renderTrainingPlanReportPdf, type TrainingPlanReportSections } from "@/lib/training-plan-report-pdf";
@@ -95,10 +94,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           targetAudience: activity.targetAudience,
           plan: { targetDepartment: plan.targetDepartment },
         };
-        if (activity.courseId) {
-          const roster = await getActivityCompletionRoster({ ...activityForRoster, courseId: activity.courseId });
-          return roster.filter((u) => !u.completed).map((u) => ({ activityTitle: activity.title, fullName: u.fullName, documentNumber: u.documentNumber }));
-        }
+        // No adherente = no asistió (la adherencia es asistencia, no "completar un curso").
         const roster = await getActivityAttendanceRoster(activityForRoster);
         return roster.filter((u) => !u.attended).map((u) => ({ activityTitle: activity.title, fullName: u.fullName, documentNumber: u.documentNumber }));
       })

@@ -42,7 +42,7 @@ export default async function InscripcionesPage({
   }
 
   const [courses, municipios, enrollments, totalEnrollments] = await Promise.all([
-    prisma.course.findMany({ orderBy: { title: "asc" }, select: { id: true, title: true } }),
+    prisma.course.findMany({ where: { esContenedorCapacitacion: false }, orderBy: { title: "asc" }, select: { id: true, title: true } }),
     // Solo las opciones del filtro, nunca el padrón: 288 cuentas activas ya
     // no se cargan en esta página para pintar un checklist en el cliente.
     prisma.municipio.findMany({ orderBy: { nombre: "asc" }, select: { id: true, nombre: true } }),

@@ -43,11 +43,39 @@ export default async function AulaQuizPage({
   // manual (ventanas del área).
   const { gate, momento, automatico } = await getMomentoParaUsuario(quizId, session.user.id);
 
+  // En el ciclo, aprobado e intentos son POR MOMENTO: aprobar el presaber no
+  // le cierra a nadie el postsaber.
+  const delMomento =
+    gate && momento
+      ? await prisma.quizAttempt.findMany({
+          where: { quizId, userId: session.user.id, moment: momento },
+          select: { passed: true, score: true, finishedAt: true },
+        })
+      : null;
+  const terminadosMomento = delMomento?.filter((a) => a.finishedAt !== null) ?? [];
+  const resumenMomento = delMomento
+    ? {
+        passed: delMomento.some((a) => a.passed === true),
+        bestScore: terminadosMomento.length > 0 ? Math.max(...terminadosMomento.map((a) => a.score ?? 0)) : null,
+        attemptsRemaining: Math.max(0, quiz.maxAttempts - terminadosMomento.length),
+      }
+    : null;
+
+  // Evaluación de una capacitación del plan (contenedor interno, no un
+  // curso): se presenta sin el marco del aula y vuelve al plan.
+  const contenedor = data.course.esContenedorCapacitacion
+    ? await prisma.trainingActivity.findFirst({
+        where: { courseId },
+        select: { title: true, planId: true, area: { select: { name: true, tutor: { select: { fullName: true } } } } },
+      })
+    : null;
+
   // El desbloqueo secuencial NO aplica mientras corre una ventana del ciclo:
   // el presaber se presenta ANTES de ver el contenido -medir lo que se sabe
   // llegando es su única razón de ser-, así que exigir las lecciones vistas
   // lo haría imposible por definición. El resto de reglas (evaluación
   // inactiva, plazo vencido) siguen intactas.
+  const volverPlan = contenedor ? { href: `/mis-capacitaciones/${contenedor.planId}`, etiqueta: "Volver a mis capacitaciones" } : undefined;
   const motivo = !quizSummary.unlocked && momento === null
     ? ("bloqueada" as const)
     : !quiz.isActive
@@ -55,7 +83,7 @@ export default async function AulaQuizPage({
       : vencida
         ? ("vencida" as const)
         : null;
-  if (motivo) return <EvaluacionNoDisponible motivo={motivo} courseId={courseId} />;
+  if (motivo) return <EvaluacionNoDisponible motivo={motivo} courseId={courseId} volver={volverPlan} />;
 
   // Los avisos de "sin habilitar / bloqueado" solo existen en modo MANUAL:
   // en automático siempre hay un momento (o la jornada está cerrada, donde
@@ -65,11 +93,11 @@ export default async function AulaQuizPage({
     if (!momento) {
       if (estadoPresaber(gate) === "NO_CONFIGURADO") {
         // Nunca se ha abierto nada todavía.
-        return <EvaluacionNoDisponible motivo="sin-habilitar" courseId={courseId} />;
+        return <EvaluacionNoDisponible motivo="sin-habilitar" courseId={courseId} volver={volverPlan} />;
       }
       if (estadoPostsaber(gate) === "NO_CONFIGURADO") {
         // Presaber ya presentado y cerrado; postsaber aún no se habilita.
-        return <EvaluacionNoDisponible motivo="postsaber-bloqueado" courseId={courseId} />;
+        return <EvaluacionNoDisponible motivo="postsaber-bloqueado" courseId={courseId} volver={volverPlan} />;
       }
       // Postsaber también cerrado: el ciclo completo ya se presentó. No se
       // bloquea la página -se puede seguir viendo el resultado, como
@@ -112,7 +140,11 @@ export default async function AulaQuizPage({
   // Lo que llevaba respondido sin enviar. Si hay borrador, el intento en curso
   // YA está contado en attemptsUsed: sumarle uno anunciaría un intento de más.
   const borrador = await getBorradorIntento(quizId, session.user.id);
-  const nextAttemptNumber = borrador.length > 0 ? quizSummary.attemptsUsed : quizSummary.attemptsUsed + 1;
+  const nextAttemptNumber = resumenMomento
+    ? terminadosMomento.length + 1
+    : borrador.length > 0
+      ? quizSummary.attemptsUsed
+      : quizSummary.attemptsUsed + 1;
   const seed = `${quizId}:${session.user.id}:${nextAttemptNumber}`;
   let questions = rawQuestions;
   if (quiz.randomizeQuestions) {
@@ -139,22 +171,23 @@ export default async function AulaQuizPage({
       <QuizTakingForm
         courseId={courseId}
         quizId={quizId}
-        title={quiz.title}
-        description={quiz.description}
+        title={contenedor ? contenedor.title : quiz.title}
+        description={contenedor ? (quiz.description ?? "Evaluación de la capacitación: la misma se presenta antes (presaber) y después (postsaber).") : quiz.description}
         passingScore={quiz.passingScore}
         timeLimitMinutes={quiz.timeLimitMinutes}
         attemptNumber={nextAttemptNumber}
         maxAttempts={quiz.maxAttempts}
         questions={questions}
-        initiallyPassed={quizSummary.passed}
-        initialBestScore={quizSummary.bestScore}
-        initialAttemptsRemaining={quizSummary.attemptsRemaining}
+        initiallyPassed={resumenMomento?.passed ?? quizSummary.passed}
+        initialBestScore={resumenMomento ? resumenMomento.bestScore : quizSummary.bestScore}
+        initialAttemptsRemaining={resumenMomento?.attemptsRemaining ?? quizSummary.attemptsRemaining}
         notaRepaso={notaRepaso}
         borrador={borrador}
-        area={data.course.category?.name ?? null}
-        tutor={data.course.tutor.fullName}
+        area={contenedor ? (contenedor.area?.name ?? null) : (data.course.category?.name ?? null)}
+        tutor={contenedor?.area?.tutor?.fullName ?? data.course.tutor.fullName}
         fechaLimite={data.enrollment.deadlineAt}
         momento={momento}
+        volver={contenedor ? { href: `/mis-capacitaciones/${contenedor.planId}`, etiqueta: "Volver a mis capacitaciones" } : undefined}
       />
     </div>
   );

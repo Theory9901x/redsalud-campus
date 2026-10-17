@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 import { getMomentoParaUsuario } from "@/lib/training-plans";
+import { jornadaDelIntento } from "@/lib/jornadas";
 
 /**
  * Guardado del borrador de una evaluación.
@@ -99,14 +100,8 @@ export async function POST(request: Request) {
     // que es el único punto donde hace falta.
     const previos = await prisma.quizAttempt.findMany({
       where: { userId, quizId },
-      select: { passed: true },
+      select: { passed: true, moment: true },
     });
-    if (previos.some((a) => a.passed)) {
-      return NextResponse.json({ ok: false, error: "Ya aprobaste este cuestionario." }, { status: 409 });
-    }
-    if (previos.length >= quiz.maxAttempts) {
-      return NextResponse.json({ ok: false, error: "No te quedan intentos disponibles." }, { status: 409 });
-    }
 
     // Ciclo presaber/postsaber: si esta evaluación es una de las dos ventanas,
     // no se abre un intento nuevo fuera de ellas -alguien no debería poder
@@ -117,9 +112,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Esta evaluación no está habilitada en este momento." }, { status: 403 });
     }
 
+    // En el ciclo, aprobado e intentos se cuentan POR MOMENTO: aprobar el
+    // presaber no puede cerrarle a nadie el postsaber.
+    const delMomento = momento ? previos.filter((a) => a.moment === momento) : previos;
+    if (delMomento.some((a) => a.passed)) {
+      return NextResponse.json({ ok: false, error: "Ya aprobaste este cuestionario." }, { status: 409 });
+    }
+    if (delMomento.length >= quiz.maxAttempts) {
+      return NextResponse.json({ ok: false, error: "No te quedan intentos disponibles." }, { status: 409 });
+    }
+
+    // Jornada por cuyo enlace entró la persona (cookie del enlace /c/...).
+    const sessionId = gateVentana ? await jornadaDelIntento(gateVentana.id) : null;
+
     try {
       const nuevo = await prisma.quizAttempt.create({
-        data: { userId, quizId, enrollmentId: enrollment.id, attemptNumber: previos.length + 1, moment: momento },
+        data: { userId, quizId, enrollmentId: enrollment.id, attemptNumber: previos.length + 1, moment: momento, sessionId },
         select: { id: true },
       });
       attemptId = nuevo.id;

@@ -30,5 +30,8 @@ export async function entrarACapacitacionAction(planId: string, activityId: stri
   // que usa el resto del módulo: si tiene un momento vigente va a presentarlo,
   // y si no, al aula a estudiar el contenido.
   const momento = entrada.quizId ? (await getMomentoParaUsuario(entrada.quizId, session.user.id)).momento : null;
-  redirect(momento && entrada.quizId ? `/aula/${entrada.courseId}/quiz/${entrada.quizId}` : `/aula/${entrada.courseId}`);
+  if (momento && entrada.quizId) redirect(`/aula/${entrada.courseId}/quiz/${entrada.quizId}`);
+  // La evaluación de una capacitación no tiene "aula" que ver: sin momento
+  // vigente se queda en el plan.
+  redirect(entrada.esContenedor ? `/mis-capacitaciones/${planId}` : `/aula/${entrada.courseId}`);
 }

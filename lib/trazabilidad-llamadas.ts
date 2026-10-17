@@ -5,8 +5,9 @@ import { veComoAdmin } from "@/lib/roles";
 import type { CourseAudience, PlanKind, Prisma } from "@prisma/client";
 
 /**
- * TRAZABILIDAD DE CONEXIÓN A VIDEOLLAMADA, organizada por ÁREA → CAPACITACIÓN
- * → TRIMESTRE, y no solo en totales generales.
+ * TRAZABILIDAD DE CONEXIÓN A LA SALA (capacitación en vivo), organizada por
+ * ÁREA → CAPACITACIÓN → TRIMESTRE, y no solo en totales generales. En la
+ * interfaz se habla siempre de «sala» o «capacitación en vivo».
  *
  * Lee únicamente CallConnectionLog (tramos ya escritos al salir de la sala;
  * ver lib/call-connections.ts, que no se toca). Todo se agrega en Postgres con
@@ -21,12 +22,15 @@ export type AlcanceTrazabilidad = {
   /** null = institucional (administración o responsable del plan). */
   areaIds: string[] | null;
   institucional: boolean;
+  /** Quién consulta (para el «generado por» de los exportables). */
+  usuario: { nombre: string };
 };
 
 /**
  * Mismo alcance que Indicadores: administración y responsable del plan ven
  * lo institucional; un tutor de área ve solo sus áreas. Lo usan la página
- * (admin y tutor) y el CSV, para que nadie exporte lo que no puede ver.
+ * (admin y tutor) y los exportables (Excel y el CSV heredado), para que
+ * nadie exporte lo que no puede ver.
  */
 export async function resolverAlcanceTrazabilidad(planId: string): Promise<AlcanceTrazabilidad | null> {
   const sesion = await requireTutorOrAdmin();
@@ -43,7 +47,12 @@ export async function resolverAlcanceTrazabilidad(planId: string): Promise<Alcan
     ? null
     : (await prisma.trainingArea.findMany({ where: { tutorId: sesion.user.id }, select: { id: true } })).map((a) => a.id);
 
-  return { plan: { id: plan.id, title: plan.title, year: plan.year, kind: plan.kind, targetDepartment: plan.targetDepartment }, areaIds, institucional };
+  return {
+    plan: { id: plan.id, title: plan.title, year: plan.year, kind: plan.kind, targetDepartment: plan.targetDepartment },
+    areaIds,
+    institucional,
+    usuario: { nombre: sesion.user.name ?? "Usuario de la plataforma" },
+  };
 }
 
 /** Trimestre pedido por URL: 1–4, o null = todo el año. */

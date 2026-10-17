@@ -9,6 +9,7 @@ import { getAulaQuiz } from "@/lib/aula";
 import { getMomentoParaUsuario } from "@/lib/training-plans";
 import { recalculateEnrollmentProgress } from "@/lib/lesson-progress";
 import { registrarAuditoria } from "@/lib/audit";
+import { jornadaDelIntento } from "@/lib/jornadas";
 
 
 export type QuizFeedbackItem = {
@@ -101,9 +102,24 @@ export async function submitQuizAttemptAction(
 
   const aulaQuiz = await getAulaQuiz(courseId, quizId, userId);
   if (!aulaQuiz) return { error: "Cuestionario no encontrado." };
-  if (!aulaQuiz.quizSummary.unlocked) return { error: "Este cuestionario todavía está bloqueado." };
-  if (aulaQuiz.quizSummary.passed) return { error: "Ya aprobaste este cuestionario." };
-  if (aulaQuiz.quizSummary.attemptsRemaining <= 0) {
+  // Ciclo presaber/postsaber: aprobado e intentos se cuentan POR MOMENTO.
+  // Antes contaban sobre toda la evaluación, y quien aprobaba el presaber
+  // quedaba con «Ya aprobaste» sin poder presentar el postsaber.
+  const ciclo = await getMomentoParaUsuario(quizId, userId);
+  const delMomento =
+    ciclo.gate && ciclo.momento
+      ? await prisma.quizAttempt.findMany({
+          where: { userId, quizId, moment: ciclo.momento },
+          select: { passed: true, finishedAt: true },
+        })
+      : null;
+  const aprobado = delMomento ? delMomento.some((a) => a.passed) : aulaQuiz.quizSummary.passed;
+  const sinIntentos = delMomento
+    ? delMomento.filter((a) => a.finishedAt !== null).length >= aulaQuiz.quizSummary.maxAttempts
+    : aulaQuiz.quizSummary.attemptsRemaining <= 0;
+  if (!aulaQuiz.quizSummary.unlocked && !ciclo.momento) return { error: "Este cuestionario todavía está bloqueado." };
+  if (aprobado) return { error: "Ya aprobaste este cuestionario." };
+  if (sinIntentos) {
     return { error: "No te quedan intentos disponibles para este cuestionario." };
   }
   const vencidaAlEnviar = venceEn(enrollment.deadlineAt);
@@ -135,9 +151,13 @@ export async function submitQuizAttemptAction(
 
   const attemptsSoFar = await prisma.quizAttempt.count({ where: { userId, quizId } });
   const attemptNumber = intentoAbierto?.attemptNumber ?? attemptsSoFar + 1;
-  if (attemptNumber > quiz.maxAttempts) {
+  // Número del intento dentro de su momento (ciclo) o de la evaluación.
+  const intentoDelMomento = delMomento ? delMomento.filter((a) => a.finishedAt !== null).length + 1 : attemptNumber;
+  if (intentoDelMomento > quiz.maxAttempts) {
     return { error: "No te quedan intentos disponibles para este cuestionario." };
   }
+  // Jornada por cuyo enlace entró la persona (cookie del enlace /c/...).
+  const sessionId = ciclo.gate ? await jornadaDelIntento(ciclo.gate.id) : null;
 
   let totalScore = 0;
   let maxScore = 0;
@@ -216,7 +236,7 @@ export async function submitQuizAttemptAction(
         // de sobrescribir un resultado ya calificado.
         const cerrado = await tx.quizAttempt.updateMany({
           where: { id: intentoAbierto.id, finishedAt: null },
-          data: { score: scorePercent, passed, finishedAt: new Date() },
+          data: { score: scorePercent, passed, finishedAt: new Date(), ...(sessionId ? { sessionId } : {}) },
         });
         if (cerrado.count === 0) throw new EnvioDuplicadoError();
         attemptId = intentoAbierto.id;
@@ -241,6 +261,7 @@ export async function submitQuizAttemptAction(
             passed,
             finishedAt: new Date(),
             moment: momento,
+            sessionId,
           },
         });
         attemptId = attempt.id;
@@ -312,7 +333,7 @@ export async function submitQuizAttemptAction(
       score: scorePercent,
       passed,
       passingScore: quiz.passingScore,
-      attemptsRemaining: Math.max(0, quiz.maxAttempts - attemptNumber),
+      attemptsRemaining: Math.max(0, quiz.maxAttempts - intentoDelMomento),
       feedback: quiz.showResultsNow ? feedback : null,
       certificateId,
     },

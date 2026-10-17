@@ -62,7 +62,7 @@ export function TrainingPlanList({
         const total = plan._count.activities;
         const abiertas = acts.filter((a) => a.status === "OPEN").length;
         const cerradas = acts.filter((a) => a.status === "CLOSED").length;
-        const conCurso = acts.filter((a) => a.courseId).length;
+        const conEvaluacion = acts.filter((a) => a.courseId).length;
         const avance = total > 0 ? Math.round((cerradas / total) * 100) : 0;
 
         return (
@@ -112,7 +112,7 @@ export function TrainingPlanList({
               <div className="dato-mini"><b>{total}</b><span>Activid.</span></div>
               <div className="dato-mini"><b className="text-success">{abiertas}</b><span>Abiertas</span></div>
               <div className="dato-mini"><b>{cerradas}</b><span>Cerradas</span></div>
-              <div className="dato-mini"><b>{conCurso}</b><span>Con curso</span></div>
+              <div className="dato-mini"><b>{conEvaluacion}</b><span>Con evaluación</span></div>
             </div>
 
             {/* Pie: responsable y acceso */}

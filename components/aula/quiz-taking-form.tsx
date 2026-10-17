@@ -121,6 +121,7 @@ export function QuizTakingForm({
   tutor,
   fechaLimite,
   momento,
+  volver,
 }: {
   courseId: string;
   quizId: string;
@@ -144,8 +145,12 @@ export function QuizTakingForm({
   fechaLimite: Date | null;
   /** Si esta evaluación es un ciclo presaber/postsaber, cuál de los dos se está presentando ahora. */
   momento?: "PRESABER" | "POSTSABER" | null;
+  /** A dónde vuelve la persona al terminar. Por defecto, al aula del curso. */
+  volver?: { href: string; etiqueta: string };
 }) {
   const router = useRouter();
+  const volverHref = volver?.href ?? `/aula/${courseId}`;
+  const volverEtiqueta = volver?.etiqueta ?? "Volver al aula";
   const action = submitQuizAttemptAction.bind(null, courseId, quizId);
   const [state, formAction, pending] = useActionState(action, initialState);
   const formRef = useRef<HTMLFormElement>(null);
@@ -366,8 +371,8 @@ export function QuizTakingForm({
           Tu mejor puntaje fue <span className="font-semibold text-foreground">{initialBestScore}%</span> (mínimo{" "}
           {passingScore}%).
         </p>
-        <Link href={`/aula/${courseId}`} className={cn(buttonVariants({ variant: "outline" }), "mt-2")}>
-          Volver al aula
+        <Link href={volverHref} className={cn(buttonVariants({ variant: "outline" }), "mt-2")}>
+          {volverEtiqueta}
         </Link>
       </div>
     );
@@ -383,8 +388,8 @@ export function QuizTakingForm({
             Usaste tus {maxAttempts} intentos sin alcanzar el mínimo de {passingScore}%. Comunícate con Talento
             Humano.
           </p>
-          <Link href={`/aula/${courseId}`} className={cn(buttonVariants({ variant: "outline" }), "mt-2")}>
-            Volver al aula
+          <Link href={volverHref} className={cn(buttonVariants({ variant: "outline" }), "mt-2")}>
+            {volverEtiqueta}
           </Link>
         </div>
         {notaRepaso.length > 0 && <NotaRepaso nota={notaRepaso} />}
@@ -555,8 +560,8 @@ export function QuizTakingForm({
         )}
 
         <div className="flex flex-wrap items-center gap-3">
-          <Link href={`/aula/${courseId}`} className={buttonVariants({ variant: "outline" })}>
-            Volver al aula
+          <Link href={volverHref} className={buttonVariants({ variant: "outline" })}>
+            {volverEtiqueta}
           </Link>
           {!passed && attemptsRemaining > 0 && (
             <Button type="button" onClick={() => window.location.reload()} className="gap-1.5">
@@ -862,6 +867,7 @@ export function QuizTakingForm({
           tutor={tutor}
           fechaLimite={fechaLimite}
           passingScore={passingScore}
+          tituloFicha={volver ? "Información de la capacitación" : undefined}
         />
       </aside>
       </div>

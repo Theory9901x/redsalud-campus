@@ -153,7 +153,7 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
       ) : (
         <CentroExportacion
           titulo="Descargas de esta encuesta"
-          bajada="Cada archivo se genera en el momento con los datos vigentes. Para exportar una sola pregunta, usa su CSV en la pestaña «Por pregunta»."
+          bajada="Cada archivo se genera en el momento con los datos vigentes. Para exportar una sola pregunta, usa su Excel en la pestaña «Por pregunta»."
         >
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <TarjetaExporte
@@ -166,12 +166,12 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
               pie="Para presentar o radicar"
             />
             <TarjetaExporte
-              href={`/api/encuestas/${encuesta.slug}/csv`}
+              href={`/api/encuestas/${encuesta.slug}/csv?formato=xlsx`}
               Icono={FileSpreadsheet}
-              formato="CSV"
+              formato="XLSX"
               titulo="Base de respuestas"
               detalle="Una fila por respuesta completa y una columna por pregunta, con encuestado, fecha, canal y puntaje."
-              pie="Se abre en Excel"
+              pie="Excel"
             />
             <TarjetaExporte
               href={`/api/encuestas/${encuesta.slug}/formato-docx`}
@@ -287,12 +287,12 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
                       {p.respuestas} {p.respuestas === 1 ? "respuesta" : "respuestas"}
                     </span>
                     <a
-                      href={`/api/encuestas/${encuesta.slug}/csv?pregunta=${p.id}`}
-                      title="Exportar esta pregunta (CSV)"
+                      href={`/api/encuestas/${encuesta.slug}/csv?pregunta=${p.id}&formato=xlsx`}
+                      title="Exportar esta pregunta (Excel)"
                       className="enc-boton enc-boton-mini"
                     >
                       <FileSpreadsheet aria-hidden="true" />
-                      CSV
+                      Excel
                     </a>
                   </div>
                 </div>
@@ -341,7 +341,7 @@ function ListaTextos({ textos }: { textos: string[] }) {
         </li>
       ))}
       {textos.length > 12 && (
-        <li className="mono-label px-1 pt-1">+ {textos.length - 12} más · completas en el CSV</li>
+        <li className="mono-label px-1 pt-1">+ {textos.length - 12} más · completas en el Excel</li>
       )}
     </ul>
   );

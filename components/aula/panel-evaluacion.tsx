@@ -36,6 +36,7 @@ export function PanelEvaluacion({
   tutor,
   fechaLimite,
   passingScore,
+  tituloFicha = "Información del curso",
 }: {
   respondidas: number;
   total: number;
@@ -44,6 +45,8 @@ export function PanelEvaluacion({
   tutor: string;
   fechaLimite: Date | null;
   passingScore: number;
+  /** Encabezado de la ficha lateral ("Información de la capacitación" en el plan). */
+  tituloFicha?: string;
 }) {
   const pct = total === 0 ? 0 : Math.round((respondidas / total) * 100);
   const pendientes = total - respondidas;
@@ -113,7 +116,7 @@ export function PanelEvaluacion({
 
       {/* ---- Ficha del curso ---- */}
       <section className="surface-glass p-5">
-        <h2 className="font-display text-sm font-bold text-foreground">Información del curso</h2>
+        <h2 className="font-display text-sm font-bold text-foreground">{tituloFicha}</h2>
         <dl className="mt-3">
           {area && <Fila icono={BookOpen} etiqueta="Área" valor={area} />}
           <Fila icono={UserRound} etiqueta="Responsable" valor={tutor} />

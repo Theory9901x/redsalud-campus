@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { trimestreActual } from "@/lib/training-plans";
 import type { Prisma } from "@prisma/client";
+import { registrarAsistenciaSesion } from "@/lib/sesiones-presenciales";
 
 /**
  * TRAZABILIDAD DE CONEXIÓN A LA VIDEOLLAMADA.
@@ -29,6 +30,8 @@ export type RegistrarConexionInput = {
   displayName: string;
   joinedAt: Date;
   leftAt: Date;
+  /** Jornada de la sala (enlace de la jornada); se valida contra la actividad. */
+  sessionId?: string | null;
 };
 
 /**
@@ -39,6 +42,7 @@ export type RegistrarConexionInput = {
  */
 export async function registrarConexionLlamada(input: RegistrarConexionInput): Promise<void> {
   const { activityId, userId, externalParticipantId, displayName, joinedAt, leftAt } = input;
+  let sessionId = input.sessionId ?? null;
   if (!userId && !externalParticipantId) return;
   if (userId && externalParticipantId) return; // uno de los dos, nunca los dos.
 
@@ -53,16 +57,33 @@ export async function registrarConexionLlamada(input: RegistrarConexionInput): P
     // telemetría en una jornada que no es la suya.
     const pertenece = await prisma.externalParticipant.findUnique({
       where: { id: externalParticipantId },
-      select: { activityId: true },
+      select: { activityId: true, sessionId: true },
     });
     if (!pertenece || pertenece.activityId !== activityId) return;
+    // El invitado quedó en la jornada por cuyo enlace se registró.
+    sessionId = sessionId ?? pertenece.sessionId;
+  }
+
+  // La jornada solo cuenta si es de ESTA actividad: un id ajeno se descarta.
+  if (sessionId) {
+    const jornada = await prisma.trainingSession.findUnique({ where: { id: sessionId }, select: { activityId: true } });
+    if (jornada?.activityId !== activityId) sessionId = null;
   }
 
   await prisma.callConnectionLog.create({
-    data: { activityId, userId: userId ?? null, externalParticipantId: externalParticipantId ?? null, displayName, joinedAt, leftAt, durationSeconds },
+    data: {
+      activityId,
+      userId: userId ?? null,
+      externalParticipantId: externalParticipantId ?? null,
+      displayName,
+      joinedAt,
+      leftAt,
+      durationSeconds,
+      sessionId,
+    },
   });
 
-  if (userId) await marcarAsistenciaPorConexion(activityId, userId);
+  if (userId) await marcarAsistenciaPorConexion(activityId, userId, sessionId);
 }
 
 /**
@@ -84,11 +105,16 @@ export async function esAnfitrionDeActividad(activityId: string, userId: string)
   return actividad.area?.tutorId === userId || actividad.responsibleUserId === userId || actividad.plan.tutorId === userId;
 }
 
-/** Asistencia = estuvo conectado a la llamada. Idempotente; no toca actividades cerradas ni al anfitrión. */
-async function marcarAsistenciaPorConexion(activityId: string, userId: string) {
+/**
+ * Asistencia = estuvo conectado a la sala. Idempotente; no toca actividades
+ * cerradas ni al anfitrión. Con jornada, la asistencia queda además en ESA
+ * jornada (AsistenciaSesion, medio "SALA").
+ */
+async function marcarAsistenciaPorConexion(activityId: string, userId: string, sessionId: string | null) {
   const actividad = await prisma.trainingActivity.findUnique({ where: { id: activityId }, select: { status: true } });
   if (!actividad || actividad.status === "CLOSED") return;
   if (await esAnfitrionDeActividad(activityId, userId)) return;
+  if (sessionId) await registrarAsistenciaSesion(sessionId, userId, "SALA").catch(() => null);
   // La asistencia queda en el trimestre en que ocurre la conexión.
   const { trimestre } = trimestreActual();
   await prisma.trainingAttendance.upsert({

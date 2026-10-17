@@ -83,13 +83,15 @@ export function VistaTrazabilidad({
     (c) => (!parametros.area || (c.areaId ?? "sin-area") === parametros.area) && (!parametros.actividad || c.id === parametros.actividad)
   );
   const tonoDeArea = new Map(datos.areas.map((a) => [a.id, a.indice % PALETA]));
-  const csvHref = `/api/planes-capacitacion/${plan.id}/conexiones/csv${conParametros("", parametros)}`;
+  // Excel con hojas por área, por capacitación y por persona (el CSV queda
+  // solo para enlaces viejos: nadie lo usa).
+  const excelHref = `/api/planes-capacitacion/${plan.id}/conexiones/excel${conParametros("", parametros)}`;
 
   const kpis = [
     { Icono: Users2, etiqueta: "Personas conectadas", valor: String(r.personas), nota: r.externos > 0 ? `${r.personasInternas} con cuenta · ${r.externos} externas` : "todas con cuenta" },
-    { Icono: Timer, etiqueta: "Minutos en llamada", valor: duracion(r.minutos), nota: `${r.tramos} ${r.tramos === 1 ? "tramo" : "tramos"} de conexión` },
+    { Icono: Timer, etiqueta: "Minutos en la sala", valor: duracion(r.minutos), nota: `${r.tramos} ${r.tramos === 1 ? "tramo" : "tramos"} de conexión` },
     { Icono: Gauge, etiqueta: "Permanencia promedio", valor: duracion(r.permanenciaPromedioMin), nota: `mediana ${duracion(r.permanenciaMedianaMin)}` },
-    { Icono: Layers3, etiqueta: "Capacitaciones con llamada", valor: String(r.capacitaciones), nota: `${r.jornadas} ${r.jornadas === 1 ? "jornada agendada" : "jornadas agendadas"}` },
+    { Icono: Layers3, etiqueta: "Capacitaciones en vivo", valor: String(r.capacitaciones), nota: `${r.jornadas} ${r.jornadas === 1 ? "jornada agendada" : "jornadas agendadas"}` },
     { Icono: Building2, etiqueta: institucional ? "Áreas con conexión" : "Mis áreas con conexión", valor: String(r.areas), nota: institucional ? "alcance institucional" : "solo las áreas a mi cargo" },
   ];
 
@@ -107,7 +109,7 @@ export function VistaTrazabilidad({
             </Link>
             <p className="mono-label mt-4 flex items-center gap-2">
               <PhoneCall className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-              Conexiones a videollamada · Trazabilidad
+              Conexiones a la sala · Trazabilidad
             </p>
             <h1 className="traz-titulo">
               {institucional ? "Trazabilidad institucional" : "Trazabilidad de mis áreas"}
@@ -115,7 +117,7 @@ export function VistaTrazabilidad({
             </h1>
             <p className="traz-desc">
               Cuánto tiempo estuvo conectada cada persona a la sala de cada jornada virtual, organizado por área, por
-              capacitación y por trimestre. Se registra solo, al salir de la llamada; nadie lo marca a mano.
+              capacitación y por trimestre. Se registra solo, al salir de la sala; nadie lo marca a mano.
             </p>
           </div>
           <div className="traz-sello-bloque">
@@ -123,9 +125,9 @@ export function VistaTrazabilidad({
               <Radar className="h-3.5 w-3.5" aria-hidden="true" />
               {datos.ultimaConexion ? `Último registro · ${fechaLarga(datos.ultimaConexion)}` : "Sin registros todavía"}
             </span>
-            <a href={csvHref} className="traz-exportar" download>
+            <a href={excelHref} className="traz-exportar" download>
               <Download className="h-3.5 w-3.5" aria-hidden="true" />
-              Exportar CSV
+              Exportar Excel
             </a>
           </div>
         </div>
@@ -180,7 +182,7 @@ export function VistaTrazabilidad({
           <div>
             <p className="font-semibold text-foreground">Sin conexiones en {etiquetaPeriodo.toLowerCase()}.</p>
             <p>
-              Los tramos se escriben solos en cuanto alguien sale de una videollamada de este plan.
+              Los tramos se escriben solos en cuanto alguien sale de la sala de una capacitación en vivo de este plan.
               {datos.trimestre ? " Prueba con otro trimestre o con el año completo." : ""}
             </p>
           </div>

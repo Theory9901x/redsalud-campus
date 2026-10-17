@@ -50,9 +50,12 @@ const MOTIVOS: Record<MotivoNoDisponible, { icono: LucideIcon; titulo: string; d
 export function EvaluacionNoDisponible({
   motivo,
   courseId,
+  volver,
 }: {
   motivo: MotivoNoDisponible;
   courseId: string;
+  /** Evaluación de una capacitación del plan: vuelve al plan, no al aula. */
+  volver?: { href: string; etiqueta: string };
 }) {
   const { icono: Icono, titulo, detalle } = MOTIVOS[motivo];
   return (
@@ -62,8 +65,8 @@ export function EvaluacionNoDisponible({
       </span>
       <h1 className="font-display text-xl font-extrabold text-balance text-foreground">{titulo}</h1>
       <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">{detalle}</p>
-      <Link href={`/aula/${courseId}`} className={cn(buttonVariants({ variant: "outline" }), "mt-2")}>
-        Volver al contenido del curso
+      <Link href={volver?.href ?? `/aula/${courseId}`} className={cn(buttonVariants({ variant: "outline" }), "mt-2")}>
+        {volver?.etiqueta ?? "Volver al contenido del curso"}
       </Link>
     </div>
   );

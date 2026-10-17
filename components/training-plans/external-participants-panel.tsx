@@ -7,6 +7,8 @@ export type ExternoFila = {
   registradoEtiqueta: string;
   presaber: number | null;
   postsaber: number | null;
+  /** Jornada por cuyo enlace se registró (ya formateada); null en registros previos. */
+  jornada?: string | null;
 };
 
 /**
@@ -24,8 +26,8 @@ export function ExternalParticipantsPanel({ externos, etiquetaEntidad = "Empresa
           Participantes externos ({externos.length})
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Registrados por el enlace público de invitados: nombre y empresa, con su resultado del ciclo. No tienen
-          cuenta en la plataforma.
+          Registrados por el enlace de invitados de cada jornada: nombre y empresa, con su resultado presaber /
+          postsaber. No tienen cuenta en la plataforma.
         </p>
       </div>
       <Table>
@@ -33,6 +35,7 @@ export function ExternalParticipantsPanel({ externos, etiquetaEntidad = "Empresa
           <TableRow>
             <TableHead>Nombre</TableHead>
             <TableHead>{etiquetaEntidad}</TableHead>
+            <TableHead>Jornada</TableHead>
             <TableHead>Registro</TableHead>
             <TableHead className="text-center">Presaber</TableHead>
             <TableHead className="text-center">Postsaber</TableHead>
@@ -43,6 +46,7 @@ export function ExternalParticipantsPanel({ externos, etiquetaEntidad = "Empresa
             <TableRow key={i}>
               <TableCell className="font-medium text-foreground">{e.fullName}</TableCell>
               <TableCell className="text-muted-foreground">{e.company}</TableCell>
+              <TableCell className="text-muted-foreground">{e.jornada ?? "—"}</TableCell>
               <TableCell className="text-muted-foreground">{e.registradoEtiqueta}</TableCell>
               <TableCell className="text-center font-semibold">
                 {e.presaber !== null ? `${e.presaber}%` : "—"}

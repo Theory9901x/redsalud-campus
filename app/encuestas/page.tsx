@@ -19,7 +19,9 @@ import { veComoAdmin } from "@/lib/roles";
  * Lo ven los tres roles, con alcances distintos y a propósito:
  *
  *  - Administrador: todas las encuestas de la plataforma.
- *  - Tutor: las que él emite y las de las jornadas de sus áreas.
+ *  - Tutor: solo las de satisfacción de las capacitaciones de sus áreas
+ *    (opcionales: el área las crea si lo desea). Nunca la encuesta SIAU ni
+ *    el Centro de datos SIAU, que son del área de Atención al Usuario.
  *  - Estudiante: únicamente aquellas que respondió, con su propio resultado.
  *    Nunca ve la encuesta de otra persona ni resultados agregados.
  */
@@ -31,7 +33,8 @@ export default async function EncuestasPage({
   const { q, estado, audiencia, vista, area, capacitacion } = await searchParams;
   const sesion = await requireSession("/encuestas");
   const rol = sesion.user.role;
-  const esGestor = veComoAdmin(rol) || rol === "TUTOR";
+  const esTutor = rol === "TUTOR";
+  const esGestor = veComoAdmin(rol) || esTutor;
 
   const alcance: AlcanceEncuestas =
     veComoAdmin(rol)
@@ -66,7 +69,9 @@ export default async function EncuestasPage({
       ])
     : [[], []];
 
-  const verPlantillas = esGestor && vista === "plantillas";
+  // Las plantillas son institucionales: el tutor parte de ellas al crear su
+  // encuesta (en /encuestas/nueva), no las administra aquí.
+  const verPlantillas = veComoAdmin(rol) && vista === "plantillas";
   const encuestas = await listarEncuestas(
     {
       buscar: q,
@@ -108,12 +113,14 @@ export default async function EncuestasPage({
       <ModuloHero
         eyebrow="Módulo de encuestas"
         Icono={ClipboardList}
-        titulo={esGestor ? "Encuestas" : "Mis"}
-        acento={esGestor ? "institucionales" : "respuestas"}
+        titulo={esTutor ? "Satisfacción de" : esGestor ? "Encuestas" : "Mis"}
+        acento={esTutor ? "tus capacitaciones" : esGestor ? "institucionales" : "respuestas"}
         descripcion={
-          esGestor
-            ? "Construye encuestas por bloques, publícalas con un enlace estable y su QR, y consulta los resultados y sus exportables en un solo lugar."
-            : "Aquí queda constancia de las encuestas que has respondido, con el resultado de cada una."
+          esTutor
+            ? "Si el área así lo desea, mide la satisfacción de cada capacitación con una encuesta corta: se adscribe a la capacitación, se publica con su enlace y su QR, y aquí consultas sus resultados. Es opcional."
+            : esGestor
+              ? "Construye encuestas por bloques, publícalas con un enlace estable y su QR, y consulta los resultados y sus exportables en un solo lugar."
+              : "Aquí queda constancia de las encuestas que has respondido, con el resultado de cada una."
         }
         cifras={cifras}
         acciones={
@@ -121,12 +128,14 @@ export default async function EncuestasPage({
             <>
               <Link href="/encuestas/nueva" className="boton-hero">
                 <Plus className="h-4 w-4" aria-hidden="true" />
-                Nueva encuesta
+                {esTutor ? "Nueva encuesta de satisfacción" : "Nueva encuesta"}
               </Link>
-              <Link href="/encuestas/siau" className="enlace-hero">
-                <Activity className="h-4 w-4" aria-hidden="true" />
-                Centro de datos SIAU
-              </Link>
+              {!esTutor && (
+                <Link href="/encuestas/siau" className="enlace-hero">
+                  <Activity className="h-4 w-4" aria-hidden="true" />
+                  Centro de datos SIAU
+                </Link>
+              )}
             </>
           )
         }
@@ -135,13 +144,17 @@ export default async function EncuestasPage({
       {esGestor && (
         <div className="barra-modulo p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <Segmento
-              etiqueta="Vista del listado"
-              items={[
-                { href: "/encuestas", etiqueta: "Encuestas", Icono: ClipboardList, activo: !verPlantillas, conteo: !verPlantillas ? encuestas.length : undefined },
-                { href: "/encuestas?vista=plantillas", etiqueta: "Plantillas", Icono: LayoutTemplate, activo: verPlantillas, conteo: verPlantillas ? encuestas.length : undefined },
-              ]}
-            />
+            {esTutor ? (
+              <p className="text-[12.5px] text-muted-foreground">Encuestas de satisfacción adscritas a las capacitaciones de tu área.</p>
+            ) : (
+              <Segmento
+                etiqueta="Vista del listado"
+                items={[
+                  { href: "/encuestas", etiqueta: "Encuestas", Icono: ClipboardList, activo: !verPlantillas, conteo: !verPlantillas ? encuestas.length : undefined },
+                  { href: "/encuestas?vista=plantillas", etiqueta: "Plantillas", Icono: LayoutTemplate, activo: verPlantillas, conteo: verPlantillas ? encuestas.length : undefined },
+                ]}
+              />
+            )}
             <p className="mono-label flex items-center gap-2">
               <span className="punto-vivo text-primary" aria-hidden="true" />
               {encuestas.length} {encuestas.length === 1 ? "resultado" : "resultados"}
@@ -168,14 +181,18 @@ export default async function EncuestasPage({
                     ? "Ninguna encuesta coincide con los filtros"
                     : verPlantillas
                       ? "Sin plantillas todavía"
-                      : "Sin encuestas todavía"
+                      : esTutor
+                        ? "Sin encuestas de satisfacción todavía"
+                        : "Sin encuestas todavía"
                   : "Aún no has respondido ninguna encuesta"
               }
               description={
                 esGestor
                   ? hayFiltros
                     ? "Ajusta o limpia los filtros para ver más resultados."
-                    : "Crea la primera con «Nueva encuesta» y publícala con su enlace y su código QR."
+                    : esTutor
+                      ? "Son opcionales. Si el área lo desea, crea una con «Nueva encuesta de satisfacción» y adscríbela a la capacitación."
+                      : "Crea la primera con «Nueva encuesta» y publícala con su enlace y su código QR."
                   : "Cuando respondas una, aparecerá aquí con tu resultado."
               }
               className="py-16"

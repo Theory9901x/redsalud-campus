@@ -94,7 +94,7 @@ export function PanelConexiones({
               <TableRow>
                 <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
                   Todavía no hay tramos de conexión registrados. Se escriben solos, en cuanto alguien salga de una
-                  videollamada de este plan.
+                  sala de este plan.
                 </TableCell>
               </TableRow>
             )}

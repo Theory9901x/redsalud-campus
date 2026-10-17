@@ -24,7 +24,7 @@ function BadgeDiferencia({ valor }: { valor: number | null }) {
  * hay al menos un intento presentado; una tabla vacía no le dice nada a
  * nadie.
  */
-export function CycleResults({ resultados, activityId }: { resultados: Resultados; activityId: string }) {
+export function CycleResults({ resultados, activityId, trimestre }: { resultados: Resultados; activityId: string; trimestre?: number }) {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
@@ -34,11 +34,11 @@ export function CycleResults({ resultados, activityId }: { resultados: Resultado
             Resultados por persona
           </h3>
           <a
-            href={`/api/planes-capacitacion/actividades/${activityId}/resultados`}
+            href={`/api/planes-capacitacion/actividades/${activityId}/resultados/excel${trimestre ? `?t=${trimestre}` : ""}`}
             className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
           >
             <Download className="h-3.5 w-3.5" aria-hidden="true" />
-            Exportar CSV
+            Exportar Excel
           </a>
         </div>
         <div className="surface-panel overflow-hidden">

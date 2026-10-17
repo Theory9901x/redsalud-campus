@@ -342,7 +342,7 @@ export async function getDetallePersona(id: string) {
 export async function getOpcionesFiltro() {
   const [municipios, cursos] = await Promise.all([
     prisma.municipio.findMany({ select: { id: true, nombre: true }, orderBy: { nombre: "asc" } }),
-    prisma.course.findMany({ select: { id: true, title: true }, orderBy: { title: "asc" } }),
+    prisma.course.findMany({ where: { esContenedorCapacitacion: false }, select: { id: true, title: true }, orderBy: { title: "asc" } }),
   ]);
   return { municipios, cursos };
 }

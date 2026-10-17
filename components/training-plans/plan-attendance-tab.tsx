@@ -21,7 +21,7 @@ function Chulo({ ok }: { ok: boolean }) {
 
 /**
  * La lista de asistencia del plan, nominal y por capacitación: quién entró,
- * quién presentó el presaber, quién el postsaber y quién completó, con chulo
+ * quién presentó el presaber, quién el postsaber y quién lo aprobó, con chulo
  * por cada paso. Es la evidencia que el PIC exige ("Registro de asistencia")
  * y por eso tiene pestaña propia en vez de vivir enterrada dentro de cada
  * actividad.
@@ -34,7 +34,7 @@ export function PlanAttendanceTab({ datos }: { datos: Datos }) {
       <EmptyState
         icon={UserCheck}
         title="Sin asistencias registradas todavía"
-        description="En cuanto alguien entre a una evaluación de una capacitación con contenido, queda registrado aquí automáticamente, con su presaber, postsaber y completado."
+        description="En cuanto alguien entre a la sala o a la evaluación de una capacitación, queda registrado aquí automáticamente, con su presaber, postsaber y si aprobó el postsaber."
         className="py-12"
       />
     );
@@ -59,7 +59,7 @@ export function PlanAttendanceTab({ datos }: { datos: Datos }) {
                   <TableHead>Ingresó</TableHead>
                   <TableHead className="text-center">Presaber</TableHead>
                   <TableHead className="text-center">Postsaber</TableHead>
-                  <TableHead className="text-center">Completado</TableHead>
+                  <TableHead className="text-center">Aprobó postsaber</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

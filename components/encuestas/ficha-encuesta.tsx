@@ -197,7 +197,7 @@ export function AvisoExportacionCentralizada({ href = "/encuestas/siau#exportar"
       <div>
         <strong>Las exportaciones de esta encuesta están centralizadas en el Centro de datos SIAU</strong>
         <p>
-          Informe PDF, Excel SIHO, datos crudos, PDF de resultados, CSV de respuestas y formato Word: todo en una sola estación, con el periodo y los
+          Informe PDF, Excel SIHO, datos crudos, PDF de resultados, Excel de respuestas y formato Word: todo en una sola estación, con el periodo y los
           filtros a la vista.
         </p>
       </div>

@@ -161,7 +161,7 @@ export function TrainingSessionForm({
               <Video className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
               <p className="text-[11.5px] leading-relaxed text-muted-foreground">
                 La jornada usa la <b className="text-foreground/80">sala integrada de la plataforma</b>: registra
-                asistencia automática, muestra quiénes están en la llamada y permite grabar la sesión. Solo cámbialo
+                asistencia automática, muestra quiénes están en la sala y permite grabar la sesión. Solo cámbialo
                 si ocurre en un espacio externo excepcional.
               </p>
             </div>

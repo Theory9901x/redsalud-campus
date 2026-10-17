@@ -98,7 +98,7 @@ export async function RegistroConexiones({ activityId, desde, hasta }: { activit
       {conexiones.length === 0 ? (
         <p className="surface p-4 text-sm text-muted-foreground">
           Nadie se ha conectado a la sala de esta capacitación todavía. Cada tramo se registra cuando la persona sale
-          de la llamada o cierra la pestaña.
+          de la sala o cierra la pestaña.
         </p>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-border/60 bg-card/70 shadow-sm backdrop-blur-sm">

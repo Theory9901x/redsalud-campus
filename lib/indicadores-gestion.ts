@@ -280,7 +280,7 @@ export function medirCapacitacion(codigo: CodigoIndicador, m: MedicionActividad,
     case "PIC-ADH-01": {
       const c = t ? m.cicloPorTrimestre[t] : m.ciclo;
       if (!c || c.personas === 0) {
-        const detalle = !m.conContenido ? "Sin curso vinculado: no hay evaluación" : m.estado === "borrador" ? "Jornada sin abrir" : "Nadie ha completado presaber y postsaber";
+        const detalle = !m.conContenido ? "Sin evaluación presaber / postsaber configurada" : m.estado === "borrador" ? "Jornada sin abrir" : "Nadie ha completado presaber y postsaber";
         return { valor: null, sem: "sin-datos", numerador: 0, denominador: 0, detalle };
       }
       const valor = Math.round(((c.promedioPost - c.promedioPre) / c.promedioPre) * 100);
@@ -294,8 +294,8 @@ export function medirCapacitacion(codigo: CodigoIndicador, m: MedicionActividad,
     }
     case "PIC-COB-02":
       return m.conContenido
-        ? { valor: 100, sem: "verde", numerador: 1, denominador: 1, detalle: "Con contenido" }
-        : { valor: 0, sem: "rojo", numerador: 0, denominador: 1, detalle: "Sin contenido" };
+        ? { valor: 100, sem: "verde", numerador: 1, denominador: 1, detalle: "Con evaluación" }
+        : { valor: 0, sem: "rojo", numerador: 0, denominador: 1, detalle: "Sin evaluación" };
     case "PIC-ASI-03": {
       const asistentes = t ? (m.asistentesPorTrimestre[t] ?? 0) : m.asistentes;
       if (m.audiencia === 0) return { valor: null, sem: "sin-datos", numerador: asistentes, denominador: 0, detalle: "Sin audiencia objetivo definida" };

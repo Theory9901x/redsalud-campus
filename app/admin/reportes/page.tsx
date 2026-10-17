@@ -43,7 +43,7 @@ export default async function ReportesPage({
 }) {
   const { curso, quizCurso, certDesde, certHasta, certEstado } = await searchParams;
 
-  const courses = await prisma.course.findMany({ orderBy: { title: "asc" }, select: { id: true, title: true } });
+  const courses = await prisma.course.findMany({ where: { esContenedorCapacitacion: false }, orderBy: { title: "asc" }, select: { id: true, title: true } });
 
   const [enrollments, deptEnrollments, attempts, certificates] = await Promise.all([
     prisma.enrollment.findMany({

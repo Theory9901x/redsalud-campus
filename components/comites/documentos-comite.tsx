@@ -34,5 +34,5 @@ export function nombreLegible(fileName: string) {
 
 /** Documentos del comité, como registro documental compartido (ver components/documentos). */
 export function DocumentosComite({ documentos, vacio = "Sin documentos todavía." }: { documentos: DocumentoComite[]; vacio?: string }) {
-  return <RegistroDocumentos documentos={documentos} vacio={vacio} />;
+  return <RegistroDocumentos documentos={documentos} vacio={vacio} contexto="comite" />;
 }

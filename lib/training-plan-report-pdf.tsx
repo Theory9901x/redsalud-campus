@@ -121,7 +121,7 @@ function CronogramaSection({ rows }: { rows: NonNullable<TrainingPlanReportSecti
             <View key={i} style={styles.barRow}>
               <Text style={styles.barLabel}>
                 {row.title} · {row.dateLabel} · {row.audience} · {row.status}
-                {row.course ? ` · Curso: ${row.course}` : ""}
+                {row.course ? " · Con evaluación presaber / postsaber" : ""}
               </Text>
               <View style={styles.barTrack}>
                 <View style={[styles.barFill, { width: `${row.percentage ?? 0}%` }]} />

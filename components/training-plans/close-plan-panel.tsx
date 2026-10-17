@@ -112,7 +112,7 @@ export function ClosePlanPanel({
               <dd className="font-semibold text-foreground">{resumen.totalActividades}</dd>
             </div>
             <div>
-              <dt className="text-xs text-muted-foreground">Con contenido</dt>
+              <dt className="text-xs text-muted-foreground">Con evaluación presaber / postsaber</dt>
               <dd className="font-semibold text-foreground">{resumen.conCurso}</dd>
             </div>
             <div>

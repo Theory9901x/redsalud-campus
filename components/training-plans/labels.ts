@@ -22,7 +22,7 @@ export const TRAINING_PLAN_STATUS_CLASSES: Record<TrainingPlanStatus, string> = 
 };
 
 export const TRAINING_ACTIVITY_TYPE_LABELS: Record<TrainingActivityType, string> = {
-  COURSE: "Curso de la plataforma",
+  COURSE: "Capacitación",
   EXTERNAL_EVENT: "Evento externo",
 };
 

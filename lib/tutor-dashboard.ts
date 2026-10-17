@@ -10,8 +10,13 @@ import type { TrainingModality } from "@prisma/client";
  *   - capacitaciones del Plan Institucional del año en curso cuya ÁREA
  *     responde este tutor (TrainingArea.tutorId), o de un plan que él mismo
  *     responde (TrainingPlan.tutorId) -el mismo alcance que ve en
- *     /tutor/planes-capacitacion/[id]-;
- *   - cursos que dicta (Course.tutorId).
+ *     /tutor/planes-capacitacion/[id]-.
+ *
+ * El tutor es un ÁREA con capacitaciones estipuladas en el plan que genera
+ * Talento Humano en concertación con los procesos: aquí no hay cursos,
+ * inscripciones ni constancias. La adherencia se mide por ASISTENCIA
+ * registrada a la capacitación en el trimestre, nunca por haber terminado
+ * un curso.
  *
  * Las consultas están acotadas a esos ids: nada recorre la institución
  * entera salvo getCapacitacionesEnVivo, que ya trae solo la franja vigente y
@@ -44,7 +49,7 @@ export type GrupoAccion = {
 };
 
 export type EventoFeed = {
-  tipo: "asistencia" | "evaluacion" | "inscripcion" | "finalizacion" | "constancia";
+  tipo: "asistencia" | "evaluacion";
   at: Date;
   quien: string;
   texto: string;
@@ -80,7 +85,7 @@ export async function getTutorCommandCenter(tutorId: string, ahora = new Date())
   const enUnaSemana = new Date(hoy0.getTime() + 8 * DIA);
   const desdeSerie = new Date(hoy0.getTime() - (SEMANAS * 7 - 1) * DIA);
 
-  const [areas, actividades, cursos] = await Promise.all([
+  const [areas, actividades] = await Promise.all([
     prisma.trainingArea.findMany({ where: { tutorId }, select: { id: true, name: true }, orderBy: { sortOrder: "asc" } }),
     prisma.trainingActivity.findMany({
       where: {
@@ -94,7 +99,6 @@ export async function getTutorCommandCenter(tutorId: string, ahora = new Date())
         planId: true,
         status: true,
         quarters: true,
-        courseId: true,
         type: true,
         modality: true,
         programa: true,
@@ -117,18 +121,6 @@ export async function getTutorCommandCenter(tutorId: string, ahora = new Date())
         },
       },
     }),
-    prisma.course.findMany({
-      where: { tutorId },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        title: true,
-        status: true,
-        modules: { select: { _count: { select: { lessons: true } } } },
-        _count: { select: { certificates: true } },
-        trainingActivities: { select: { id: true }, take: 1 },
-      },
-    }),
   ]);
 
   const ids = actividades.map((a) => a.id);
@@ -137,7 +129,7 @@ export async function getTutorCommandCenter(tutorId: string, ahora = new Date())
   const jornadasDelTrimestre = (a: (typeof actividades)[number]) => a.sessions.filter((s) => enRango(s.startsAt, rango));
   const quizPorActividad = new Map(actividades.flatMap((a) => (a.course?.quizzes[0] ? [[a.id, a.course.quizzes[0]] as const] : [])));
   const quizIds = [...quizPorActividad.values()].map((q) => q.id);
-  const courseIds = cursos.map((c) => c.id);
+  const tituloPorQuiz = new Map(actividades.flatMap((a) => (a.course?.quizzes[0] ? [[a.course.quizzes[0].id, a.title] as const] : [])));
 
   // ── Todo lo que depende de los ids, en paralelo ──
   const [
@@ -151,20 +143,16 @@ export async function getTutorCommandCenter(tutorId: string, ahora = new Date())
     enVivoInstitucional,
     feedAsistencia,
     feedEvaluaciones,
-    estadoInscripciones,
-    estancados,
-    feedInscripciones,
-    feedFinalizaciones,
-    feedConstancias,
-    constanciasMes,
   ] = await Promise.all([
     Promise.all(
       delTrimestre.map(async (a) => ({
         id: a.id,
+        // Adherencia por ASISTENCIA (courseId: null): en el plan de un área
+        // no cuenta haber terminado un curso, cuenta haber asistido.
         ...(await getActivityAdherence(
           {
             id: a.id,
-            courseId: a.courseId,
+            courseId: null,
             targetAudience: a.targetAudience,
             plan: { id: a.plan.id, targetDepartment: a.plan.targetDepartment, kind: a.plan.kind },
             audienceCommitteePlanId: a.audienceCommitteePlanId,
@@ -205,44 +193,9 @@ export async function getTutorCommandCenter(tutorId: string, ahora = new Date())
           where: { quizId: { in: quizIds }, finishedAt: { not: null }, score: { not: null } },
           orderBy: { finishedAt: "desc" },
           take: 8,
-          select: { finishedAt: true, score: true, passed: true, moment: true, user: { select: { fullName: true } }, quiz: { select: { course: { select: { title: true } } } } },
+          select: { finishedAt: true, score: true, passed: true, moment: true, quizId: true, user: { select: { fullName: true } } },
         })
       : Promise.resolve([]),
-    courseIds.length ? prisma.enrollment.groupBy({ by: ["courseId", "status"], where: { courseId: { in: courseIds } }, _count: { _all: true } }) : Promise.resolve([]),
-    courseIds.length
-      ? prisma.enrollment.groupBy({
-          by: ["courseId"],
-          where: { courseId: { in: courseIds }, status: "ACTIVE", progressPercentage: 0, enrolledAt: { lte: new Date(ahora.getTime() - 7 * DIA) } },
-          _count: { _all: true },
-        })
-      : Promise.resolve([]),
-    courseIds.length
-      ? prisma.enrollment.findMany({
-          where: { courseId: { in: courseIds } },
-          orderBy: { enrolledAt: "desc" },
-          take: 6,
-          select: { enrolledAt: true, user: { select: { fullName: true } }, course: { select: { title: true } } },
-        })
-      : Promise.resolve([]),
-    courseIds.length
-      ? prisma.enrollment.findMany({
-          where: { courseId: { in: courseIds }, completedAt: { not: null } },
-          orderBy: { completedAt: "desc" },
-          take: 6,
-          select: { completedAt: true, user: { select: { fullName: true } }, course: { select: { title: true } } },
-        })
-      : Promise.resolve([]),
-    courseIds.length
-      ? prisma.certificate.findMany({
-          where: { courseId: { in: courseIds } },
-          orderBy: { issuedAt: "desc" },
-          take: 6,
-          select: { issuedAt: true, user: { select: { fullName: true } }, course: { select: { title: true } } },
-        })
-      : Promise.resolve([]),
-    courseIds.length
-      ? prisma.certificate.count({ where: { courseId: { in: courseIds }, issuedAt: { gte: new Date(`${hoy0.toISOString().slice(0, 7)}-01T00:00:00-05:00`) } } })
-      : Promise.resolve(0),
   ]);
 
   // ── Adherencia del trimestre, por capacitación ──
@@ -263,13 +216,11 @@ export async function getTutorCommandCenter(tutorId: string, ahora = new Date())
         programa: a.programa,
         estado: a.status,
         href: rutaActividad(a.planId, a.id, trimestre),
-        fuente: ad.source,
         esperados: ad.totalExpected,
         cumplen: ad.adherentCount,
         porcentaje: ad.totalExpected > 0 ? ad.percentage : null,
         jornada: jornadas[0]?.startsAt ?? null,
         jornadas: jornadas.length,
-        curso: a.course?.title ?? null,
       };
     })
     .sort((x, y) => (x.porcentaje ?? 101) - (y.porcentaje ?? 101) || x.titulo.localeCompare(y.titulo, "es"));
@@ -386,7 +337,7 @@ export async function getTutorCommandCenter(tutorId: string, ahora = new Date())
       cta: "Agendar",
       entradas: sinJornada.map((a) => ({
         titulo: a.title,
-        detalle: [a.area?.name, a.course ? "Con curso" : "Sin curso vinculado"].filter(Boolean).join(" · "),
+        detalle: [a.area?.name, a.programa].filter(Boolean).join(" · ") || "Capacitación del plan",
         href: rutaActividad(a.planId, a.id, trimestre),
       })),
     });
@@ -419,16 +370,16 @@ export async function getTutorCommandCenter(tutorId: string, ahora = new Date())
       entradas: semana.map((s) => ({ titulo: s.titulo, detalle: s.lugar ?? (s.modalidad === "PRESENCIAL" ? "Presencial" : "Sala virtual"), href: s.hrefSesion })),
     });
   }
-  const sinCurso = delTrimestre.filter((a) => a.status !== "CLOSED" && !a.courseId);
-  if (sinCurso.length) {
+  const sinEvaluacion = delTrimestre.filter((a) => a.status !== "CLOSED" && !quizPorActividad.has(a.id));
+  if (sinEvaluacion.length) {
     cola.push({
-      clave: "sin-curso",
+      clave: "sin-evaluacion",
       tono: "atencion",
-      sello: "Sin curso",
-      titulo: `${sinCurso.length} ${sinCurso.length === 1 ? "capacitación" : "capacitaciones"} del trimestre sin curso vinculado`,
-      bajada: "Sin curso no hay presaber ni postsaber: la adherencia sale solo de la asistencia registrada.",
-      cta: "Vincular",
-      entradas: sinCurso.map((a) => ({ titulo: a.title, detalle: a.area?.name ?? "Capacitación del plan", href: rutaActividad(a.planId, a.id, trimestre) })),
+      sello: "Sin evaluación",
+      titulo: `${sinEvaluacion.length} ${sinEvaluacion.length === 1 ? "capacitación" : "capacitaciones"} del trimestre sin presaber/postsaber`,
+      bajada: "Sin evaluación no se mide el antes y el después de la capacitación. Configúrala desde la ficha.",
+      cta: "Configurar",
+      entradas: sinEvaluacion.map((a) => ({ titulo: a.title, detalle: a.area?.name ?? "Capacitación del plan", href: rutaActividad(a.planId, a.id, trimestre) })),
     });
   }
   const cerradas = actividades
@@ -448,54 +399,6 @@ export async function getTutorCommandCenter(tutorId: string, ahora = new Date())
         href: rutaActividad(a.planId, a.id),
         extra: { etiqueta: "PDF", href: `/api/planes-capacitacion/actividades/${a.id}/informe` },
       })),
-    });
-  }
-
-  // ── Cursos que dicta ──
-  const conteoInscripciones = new Map<string, Record<string, number>>();
-  for (const g of estadoInscripciones) {
-    const m = conteoInscripciones.get(g.courseId) ?? {};
-    m[g.status] = g._count._all;
-    conteoInscripciones.set(g.courseId, m);
-  }
-  const estancadosPor = new Map(estancados.map((e) => [e.courseId, e._count._all]));
-  const filasCursos = cursos.map((c) => {
-    const m = conteoInscripciones.get(c.id) ?? {};
-    const activos = m.ACTIVE ?? 0;
-    const completados = m.COMPLETED ?? 0;
-    const reprobados = m.FAILED ?? 0;
-    const inscritos = activos + completados + reprobados;
-    const lecciones = c.modules.reduce((s, mo) => s + mo._count.lessons, 0);
-    return {
-      id: c.id,
-      titulo: c.title,
-      estado: c.status,
-      inscritos,
-      activos,
-      completados,
-      finalizacion: inscritos > 0 ? Math.round((completados / inscritos) * 100) : null,
-      constancias: c._count.certificates,
-      modulos: c.modules.length,
-      lecciones,
-      estancados: estancadosPor.get(c.id) ?? 0,
-      delPlan: c.trainingActivities.length > 0,
-    };
-  });
-  const atencionCursos = filasCursos.flatMap((c) => [
-    ...(c.lecciones === 0 ? [{ titulo: c.titulo, detalle: c.modulos === 0 ? "Sin módulos ni lecciones" : "Módulos sin lecciones", href: `/tutor/cursos/${c.id}` }] : []),
-    ...(c.estancados > 0
-      ? [{ titulo: c.titulo, detalle: `${c.estancados} ${c.estancados === 1 ? "inscrito sin avanzar" : "inscritos sin avanzar"} hace más de 7 días`, href: `/tutor/inscritos?curso=${c.id}&estado=estancados` }]
-      : []),
-  ]);
-  if (atencionCursos.length) {
-    cola.push({
-      clave: "cursos",
-      tono: "atencion",
-      sello: "Cursos",
-      titulo: `${atencionCursos.length} ${atencionCursos.length === 1 ? "alerta" : "alertas"} en tus cursos`,
-      bajada: "Contenido incompleto o personas inscritas que no han empezado.",
-      cta: "Revisar",
-      entradas: atencionCursos,
     });
   }
 
@@ -546,13 +449,10 @@ export async function getTutorCommandCenter(tutorId: string, ahora = new Date())
       tipo: "evaluacion" as const,
       at: r.finishedAt!,
       quien: r.user.fullName,
-      texto: `presentó ${r.moment === "POSTSABER" ? "el postsaber" : r.moment === "PRESABER" ? "el presaber" : "la evaluación"} de ${r.quiz.course.title}`,
+      texto: `presentó ${r.moment === "POSTSABER" ? "el postsaber" : r.moment === "PRESABER" ? "el presaber" : "la evaluación"} de ${tituloPorQuiz.get(r.quizId) ?? "la capacitación"}`,
       dato: `${r.score}%`,
       positivo: r.passed ?? false,
     })),
-    ...feedInscripciones.map((r) => ({ tipo: "inscripcion" as const, at: r.enrolledAt, quien: r.user.fullName, texto: `se inscribió en ${r.course.title}` })),
-    ...feedFinalizaciones.map((r) => ({ tipo: "finalizacion" as const, at: r.completedAt!, quien: r.user.fullName, texto: `completó ${r.course.title}` })),
-    ...feedConstancias.map((r) => ({ tipo: "constancia" as const, at: r.issuedAt, quien: r.user.fullName, texto: `obtuvo constancia de ${r.course.title}` })),
   ]
     .sort((a, b) => b.at.getTime() - a.at.getTime())
     .slice(0, 10);
@@ -585,8 +485,6 @@ export async function getTutorCommandCenter(tutorId: string, ahora = new Date())
     cola,
     semanas,
     feed,
-    cursos: filasCursos,
-    constanciasMes,
   };
 }
 

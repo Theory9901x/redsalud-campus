@@ -1,12 +1,13 @@
 "use client";
 
 import { useTransition } from "react";
-import { MapPin, Link2, Users, PlayCircle, CheckCircle2, Radio, Clock3 } from "lucide-react";
+import { MapPin, Link2, Users, PlayCircle, CheckCircle2, Radio, Clock3, Video, UserCheck, FileQuestion, ClipboardCheck, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
+import { AccesosJornada, type AccesoConQr } from "@/components/training-plans/accesos-jornada";
 import { cn } from "@/lib/utils";
 import {
   TRAINING_MODALITY_LABELS,
@@ -37,6 +38,16 @@ type Sesion = {
   capacity: number | null;
   status: TrainingActivityStatus;
   municipio: { nombre: string } | null;
+  /** Lo registrado por los enlaces de ESTA jornada. */
+  conteo?: { asistentes: number; presaber: number; postsaber: number; invitados: number };
+  /** Enlaces y QR propios de la jornada (puerta, sala, presaber, postsaber, invitados). */
+  accesos?: AccesoConQr[];
+  /** «Abrir sala» de esta jornada. */
+  salaHref?: string;
+  /** Cartel proyectable de la jornada. */
+  fichaHref?: string;
+  /** Es la jornada a la que llevan hoy los enlaces generales. */
+  vigente?: boolean;
 };
 
 export function TrainingSessionList({
@@ -45,6 +56,7 @@ export function TrainingSessionList({
   onClose,
   onDelete,
   vivoBaseUrl,
+  conEvaluacion = false,
 }: {
   sessions: Sesion[];
   onEnable: (sessionId: string) => Promise<void>;
@@ -52,6 +64,8 @@ export function TrainingSessionList({
   onDelete: (sessionId: string) => Promise<{ error: string | null }>;
   /** FASE 10: base de la vista de gestión de la jornada ("{basePath}/{plan}/actividades/{actividad}/sesion"). */
   vivoBaseUrl?: string;
+  /** Mostrar evaluación en los contadores (solo si la capacitación tiene evaluación). */
+  conEvaluacion?: boolean;
 }) {
   const [pendiente, iniciar] = useTransition();
 
@@ -77,11 +91,21 @@ export function TrainingSessionList({
     <div className="space-y-3">
       {sessions.map((s) => {
         const cerrada = s.status === "CLOSED";
+        const contadores = s.conteo
+          ? [
+              { Icono: UserCheck, valor: s.conteo.asistentes, etiqueta: s.conteo.asistentes === 1 ? "asistente" : "asistentes" },
+              ...(conEvaluacion
+                ? [
+                    { Icono: FileQuestion, valor: s.conteo.presaber, etiqueta: "presaber" },
+                    { Icono: ClipboardCheck, valor: s.conteo.postsaber, etiqueta: "postsaber" },
+                  ]
+                : []),
+              { Icono: UserPlus, valor: s.conteo.invitados, etiqueta: s.conteo.invitados === 1 ? "invitado" : "invitados" },
+            ]
+          : [];
         return (
-          <div
-            key={s.id}
-            className="surface group/fila flex flex-col gap-4 p-5 transition-all duration-200 hover:-translate-y-px hover:shadow-md lg:flex-row lg:items-center"
-          >
+          <div key={s.id} className="surface group/fila space-y-4 p-5 transition-all duration-200 hover:shadow-md">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
             {/* Ficha de calendario: el día manda la fila. */}
             <Link
               href={vivoBaseUrl ? `${vivoBaseUrl}/${s.id}` : "#"}
@@ -123,6 +147,14 @@ export function TrainingSessionList({
                 <Badge className={TRAINING_ACTIVITY_STATUS_CLASSES[s.status]}>
                   {TRAINING_ACTIVITY_STATUS_LABELS[s.status]}
                 </Badge>
+                {s.vigente && (
+                  <span
+                    className="rounded-full border border-success/30 bg-success/10 px-2.5 py-0.5 text-[11px] font-bold text-success"
+                    title="Los enlaces generales de la capacitación llevan hoy a esta jornada."
+                  >
+                    Vigente
+                  </span>
+                )}
               </div>
               <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-muted-foreground">
                 <span className="font-semibold text-foreground/75">{TRAINING_MODALITY_LABELS[s.modality]}</span>
@@ -132,7 +164,7 @@ export function TrainingSessionList({
                     {[s.location, s.municipio?.nombre].filter(Boolean).join(" · ")}
                   </span>
                 )}
-                {s.meetingUrl && (
+                {s.meetingUrl && !s.salaHref && (
                   <a
                     href={s.meetingUrl}
                     target="_blank"
@@ -153,7 +185,18 @@ export function TrainingSessionList({
             </div>
 
             {/* Acciones, separadas del contenido. */}
-            <div className="flex shrink-0 items-center gap-2 border-t border-border/40 pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
+            <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-border/40 pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
+              {s.salaHref && !cerrada && (
+                <a
+                  href={s.salaHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-success px-3.5 text-[12.5px] font-bold text-white shadow-sm transition-opacity hover:opacity-90"
+                >
+                  <Video className="h-3.5 w-3.5" aria-hidden="true" />
+                  Abrir sala
+                </a>
+              )}
               {vivoBaseUrl && (
                 <Link
                   href={`${vivoBaseUrl}/${s.id}`}
@@ -178,10 +221,27 @@ export function TrainingSessionList({
               <DeleteEntityButton
                 action={() => onDelete(s.id)}
                 nombre="La jornada"
-                descripcion="Se elimina esta jornada del calendario. La capacitación en el plan sigue existiendo."
+                descripcion="Se elimina esta jornada del calendario. La capacitación en el plan sigue existiendo; lo que se registró por sus enlaces se conserva en la capacitación."
                 size="icon-sm"
               />
             </div>
+          </div>
+
+            {contadores.length > 0 && (
+              <ul className="flex flex-wrap gap-2" aria-label="Registrado en esta jornada">
+                {contadores.map((c) => (
+                  <li
+                    key={c.etiqueta}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/70 px-2.5 py-1 text-[12px] text-muted-foreground"
+                  >
+                    <c.Icono className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                    <b className="tabular-nums text-foreground">{c.valor}</b> {c.etiqueta}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {s.accesos && s.accesos.length > 0 && <AccesosJornada accesos={s.accesos} fichaHref={s.fichaHref} />}
           </div>
         );
       })}

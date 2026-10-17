@@ -19,6 +19,27 @@ export const TIPOS_DOCUMENTO = {
 
 export type TipoDocumento = keyof typeof TIPOS_DOCUMENTO;
 
+/**
+ * DÓNDE se sube el documento. Las actas y las resoluciones son de los
+ * comités y las reuniones; un plan de capacitación o una capacitación no
+ * levantan acta, así que ahí no se ofrecen (ni se deducen).
+ */
+export type ContextoDocumento = "capacitacion" | "comite" | "reunion";
+
+const TODOS_LOS_TIPOS = Object.keys(TIPOS_DOCUMENTO) as TipoDocumento[];
+
+export const TIPOS_POR_CONTEXTO: Record<ContextoDocumento, readonly TipoDocumento[]> = {
+  capacitacion: ["PRESENTACION", "LISTA_ASISTENCIA", "GRABACION", "INFORME", "FORMATO", "EVIDENCIA", "MATERIAL", "OTRO"],
+  comite: TODOS_LOS_TIPOS,
+  reunion: TODOS_LOS_TIPOS,
+};
+
+/** Tipos documentales que se ofrecen al subir en ese contexto, en el orden del catálogo. */
+export function tiposDocumentoPara(contexto: ContextoDocumento): [TipoDocumento, string][] {
+  const permitidos = TIPOS_POR_CONTEXTO[contexto];
+  return TODOS_LOS_TIPOS.filter((t) => permitidos.includes(t)).map((t) => [t, TIPOS_DOCUMENTO[t]]);
+}
+
 export type Formato = "pdf" | "word" | "excel" | "powerpoint" | "video" | "imagen" | "audio" | "zip" | "texto" | "otro";
 
 export const FORMATOS: Record<Formato, { etiqueta: string; sigla: string }> = {
@@ -53,8 +74,17 @@ export function formatoDe(fileType: string, fileName: string): Formato {
   return "otro";
 }
 
-/** Tipo documental: el elegido al subir o, si no hay, el que sugieren el nombre y el formato. */
-export function tipoDocumentoDe(doc: { kind?: string | null; fileName: string; fileType: string }): TipoDocumento {
+/**
+ * Tipo documental: el elegido al subir o, si no hay, el que sugieren el
+ * nombre y el formato. Con `contexto`, un tipo que no aplica ahí (un "ACTA"
+ * viejo en una capacitación) se lee como «Otro documento».
+ */
+export function tipoDocumentoDe(doc: { kind?: string | null; fileName: string; fileType: string }, contexto?: ContextoDocumento): TipoDocumento {
+  const tipo = tipoDocumentoSinContexto(doc);
+  return contexto && !TIPOS_POR_CONTEXTO[contexto].includes(tipo) ? "OTRO" : tipo;
+}
+
+function tipoDocumentoSinContexto(doc: { kind?: string | null; fileName: string; fileType: string }): TipoDocumento {
   if (doc.kind && doc.kind in TIPOS_DOCUMENTO) return doc.kind as TipoDocumento;
   const n = doc.fileName.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const f = formatoDe(doc.fileType, doc.fileName);

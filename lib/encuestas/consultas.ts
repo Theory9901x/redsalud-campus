@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { configSinClave, leerConfig, type ValorRespuesta } from "@/lib/encuestas/tipos";
 import { agregarPuntajes, tienePreguntasCalificadas, type BloquePuntuable } from "@/lib/encuestas/puntaje";
+import { CODIGO_SIAU } from "@/lib/encuestas/metrics";
 import type { Prisma, SurveyStatus, SurveyAudience } from "@prisma/client";
 
 /**
@@ -68,7 +69,10 @@ export type EncuestaDeLista = {
  * ALCANCE POR ROL. El módulo lo ven los tres, pero no ven lo mismo:
  *
  *  - `todas`      administrador: todo lo creado en la plataforma.
- *  - `emitidas`   tutor: las que él emite, más las de las jornadas de sus áreas.
+ *  - `emitidas`   tutor: SOLO las de satisfacción de las capacitaciones de sus
+ *                  áreas (o de un plan que responde), y las suyas adscritas a
+ *                  una capacitación. Nunca la Encuesta de Atención al Usuario
+ *                  (SIAU): esa es del área SIAU, no de las capacitaciones.
  *  - `respondidas` estudiante: únicamente aquellas en las que participó, con
  *                  su propio resultado. Nunca ve la encuesta de otra persona.
  */
@@ -83,9 +87,15 @@ function whereDeAlcance(alcance: AlcanceEncuestas): Prisma.SurveyWhereInput {
       return {};
     case "emitidas":
       return {
-        OR: [
-          { createdBy: alcance.userId },
-          ...(alcance.areaIds.length > 0 ? [{ trainingActivity: { areaId: { in: alcance.areaIds } } }] : []),
+        AND: [
+          { NOT: { code: { startsWith: CODIGO_SIAU } } },
+          {
+            OR: [
+              { createdBy: alcance.userId, trainingActivityId: { not: null } },
+              { trainingActivity: { plan: { tutorId: alcance.userId } } },
+              ...(alcance.areaIds.length > 0 ? [{ trainingActivity: { areaId: { in: alcance.areaIds } } }] : []),
+            ],
+          },
         ],
       };
     case "respondidas":

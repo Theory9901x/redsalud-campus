@@ -83,7 +83,7 @@ function Boton({
  * puede abrirse antes de que el presaber cierre, y hay que poder mostrar
  * las dos por separado mientras eso pasa.
  */
-/** Ir a VER la evaluación: el editor de preguntas del curso y el enlace estable para presentarla. */
+/** Ir a VER la evaluación: el editor de la evaluación y el enlace estable para presentarla. */
 function EnlacesEvaluacion({ enlaces, presentar }: { enlaces?: { editor: string }; presentar: string }) {
   if (!enlaces) return null;
   return (
@@ -109,7 +109,7 @@ export function PresaberPostsaberPanel({
   enlaces,
 }: {
   ventanas: Ventanas;
-  /** A dónde ir a VER la evaluación: el editor de preguntas del curso y el enlace estable para presentarla. */
+  /** A dónde ir a VER la evaluación: el editor de la evaluación y el enlace estable para presentarla. */
   enlaces?: { editor: string; presaber: string; postsaber: string };
   /**
    * Las cuatro fechas ya formateadas, calculadas en el servidor.

@@ -24,6 +24,7 @@ import { registrarInvitadoAction, getParticipanteDeCookie } from "@/app/invitado
 import { etiquetaJornada } from "@/components/training-plans/labels";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import { cn } from "@/lib/utils";
+import { jornadaDeEnlace } from "@/lib/jornadas";
 
 /**
  * ACCESO EXTERNO a una jornada del plan: página PÚBLICA (sin login) para
@@ -33,8 +34,15 @@ import { cn } from "@/lib/utils";
  * presaber/postsaber-, tras un registro mínimo de nombre y empresa que
  * queda como constancia de asistencia externa.
  */
-export default async function InvitadoPage({ params }: { params: Promise<{ activityId: string }> }) {
+export default async function InvitadoPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ activityId: string }>;
+  searchParams: Promise<{ s?: string }>;
+}) {
   const { activityId } = await params;
+  const { s: tokenJornada } = await searchParams;
 
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
@@ -54,18 +62,28 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
       postsaberClosedAt: true,
       area: { select: { name: true, tutor: { select: { fullName: true } } } },
       plan: { select: { title: true, kind: true } },
-      sessions: {
-        where: { status: { not: "CLOSED" } },
-        orderBy: { startsAt: "asc" },
-        take: 1,
-        select: { startsAt: true, endsAt: true },
-      },
     },
   });
   if (!actividad) notFound();
 
-  const participante = await getParticipanteDeCookie(activityId);
-  const registrar = registrarInvitadoAction.bind(null, activityId);
+  // ACCESO POR JORNADA: el enlace de cada jornada lleva su token (?s=); el
+  // enlace general se resuelve a la jornada vigente. El invitado queda
+  // registrado en ESA jornada. Un registro hecho en otra jornada de la misma
+  // capacitación no sirve para el enlace de OTRA jornada: se le pide
+  // confirmar sus datos (ya diligenciados) y queda un registro nuevo, en
+  // esa jornada. Con el enlace general, quien ya se registró sigue en la suya.
+  const { jornada: jornadaEnlace, explicita } = await jornadaDeEnlace(activityId, tokenJornada);
+  const registroCookie = await getParticipanteDeCookie(activityId);
+  const participante =
+    registroCookie && (!explicita || !registroCookie.sessionId || registroCookie.sessionId === jornadaEnlace?.id)
+      ? registroCookie
+      : null;
+  const registrar = registrarInvitadoAction.bind(null, activityId, jornadaEnlace?.id ?? null);
+  // La jornada que se muestra: la del registro si ya lo hay, si no la del enlace.
+  const jornada =
+    participante?.sessionId && participante.sessionId !== jornadaEnlace?.id
+      ? await prisma.trainingSession.findUnique({ where: { id: participante.sessionId }, select: { id: true, startsAt: true, endsAt: true } })
+      : jornadaEnlace;
 
   // Si quien abre el enlace externo ADEMÁS tiene sesión de personal (un
   // tutor o admin revisando su propia jornada), se le habilita la grabación
@@ -84,7 +102,13 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
   if (!participante) {
     return (
       <main className="aula-canvas flex min-h-screen items-center justify-center px-4 py-10">
-        <RegistroInvitado action={registrar} titulo={actividad.title} reunionAbierta={actividad.plan.kind === "REUNION"} />
+        <RegistroInvitado
+          action={registrar}
+          titulo={actividad.title}
+          reunionAbierta={actividad.plan.kind === "REUNION"}
+          jornada={jornadaEnlace ? etiquetaJornada(jornadaEnlace) : null}
+          inicial={registroCookie ? { fullName: registroCookie.fullName, company: registroCookie.company } : null}
+        />
       </main>
     );
   }
@@ -97,7 +121,7 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
 
   const profesional =
     actividad.area?.tutor?.fullName ?? actividad.responsibleUser?.fullName ?? actividad.responsibleLabel ?? "—";
-  const proximaJornada = actividad.sessions[0] ? etiquetaJornada(actividad.sessions[0]) : null;
+  const proximaJornada = jornada ? etiquetaJornada(jornada) : null;
 
   const MOMENTOS = [
     {
@@ -153,6 +177,7 @@ export default async function InvitadoPage({ params }: { params: Promise<{ activ
               subject={actividad.title}
               jwt={tokenStaff}
               externalParticipantId={participante.id}
+              sessionId={participante.sessionId ?? jornada?.id ?? null}
               esPresentador={puedeGrabar}
               grabacion={puedeGrabar ? <GrabacionJornada activityId={actividad.id} /> : undefined}
               panelDerecho={

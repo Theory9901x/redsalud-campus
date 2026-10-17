@@ -32,7 +32,7 @@ export function PlanMetricsView({ data, puedeExportar = true }: { data: PlanMetr
         <StaggerGrid className="grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5 flex-1">
           <MetricCard label="Capacitaciones" value={kpis.totalActividades} icon={CalendarRange} accent="primary" />
           <MetricCard
-            label={`Cobertura de contenido (${kpis.conContenido} de ${kpis.totalActividades})`}
+            label={`Cobertura de evaluación (${kpis.conContenido} de ${kpis.totalActividades})`}
             value={kpis.cobertura ?? 0}
             suffix="%"
             icon={Layers}
@@ -62,7 +62,7 @@ export function PlanMetricsView({ data, puedeExportar = true }: { data: PlanMetr
           <div className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-primary" />
             <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
-              Cobertura de contenido por área
+              Cobertura de evaluación por área
             </h2>
           </div>
           <AdherenceBarChart data={porArea.map((a) => ({ label: a.name, percentage: a.cobertura ?? 0 }))} />
@@ -120,7 +120,7 @@ export function PlanMetricsView({ data, puedeExportar = true }: { data: PlanMetr
               <TableRow>
                 <TableHead>Área</TableHead>
                 <TableHead className="text-center">Capacitaciones</TableHead>
-                <TableHead className="text-center">Con contenido</TableHead>
+                <TableHead className="text-center">Con evaluación</TableHead>
                 <TableHead className="text-center">Cobertura</TableHead>
                 <TableHead className="text-center">Abiertas</TableHead>
                 <TableHead className="text-center">Cerradas</TableHead>
