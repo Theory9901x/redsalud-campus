@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { TutorShell } from "@/components/tutor/tutor-shell";
+import { esCuentaSiau } from "@/lib/encuestas/acceso-siau";
 import { StudentShell } from "@/components/student/student-shell";
 import { getUserAvatarUrl } from "@/lib/avatar";
 import { getNotificationsForUser } from "@/lib/notifications";
@@ -30,7 +31,11 @@ export default async function EncuestasLayout({ children }: { children: React.Re
   }
 
   if (session.user.role === "TUTOR") {
-    return <TutorShell userName={session.user.name ?? "Tutor"}>{children}</TutorShell>;
+    return (
+      <TutorShell userName={session.user.name ?? "Tutor"} cuentaSiau={await esCuentaSiau(session)}>
+        {children}
+      </TutorShell>
+    );
   }
 
   // Estudiante: su shell pide avatar, logo y notificaciones (igual que en

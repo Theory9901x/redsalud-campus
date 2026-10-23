@@ -27,15 +27,19 @@ export function Segmento({ items, etiqueta, className }: { items: ItemSegmento[]
   );
 }
 
-/** Las tres vistas de trabajo de una encuesta, siempre en el mismo orden. */
-export function NavFicha({ id, activa }: { id: string; activa: "resultados" | "respuestas" }) {
+/**
+ * Las tres vistas de trabajo de una encuesta, siempre en el mismo orden.
+ * `editable={false}`: quien solo consulta (la cuenta SIAU en su encuesta)
+ * no ve el Constructor.
+ */
+export function NavFicha({ id, activa, editable = true }: { id: string; activa: "resultados" | "respuestas"; editable?: boolean }) {
   return (
     <Segmento
       etiqueta="Secciones de la encuesta"
       items={[
         { href: `/encuestas/${id}/resultados`, etiqueta: "Resultados", Icono: BarChart3, activo: activa === "resultados" },
         { href: `/encuestas/${id}/respuestas`, etiqueta: "Respuestas", Icono: ListChecks, activo: activa === "respuestas" },
-        { href: `/encuestas/${id}/constructor`, etiqueta: "Constructor", Icono: PencilRuler },
+        ...(editable ? [{ href: `/encuestas/${id}/constructor`, etiqueta: "Constructor", Icono: PencilRuler }] : []),
       ]}
     />
   );

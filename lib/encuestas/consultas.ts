@@ -73,20 +73,23 @@ export type EncuestaDeLista = {
  *                  áreas (o de un plan que responde), y las suyas adscritas a
  *                  una capacitación. Nunca la Encuesta de Atención al Usuario
  *                  (SIAU): esa es del área SIAU, no de las capacitaciones.
+ *                  La excepción es la propia cuenta del área SIAU
+ *                  (`incluirSiau`, ver lib/encuestas/acceso-siau.ts), que
+ *                  además de lo anterior ve su encuesta.
  *  - `respondidas` estudiante: únicamente aquellas en las que participó, con
  *                  su propio resultado. Nunca ve la encuesta de otra persona.
  */
 export type AlcanceEncuestas =
   | { tipo: "todas" }
-  | { tipo: "emitidas"; userId: string; areaIds: string[] }
+  | { tipo: "emitidas"; userId: string; areaIds: string[]; incluirSiau?: boolean }
   | { tipo: "respondidas"; userId: string };
 
 function whereDeAlcance(alcance: AlcanceEncuestas): Prisma.SurveyWhereInput {
   switch (alcance.tipo) {
     case "todas":
       return {};
-    case "emitidas":
-      return {
+    case "emitidas": {
+      const deSusCapacitaciones: Prisma.SurveyWhereInput = {
         AND: [
           { NOT: { code: { startsWith: CODIGO_SIAU } } },
           {
@@ -98,6 +101,8 @@ function whereDeAlcance(alcance: AlcanceEncuestas): Prisma.SurveyWhereInput {
           },
         ],
       };
+      return alcance.incluirSiau ? { OR: [deSusCapacitaciones, { code: { startsWith: CODIGO_SIAU } }] } : deSusCapacitaciones;
+    }
     case "respondidas":
       return { responses: { some: { userId: alcance.userId, completed: true } } };
   }

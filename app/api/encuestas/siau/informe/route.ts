@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
+import { puedeGestionarSiau } from "@/lib/encuestas/acceso-siau";
 import { prisma } from "@/lib/prisma";
 import { getInformeSiau } from "@/lib/encuestas/metrics";
 import { leerPeriodo } from "@/lib/encuestas/periodo-url";
@@ -15,8 +16,9 @@ export async function GET(request: Request) {
   } catch {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
-  // La encuesta SIAU es del área de Atención al Usuario, no de los tutores de área.
-  if (sesion.user.role === "TUTOR") return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  // La encuesta SIAU es del área de Atención al Usuario: solo el administrador
+  // y la cuenta de esa área, nunca el tutor de otra área del plan.
+  if (!(await puedeGestionarSiau(sesion))) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   const url = new URL(request.url);
   const periodo = leerPeriodo(url.searchParams);
   if (!periodo) return NextResponse.json({ error: "Periodo inválido." }, { status: 400 });

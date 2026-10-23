@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
-import { requireSurveyAccess } from "@/lib/auth-helpers";
+import { requireSurveyRead } from "@/lib/auth-helpers";
 import { leerConfig, type ValorRespuesta } from "@/lib/encuestas/tipos";
 
 /**
@@ -28,7 +28,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   if (!encuesta) return NextResponse.json({ error: "Encuesta no encontrada." }, { status: 404 });
 
   try {
-    await requireSurveyAccess(encuesta.id);
+    await requireSurveyRead(encuesta.id);
   } catch {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }

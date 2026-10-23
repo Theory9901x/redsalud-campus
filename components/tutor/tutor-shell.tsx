@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   LayoutDashboard,
   MessageSquareText,
+  PieChart,
   Radio,
   Users,
 } from "lucide-react";
@@ -42,8 +43,9 @@ const NAV_GROUPS: GrupoNav[] = [
       // ciclo, no las presenta, así que aquí ve en vivo quién está
       // presentando y quién terminó -no la pantalla del estudiante-.
       { href: "/tutor/mis-encuestas", label: "Evaluaciones en vivo", icon: ClipboardCheck },
-      // Solo las encuestas de satisfacción de sus capacitaciones (nunca la SIAU).
-      { href: "/encuestas", label: "Encuestas", icon: MessageSquareText },
+      // Solo las encuestas de satisfacción de sus capacitaciones (nunca la SIAU,
+      // salvo para la cuenta del área SIAU).
+      { href: "/encuestas", label: "Encuestas", icon: MessageSquareText, excluir: ["/encuestas/siau"] },
     ],
   },
   {
@@ -52,10 +54,22 @@ const NAV_GROUPS: GrupoNav[] = [
   },
 ];
 
+/**
+ * Solo para la cuenta del área de Atención al Usuario: su Centro de datos.
+ * Quién es esa cuenta lo decide el servidor (lib/encuestas/acceso-siau.ts)
+ * y llega aquí como `cuentaSiau`; el cliente no consulta nada.
+ */
+const GRUPO_SIAU: GrupoNav = {
+  label: "Atención al Usuario",
+  items: [{ href: "/encuestas/siau", label: "Centro de datos SIAU", icon: PieChart }],
+};
+const NAV_GROUPS_SIAU: GrupoNav[] = [...NAV_GROUPS.slice(0, 2), GRUPO_SIAU, ...NAV_GROUPS.slice(2)];
+
 const BREADCRUMBS: [string, string][] = [
   ["/tutor/planes-capacitacion/en-vivo", "Plan · En vivo"],
   ["/tutor/planes-capacitacion", "Plan · Planes de capacitación"],
   ["/tutor/mis-encuestas", "Plan · Evaluaciones en vivo"],
+  ["/encuestas/siau", "Atención al Usuario · Centro de datos SIAU"],
   ["/encuestas", "Plan · Encuestas"],
   ["/tutor/inscritos", "Personas · Participantes"],
   ["/tutor", "Centro de mando"],
@@ -63,10 +77,13 @@ const BREADCRUMBS: [string, string][] = [
 
 export function TutorShell({
   userName,
+  cuentaSiau = false,
   banner,
   children,
 }: {
   userName: string;
+  /** Es la cuenta del área SIAU: suma al menú el Centro de datos SIAU. */
+  cuentaSiau?: boolean;
   /** Banner discreto sobre el contenido (p. ej. "Estás viendo el catálogo como tutor"). */
   banner?: React.ReactNode;
   children: React.ReactNode;
@@ -80,7 +97,7 @@ export function TutorShell({
       <AppSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        grupos={NAV_GROUPS}
+        grupos={cuentaSiau ? NAV_GROUPS_SIAU : NAV_GROUPS}
         subtitulo="Espacio de tutor"
         claseAcento="accent-tutor"
         // Sin tarjeta de pie: con ocho entradas se montaba sobre el menú en

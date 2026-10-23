@@ -36,12 +36,15 @@ const FECHA = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short",
 export function TarjetaEncuesta({
   encuesta,
   puedeGestionar,
+  puedeEditar = true,
   baseUrl,
   indice = 0,
 }: {
   encuesta: EncuestaDeLista;
   /** Estudiante: solo consulta su resultado; tutor y admin gestionan. */
   puedeGestionar: boolean;
+  /** Gestiona pero sin Constructor (la cuenta SIAU sobre la encuesta SIAU). */
+  puedeEditar?: boolean;
   baseUrl: string;
   indice?: number;
 }) {
@@ -111,7 +114,7 @@ export function TarjetaEncuesta({
 
       {/* Acciones, al pie, cada una con su nombre */}
       {puedeGestionar ? (
-        <div className="enc-acciones mt-4" style={{ ["--n" as string]: difundible ? 4 : 3 }}>
+        <div className="enc-acciones mt-4" style={{ ["--n" as string]: 2 + (puedeEditar ? 1 : 0) + (difundible ? 1 : 0) }}>
           <Link href={`${base}/resultados`} className="enc-accion-principal">
             <BarChart3 aria-hidden="true" />
             Resultados
@@ -120,10 +123,12 @@ export function TarjetaEncuesta({
             <ListChecks aria-hidden="true" />
             Respuestas
           </Link>
-          <Link href={`${base}/constructor`}>
-            <PencilRuler aria-hidden="true" />
-            Editar
-          </Link>
+          {puedeEditar && (
+            <Link href={`${base}/constructor`}>
+              <PencilRuler aria-hidden="true" />
+              Editar
+            </Link>
+          )}
           {difundible && <BotonEnlacePublico slug={encuesta.slug} titulo={encuesta.title} acento={acento} variante="celda" />}
         </div>
       ) : (

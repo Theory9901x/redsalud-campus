@@ -12,6 +12,8 @@ import { Segmento } from "@/components/encuestas/ficha-encuesta";
 import { cn } from "@/lib/utils";
 import type { SurveyStatus, SurveyAudience } from "@prisma/client";
 import { veComoAdmin } from "@/lib/roles";
+import { puedeGestionarSiau } from "@/lib/encuestas/acceso-siau";
+import { CODIGO_SIAU } from "@/lib/encuestas/metrics";
 
 /**
  * ESPACIO DE TRABAJO DE ENCUESTAS.
@@ -22,6 +24,9 @@ import { veComoAdmin } from "@/lib/roles";
  *  - Tutor: solo las de satisfacción de las capacitaciones de sus áreas
  *    (opcionales: el área las crea si lo desea). Nunca la encuesta SIAU ni
  *    el Centro de datos SIAU, que son del área de Atención al Usuario.
+ *    Única excepción: la cuenta de esa área (puedeGestionarSiau), que además
+ *    ve la encuesta SIAU -para consultarla y exportarla, sin «Editar»- y el
+ *    acceso al Centro de datos SIAU.
  *  - Estudiante: únicamente aquellas que respondió, con su propio resultado.
  *    Nunca ve la encuesta de otra persona ni resultados agregados.
  */
@@ -35,6 +40,8 @@ export default async function EncuestasPage({
   const rol = sesion.user.role;
   const esTutor = rol === "TUTOR";
   const esGestor = veComoAdmin(rol) || esTutor;
+  // Administrador o cuenta del área SIAU: ven la encuesta y el Centro de datos.
+  const veSiau = esGestor && (await puedeGestionarSiau(sesion));
 
   const alcance: AlcanceEncuestas =
     veComoAdmin(rol)
@@ -46,6 +53,7 @@ export default async function EncuestasPage({
             areaIds: (
               await prisma.trainingArea.findMany({ where: { tutorId: sesion.user.id }, select: { id: true } })
             ).map((a) => a.id),
+            incluirSiau: veSiau,
           }
         : { tipo: "respondidas", userId: sesion.user.id };
 
@@ -130,7 +138,7 @@ export default async function EncuestasPage({
                 <Plus className="h-4 w-4" aria-hidden="true" />
                 {esTutor ? "Nueva encuesta de satisfacción" : "Nueva encuesta"}
               </Link>
-              {!esTutor && (
+              {veSiau && (
                 <Link href="/encuestas/siau" className="enlace-hero">
                   <Activity className="h-4 w-4" aria-hidden="true" />
                   Centro de datos SIAU
@@ -145,7 +153,9 @@ export default async function EncuestasPage({
         <div className="barra-modulo p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             {esTutor ? (
-              <p className="text-[12.5px] text-muted-foreground">Encuestas de satisfacción adscritas a las capacitaciones de tu área.</p>
+              <p className="text-[12.5px] text-muted-foreground">
+                Encuestas de satisfacción adscritas a las capacitaciones de tu área{veSiau ? " y la Encuesta de Atención al Usuario (SIAU)" : ""}.
+              </p>
             ) : (
               <Segmento
                 etiqueta="Vista del listado"
@@ -201,7 +211,15 @@ export default async function EncuestasPage({
         ) : (
           <FocoCursor className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {encuestas.map((e, i) => (
-              <TarjetaEncuesta key={e.id} encuesta={e} puedeGestionar={esGestor} baseUrl="/encuestas" indice={i} />
+              <TarjetaEncuesta
+                key={e.id}
+                encuesta={e}
+                puedeGestionar={esGestor}
+                // La cuenta SIAU consulta y exporta su encuesta; su estructura no la edita.
+                puedeEditar={!(esTutor && e.code.startsWith(CODIGO_SIAU))}
+                baseUrl="/encuestas"
+                indice={i}
+              />
             ))}
           </FocoCursor>
         )}

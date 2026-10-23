@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSurveyAccess } from "@/lib/auth-helpers";
+import { requireSurveyRead } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { getResultadosEncuesta } from "@/lib/encuestas/consultas";
 import { renderInformeEncuestaPdf } from "@/lib/encuesta-report-pdf";
@@ -19,7 +19,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
 
   let generatedBy: string;
   try {
-    const { session } = await requireSurveyAccess(id);
+    const { session } = await requireSurveyRead(id);
     generatedBy = session.user.name ?? "—";
   } catch {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });

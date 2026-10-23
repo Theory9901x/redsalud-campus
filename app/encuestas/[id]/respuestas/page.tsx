@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Globe, Inbox, ListChecks, MonitorSmartphone } from "lucide-react";
-import { requireSurveyAccess } from "@/lib/auth-helpers";
+import { requireSurveyRead } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { parsePageSize } from "@/lib/pagination";
 import { TablePagination } from "@/components/admin/table-pagination";
@@ -26,7 +26,8 @@ export default async function RespuestasPage({
 }) {
   const { id } = await params;
   const { page: pageParam, pageSize: pageSizeParam } = await searchParams;
-  await requireSurveyAccess(id).catch(() => notFound());
+  // soloConsulta: la cuenta SIAU en su encuesta (ve y exporta, no edita).
+  const { soloConsulta } = await requireSurveyRead(id).catch(() => notFound());
 
   const encuesta = await prisma.survey.findUnique({
     where: { id },
@@ -87,7 +88,7 @@ export default async function RespuestasPage({
           ]}
         />
         <div className="barra-modulo flex flex-wrap items-center justify-between gap-3 p-2.5">
-          <NavFicha id={id} activa="respuestas" />
+          <NavFicha id={id} activa="respuestas" editable={!soloConsulta} />
           <p className="mono-label px-2">Ordenadas de la más reciente a la más antigua</p>
         </div>
       </div>

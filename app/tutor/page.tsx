@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { requireSession } from "@/lib/auth-helpers";
+import { esCuentaSiau } from "@/lib/encuestas/acceso-siau";
 import { getTutorCommandCenter, hace, type EventoFeed } from "@/lib/tutor-dashboard";
 import { ModuloHero } from "@/components/training-plans/modulo-hero";
 import { Cifra } from "@/components/training-plans/plan-dinamico";
@@ -58,7 +59,8 @@ const diaMes = (f: Date) => {
 export default async function TutorDashboardPage() {
   const session = await requireSession("/tutor");
   const ahora = new Date();
-  const d = await getTutorCommandCenter(session.user.id, ahora);
+  // La cuenta del área SIAU además consulta y exporta la encuesta de Atención al Usuario.
+  const [d, cuentaSiau] = await Promise.all([getTutorCommandCenter(session.user.id, ahora), esCuentaSiau(session)]);
 
   const nombre = session.user.name?.split(" ")[0] ?? "Tutor";
   const tienePlan = d.kpis.aCargo > 0;
@@ -152,6 +154,12 @@ export default async function TutorDashboardPage() {
               En vivo
               {d.enVivoAhora > 0 && <span className="rounded bg-[oklch(0.58_0.2_25)] px-1.5 font-mono text-[10px] leading-4 text-white">{d.enVivoAhora}</span>}
             </Link>
+            {cuentaSiau && (
+              <Link href="/encuestas/siau" className="enlace-hero">
+                <ActivityIcon className="h-4 w-4" aria-hidden="true" />
+                Centro de datos SIAU
+              </Link>
+            )}
             {tienePlan && (
               <Link href="/tutor/mis-encuestas" className="enlace-hero">
                 <ClipboardCheck className="h-4 w-4" aria-hidden="true" />

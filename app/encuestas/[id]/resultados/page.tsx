@@ -15,7 +15,7 @@ import {
   Users2,
 } from "lucide-react";
 import type { SurveyQuestionType } from "@prisma/client";
-import { requireSurveyAccess } from "@/lib/auth-helpers";
+import { requireSurveyRead } from "@/lib/auth-helpers";
 import { getResultadosEncuesta } from "@/lib/encuestas/consultas";
 import { ETIQUETA_TIPO } from "@/lib/encuestas/tipos";
 import { GraficaEvolucion, GraficaOpciones, GraficaDistribucion } from "@/components/encuestas/graficas-resultados";
@@ -55,11 +55,13 @@ const DESCRIPCION_CUMPLIMIENTO = {
  *   4. Pestañas: el resumen (indicadores, bloques, evolución) y el detalle
  *      por pregunta.
  *
- * Solo para quien gestiona la encuesta.
+ * Solo para quien gestiona la encuesta y, en modo consulta (sin
+ * Constructor), para la cuenta del área SIAU sobre la encuesta SIAU.
  */
 export default async function ResultadosPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requireSurveyAccess(id).catch(() => notFound());
+  // soloConsulta: la cuenta SIAU en su encuesta (ve y exporta, no edita).
+  const { soloConsulta } = await requireSurveyRead(id).catch(() => notFound());
 
   const datos = await getResultadosEncuesta(id);
   if (!datos) notFound();
@@ -132,7 +134,7 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
 
         {/* Barra de mando: navegación de la ficha a la izquierda, difusión a la derecha. */}
         <div className="barra-modulo flex flex-wrap items-center justify-between gap-3 p-2.5">
-          <NavFicha id={id} activa="resultados" />
+          <NavFicha id={id} activa="resultados" editable={!soloConsulta} />
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto [&>*]:flex-1 sm:[&>*]:flex-none">
             {esSiau && (
               <Link href="/encuestas/siau" className="enc-boton">

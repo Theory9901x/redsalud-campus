@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { veComoAdmin } from "@/lib/roles";
+import { CODIGO_SIAU } from "@/lib/encuestas/metrics";
+import { puedeGestionarSiau } from "@/lib/encuestas/acceso-siau";
 
 /**
  * La sesión de una página que exige estar identificado, o un redirect a
@@ -156,4 +158,30 @@ export async function requireSurveyAccess(surveyId: string) {
   if (!survey.trainingPlanId) throw new Error("No autorizado: encuesta sin plan adscrito.");
   await requireTrainingPlanAccess(survey.trainingPlanId);
   return { session, planId: survey.trainingPlanId };
+}
+
+/**
+ * CONSULTA de una encuesta (resultados, respuestas y sus descargas): los
+ * mismos de requireSurveyAccess y, además, la cuenta del área SIAU sobre la
+ * encuesta SIAU, que es suya (lib/encuestas/acceso-siau.ts).
+ *
+ * Es más amplio que requireSurveyAccess a propósito y solo para leer: el
+ * constructor y sus acciones siguen exigiendo requireSurveyAccess, así que
+ * la cuenta SIAU consulta y exporta su encuesta, pero no la edita.
+ * `soloConsulta` dice cuándo se entró por esta ampliación, para que la ficha
+ * no ofrezca un «Constructor» que luego respondería 404.
+ */
+export async function requireSurveyRead(surveyId: string) {
+  try {
+    return { ...(await requireSurveyAccess(surveyId)), soloConsulta: false };
+  } catch (error) {
+    const survey = await prisma.survey.findUnique({ where: { id: surveyId }, select: { code: true, trainingPlanId: true } });
+    if (survey?.code.startsWith(CODIGO_SIAU)) {
+      const session = await auth();
+      if (session?.user && (await puedeGestionarSiau(session))) {
+        return { session, planId: survey.trainingPlanId, soloConsulta: true };
+      }
+    }
+    throw error;
+  }
 }

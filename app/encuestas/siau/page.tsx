@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
+import { puedeGestionarSiau } from "@/lib/encuestas/acceso-siau";
 import { getInformeSiau, getEstructuraSiau } from "@/lib/encuestas/metrics";
 import { leerPeriodo, periodoActual } from "@/lib/encuestas/periodo-url";
 import { leerConfig } from "@/lib/encuestas/tipos";
@@ -15,9 +16,10 @@ import { VistaSiau } from "@/components/encuestas/siau/vista-siau";
  */
 export default async function CentroDatosSiauPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sesion = await requireTutorOrAdmin();
-  // La encuesta SIAU es del área de Atención al Usuario: el tutor de un área
-  // del plan solo gestiona la satisfacción de sus capacitaciones.
-  if (sesion.user.role === "TUTOR") redirect("/encuestas");
+  // La encuesta SIAU es del área de Atención al Usuario: además del
+  // administrador, solo entra la cuenta de esa área. El tutor de cualquier
+  // otra área del plan solo gestiona la satisfacción de sus capacitaciones.
+  if (!(await puedeGestionarSiau(sesion))) redirect("/encuestas");
   const sp = await searchParams;
   const params = new URLSearchParams(Object.entries(sp).filter(([, v]) => v) as [string, string][]);
   const periodo = leerPeriodo(params) ?? periodoActual((sp.tipo as "mensual" | "trimestral" | "anual") || "mensual");

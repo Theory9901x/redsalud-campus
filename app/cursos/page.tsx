@@ -9,6 +9,7 @@ import { StaggerSections } from "@/components/brand/stagger-sections";
 import { StudentShell } from "@/components/student/student-shell";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { TutorShell, TutorContextBanner } from "@/components/tutor/tutor-shell";
+import { esCuentaSiau } from "@/lib/encuestas/acceso-siau";
 import { PublicCoursesShell } from "@/components/cursos/public-courses-shell";
 import { getUserAvatarUrl } from "@/lib/avatar";
 import { getNotificationsForUser } from "@/lib/notifications";
@@ -235,7 +236,7 @@ export default async function CatalogoCursosPage({
   // Tutor: conserva su chrome de trabajo con un banner de contexto discreto.
   if (session?.user.role === "TUTOR") {
     return (
-      <TutorShell userName={session.user.name ?? "Tutor"} banner={<TutorContextBanner />}>
+      <TutorShell userName={session.user.name ?? "Tutor"} cuentaSiau={await esCuentaSiau(session)} banner={<TutorContextBanner />}>
         <div className="mx-auto w-full max-w-6xl">{content}</div>
       </TutorShell>
     );

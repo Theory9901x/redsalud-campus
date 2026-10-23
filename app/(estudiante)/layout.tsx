@@ -5,6 +5,7 @@ import { veComoAdmin } from "@/lib/roles";
 import { StudentShell } from "@/components/student/student-shell";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { TutorShell } from "@/components/tutor/tutor-shell";
+import { esCuentaSiau } from "@/lib/encuestas/acceso-siau";
 import { getUserAvatarUrl } from "@/lib/avatar";
 import { getNotificationsForUser } from "@/lib/notifications";
 
@@ -34,7 +35,11 @@ export default async function EstudianteLayout({ children }: { children: React.R
   }
 
   if (session.user.role === "TUTOR") {
-    return <TutorShell userName={session.user.name ?? "Tutor"}>{children}</TutorShell>;
+    return (
+      <TutorShell userName={session.user.name ?? "Tutor"} cuentaSiau={await esCuentaSiau(session)}>
+        {children}
+      </TutorShell>
+    );
   }
 
   const [avatarUrl, settings, { notifications, unreadCount }, user] = await Promise.all([
