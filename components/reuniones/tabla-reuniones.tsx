@@ -5,16 +5,17 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EliminarReunion } from "@/components/reuniones/formularios";
-import { eliminarReunionAction } from "@/app/admin/reuniones/actions";
+import { EliminarReunion, ReprogramarSesion } from "@/components/reuniones/formularios";
+import { eliminarReunionAction, reprogramarSesionAction } from "@/app/admin/reuniones/actions";
 
 type Fila = {
   id: string; titulo: string; responsable: string; creador: string;
   fecha: string; fechaOrden: string; sesiones: number; abiertas: number;
   registrados: number; actas: number;
+  sesionUnica: { id: string; fecha: string; inicio: string; fin: string } | null;
 };
 
-export function TablaReuniones({ reuniones, basePath, puedeEliminar = false }: { reuniones: Fila[]; basePath: string; puedeEliminar?: boolean }) {
+export function TablaReuniones({ reuniones, basePath, puedeGestionar = false }: { reuniones: Fila[]; basePath: string; puedeGestionar?: boolean }) {
   const [busqueda, setBusqueda] = useState("");
   const [orden, setOrden] = useState("fecha");
   const [pagina, setPagina] = useState(1);
@@ -52,7 +53,7 @@ export function TablaReuniones({ reuniones, basePath, puedeEliminar = false }: {
             <TableCell className="px-4 tabular-nums">{r.abiertas}</TableCell>
             <TableCell className="px-4 tabular-nums">{r.registrados}</TableCell>
             <TableCell className="px-4 tabular-nums">{r.actas}/{r.sesiones}</TableCell>
-            <TableCell className="px-4"><div className="flex items-center gap-2"><Link href={`${basePath}/${r.id}`} className="inline-flex min-h-10 items-center rounded-lg border border-border px-3 font-semibold hover:bg-muted">Abrir</Link>{puedeEliminar && <EliminarReunion action={eliminarReunionAction.bind(null, r.id)} titulo={r.titulo} />}</div></TableCell>
+            <TableCell className="px-4"><div className="flex flex-wrap items-center gap-2"><Link href={`${basePath}/${r.id}`} className="inline-flex min-h-10 items-center rounded-lg border border-border px-3 font-semibold hover:bg-muted">Abrir</Link>{puedeGestionar && r.sesionUnica && <ReprogramarSesion action={reprogramarSesionAction.bind(null, r.id, r.sesionUnica.id)} fecha={r.sesionUnica.fecha} inicio={r.sesionUnica.inicio} fin={r.sesionUnica.fin} className="min-h-10" />}{puedeGestionar && <EliminarReunion action={eliminarReunionAction.bind(null, r.id)} titulo={r.titulo} />}</div></TableCell>
           </TableRow>)}
           {!visibles.length && <TableRow><TableCell colSpan={9} className="py-10 text-center text-muted-foreground">No hay reuniones que coincidan con la búsqueda.</TableCell></TableRow>}
         </TableBody>

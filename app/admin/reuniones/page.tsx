@@ -2,6 +2,7 @@ import { Presentation } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { listarReuniones } from "@/lib/reuniones";
+import { horarioBogota } from "@/lib/reuniones-gestion";
 import { crearReunionAction } from "@/app/admin/reuniones/actions";
 import { PestanasModulo } from "@/components/comites/pestanas-modulo";
 import { ModuloHero } from "@/components/training-plans/modulo-hero";
@@ -68,10 +69,11 @@ export default async function ReunionesPage() {
       {reuniones.length === 0 ? (
         <EmptyState icon={Presentation} title="Todavía no hay reuniones abiertas" description="Crea la primera con el botón «Nueva reunión»." className="py-16" />
       ) : (
-        <TablaReuniones basePath={basePath} puedeEliminar={user.role !== "SEGUIMIENTO"} reuniones={reuniones.map((r) => ({
+        <TablaReuniones basePath={basePath} puedeGestionar={user.role !== "SEGUIMIENTO"} reuniones={reuniones.map((r) => ({
           ...r,
           fecha: r.primeraFecha ? FECHA.format(r.primeraFecha) : "Sin fecha",
           fechaOrden: r.primeraFecha?.toISOString() ?? "",
+          sesionUnica: r.sesionUnica ? { id: r.sesionUnica.id, ...horarioBogota(r.sesionUnica.inicio, r.sesionUnica.fin) } : null,
         }))} />
       )}
     </div>

@@ -37,7 +37,8 @@ export type ResumenSesion = {
 export async function listarReuniones() {
   const acceso = await accesoReuniones();
   const planes = await prisma.trainingPlan.findMany({
-    where: { ...acceso.where, status: { not: "ARCHIVED" }, ...(veePruebas(acceso.user.role) ? {} : SIN_PRUEBAS) },
+    // Las pruebas solo las ve el admin… y quien las creó, que las administra.
+    where: { ...acceso.where, status: { not: "ARCHIVED" }, ...(veePruebas(acceso.user.role) ? {} : { OR: [{ createdById: acceso.user.id }, SIN_PRUEBAS] }) },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -51,7 +52,7 @@ export async function listarReuniones() {
           id: true,
           status: true,
           responsibleLabel: true,
-          sessions: { orderBy: { startsAt: "asc" }, take: 1, select: { startsAt: true } },
+          sessions: { orderBy: { startsAt: "asc" }, take: 1, select: { startsAt: true, endsAt: true } },
           _count: { select: { externalParticipants: true } },
           documents: { where: { fileName: { contains: "ACTA" } }, select: { id: true } },
         },
@@ -73,6 +74,8 @@ export async function listarReuniones() {
       actas: p.activities.filter((a) => a.documents.length > 0).length,
       primeraFecha: fechas[0] ?? null,
       ultimaFecha: fechas[fechas.length - 1] ?? null,
+      /** Reunión de una sola sesión: se reprograma desde la lista. */
+      sesionUnica: p.activities.length === 1 && p.activities[0].sessions[0] ? { id: p.activities[0].id, inicio: p.activities[0].sessions[0].startsAt, fin: p.activities[0].sessions[0].endsAt } : null,
     };
   });
 }
