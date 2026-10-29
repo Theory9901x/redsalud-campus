@@ -8,6 +8,9 @@ const dia = (d: Date) => {
 const hora = (d: Date | null) => d ? new Intl.DateTimeFormat("en-GB", { timeZone: "America/Bogota", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(d) : "";
 const fecha = (d: Date | null) => d ? new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" }).format(d) : "";
 
+/** Fecha y horas de una jornada en hora de Colombia, listas para inputs date/time. */
+export const horarioBogota = (startsAt: Date | null, endsAt: Date | null) => ({ fecha: startsAt ? dia(startsAt) : "", inicio: hora(startsAt), fin: hora(endsAt) });
+
 export async function getGestionReunion(planId: string, activityId: string) {
   const d = await getSesionReunion(planId, activityId);
   if (!d) return null;

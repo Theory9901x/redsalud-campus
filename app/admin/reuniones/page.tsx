@@ -68,7 +68,7 @@ export default async function ReunionesPage() {
       {reuniones.length === 0 ? (
         <EmptyState icon={Presentation} title="Todavía no hay reuniones abiertas" description="Crea la primera con el botón «Nueva reunión»." className="py-16" />
       ) : (
-        <TablaReuniones basePath={basePath} reuniones={reuniones.map((r) => ({
+        <TablaReuniones basePath={basePath} puedeEliminar={user.role !== "SEGUIMIENTO"} reuniones={reuniones.map((r) => ({
           ...r,
           fecha: r.primeraFecha ? FECHA.format(r.primeraFecha) : "Sin fecha",
           fechaOrden: r.primeraFecha?.toISOString() ?? "",

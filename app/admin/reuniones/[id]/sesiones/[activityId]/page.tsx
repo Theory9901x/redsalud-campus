@@ -6,8 +6,8 @@ import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getSesionReunion } from "@/lib/reuniones";
 import { getAreasAnfitrionas, getGestionReunion } from "@/lib/reuniones-gestion";
 import { GestionReunionEnVivo } from "@/components/reuniones/gestion-en-vivo";
-import { subirActaFirmadaAction } from "@/app/admin/reuniones/actions";
-import { SubirActaFirmada } from "@/components/reuniones/formularios";
+import { reprogramarSesionAction, subirActaFirmadaAction } from "@/app/admin/reuniones/actions";
+import { ReprogramarSesion, SubirActaFirmada } from "@/components/reuniones/formularios";
 import { ActivityQrPanel } from "@/components/training-plans/activity-qr-panel";
 import { etiquetaJornada } from "@/components/training-plans/labels";
 import { accesosDeJornada } from "@/lib/jornadas";
@@ -32,7 +32,7 @@ export default async function SesionReunionPage({ params, searchParams }: { para
       <div className="flex flex-wrap items-center justify-between gap-4"><h1 className="text-3xl font-semibold">{d.titulo}</h1><span className="rounded-full border px-4 py-2 text-base font-semibold">{d.estado === "CLOSED" ? "Cerrada" : "Abierta hasta cierre manual"}</span></div>
       {d.jornada && <p className="flex items-center gap-2 text-base text-muted-foreground"><CalendarClock className="h-5 w-5" />{etiquetaJornada(d.jornada)}</p>}
       <p className="text-base text-muted-foreground">Consulta los compromisos, documentos, asistencia y acta de esta reunión. Para modificar información, pulsa Editar.</p>
-      <div className="flex flex-wrap gap-3"><Link href={`/sala/${activityId}${d.jornada ? `?s=${d.jornada.tokenPublico}` : ""}`} target="_blank" className={cn(buttonVariants(), "min-h-12 gap-2 text-base")}><Video className="h-5 w-5" />Abrir sala virtual</Link><a href={`/api/reuniones/${id}/sesiones/${activityId}/acta`} className={cn(buttonVariants({ variant: "outline" }), "min-h-12 gap-2 text-base")}><FileDown className="h-5 w-5" />Descargar acta PDF</a></div>
+      <div className="flex flex-wrap gap-3"><Link href={`/sala/${activityId}${d.jornada ? `?s=${d.jornada.tokenPublico}` : ""}`} target="_blank" className={cn(buttonVariants(), "min-h-12 gap-2 text-base")}><Video className="h-5 w-5" />Abrir sala virtual</Link><a href={`/api/reuniones/${id}/sesiones/${activityId}/acta`} className={cn(buttonVariants({ variant: "outline" }), "min-h-12 gap-2 text-base")}><FileDown className="h-5 w-5" />Descargar acta PDF</a>{d.puedeGestionar && <ReprogramarSesion action={reprogramarSesionAction.bind(null, id, activityId)} fecha={gestion.fecha} inicio={gestion.inicio} fin={gestion.fin} className="min-h-12 px-4 text-base" />}</div>
     </header>
     <GestionReunionEnVivo inicial={gestion} areas={areas} editarInicial={editar === "1" && gestion.puedeGestionar && !gestion.cerrada} formularioActaFirmada={d.puedeGestionar ? <SubirActaFirmada action={subirActaFirmadaAction.bind(null, id, activityId)} /> : undefined} />
     <section id="accesos-reunion" className="space-y-4 rounded-2xl border bg-card p-6"><h2 className="text-2xl font-semibold">Enlaces y QR de la reunión</h2><p className="text-base text-muted-foreground">Accesos disponibles según el tipo de participantes definido para esta sesión.</p><ActivityQrPanel enlaces={enlaces} /></section>

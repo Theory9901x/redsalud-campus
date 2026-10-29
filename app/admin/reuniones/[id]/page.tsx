@@ -4,7 +4,8 @@ import QRCode from "qrcode";
 import { ArrowLeft, CalendarClock, ExternalLink, FileCheck2, FileDown, ListOrdered, MapPin, Pencil, Presentation, Target, Users2, Video } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getReunion } from "@/lib/reuniones";
-import { agregarSesionAction } from "@/app/admin/reuniones/actions";
+import { agregarSesionAction, eliminarReunionAction, reprogramarSesionAction } from "@/app/admin/reuniones/actions";
+import { horarioBogota } from "@/lib/reuniones-gestion";
 import { ModuloHero } from "@/components/training-plans/modulo-hero";
 import { PanelDeslizable } from "@/components/training-plans/panel-deslizable";
 import { PildoraEstado, escalon } from "@/components/training-plans/plan-visual";
@@ -12,7 +13,7 @@ import { SeccionActividad } from "@/components/training-plans/vista-actividad";
 import { etiquetaJornada } from "@/components/training-plans/labels";
 import { AccesosJornada } from "@/components/training-plans/accesos-jornada";
 import { accesosDeJornada } from "@/lib/jornadas";
-import { FormularioAgregarSesion } from "@/components/reuniones/formularios";
+import { EliminarReunion, FormularioAgregarSesion, ReprogramarSesion } from "@/components/reuniones/formularios";
 import { EmptyState } from "@/components/brand/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const r = await getReunion(id);
   if (!r) notFound();
+  const puedeEscribir = sesion.user.role !== "SEGUIMIENTO";
 
   const accesos = await Promise.all(r.sesiones.map(async (s) => {
     const enlaces = accesosDeJornada(APP_URL, s.id, s.tokenPublico ?? '', { conEvaluacion: false, modalidad: 'VIRTUAL', audience: s.audience })
@@ -61,11 +63,14 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
           { valor: registrados, etiqueta: "Asistentes registrados" },
           { valor: `${actas}/${r.sesiones.length}`, etiqueta: "Actas firmadas" },
         ]}
-        acciones={
-          <PanelDeslizable centrado etiqueta="Agregar sesión" icono="agendar" titulo="Agregar sesión" descripcion="Cada sesión nueva tiene su propio enlace, QR, sala y acta.">
-            <FormularioAgregarSesion action={agregarSesionAction.bind(null, r.id)} />
-          </PanelDeslizable>
-        }
+        acciones={puedeEscribir ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <PanelDeslizable centrado etiqueta="Agregar sesión" icono="agendar" titulo="Agregar sesión" descripcion="Cada sesión nueva tiene su propio enlace, QR, sala y acta.">
+              <FormularioAgregarSesion action={agregarSesionAction.bind(null, r.id)} />
+            </PanelDeslizable>
+            <EliminarReunion action={eliminarReunionAction.bind(null, r.id)} titulo={r.titulo} volverA={basePath} className="min-h-12 rounded-xl border-white/25 bg-white/[0.06] px-5 text-base text-white hover:bg-white/15" />
+          </div>
+        ) : undefined}
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -128,8 +133,9 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
                       <a href={`/api/reuniones/${r.id}/sesiones/${s.id}/acta`} className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}>
                         <FileDown className="h-3.5 w-3.5" aria-hidden="true" /> Acta PDF
                       </a>
-                      <Link href={`${basePath}/${r.id}/sesiones/${s.id}?editar=1`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
-                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" /> Editar
+                      {puedeEscribir && <ReprogramarSesion action={reprogramarSesionAction.bind(null, r.id, s.id)} {...horarioBogota(s.inicio, s.fin)} />}
+                      <Link href={`${basePath}/${r.id}/sesiones/${s.id}${puedeEscribir ? "?editar=1" : ""}`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
+                        {puedeEscribir ? <><Pencil className="h-3.5 w-3.5" aria-hidden="true" /> Editar</> : "Ver detalle"}
                       </Link>
                     </div>
                   </div>

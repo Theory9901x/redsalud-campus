@@ -1,8 +1,11 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { CalendarPlus, CheckCircle2, FileUp, Lock, LockOpen, Plus, Save, Trash2, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CalendarClock, CalendarPlus, CheckCircle2, FileUp, Lock, LockOpen, Plus, Save, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import type { EstadoReunion } from "@/app/admin/reuniones/actions";
 import { CamposFichaDocumento } from "@/components/documentos/campos-ficha-documento";
 
@@ -250,5 +253,83 @@ export function AccionesSesion({
       </Button>
       {error && <p className="w-full text-base text-destructive">{error}</p>}
     </div>
+  );
+}
+
+/** Reprogramar: un diálogo que solo pide fecha y hora; todo lo demás de la sesión se conserva. */
+export function ReprogramarSesion({ action, fecha, inicio, fin, className }: {
+  action: (s: EstadoReunion, fd: FormData) => Promise<EstadoReunion>;
+  fecha: string; inicio: string; fin: string; className?: string;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const [state, formAction, pendiente] = useActionState(async (s: EstadoReunion, fd: FormData) => {
+    const r = await action(s, fd);
+    if (r.ok) setAbierto(false);
+    return r;
+  }, INICIAL);
+  return (
+    <Dialog open={abierto} onOpenChange={setAbierto}>
+      <DialogTrigger className={cn("inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-semibold text-foreground hover:bg-muted", className)}>
+        <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" /> Reprogramar
+      </DialogTrigger>
+      <DialogContent className="font-sans sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold">Reprogramar sesión</DialogTitle>
+          <DialogDescription className="text-base">Solo cambian la fecha y la hora. El enlace, el QR, los datos, los compromisos y los documentos se conservan. Si la sesión estaba cerrada, se reabre.</DialogDescription>
+        </DialogHeader>
+        <form action={formAction} className="form-premium space-y-4">
+          <Campo etiqueta="Nueva fecha"><input name="fecha" type="date" required defaultValue={fecha} className="w-full" /></Campo>
+          <div className="grid grid-cols-2 gap-3">
+            <Campo etiqueta="Hora de inicio"><input name="inicio" type="time" required defaultValue={inicio} className="w-full" /></Campo>
+            <Campo etiqueta="Fin previsto"><input name="fin" type="time" defaultValue={fin} className="w-full" /></Campo>
+          </div>
+          {state.error && <p role="alert" className="text-base text-destructive">{state.error}</p>}
+          <Button type="submit" disabled={pendiente} className="min-h-11 w-full gap-2 text-base"><CalendarClock className="h-4 w-4" />{pendiente ? "Reprogramando…" : "Guardar nueva fecha"}</Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Eliminar la reunión completa: hay que escribir su nombre para confirmar. */
+export function EliminarReunion({ action, titulo, volverA, className }: {
+  action: (confirmacion: string) => Promise<EstadoReunion>;
+  titulo: string; volverA?: string; className?: string;
+}) {
+  const router = useRouter();
+  const [abierto, setAbierto] = useState(false);
+  const [confirmacion, setConfirmacion] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pendiente, iniciar] = useTransition();
+  const coincide = confirmacion.replace(/\s+/g, " ").trim().toLowerCase() === titulo.replace(/\s+/g, " ").trim().toLowerCase();
+  return (
+    <Dialog open={abierto} onOpenChange={(v) => { setAbierto(v); setConfirmacion(""); setError(null); }}>
+      <DialogTrigger className={cn("inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-destructive/40 px-3 text-sm font-semibold text-destructive hover:bg-destructive/10", className)}>
+        <Trash2 className="h-4 w-4" aria-hidden="true" /> Eliminar
+      </DialogTrigger>
+      <DialogContent className="font-sans sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold">Eliminar reunión</DialogTitle>
+          <DialogDescription className="text-base">Se borran <strong>todas</strong> sus sesiones, la asistencia, los compromisos, el acta y los documentos. No se puede deshacer.</DialogDescription>
+        </DialogHeader>
+        <form className="space-y-4" onSubmit={(e) => {
+          e.preventDefault();
+          setError(null);
+          iniciar(async () => {
+            const r = await action(confirmacion);
+            if (r.error) { setError(r.error); return; }
+            setAbierto(false);
+            if (volverA) router.push(volverA); else router.refresh();
+          });
+        }}>
+          <label className="block space-y-1.5">
+            <span className="block text-base">Para confirmar, escribe el nombre: <strong className="select-all">{titulo}</strong></span>
+            <input value={confirmacion} onChange={(e) => setConfirmacion(e.target.value)} autoComplete="off" className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-base" />
+          </label>
+          {error && <p role="alert" className="text-base text-destructive">{error}</p>}
+          <Button type="submit" variant="destructive" disabled={!coincide || pendiente} className="min-h-11 w-full gap-2 text-base"><Trash2 className="h-4 w-4" />{pendiente ? "Eliminando…" : "Eliminar definitivamente"}</Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

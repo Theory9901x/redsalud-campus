@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { accesoReuniones, requireReunionAccess } from "@/lib/reuniones-access";
 import { saveTrainingActivityDocument, fichaDesdeFormulario } from "@/lib/storage";
 import { registrarAuditoria } from "@/lib/audit";
+import { reprogramacionSesionReunion } from "@/lib/reuniones-edicion";
 import { Prisma } from "@prisma/client";
 
 /**
@@ -209,6 +210,57 @@ export async function reabrirSesionAction(planId: string, activityId: string): P
   revalidatePath(`/tutor/reuniones/${planId}/sesiones/${activityId}`);
   revalidatePath(`${BASE}/${planId}`);
   revalidatePath(`/tutor/reuniones/${planId}`);
+  return { error: null, ok: true };
+}
+
+/**
+ * Reprogramar: mueve la MISMA sesión a otra fecha y hora. Enlace, QR, datos,
+ * compromisos y documentos se conservan; si estaba cerrada, se reabre.
+ */
+export async function reprogramarSesionAction(planId: string, activityId: string, _prev: EstadoReunion, fd: FormData): Promise<EstadoReunion> {
+  const sesion = await requireReunionAccess(planId, activityId, true);
+  const parsed = reprogramacionSesionReunion.safeParse(Object.fromEntries(fd));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Revisa la fecha y la hora." };
+  const { fecha, inicio, fin } = parsed.data;
+  const jornada = await prisma.trainingSession.findFirst({ where: { activityId, activity: { planId } }, orderBy: { startsAt: "asc" }, select: { id: true } });
+  if (!jornada) return { error: "La sesión no existe." };
+  const startsAt = enBogota(fecha, inicio);
+  const endsAt = fin ? enBogota(fecha, fin) : null;
+  await prisma.$transaction([
+    prisma.trainingActivity.update({ where: { id: activityId }, data: { startDate: startsAt, endDate: endsAt, status: "OPEN", closedAt: null } }),
+    prisma.trainingSession.update({ where: { id: jornada.id }, data: { startsAt, endsAt } }),
+    prisma.trainingSession.updateMany({ where: { activityId, status: "CLOSED" }, data: { status: "OPEN", fase: "REGISTRO", cerradaEl: null, cierreSnapshot: Prisma.DbNull } }),
+  ]);
+  await registrarAuditoria({ userId: sesion.user.id, action: "UPDATE", entity: "TrainingActivity", entityId: activityId, description: `Sesión reprogramada para ${fecha} ${inicio}${fin ? `–${fin}` : ""}; enlaces y acta conservados.` }).catch(() => {});
+  for (const base of [BASE, "/tutor/reuniones"]) {
+    revalidatePath(base); revalidatePath(`${base}/${planId}`); revalidatePath(`${base}/${planId}/sesiones/${activityId}`);
+  }
+  return { error: null, ok: true };
+}
+
+/**
+ * Eliminar la reunión COMPLETA: sesiones, asistencia, compromisos y documentos.
+ * Pueden hacerlo la administración, quien la creó o el anfitrión, y solo
+ * escribiendo el nombre exacto de la reunión como confirmación.
+ */
+export async function eliminarReunionAction(planId: string, confirmacion: string): Promise<EstadoReunion> {
+  const { user } = await accesoReuniones(true);
+  const plan = await prisma.trainingPlan.findFirst({
+    where: { id: planId, kind: "REUNION", ...(user.role === "ADMIN" ? {} : { OR: [{ createdById: user.id }, { tutorId: user.id }] }) },
+    select: { title: true },
+  });
+  if (!plan) return { error: "La reunión no existe o no tienes permiso para eliminarla." };
+  const normal = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase();
+  if (normal(confirmacion) !== normal(plan.title)) return { error: "El nombre escrito no coincide con el de la reunión." };
+  try {
+    await prisma.trainingPlan.delete({ where: { id: planId } });
+  } catch (error) {
+    console.error("No se pudo eliminar la reunión", planId, error);
+    return { error: `No se pudo eliminar "${plan.title}": tiene registros vinculados que la base de datos protege. Avísale a soporte.` };
+  }
+  await registrarAuditoria({ userId: user.id, action: "DELETE", entity: "TrainingPlan", entityId: planId, description: `Reunión eliminada con todas sus sesiones, asistencia y actas: ${plan.title}` }).catch(() => {});
+  revalidatePath(BASE);
+  revalidatePath("/tutor/reuniones");
   return { error: null, ok: true };
 }
 
