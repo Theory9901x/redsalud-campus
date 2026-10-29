@@ -45,6 +45,9 @@ export async function editarDatosReunionAction(planId: string, activityId: strin
   return { error: null, ok: true };
 }
 
+/** Cada compromiso es un ítem único: un doble envío o dos anfitriones escribiendo lo mismo no lo repiten. */
+const normal = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase();
+
 export async function gestionarCompromisoReunionAction(planId: string, activityId: string, fd: FormData): Promise<EstadoReunion> {
   const user = await requireReunionAccess(planId, activityId, true);
   const texto = String(fd.get("texto") ?? "").trim();
@@ -54,6 +57,8 @@ export async function gestionarCompromisoReunionAction(planId: string, activityI
   if (texto.length > 10000) return { error: "El compromiso es demasiado largo; divídelo en varios puntos." };
   let guardado;
   if (operacion === "agregar") {
+    const actual = await prisma.trainingActivity.findFirst({ where: { id: activityId, planId }, select: { followUpEvidence: true } });
+    if (actual?.followUpEvidence.some(c => normal(c) === normal(texto))) return { error: "Ese compromiso ya está en el acta." };
     guardado = await prisma.trainingActivity.updateMany({ where: { id: activityId, planId, status: { not: "CLOSED" } }, data: { followUpEvidence: { push: texto } } });
   } else {
     let originales: unknown;
@@ -61,6 +66,7 @@ export async function gestionarCompromisoReunionAction(planId: string, activityI
     const indice = Number(fd.get("indice"));
     if (!Array.isArray(originales) || !originales.every(x => typeof x === "string") || !Number.isInteger(indice) || indice < 0 || indice >= originales.length) return { error: "El compromiso no es válido." };
     const lista = [...originales] as string[];
+    if (operacion === "editar" && lista.some((c, i) => i !== indice && normal(c) === normal(texto))) return { error: "Ese compromiso ya está en el acta." };
     if (operacion === "editar") lista[indice] = texto; else lista.splice(indice, 1);
     guardado = await prisma.trainingActivity.updateMany({ where: { id: activityId, planId, status: { not: "CLOSED" }, followUpEvidence: { equals: originales as string[] } }, data: { followUpEvidence: lista } });
   }

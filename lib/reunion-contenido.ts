@@ -19,7 +19,7 @@ export async function puedeLeerContenidoReunion(activityId: string) {
 
 export async function getContenidoReunion(activityId: string) {
   if (!await puedeLeerContenidoReunion(activityId)) return null;
-  const act = await prisma.trainingActivity.findUnique({ where: { id: activityId }, select: { followUpEvidence: true, documents: { orderBy: { createdAt: "desc" }, select: { id: true, fileName: true, fileUrl: true, description: true } } } });
-  return act ? { compromisos: act.followUpEvidence, documentos: act.documents } : null;
+  const act = await prisma.trainingActivity.findUnique({ where: { id: activityId }, select: { status: true, followUpEvidence: true, documents: { orderBy: { createdAt: "desc" }, select: { id: true, fileName: true, fileUrl: true, description: true } } } });
+  return act ? { compromisos: act.followUpEvidence, documentos: act.documents, cerrada: act.status === "CLOSED" } : null;
 }
 export type ContenidoReunion = NonNullable<Awaited<ReturnType<typeof getContenidoReunion>>>;

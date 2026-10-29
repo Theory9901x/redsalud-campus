@@ -135,9 +135,9 @@ export default async function SalaVirtualPage({
   const inicialesUsuario = nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
 
   const volverHref = esReunion
-    ? gestion ? `${session.user.role === "TUTOR" ? "/tutor" : "/admin"}/reuniones/${actividad.plan.id}/sesiones/${activityId}` : "/mis-capacitaciones/en-vivo"
+    ? gestion ? `${session.user.role === "TUTOR" ? "/tutor" : "/admin"}/reuniones/${actividad.plan.id}` : "/mis-capacitaciones/en-vivo"
     : esPersonal ? `/tutor/${actividad.plan.isIndependent ? "capacitaciones" : "planes-capacitacion"}/${actividad.plan.id}/actividades/${actividad.id}` : `/mis-capacitaciones/${actividad.plan.id}`;
-  const herramientas = contenido ? <ContenidoSalaReunion activityId={activityId} inicial={contenido} panelHref={gestion?.puedeGestionar ? volverHref : undefined} /> : undefined;
+  const herramientas = contenido ? <ContenidoSalaReunion activityId={activityId} inicial={contenido} anfitrion={gestion?.puedeGestionar ? { planId: actividad.plan.id, desarrollo: gestion.desarrollo } : undefined} /> : undefined;
 
   const FICHA = [
     { icon: Building2, etiqueta: "Área que la genera", valor: actividad.area?.name ?? "Sin área" },
