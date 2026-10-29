@@ -90,7 +90,16 @@ export async function crearReunionAction(_prev: EstadoReunion, fd: FormData): Pr
   const objetivo = texto(fd, "objetivo") || null;
   const ordenDelDia = texto(fd, "ordenDelDia") || null;
   const responsable = texto(fd, "responsable");
-  const anfitrionId = texto(fd, "anfitrionId") || sesion.user.id;
+  const area = await prisma.trainingArea.findFirst({
+    where: {
+      id: texto(fd, "anfitrionAreaId"),
+      isActive: true,
+      tutor: { status: "ACTIVE", role: { in: ["ADMIN", "TUTOR"] } },
+    },
+    select: { tutorId: true },
+  });
+  if (!area?.tutorId) return { error: "Selecciona un área anfitriona activa." };
+  const anfitrionId = area.tutorId;
 
   const anio = Number(sesiones[0].fecha.slice(0, 4)) || new Date().getFullYear();
   const plan = await prisma.trainingPlan.create({

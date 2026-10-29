@@ -24,14 +24,13 @@ export default async function ReunionesPage() {
   const basePath = session.user.role === "TUTOR" ? "/tutor/reuniones" : "/admin/reuniones";
   const [reuniones, anfitriones] = await Promise.all([
     listarReuniones(),
-    prisma.user.findMany({
+    prisma.trainingArea.findMany({
       where: {
-        role: { in: ["ADMIN", "TUTOR"] },
-        status: "ACTIVE",
-        NOT: { role: "TUTOR", fullName: { equals: "Talento Humano", mode: "insensitive" } },
+        isActive: true,
+        tutor: { status: "ACTIVE", role: { in: ["ADMIN", "TUTOR"] } },
       },
-      orderBy: { fullName: "asc" },
-      select: { id: true, fullName: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
     }),
   ]);
 
@@ -61,7 +60,7 @@ export default async function ReunionesPage() {
             titulo="Nueva reunión abierta"
             descripcion="Define la reunión y sus sesiones. Cada sesión queda con su enlace de registro, su QR y su sala virtual."
           >
-            <FormularioReunion action={crearReunionAction} anfitriones={anfitriones.map((a) => ({ id: a.id, nombre: a.fullName }))} />
+            <FormularioReunion action={crearReunionAction} anfitriones={anfitriones.map((a) => ({ id: a.id, nombre: a.name }))} />
           </PanelDeslizable> : undefined
         }
       />

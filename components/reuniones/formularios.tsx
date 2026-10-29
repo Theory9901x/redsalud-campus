@@ -105,9 +105,9 @@ export function FormularioReunion({
         <Campo etiqueta="Responsable (como figura en el acta)">
           <input name="responsable" placeholder="Ej. SST y ARL Positiva" className="w-full" />
         </Campo>
-        <Campo etiqueta="Anfitrión en la plataforma">
-          <select name="anfitrionId" className="w-full" defaultValue="">
-            <option value="">Yo</option>
+        <Campo etiqueta="Área anfitriona">
+          <select name="anfitrionAreaId" className="w-full" defaultValue="" required>
+            <option value="" disabled>Selecciona un área</option>
             {anfitriones.map((a) => (
               <option key={a.id} value={a.id}>{a.nombre}</option>
             ))}
