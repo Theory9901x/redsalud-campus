@@ -77,6 +77,9 @@ export async function GET(
   // reunión que empieza ya. La asistencia con identidad la registra la
   // evaluación, no la sala.
   if (destino === "meet") {
+    const session = await auth();
+    if (!session?.user) return NextResponse.redirect(`${base}/login?callbackUrl=${encodeURIComponent(new URL(request.url).pathname + new URL(request.url).search)}`);
+    if (jornada?.audience === "EXTERNAL" && session.user.role === "STUDENT") return NextResponse.redirect(`${base}/invitado/${activityId}?s=${jornada.tokenPublico}`);
     // La jornada con sala externa propia (Meet, Teams) va a ella; si no, a la
     // sala integrada de la capacitación, con la jornada en el enlace para que
     // cada conexión quede en ESA jornada.

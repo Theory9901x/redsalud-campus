@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
-import { ArrowLeft, ArrowRight, CalendarClock, Download, ExternalLink, FileCheck2, FileDown, ListOrdered, MapPin, Presentation, Target, Users2, Video } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarClock, ExternalLink, FileCheck2, FileDown, ListOrdered, MapPin, Presentation, Target, Users2, Video } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getReunion } from "@/lib/reuniones";
 import { agregarSesionAction } from "@/app/admin/reuniones/actions";
@@ -10,7 +10,8 @@ import { PanelDeslizable } from "@/components/training-plans/panel-deslizable";
 import { PildoraEstado, escalon } from "@/components/training-plans/plan-visual";
 import { SeccionActividad } from "@/components/training-plans/vista-actividad";
 import { etiquetaJornada } from "@/components/training-plans/labels";
-import { BotonCopiar } from "@/components/comites/formularios";
+import { AccesosJornada } from "@/components/training-plans/accesos-jornada";
+import { accesosDeJornada } from "@/lib/jornadas";
 import { FormularioAgregarSesion } from "@/components/reuniones/formularios";
 import { EmptyState } from "@/components/brand/empty-state";
 import { buttonVariants } from "@/components/ui/button";
@@ -25,7 +26,11 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
   const r = await getReunion(id);
   if (!r) notFound();
 
-  const qrs = await Promise.all(r.sesiones.map((s) => QRCode.toDataURL(`${APP_URL}/invitado/${s.id}`, { width: 600, margin: 2, errorCorrectionLevel: "M" })));
+  const accesos = await Promise.all(r.sesiones.map(async (s) => {
+    const enlaces = accesosDeJornada(APP_URL, s.id, s.tokenPublico ?? '', { conEvaluacion: false, modalidad: 'VIRTUAL', audience: s.audience })
+      .filter((a) => a.clave === 'sala' || a.clave === 'invitados');
+    return Promise.all(enlaces.map(async (a) => ({ ...a, qrDataUrl: await QRCode.toDataURL(a.url, { width: 600, margin: 2, errorCorrectionLevel: 'M' }) })));
+  }));
   const registrados = r.sesiones.reduce((t, s) => t + s.registrados, 0);
   const actas = r.sesiones.filter((s) => s.actaFirmada).length;
 
@@ -56,7 +61,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
           { valor: `${actas}/${r.sesiones.length}`, etiqueta: "Actas firmadas" },
         ]}
         acciones={
-          <PanelDeslizable etiqueta="Agregar sesión" icono="agendar" titulo="Agregar sesión" descripcion="Cada sesión nueva tiene su propio enlace, QR, sala y acta.">
+          <PanelDeslizable centrado etiqueta="Agregar sesión" icono="agendar" titulo="Agregar sesión" descripcion="Cada sesión nueva tiene su propio enlace, QR, sala y acta.">
             <FormularioAgregarSesion action={agregarSesionAction.bind(null, r.id)} />
           </PanelDeslizable>
         }
@@ -90,7 +95,6 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
         ) : (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {r.sesiones.map((s, i) => {
-              const enlace = `${APP_URL}/invitado/${s.id}`;
               return (
                 <article key={s.id} className="plan-instancia revelar flex flex-col gap-4 p-5" style={escalon(i)}>
                   <div className="flex items-start justify-between gap-3">
@@ -105,20 +109,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
                     <PildoraEstado estado={s.estado}>{ESTADO[s.estado]}</PildoraEstado>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-4">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- data-URL generado en el servidor */}
-                    <img src={qrs[i]} alt={`Código QR de registro: ${s.titulo}`} className="h-28 w-28 rounded-xl border border-border/60 bg-white p-1" />
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <p className="mono-label">Enlace de registro · nombre y cargo</p>
-                      <p className="break-all rounded-lg bg-muted/60 px-2.5 py-1.5 font-mono text-[11px] text-foreground">{enlace}</p>
-                      <div className="flex flex-wrap gap-2">
-                        <BotonCopiar texto={enlace} />
-                        <a href={qrs[i]} download={`QR ${s.titulo}.png`} className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}>
-                          <Download className="h-3.5 w-3.5" aria-hidden="true" /> QR
-                        </a>
-                      </div>
-                    </div>
-                  </div>
+                  <AccesosJornada accesos={accesos[i]} abiertoInicial />
 
                   <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3">
                     <div className="flex flex-wrap gap-3 text-[12.5px]">

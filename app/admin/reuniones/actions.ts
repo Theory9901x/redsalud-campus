@@ -16,7 +16,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 export type EstadoReunion = { error: string | null; ok?: boolean };
 
-type SesionEntrada = { fecha: string; inicio: string; fin: string; dirigidoA: string };
+type SesionEntrada = { fecha: string; inicio: string; fin: string; dirigidoA: string; audience: string };
 
 const texto = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 
@@ -36,7 +36,8 @@ function leerSesiones(fd: FormData): SesionEntrada[] | string {
     const s = c as Partial<SesionEntrada>;
     if (!s.fecha || !s.inicio) return `La sesión ${i + 1} necesita fecha y hora de inicio.`;
     if (s.fin && s.fin <= s.inicio) return `En la sesión ${i + 1} la hora de fin debe ser posterior a la de inicio.`;
-    sesiones.push({ fecha: s.fecha, inicio: s.inicio, fin: s.fin ?? "", dirigidoA: (s.dirigidoA ?? "").trim() });
+    if (s.audience && !["INTERNAL", "EXTERNAL", "BOTH"].includes(s.audience)) return "Selecciona internos, externos o ambos.";
+    sesiones.push({ audience: s.audience ?? "BOTH", fecha: s.fecha, inicio: s.inicio, fin: s.fin ?? "", dirigidoA: (s.dirigidoA ?? "").trim() });
   }
   return sesiones;
 }
@@ -63,6 +64,7 @@ async function crearSesion(planId: string, titulo: string, s: SesionEntrada, res
   await prisma.trainingSession.create({
     data: {
       activityId: actividad.id,
+      audience: s.audience,
       startsAt: enBogota(s.fecha, s.inicio),
       endsAt: s.fin ? enBogota(s.fecha, s.fin) : null,
       modality: "VIRTUAL",

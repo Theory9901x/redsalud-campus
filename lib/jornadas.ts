@@ -25,6 +25,7 @@ const SELECT_JORNADA = {
   id: true,
   activityId: true,
   tokenPublico: true,
+  audience: true,
   startsAt: true,
   endsAt: true,
   meetingUrl: true,
@@ -37,6 +38,7 @@ export type JornadaResuelta = {
   id: string;
   activityId: string;
   tokenPublico: string;
+  audience: string;
   startsAt: Date;
   endsAt: Date | null;
   meetingUrl: string | null;
@@ -185,10 +187,10 @@ export function accesosDeJornada(
   baseUrl: string,
   activityId: string,
   token: string,
-  opciones: { conEvaluacion: boolean; modalidad: "VIRTUAL" | "PRESENCIAL" | "MIXTA" }
+  opciones: { conEvaluacion: boolean; modalidad: "VIRTUAL" | "PRESENCIAL" | "MIXTA"; audience?: string }
 ): AccesoJornada[] {
   const q = `?s=${encodeURIComponent(token)}`;
-  return [
+  const accesos: AccesoJornada[] = [
     {
       clave: "puerta",
       titulo: "Puerta de la jornada",
@@ -200,7 +202,7 @@ export function accesosDeJornada(
     },
     {
       clave: "sala",
-      titulo: "Sala / ingreso",
+      titulo: "Ingreso de internos",
       descripcion: "Entra a la sala de esta jornada. La conexión queda como asistencia de la jornada.",
       url: `${baseUrl}/c/${activityId}/meet${q}`,
     },
@@ -222,9 +224,12 @@ export function accesosDeJornada(
       : []),
     {
       clave: "invitados",
-      titulo: "Invitados externos",
+      titulo: "Ingreso de externos",
       descripcion: "Gente de otras entidades: registro breve de nombre y empresa, sin cuenta. Quedan en esta jornada.",
       url: `${baseUrl}/invitado/${activityId}${q}`,
     },
   ];
+  return accesos.filter((a) => a.clave === "invitados"
+    ? opciones.audience !== "INTERNAL"
+    : opciones.audience !== "EXTERNAL");
 }

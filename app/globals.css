@@ -4362,3 +4362,20 @@ a.st-opcion:hover { border-color: color-mix(in oklch, var(--primary) 45%, var(--
   .siau-revelar, .siau-anillo-arco, .siau-pista > span, .siau-dist > span, .siau-estacion[data-foco="true"], .siau-girando { animation: none !important; }
   .siau-boton:hover, .siau-boton:active, .siau-opcion:hover, .siau-opcion:active, .siau-sugerencia:hover { transform: none; }
 }
+
+/* Formularios centrales de reuniones: una fuente y controles legibles. */
+.reunion-dialog, .reunion-dialog :is(h2, p, span, label, legend, button, input, select, textarea) {
+  font-family: var(--font-cuerpo), sans-serif;
+}
+.reunion-form label, .reunion-form [data-slot="label"] {
+  font-size: 1rem; font-weight: 600; letter-spacing: normal;
+  text-transform: none; color: var(--foreground);
+}
+.reunion-form label :is(input, select, textarea),
+.reunion-form :is(input:not([type="radio"]):not([type="hidden"]), select, textarea) {
+  min-height: 3rem; font-size: 1rem; font-family: var(--font-cuerpo), sans-serif;
+  background: var(--background); border-color: var(--border);
+}
+.reunion-form textarea { resize: vertical; }
+.reunion-form input[type="radio"] { min-height: 1rem; padding: 0; }
+.reunion-dialog [data-slot="dialog-close"] { min-width: 2.5rem; min-height: 2.5rem; }

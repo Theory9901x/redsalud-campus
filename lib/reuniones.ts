@@ -25,6 +25,8 @@ export type ResumenSesion = {
   fin: Date | null;
   registrados: number;
   actaFirmada: boolean;
+  audience: string;
+  tokenPublico: string | null;
 };
 
 export async function listarReuniones() {
@@ -85,7 +87,7 @@ export async function getReunion(planId: string) {
           status: true,
           targetAudienceNote: true,
           responsibleLabel: true,
-          sessions: { orderBy: { startsAt: "asc" }, take: 1, select: { startsAt: true, endsAt: true } },
+          sessions: { orderBy: { startsAt: "asc" }, take: 1, select: { startsAt: true, endsAt: true, audience: true, tokenPublico: true } },
           _count: { select: { externalParticipants: true } },
           documents: { where: { fileName: { contains: "ACTA" } }, select: { id: true } },
         },
@@ -101,6 +103,8 @@ export async function getReunion(planId: string) {
       dirigidoA: a.targetAudienceNote,
       inicio: a.sessions[0]?.startsAt ?? null,
       fin: a.sessions[0]?.endsAt ?? null,
+      audience: a.sessions[0]?.audience ?? "BOTH",
+      tokenPublico: a.sessions[0]?.tokenPublico ?? null,
       registrados: a._count.externalParticipants,
       actaFirmada: a.documents.length > 0,
     }))

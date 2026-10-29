@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useState } from "react";
-import { CalendarPlus, CalendarRange, MapPin, Users, Video } from "lucide-react";
+import { CalendarPlus, CalendarRange, Users, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +49,17 @@ export function TrainingSessionForm({
 
   return (
     <form action={formAction} className="space-y-6">
+      <Grupo Icono={Users} titulo="Participantes">
+        <div className="space-y-2">
+          <Label htmlFor="audience">¿A quién está dirigida la reunión?</Label>
+          <select id="audience" name="audience" defaultValue="BOTH" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+            <option value="INTERNAL">Internos</option>
+            <option value="EXTERNAL">Externos</option>
+            <option value="BOTH">Internos y externos</option>
+          </select>
+          <p className="text-xs text-muted-foreground">Internos: enlace con usuario y contraseña. Externos: enlace sin cuenta, con registro de datos. Al elegir ambos se generan los dos enlaces.</p>
+        </div>
+      </Grupo>
       <Grupo Icono={CalendarRange} titulo="Cuándo">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">

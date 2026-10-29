@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { CalendarClock, MapPin, User2, Video, FileQuestion, ClipboardCheck, UserPlus, Lock } from "lucide-react";
 import { getSesionPorToken, getEstadoPersonaEnSesion, ETIQUETA_FASE } from "@/lib/sesiones-presenciales";
@@ -27,6 +27,7 @@ export default async function SesionPublicaPage({ params }: { params: Promise<{ 
   const { token } = await params;
   const sesion = await getSesionPorToken(token);
   if (!sesion) notFound();
+  if (sesion.audience === "EXTERNAL") redirect(`/invitado/${sesion.activity.id}?s=${encodeURIComponent(token)}`);
 
   // JORNADA VIRTUAL: esta página es la PUERTA de la jornada -sala, presaber y
   // postsaber-, cada botón con el token de la jornada para que todo quede en
@@ -81,6 +82,7 @@ export default async function SesionPublicaPage({ params }: { params: Promise<{ 
             activityId={sesion.activity.id}
             conEvaluacion={!!sesion.activity.courseId}
             cerrada={cerradaJornada}
+            permiteExternos={sesion.audience !== "INTERNAL"}
           />
         ) : (
         <PantallaSesion
@@ -103,11 +105,13 @@ function PuertaVirtual({
   activityId,
   conEvaluacion,
   cerrada,
+  permiteExternos,
 }: {
   token: string;
   activityId: string;
   conEvaluacion: boolean;
   cerrada: boolean;
+  permiteExternos: boolean;
 }) {
   if (cerrada) {
     return (
@@ -149,13 +153,13 @@ function PuertaVirtual({
       <p className="px-2 text-center text-[11.5px] leading-snug text-muted-foreground">
         Te pedirá iniciar sesión con tu cuenta institucional. Tu asistencia y tus evaluaciones quedan en esta jornada.
       </p>
-      <Link
+      {permiteExternos && <Link
         href={`/invitado/${activityId}${q}`}
         className="mx-auto mt-1 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-primary hover:underline"
       >
         <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
         ¿Vienes de otra entidad? Entra como invitado
-      </Link>
+      </Link>}
     </div>
   );
 }

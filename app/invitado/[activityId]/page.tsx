@@ -73,6 +73,7 @@ export default async function InvitadoPage({
   // confirmar sus datos (ya diligenciados) y queda un registro nuevo, en
   // esa jornada. Con el enlace general, quien ya se registró sigue en la suya.
   const { jornada: jornadaEnlace, explicita } = await jornadaDeEnlace(activityId, tokenJornada);
+  if (jornadaEnlace?.audience === "INTERNAL") notFound();
   const registroCookie = await getParticipanteDeCookie(activityId);
   const participante =
     registroCookie && (!explicita || !registroCookie.sessionId || registroCookie.sessionId === jornadaEnlace?.id)

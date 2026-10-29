@@ -174,7 +174,7 @@ export async function PaginaActividad({
   const sesionesUrl = `${basePath}/${id}/actividades/${activityId}/sesion`;
   const jornadasConAccesos = await Promise.all(
     jornadas.map(async (ses) => {
-      const accesos = accesosDeJornada(baseUrl, activityId, ses.tokenPublico, { conEvaluacion, modalidad: ses.modality });
+      const accesos = accesosDeJornada(baseUrl, activityId, ses.tokenPublico, { conEvaluacion, modalidad: ses.modality, audience: ses.audience });
       return {
         ...ses,
         etiqueta: etiquetaJornada(ses),
@@ -201,7 +201,7 @@ export async function PaginaActividad({
           ]
         : []),
       { clave: "invitados", titulo: "Invitados externos", descripcion: "Registro breve de invitados, en la jornada vigente.", url: `${baseUrl}/invitado/${activityId}` },
-    ].map(async (e) => ({ ...e, qrDataUrl: await qr(e.url) }))
+    ].filter((e) => e.clave === "invitados" ? vigente?.audience !== "INTERNAL" : vigente?.audience !== "EXTERNAL").map(async (e) => ({ ...e, qrDataUrl: await qr(e.url) }))
   );
 
   const etiquetasCiclo = {

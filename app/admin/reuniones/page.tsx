@@ -50,7 +50,7 @@ export default async function ReunionesPage() {
           { valor: totales.actas, etiqueta: "Actas firmadas", detalle: `de ${totales.sesiones} sesiones` },
         ]}
         acciones={
-          <PanelDeslizable
+          <PanelDeslizable centrado
             etiqueta="Nueva reunión"
             titulo="Nueva reunión abierta"
             descripcion="Define la reunión y sus sesiones. Cada sesión queda con su enlace de registro, su QR y su sala virtual."

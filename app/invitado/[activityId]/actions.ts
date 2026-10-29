@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { momentoParaPersona, cicloEsAutomatico } from "@/lib/presaber-postsaber";
-import { jornadaCerrada } from "@/lib/jornadas";
+import { resolverJornadaVigente, jornadaCerrada } from "@/lib/jornadas";
 
 /**
  * Acciones del ACCESO EXTERNO (/invitado): gente de fuera de la entidad que
@@ -44,11 +44,16 @@ export async function registrarInvitadoAction(
   if (actividad.status === "CLOSED") return { error: "Esta jornada ya fue cerrada por el área." };
 
   let jornadaId: string | null = null;
+  const vigente = await resolverJornadaVigente(activityId);
+  if (!sessionId && vigente?.audience === "INTERNAL") return { error: "Esta jornada es solo para personal interno." };
+  sessionId = sessionId ?? vigente?.id ?? null;
   if (sessionId) {
     const jornada = await prisma.trainingSession.findUnique({
       where: { id: sessionId },
-      select: { id: true, activityId: true, status: true, fase: true },
+      select: { id: true, activityId: true, status: true, fase: true, audience: true },
     });
+    if (!jornada || jornada.activityId !== activityId) return { error: "Jornada no disponible." };
+    if (jornada.audience === "INTERNAL") return { error: "Esta jornada es solo para personal interno." };
     if (jornada && jornada.activityId === activityId) {
       if (jornadaCerrada(jornada)) return { error: "Esta jornada ya fue cerrada por el área." };
       jornadaId = jornada.id;

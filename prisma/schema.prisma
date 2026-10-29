@@ -1032,6 +1032,7 @@ model TrainingSession {
   fase FaseSesion @default(REGISTRO)
   /** Identificador del enlace público /s/[token]: impredecible, va en el QR. */
   tokenPublico String @unique @default(cuid())
+  audience String @default("BOTH")
   /**
    * Totales congelados al CERRAR la sesión (asistentes, presaber, postsaber,
    * adherencia): el informe de una jornada que ya pasó no debe moverse

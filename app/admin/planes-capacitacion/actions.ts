@@ -604,6 +604,7 @@ export async function createTrainingSessionAction(
   if (cerrado) return { error: cerrado };
 
   const parsed = trainingSessionSchema.safeParse({
+    audience: formData.get("audience") ?? "BOTH",
     startsAtDate: formData.get("startsAtDate"),
     startsAtTime: formData.get("startsAtTime"),
     endsAtTime: formData.get("endsAtTime") ?? "",
@@ -629,6 +630,7 @@ export async function createTrainingSessionAction(
       activityId,
       startsAt,
       endsAt,
+      audience: data.audience,
       shift: data.shift || null,
       modality: data.modality,
       location: data.location || null,

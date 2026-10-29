@@ -7,15 +7,15 @@ import type { EstadoReunion } from "@/app/admin/reuniones/actions";
 import { CamposFichaDocumento } from "@/components/documentos/campos-ficha-documento";
 
 const INICIAL: EstadoReunion = { error: null };
-type Sesion = { fecha: string; inicio: string; fin: string; dirigidoA: string };
-const VACIA: Sesion = { fecha: "", inicio: "", fin: "", dirigidoA: "" };
+type Sesion = { fecha: string; inicio: string; fin: string; dirigidoA: string; audience: string };
+const VACIA: Sesion = { fecha: "", inicio: "", fin: "", dirigidoA: "", audience: "BOTH" };
 
 function Campo({ etiqueta, children, ayuda }: { etiqueta: string; children: React.ReactNode; ayuda?: string }) {
   return (
     <label className="block space-y-1.5">
       <span className="block">{etiqueta}</span>
       {children}
-      {ayuda && <span className="block text-[11.5px] font-normal normal-case tracking-normal text-muted-foreground">{ayuda}</span>}
+      {ayuda && <span className="block text-sm font-normal normal-case tracking-normal text-muted-foreground">{ayuda}</span>}
     </label>
   );
 }
@@ -28,7 +28,7 @@ function EditorSesiones({ sesiones, setSesiones }: { sesiones: Sesion[]; setSesi
       {sesiones.map((s, i) => (
         <div key={i} className="rounded-[14px] border border-border bg-[color-mix(in_oklch,var(--foreground)_2%,var(--card))] p-3.5">
           <div className="mb-2.5 flex items-center justify-between">
-            <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary">Sesión {i + 1}</span>
+            <span className="text-base font-semibold text-primary">Sesión {i + 1}</span>
             {sesiones.length > 1 && (
               <button
                 type="button"
@@ -51,6 +51,18 @@ function EditorSesiones({ sesiones, setSesiones }: { sesiones: Sesion[]; setSesi
               <input type="time" value={s.fin} onChange={(e) => cambiar(i, "fin", e.target.value)} className="w-full" />
             </Campo>
           </div>
+          <fieldset className="my-4 space-y-2">
+            <legend className="text-base font-semibold">Participantes de esta sesión</legend>
+            <div className="grid grid-cols-3 gap-2">
+              {([['INTERNAL', 'Internos'], ['EXTERNAL', 'Externos'], ['BOTH', 'Ambos']] as const).map(([valor, nombre]) => (
+                <label key={valor} className={`flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-2 py-3 ${s.audience === valor ? 'border-primary bg-primary/10 text-foreground' : 'border-border bg-background text-foreground'}`}>
+                  <input type="radio" name={`audience-${i}`} value={valor} checked={s.audience === valor} onChange={() => cambiar(i, 'audience', valor)} className="h-4 w-4 accent-primary" />
+                  {nombre}
+                </label>
+              ))}
+            </div>
+            <p className="text-sm leading-relaxed text-muted-foreground">Internos: usuario y contraseña. Externos: registro sin cuenta. Ambos: dos enlaces separados.</p>
+          </fieldset>
           <div className="mt-2.5">
             <Campo etiqueta="Dirigida a / zonas">
               <input value={s.dirigidoA} onChange={(e) => cambiar(i, "dirigidoA", e.target.value)} placeholder="Ej. Zona Sur y Zona Centro" className="w-full" />
@@ -61,7 +73,7 @@ function EditorSesiones({ sesiones, setSesiones }: { sesiones: Sesion[]; setSesi
       <button
         type="button"
         onClick={() => setSesiones([...sesiones, { ...VACIA, fecha: sesiones[sesiones.length - 1]?.fecha ?? "" }])}
-        className="inline-flex items-center gap-1.5 rounded-[10px] border border-dashed border-primary/45 px-3 py-2 text-[12.5px] font-semibold text-primary hover:bg-primary/6"
+        className="inline-flex items-center gap-1.5 rounded-[10px] border border-dashed border-primary/45 px-3 py-2 text-base font-semibold text-primary hover:bg-primary/6"
       >
         <CalendarPlus className="h-4 w-4" /> Agregar otra sesión
       </button>
@@ -108,13 +120,14 @@ export function FormularioReunion({
       </div>
       <input type="hidden" name="sesiones" value={JSON.stringify(sesiones)} />
       {state.error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>}
-      <Button type="submit" disabled={pendiente} className="w-full gap-1.5">
+      <p className="text-sm leading-relaxed text-muted-foreground">Cada sesión tendrá los enlaces y QR de acceso según los participantes seleccionados.</p>
+      <div className="sticky -bottom-5 z-10 -mx-6 border-t border-border bg-background px-6 py-4">
+      <Button type="submit" disabled={pendiente} className="min-h-12 w-full gap-2 text-base">
         <Plus className="h-4 w-4" />
         {pendiente ? "Creando…" : "Crear reunión con sus enlaces y QR"}
       </Button>
-      <p className="text-center text-[11.5px] text-muted-foreground">
-        Cada sesión queda abierta con su enlace de registro (nombre y cargo), su QR y su sala virtual.
-      </p>
+      </div>
+
     </form>
   );
 }
@@ -128,10 +141,12 @@ export function FormularioAgregarSesion({ action }: { action: (s: EstadoReunion,
       <input type="hidden" name="sesiones" value={JSON.stringify(sesiones)} />
       {state.error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>}
       {state.ok && <p className="flex items-center gap-1.5 text-sm font-semibold text-success"><CheckCircle2 className="h-4 w-4" /> Sesión agregada.</p>}
-      <Button type="submit" disabled={pendiente} className="w-full gap-1.5">
+      <div className="sticky -bottom-5 z-10 -mx-6 border-t border-border bg-background px-6 py-4">
+      <Button type="submit" disabled={pendiente} className="min-h-12 w-full gap-2 text-base">
         <CalendarPlus className="h-4 w-4" />
         {pendiente ? "Agregando…" : "Agregar sesión"}
       </Button>
+      </div>
     </form>
   );
 }
@@ -230,7 +245,7 @@ export function AccionesSesion({
       <Button type="button" size="sm" variant="ghost" disabled={pendiente} className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => correr(onEliminar, "¿Eliminar esta sesión? Solo es posible si nadie se ha registrado.")}>
         <Trash2 className="h-3.5 w-3.5" /> Eliminar
       </Button>
-      {error && <p className="w-full text-[12.5px] text-destructive">{error}</p>}
+      {error && <p className="w-full text-base text-destructive">{error}</p>}
     </div>
   );
 }

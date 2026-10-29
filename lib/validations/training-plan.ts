@@ -36,6 +36,7 @@ export const trainingActivitySchema = z.object({
  */
 export const trainingSessionSchema = z
   .object({
+    audience: z.enum(["INTERNAL", "EXTERNAL", "BOTH"]).default("BOTH"),
     startsAtDate: z.string().trim().min(1, "La fecha es obligatoria."),
     startsAtTime: z.string().trim().min(1, "La hora de inicio es obligatoria."),
     endsAtTime: z.string().trim().optional().or(z.literal("")),

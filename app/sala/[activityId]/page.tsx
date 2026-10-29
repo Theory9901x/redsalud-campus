@@ -72,6 +72,7 @@ export default async function SalaVirtualPage({
   // La jornada de esta sala: la del enlace (?s=) o, con el enlace general, la
   // vigente. Cada conexión queda en ella.
   const { jornada } = await jornadaDeEnlace(activityId, tokenJornada);
+  if (jornada?.audience === "EXTERNAL" && session.user.role === "STUDENT") redirect(`/invitado/${activityId}?s=${jornada.tokenPublico}`);
   const sufijoJornada = jornada ? `?s=${jornada.tokenPublico}` : "";
 
   const profesional =
