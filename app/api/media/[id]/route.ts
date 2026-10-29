@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { privateMediaDiskPath } from "@/lib/storage";
 import { veComoAdmin } from "@/lib/roles";
 import { requireReunionAccess } from "@/lib/reuniones-access";
+import { puedeLeerContenidoReunion } from "@/lib/reunion-contenido";
 
 /** Si el archivo es un adjunto de lección ("lessons/{lessonId}"), ¿el usuario está inscrito en ese curso? */
 async function isEnrolledInLessonCourse(folder: string, userId: string) {
@@ -99,16 +100,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const session = await auth();
 
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autenticado." }, { status: 401 });
-  }
-
   const media = await prisma.media.findUnique({ where: { id } });
   if (!media) {
     return NextResponse.json({ error: "Archivo no encontrado." }, { status: 404 });
   }
 
-  const cacheKey = `${session.user.id}:${media.id}`;
+  let accesoReunion = false;
   const folderPlan = media.folder?.match(/^training-plans\/([^/]+)$/)?.[1];
   const folderActivity = media.folder?.match(/^training-activities\/([^/]+)$/)?.[1];
   const activityId = media.trainingActivityId ?? folderActivity;
@@ -120,13 +117,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     if (plan?.kind === "REUNION") {
       try {
         await requireReunionAccess(planId, activityId);
+        accesoReunion = true;
       } catch {
-        return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+        accesoReunion = !!activityId && await puedeLeerContenidoReunion(activityId);
       }
-      memorizar(cacheKey);
+      if (!accesoReunion) return NextResponse.json({ error: "No autorizado." }, { status: session?.user ? 403 : 401 });
     }
   }
-  if (!autorizado(cacheKey)) {
+  if (!accesoReunion) {
+    if (!session?.user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+    const cacheKey = `${session.user.id}:${media.id}`;
+    if (!autorizado(cacheKey)) {
     const isOwner = media.uploadedBy === session.user.id;
     const isAdmin = veComoAdmin(session.user.role);
     const isEnrolled = !isAdmin && !isOwner && (await isEnrolledInLessonCourse(media.folder ?? "", session.user.id));
@@ -138,6 +139,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "No autorizado." }, { status: 403 });
     }
     memorizar(cacheKey);
+    }
   }
 
   const filePath = privateMediaDiskPath(media.folder ?? "", media.fileName);

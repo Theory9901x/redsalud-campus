@@ -26,6 +26,10 @@ import { firmarTokenJitsi } from "@/lib/jitsi";
 import { etiquetaJornada } from "@/components/training-plans/labels";
 import { jornadaDeEnlace } from "@/lib/jornadas";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
+import { getGestionReunion } from "@/lib/reuniones-gestion";
+import { getContenidoReunion } from "@/lib/reunion-contenido";
+import { ContenidoSalaReunion } from "@/components/reuniones/contenido-sala";
+import { ControlSalaReunion } from "@/components/reuniones/control-sala";
 
 /**
  * SALA VIRTUAL INTEGRADA de una capacitación del plan: la videollamada
@@ -65,7 +69,7 @@ export default async function SalaVirtualPage({
       responsibleUserId: true,
       responsibleUser: { select: { fullName: true } },
       area: { select: { name: true, tutorId: true, tutor: { select: { fullName: true } } } },
-      plan: { select: { id: true, title: true, tutorId: true, kind: true } },
+      plan: { select: { id: true, title: true, tutorId: true, kind: true, isIndependent: true } },
     },
   });
   if (!actividad) notFound();
@@ -112,7 +116,11 @@ export default async function SalaVirtualPage({
    * cualquiera con cuenta, y eso volvía moderador a todo el auditorio.
    */
   const uid = session.user.id;
-  const esPersonal =
+  const esReunion = actividad.plan.kind === "REUNION";
+  const gestion = esReunion && ["ADMIN", "TUTOR", "SEGUIMIENTO"].includes(session.user.role)
+    ? await getGestionReunion(actividad.plan.id, activityId).catch(() => null) : null;
+  const contenido = esReunion ? await getContenidoReunion(activityId) : null;
+  const esPersonal = esReunion ? !!gestion?.puedeGestionar :
     session.user.role === "ADMIN" ||
     (session.user.role === "TUTOR" &&
       (actividad.area?.tutorId === uid || actividad.responsibleUserId === uid || actividad.plan.tutorId === uid));
@@ -126,9 +134,10 @@ export default async function SalaVirtualPage({
   const nombre = session.user.name ?? "Participante";
   const inicialesUsuario = nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
 
-  const volverHref = esPersonal
-    ? `/tutor/planes-capacitacion/${actividad.plan.id}/actividades/${actividad.id}`
-    : `/mis-capacitaciones/${actividad.plan.id}`;
+  const volverHref = esReunion
+    ? gestion ? `${session.user.role === "TUTOR" ? "/tutor" : "/admin"}/reuniones/${actividad.plan.id}/sesiones/${activityId}` : "/mis-capacitaciones/en-vivo"
+    : esPersonal ? `/tutor/${actividad.plan.isIndependent ? "capacitaciones" : "planes-capacitacion"}/${actividad.plan.id}/actividades/${actividad.id}` : `/mis-capacitaciones/${actividad.plan.id}`;
+  const herramientas = contenido ? <ContenidoSalaReunion activityId={activityId} inicial={contenido} panelHref={gestion?.puedeGestionar ? volverHref : undefined} /> : undefined;
 
   const FICHA = [
     { icon: Building2, etiqueta: "Área que la genera", valor: actividad.area?.name ?? "Sin área" },
@@ -143,7 +152,7 @@ export default async function SalaVirtualPage({
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
           {/* Barra lateral de la sala */}
           <div className="hidden lg:block">
-            <NavSala archivosHref={volverHref} conGrabacion={esPersonal} />
+            <NavSala archivosHref={volverHref} conGrabacion={esPersonal} conGestion={!!contenido} />
           </div>
 
           {/* Columna principal */}
@@ -152,7 +161,7 @@ export default async function SalaVirtualPage({
               <div className="min-w-0">
                 <nav aria-label="Ruta" className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
                   <Link href={volverHref} className="hover:text-foreground">
-                    Capacitaciones
+                    {esReunion ? "Reuniones" : "Capacitaciones"}
                   </Link>
                   <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
                   <span className="text-foreground">Sala de reunión</span>
@@ -184,6 +193,7 @@ export default async function SalaVirtualPage({
               </div>
             </header>
 
+            <ControlSalaReunion esReunion={esReunion} activityId={activityId} cerradaInicial={actividad.status === "CLOSED"} gestion={herramientas}>
             <SalaVirtual
               domain={jitsiDomain}
               roomName={`RedSaludTeForma-${actividad.id}`}
@@ -193,6 +203,7 @@ export default async function SalaVirtualPage({
               subject={actividad.title}
               jwt={tokenSala}
               esPresentador={esPersonal}
+              herramientas={herramientas}
               grabacion={esPersonal ? <GrabacionJornada activityId={actividad.id} /> : undefined}
               panelDerecho={
                 <div id="informe" className="space-y-4 scroll-mt-24">
@@ -226,7 +237,7 @@ export default async function SalaVirtualPage({
             <section className="surface-glass space-y-3 p-5">
               <h2 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground">
                 <FileText className="h-4 w-4 text-primary" aria-hidden="true" />
-                Informe de la capacitación
+                {esReunion ? "Información de la reunión" : "Informe de la capacitación"}
               </h2>
               {FICHA.map((f) => (
                 <div key={f.etiqueta} className="flex items-start gap-3 rounded-xl bg-card/50 p-2.5">
@@ -255,7 +266,7 @@ export default async function SalaVirtualPage({
               <section className="surface-glass space-y-2 p-5">
                 <h2 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground">
                   <ListChecks className="h-4 w-4 text-primary" aria-hidden="true" />
-                  Metodología
+                  {esReunion ? "Desarrollo registrado" : "Metodología"}
                 </h2>
                 <p className="text-[13px] leading-relaxed text-muted-foreground">{actividad.methodology}</p>
               </section>
@@ -263,10 +274,11 @@ export default async function SalaVirtualPage({
                 </div>
               }
             />
+            </ControlSalaReunion>
 
             <p className="flex items-center gap-2 text-xs text-muted-foreground">
               <ShieldCheck className="h-4 w-4 text-success" aria-hidden="true" />
-              Tu ingreso quedó registrado en la lista de asistencia de la jornada.
+              La asistencia se registra automáticamente cuando ingresas a la llamada.
             </p>
           </div>
 

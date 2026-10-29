@@ -1,6 +1,7 @@
 import { consolidarAsistencia } from "@/lib/reunion-asistencia";
 export type { AsistenteSesion } from "@/lib/reunion-asistencia";
 import { accesoReuniones } from "@/lib/reuniones-access";
+import { alcanceSesionReunion } from "@/lib/reuniones-policy";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -131,19 +132,21 @@ export async function getReunion(planId: string) {
 export async function getSesionReunion(planId: string, activityId: string) {
   const acceso = await accesoReuniones();
   const act = await prisma.trainingActivity.findFirst({
-    where: { id: activityId, planId, plan: acceso.where },
+    where: { AND: [{ id: activityId, planId }, alcanceSesionReunion(acceso.user)] },
     select: {
       id: true,
       title: true,
       status: true,
       closedAt: true,
+      areaId: true,
+      responsibleUserId: true,
       objective: true,
       methodology: true,
       followUpEvidence: true,
       meetingAgenda: true,
       targetAudienceNote: true,
       responsibleLabel: true,
-      plan: { select: { id: true, title: true, description: true, summary: true, tutor: { select: { fullName: true } } } },
+      plan: { select: { id: true, title: true, description: true, summary: true, createdById: true, tutorId: true, tutor: { select: { fullName: true } } } },
       sessions: { orderBy: { startsAt: "asc" }, take: 1, select: { id: true, startsAt: true, endsAt: true, meetingUrl: true, tokenPublico: true, status: true, modality: true, location: true, audience: true } },
       documents: { orderBy: { createdAt: "desc" }, include: { uploader: { select: { fullName: true } } } },
     },
@@ -170,6 +173,10 @@ export async function getSesionReunion(planId: string, activityId: string) {
     titulo: act.title,
     estado: act.status,
     cerradaEl: act.closedAt,
+    areaId: act.areaId,
+    anfitrionId: act.responsibleUserId ?? act.plan.tutorId,
+    puedeGestionar: acceso.user.role !== "SEGUIMIENTO",
+    puedeEditarReunion: acceso.user.role !== "SEGUIMIENTO" && (act.plan.createdById === acceso.user.id || (acceso.user.role === "ADMIN" && acceso.user.canManageAllMeetings)),
     objetivo: act.objective ?? act.plan.description,
     desarrollo: act.methodology ?? "",
     compromisos: act.followUpEvidence,

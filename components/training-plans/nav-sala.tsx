@@ -29,12 +29,13 @@ type Item =
  * manda comandos a la videollamada (chat, configuración). No recarga nada:
  * la llamada nunca se interrumpe por moverse por el módulo.
  */
-export function NavSala({ archivosHref, conGrabacion }: { archivosHref: string; conGrabacion: boolean }) {
+export function NavSala({ archivosHref, conGrabacion, conGestion = false }: { archivosHref: string; conGrabacion: boolean; conGestion?: boolean }) {
   const [activo, setActivo] = useState("llamada");
 
   const items: Item[] = [
     { clave: "resumen", etiqueta: "Resumen", icono: Home, ancla: "informe" },
     { clave: "llamada", etiqueta: "Sala", icono: PhoneCall, ancla: "llamada" },
+    ...(conGestion ? [{ clave: "gestion", etiqueta: "Compromisos y documentos", icono: StickyNote, ancla: "contenido-reunion" } as Item] : []),
     { clave: "participantes", etiqueta: "Participantes", icono: Users, comando: "abrirParticipantes" },
     { clave: "chat", etiqueta: "Chat", icono: MessageCircle, comando: "enfocarChat" },
     { clave: "bitacora", etiqueta: "Bitácora", icono: Activity, comando: "abrirBitacora" },

@@ -113,6 +113,7 @@ export function SalaVirtual({
   esPresentador = false,
   grabacion,
   panelDerecho,
+  herramientas,
 }: {
   domain: string;
   roomName: string;
@@ -129,9 +130,16 @@ export function SalaVirtual({
   grabacion?: React.ReactNode;
   /** Lo que va debajo del chat en la columna derecha (informe, evaluación, métricas…). */
   panelDerecho?: React.ReactNode;
+  /** Panel amplio de gestión junto a la llamada, antes del chat. */
+  herramientas?: React.ReactNode;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiApi | null>(null);
+  const configSala = useRef({ jwt, subject });
+  useEffect(() => {
+    configSala.current = { jwt, subject };
+    apiRef.current?.executeCommand("subject", subject);
+  }, [jwt, subject]);
   const [cargando, setCargando] = useState(true);
   /*
    * PANTALLA COMPLETA tipo Meet: se amplía el escenario (video + controles)
@@ -188,6 +196,7 @@ export function SalaVirtual({
   }, []);
 
   useEffect(() => {
+    const { jwt, subject } = configSala.current;
     let api: JitsiApi | null = null;
     let cancelado = false;
 
@@ -413,7 +422,7 @@ export function SalaVirtual({
       api?.dispose();
       apiRef.current = null;
     };
-  }, [domain, roomName, activityId, displayName, subject, jwt, externalParticipantId, sessionId, reintento, registrar]);
+  }, [domain, roomName, activityId, displayName, externalParticipantId, sessionId, reintento, registrar]);
 
   // Comandos desde fuera (barra lateral de la sala).
   useEffect(() => {
@@ -470,7 +479,7 @@ export function SalaVirtual({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+    <div className={cn("grid grid-cols-1 gap-5", herramientas ? "xl:grid-cols-[minmax(0,1fr)_minmax(440px,0.9fr)]" : "xl:grid-cols-[minmax(0,1fr)_400px]")}>
     <div ref={escenarioRef} className={cn("min-w-0 space-y-5", ampliado && "overflow-y-auto bg-background p-4")}>
       {/* ---------------- Video ---------------- */}
       <section
@@ -680,6 +689,7 @@ export function SalaVirtual({
 
     {/* ---------------- Columna derecha: chat + panel ---------------- */}
     <div className="min-w-0 space-y-5">
+      {herramientas}
       <ChatSala
         mensajes={mensajes}
         dentro={dentro}
@@ -993,11 +1003,10 @@ function NotasRapidas({ activityId, textareaRef }: { activityId: string; textare
   const clave = `sala-notas-${activityId}`;
   const [texto, setTexto] = useState("");
   useEffect(() => {
-    try {
-      setTexto(localStorage.getItem(clave) ?? "");
-    } catch {
-      // Sin almacenamiento (modo privado): las notas viven solo mientras la pestaña está abierta.
-    }
+    const cargar = setTimeout(() => {
+      try { setTexto(localStorage.getItem(clave) ?? ""); } catch { /* Notas solo en memoria. */ }
+    }, 0);
+    return () => clearTimeout(cargar);
   }, [clave]);
   useEffect(() => {
     const t = setTimeout(() => {

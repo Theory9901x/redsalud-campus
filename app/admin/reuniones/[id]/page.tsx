@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { ArrowLeft, ArrowRight, CalendarClock, ExternalLink, FileCheck2, FileDown, ListOrdered, MapPin, Presentation, Target, Users2, Video } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
@@ -26,6 +26,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const r = await getReunion(id);
   if (!r) notFound();
+  if (r.sesiones.length === 1) redirect(`${basePath}/${r.id}/sesiones/${r.sesiones[0].id}`);
 
   const accesos = await Promise.all(r.sesiones.map(async (s) => {
     const enlaces = accesosDeJornada(APP_URL, s.id, s.tokenPublico ?? '', { conEvaluacion: false, modalidad: 'VIRTUAL', audience: s.audience })
@@ -129,7 +130,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
                         <FileDown className="h-3.5 w-3.5" aria-hidden="true" /> Acta PDF
                       </a>
                       <Link href={`${basePath}/${r.id}/sesiones/${s.id}`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
-                        Asistencia y acta <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                        Panel de la reunión <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                       </Link>
                     </div>
                   </div>

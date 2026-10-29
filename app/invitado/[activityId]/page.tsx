@@ -25,6 +25,9 @@ import { etiquetaJornada } from "@/components/training-plans/labels";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import { cn } from "@/lib/utils";
 import { jornadaDeEnlace } from "@/lib/jornadas";
+import { ControlSalaReunion } from "@/components/reuniones/control-sala";
+import { ContenidoSalaReunion } from "@/components/reuniones/contenido-sala";
+import { getContenidoReunion } from "@/lib/reunion-contenido";
 
 /**
  * ACCESO EXTERNO a una jornada del plan: página PÚBLICA (sin login) para
@@ -114,6 +117,8 @@ export default async function InvitadoPage({
     );
   }
 
+  const contenido = reunionAbierta ? await getContenidoReunion(activityId) : null;
+  const contenidoPanel = contenido ? <ContenidoSalaReunion activityId={activityId} inicial={contenido} /> : undefined;
   const intentoPre = participante.attempts.find((a) => a.moment === "PRESABER") ?? null;
   const intentoPost = participante.attempts.find((a) => a.moment === "POSTSABER") ?? null;
   const automatico = cicloEsAutomatico(actividad);
@@ -170,6 +175,7 @@ export default async function InvitadoPage({
                 {actividad.title}
               </h1>
             </div>
+            <ControlSalaReunion esReunion={reunionAbierta} activityId={activityId} cerradaInicial={actividad.status === "CLOSED"} gestion={contenidoPanel}>
             <SalaVirtual
               domain={process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si"}
               roomName={`RedSaludTeForma-${actividad.id}`}
@@ -180,6 +186,7 @@ export default async function InvitadoPage({
               externalParticipantId={participante.id}
               sessionId={participante.sessionId ?? jornada?.id ?? null}
               esPresentador={puedeGrabar}
+              herramientas={contenidoPanel}
               grabacion={puedeGrabar ? <GrabacionJornada activityId={actividad.id} /> : undefined}
               panelDerecho={
                 <div className="space-y-4">
@@ -250,6 +257,7 @@ export default async function InvitadoPage({
                 </div>
               }
             />
+            </ControlSalaReunion>
           </div>
 
         </div>

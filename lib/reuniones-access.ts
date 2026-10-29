@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { alcanceReuniones, puedeEscribirReuniones } from "@/lib/reuniones-policy";
+import { alcanceReuniones, alcanceSesionReunion, puedeEscribirReuniones } from "@/lib/reuniones-policy";
 import { notFound } from "next/navigation";
 
 export async function accesoReuniones(escritura = false) {
@@ -18,6 +18,11 @@ export async function accesoReuniones(escritura = false) {
 
 export async function requireReunionAccess(planId: string, activityId?: string, escritura = false) {
   const acceso = await accesoReuniones(escritura);
+  if (activityId) {
+    const actividad = await prisma.trainingActivity.findFirst({ where: { AND: [alcanceSesionReunion(acceso.user), { id: activityId, planId }] }, select: { id: true } });
+    if (!actividad) notFound();
+    return acceso.session;
+  }
   const plan = await prisma.trainingPlan.findFirst({
     where: { ...acceso.where, id: planId, ...(activityId ? { activities: { some: { id: activityId } } } : {}) },
     select: { id: true },

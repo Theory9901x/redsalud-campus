@@ -155,14 +155,17 @@ export function FormularioActa({
   action,
   valores,
   bloqueado,
+  compromisosOriginales,
 }: {
   action: (s: EstadoReunion, fd: FormData) => Promise<EstadoReunion>;
   valores: { objetivo: string; desarrollo: string; compromisos: string; ordenDelDia: string };
   bloqueado: boolean;
+  compromisosOriginales: string[];
 }) {
   const [state, formAction, pendiente] = useActionState(action, INICIAL);
   return (
     <form action={formAction} className="space-y-4">
+      <input type="hidden" name="compromisosOriginales" value={JSON.stringify(compromisosOriginales)} />
       <fieldset disabled={bloqueado} className="space-y-4 disabled:opacity-80">
         <Campo etiqueta="Objetivo de la sesión">
           <textarea name="objetivo" rows={2} defaultValue={valores.objetivo} className="w-full" />

@@ -68,7 +68,10 @@ export async function getCapacitacionesEnVivo(opciones: { verPruebas: boolean; v
     prisma.trainingSession.findMany({
       where: {
         status: { not: "CLOSED" },
-        startsAt: { gte: new Date(ahora.getTime() - 24 * 60 * MIN), lte: new Date(ahora.getTime() + HORIZONTE) },
+        OR: [
+          { startsAt: { gte: new Date(ahora.getTime() - 24 * 60 * MIN), lte: new Date(ahora.getTime() + HORIZONTE) } },
+          { startsAt: { lte: new Date(ahora.getTime() + HORIZONTE) }, activity: { plan: { kind: "REUNION" } } },
+        ],
         activity: actividadVisible,
       },
       orderBy: { startsAt: "asc" },
@@ -111,7 +114,7 @@ export async function getCapacitacionesEnVivo(opciones: { verPruebas: boolean; v
   const resultado = new Map<string, CapacitacionEnVivo>();
   for (const j of jornadas) {
     const fin = j.endsAt ?? new Date(j.startsAt.getTime() + SIN_FIN);
-    const enVivo = ahora.getTime() >= j.startsAt.getTime() - ANTES && ahora.getTime() <= fin.getTime() + DESPUES;
+    const enVivo = ahora.getTime() >= j.startsAt.getTime() - ANTES && (j.activity.plan.kind === "REUNION" || ahora.getTime() <= fin.getTime() + DESPUES);
     const proxima = j.startsAt.getTime() - ANTES > ahora.getTime();
     if (!enVivo && !proxima) continue;
     const previa = resultado.get(j.activity.id);

@@ -1,185 +1,40 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
-import { CalendarClock, FileDown, FileText, MapPin, QrCode, UserRound, Users2 } from "lucide-react";
+import { ArrowLeft, CalendarClock, FileDown, Video } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getSesionReunion } from "@/lib/reuniones";
-import { RefrescarAsistencia } from "@/components/reuniones/refrescar-asistencia";
-import { VistaPreviaActa } from "@/components/reuniones/vista-previa-acta";
-import {
-  cerrarSesionAction,
-  eliminarSesionAction,
-  guardarActaAction,
-  reabrirSesionAction,
-  subirActaFirmadaAction,
-} from "@/app/admin/reuniones/actions";
-import { VistaActividad, SeccionActividad, type PestanaActividad } from "@/components/training-plans/vista-actividad";
-import { ActivityQrPanel, type EnlaceQr } from "@/components/training-plans/activity-qr-panel";
-import { RegistroDocumentos } from "@/components/documentos/registro-documentos";
+import { getAreasAnfitrionas, getGestionReunion } from "@/lib/reuniones-gestion";
+import { GestionReunionEnVivo } from "@/components/reuniones/gestion-en-vivo";
+import { subirActaFirmadaAction } from "@/app/admin/reuniones/actions";
+import { SubirActaFirmada } from "@/components/reuniones/formularios";
+import { ActivityQrPanel } from "@/components/training-plans/activity-qr-panel";
 import { etiquetaJornada } from "@/components/training-plans/labels";
-import { AccionesSesion, FormularioActa, SubirActaFirmada } from "@/components/reuniones/formularios";
-import { EmptyState } from "@/components/brand/empty-state";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { accesosDeJornada } from "@/lib/jornadas";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-const HORA = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Bogota" });
 
 export default async function SesionReunionPage({ params }: { params: Promise<{ id: string; activityId: string }> }) {
-  const sesion = await requireTutorOrAdmin();
-  const basePath = sesion.user.role === "TUTOR" ? "/tutor/reuniones" : "/admin/reuniones";
+  const session = await requireTutorOrAdmin();
   const { id, activityId } = await params;
-  const d = await getSesionReunion(id, activityId);
-  if (!d) notFound();
-
-  const enlaces: EnlaceQr[] = await Promise.all(
-    [
-      { titulo: "Registro y sala", descripcion: "Para los asistentes: nombre completo y cargo, y entran a la sala.", url: `${APP_URL}/invitado/${activityId}` },
-      { titulo: "Sala (anfitrión)", descripcion: "Para quien conduce la reunión con su cuenta de la plataforma.", url: `${APP_URL}/sala/${activityId}` },
-    ].map(async (e) => ({ ...e, qrDataUrl: await QRCode.toDataURL(e.url, { width: 320, margin: 1 }) }))
-  );
-  const cerrada = d.estado === "CLOSED";
-  const acta = `/api/reuniones/${id}/sesiones/${activityId}/acta`;
-  const conActa = d.documentos.filter((doc) => doc.fileName.includes("ACTA"));
-
-  const pestanas: PestanaActividad[] = [
-    {
-      valor: "asistencia",
-      etiqueta: "Asistencia",
-      Icono: Users2,
-      conteo: d.asistentes.length,
-      contenido: (
-        <SeccionActividad
-          titulo="Lista de asistencia"
-          bajada="Asistencia automática de quienes ingresaron a la sala. Una fila por persona, con nombre, cargo y permanencia. Se actualiza cada 30 segundos mientras la reunión está abierta."
-          accion={
-            <div className="flex flex-wrap items-center gap-2"><RefrescarAsistencia abierta={!cerrada} /><a href={`/api/reuniones/${id}/sesiones/${activityId}/asistencia/excel`} className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}>Asistencia Excel</a><a href={`/api/reuniones/${id}/sesiones/${activityId}/asistencia/pdf`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>Asistencia e informe PDF</a><a href={acta} className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}><FileDown className="h-4 w-4" />Acta PDF</a></div>
-          }
-        >
-          {d.asistentes.length === 0 ? (
-            <EmptyState icon={Users2} title="Nadie ha ingresado a la sala todavía" description="La asistencia aparece automáticamente cuando una persona entra a la reunión." className="py-12" />
-          ) : (
-            <div className="tabla-modulo">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Cargo</TableHead>
-                    <TableHead>Ingreso</TableHead>
-                    <TableHead>Salida / estado</TableHead>
-                    <TableHead className="text-right">Permanencia</TableHead>
-                    <TableHead className="text-right">Conexiones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {d.asistentes.map((a, i) => (
-                    <TableRow key={a.clave}>
-                      <TableCell className="font-mono text-[11.5px] text-muted-foreground">{String(i + 1).padStart(2, "0")}</TableCell>
-                      <TableCell className="font-semibold text-foreground">
-                        {a.nombre}
-                        {a.tipo === "cuenta" && <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">Con cuenta</span>}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{a.cargo}</TableCell>
-                      <TableCell className="font-mono text-[12px] text-muted-foreground">{a.registradoEl ? HORA.format(a.registradoEl) : "—"}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{a.salidaEl ? HORA.format(a.salidaEl) : a.estado}</TableCell>
-                      <TableCell className="text-right font-mono text-[12px]">{a.minutos > 0 ? `${a.minutos} min` : <span className="text-muted-foreground">—</span>}</TableCell>
-                      <TableCell className="text-right font-mono text-[12px] text-muted-foreground">{a.conexiones || "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </SeccionActividad>
-      ),
-    },
-    {
-      valor: "acta",
-      etiqueta: "Acta",
-      Icono: FileText,
-      conteo: conActa.length,
-      contenido: (
-        <div className="space-y-6">
-          <VistaPreviaActa sesion={d} />
-          <SeccionActividad
-            titulo="Contenido del acta"
-            bajada={cerrada ? "La sesión está cerrada: el contenido queda congelado." : "Lo que escribas aquí sale en el acta en PDF junto con la lista de asistencia."}
-            accion={
-              <a href={acta} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
-                <FileDown className="h-3.5 w-3.5" aria-hidden="true" /> Descargar acta PDF
-              </a>
-            }
-          >
-            <div className="barra-modulo form-premium p-5">
-              <FormularioActa
-                action={guardarActaAction.bind(null, id, activityId)}
-                bloqueado={cerrada}
-                valores={{ objetivo: d.objetivo ?? "", desarrollo: d.desarrollo, compromisos: d.compromisos.join("\n"), ordenDelDia: d.reunion.ordenDelDia.join("\n") }}
-              />
-            </div>
-          </SeccionActividad>
-          <div className="grid gap-6 xl:grid-cols-2">
-            <SeccionActividad titulo="Acta firmada" bajada="Descarga el PDF, fírmalo y súbelo escaneado: queda archivado como evidencia.">
-              <div className="barra-modulo form-premium p-5">
-                <SubirActaFirmada action={subirActaFirmadaAction.bind(null, id, activityId)} />
-              </div>
-            </SeccionActividad>
-            <SeccionActividad titulo="Documentos de la sesión">
-              <RegistroDocumentos
-                documentos={d.documentos}
-                contexto="reunion"
-                vacio="Sin documentos todavía. Sube el primero con el formulario de abajo: indica qué documento es y una descripción corta."
-              />
-            </SeccionActividad>
-          </div>
-        </div>
-      ),
-    },
-    {
-      valor: "accesos",
-      etiqueta: "Accesos",
-      Icono: QrCode,
-      contenido: (
-        <div className="max-w-2xl">
-          <ActivityQrPanel enlaces={enlaces} />
-        </div>
-      ),
-    },
-  ];
-
-  return (
-    <VistaActividad
-      volver={{ href: `${basePath}/${id}`, etiqueta: d.reunion.titulo }}
-      eyebrow="Sesión de reunión abierta"
-      titulo={d.titulo}
-      chips={[
-        ...(d.jornada ? [{ Icono: CalendarClock, contenido: etiquetaJornada(d.jornada) }] : []),
-        ...(d.dirigidoA ? [{ Icono: MapPin, contenido: d.dirigidoA }] : []),
-        ...(d.responsable ? [{ Icono: UserRound, contenido: `Responsable: ${d.responsable}` }] : []),
-      ]}
-      estado={d.estado}
-      acciones={
-        <div className="flex flex-wrap items-center gap-2">
-        <a href={acta} className={cn(buttonVariants({ variant: "outline" }), "gap-2")}><FileDown className="h-4 w-4" />Descargar acta PDF</a>
-        <AccionesSesion
-          estado={d.estado}
-          esAdmin={sesion.user.role === "ADMIN"}
-          onCerrar={cerrarSesionAction.bind(null, id, activityId)}
-          onReabrir={reabrirSesionAction.bind(null, id, activityId)}
-          onEliminar={eliminarSesionAction.bind(null, id, activityId)}
-        />
-        </div>
-      }
-      kpis={[
-        { valor: d.resumen.registrados, etiqueta: "Asistentes", detalle: "registrados" },
-        { valor: d.resumen.conectados, etiqueta: "En la sala", detalle: "con conexión real" },
-        { valor: `${d.resumen.permanenciaPromedio}m`, etiqueta: "Permanencia", detalle: "promedio" },
-        { valor: d.compromisos.length, etiqueta: "Compromisos" },
-        { valor: d.reunion.ordenDelDia.length, etiqueta: "Puntos", detalle: "del orden del día" },
-        { valor: conActa.length ? "Sí" : "No", etiqueta: "Acta firmada" },
-      ]}
-      pestanas={pestanas}
-    />
-  );
+  const [d, gestion, areas] = await Promise.all([getSesionReunion(id, activityId), getGestionReunion(id, activityId), getAreasAnfitrionas()]);
+  if (!d || !gestion) notFound();
+  const base = session.user.role === "TUTOR" ? "/tutor/reuniones" : "/admin/reuniones";
+  const enlaces = d.jornada ? await Promise.all(accesosDeJornada(APP_URL, activityId, d.jornada.tokenPublico, { conEvaluacion: false, modalidad: d.jornada.modality, audience: d.jornada.audience }).filter(a => a.clave === "sala" || a.clave === "invitados").map(async a => ({ ...a, qrDataUrl: await QRCode.toDataURL(a.url, { width: 320, margin: 1 }) }))) : [];
+  return <div className="space-y-6">
+    <Link href={base} className="inline-flex items-center gap-2 text-base font-semibold text-muted-foreground"><ArrowLeft className="h-4 w-4" />Reuniones</Link>
+    <header className="space-y-4 rounded-2xl border bg-card p-6">
+      <p className="text-base font-semibold text-primary">Panel de la reunión</p>
+      <p className="text-lg font-semibold">{d.reunion.titulo}</p>
+      <div className="flex flex-wrap items-center justify-between gap-4"><h1 className="text-3xl font-semibold">{d.titulo}</h1><span className="rounded-full border px-4 py-2 text-base font-semibold">{d.estado === "CLOSED" ? "Cerrada" : "Abierta hasta cierre manual"}</span></div>
+      {d.jornada && <p className="flex items-center gap-2 text-base text-muted-foreground"><CalendarClock className="h-5 w-5" />{etiquetaJornada(d.jornada)}</p>}
+      <p className="text-base text-muted-foreground">Compromisos, documentos, asistencia, acta y datos de la sesión están visibles en sus propios submódulos. Los cambios se guardan en esta reunión.</p>
+      <div className="flex flex-wrap gap-3"><Link href={`/sala/${activityId}${d.jornada ? `?s=${d.jornada.tokenPublico}` : ""}`} target="_blank" className={cn(buttonVariants(), "min-h-12 gap-2 text-base")}><Video className="h-5 w-5" />Abrir sala virtual</Link><a href={`/api/reuniones/${id}/sesiones/${activityId}/acta`} className={cn(buttonVariants({ variant: "outline" }), "min-h-12 gap-2 text-base")}><FileDown className="h-5 w-5" />Descargar acta PDF</a></div>
+    </header>
+    <GestionReunionEnVivo inicial={gestion} areas={areas} />
+    <section id="acta-firmada" className="space-y-4 rounded-2xl border bg-card p-6"><h2 className="text-2xl font-semibold">Acta firmada</h2><p className="text-base text-muted-foreground">Descarga el acta, diligencia las firmas y adjunta el archivo firmado a esta sesión. Quedará disponible en Documentos.</p>{d.puedeGestionar && <div className="form-premium max-w-3xl"><SubirActaFirmada action={subirActaFirmadaAction.bind(null, id, activityId)} /></div>}</section>
+    <section id="accesos-reunion" className="space-y-4 rounded-2xl border bg-card p-6"><h2 className="text-2xl font-semibold">Enlaces y QR de la reunión</h2><p className="text-base text-muted-foreground">Accesos disponibles según el tipo de participantes definido para esta sesión.</p><ActivityQrPanel enlaces={enlaces} /></section>
+  </div>;
 }
