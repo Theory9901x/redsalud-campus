@@ -38,7 +38,7 @@ const NAV_GROUPS: GrupoNav[] = [
     label: "Plan de capacitación",
     items: [
       { href: "/tutor/planes-capacitacion", label: "Planes de capacitación", icon: CalendarRange, excluir: ["/tutor/planes-capacitacion/en-vivo"] },
-      { href: "/tutor/capacitaciones/nueva", label: "Crear capacitaci?n", icon: CalendarRange },
+      { href: "/tutor/capacitaciones/nueva", label: "Crear capacitación", icon: CalendarRange },
       { href: "/tutor/reuniones", label: "Mis reuniones", icon: CalendarRange },
       { href: "/tutor/planes-capacitacion/en-vivo", label: "En vivo", icon: Radio },
       // Vista de OBSERVACIÓN, no de acción: el tutor abre las ventanas del
