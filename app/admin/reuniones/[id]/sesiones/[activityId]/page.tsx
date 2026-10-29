@@ -4,6 +4,7 @@ import { CalendarClock, FileDown, FileText, MapPin, QrCode, UserRound, Users2 } 
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getSesionReunion } from "@/lib/reuniones";
 import { RefrescarAsistencia } from "@/components/reuniones/refrescar-asistencia";
+import { VistaPreviaActa } from "@/components/reuniones/vista-previa-acta";
 import {
   cerrarSesionAction,
   eliminarSesionAction,
@@ -52,7 +53,7 @@ export default async function SesionReunionPage({ params }: { params: Promise<{ 
           titulo="Lista de asistencia"
           bajada="Asistencia automática de quienes ingresaron a la sala. Una fila por persona, con nombre, cargo y permanencia. Se actualiza cada 30 segundos mientras la reunión está abierta."
           accion={
-            <div className="flex flex-wrap items-center gap-2"><RefrescarAsistencia abierta={!cerrada} /><a href={`/api/reuniones/${id}/sesiones/${activityId}/asistencia/excel`} className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}>Asistencia Excel</a><a href={`/api/reuniones/${id}/sesiones/${activityId}/asistencia/pdf`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>Asistencia e informe PDF</a></div>
+            <div className="flex flex-wrap items-center gap-2"><RefrescarAsistencia abierta={!cerrada} /><a href={`/api/reuniones/${id}/sesiones/${activityId}/asistencia/excel`} className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}>Asistencia Excel</a><a href={`/api/reuniones/${id}/sesiones/${activityId}/asistencia/pdf`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>Asistencia e informe PDF</a><a href={acta} className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}><FileDown className="h-4 w-4" />Acta PDF</a></div>
           }
         >
           {d.asistentes.length === 0 ? (
@@ -99,7 +100,8 @@ export default async function SesionReunionPage({ params }: { params: Promise<{ 
       Icono: FileText,
       conteo: conActa.length,
       contenido: (
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-6">
+          <VistaPreviaActa sesion={d} />
           <SeccionActividad
             titulo="Contenido del acta"
             bajada={cerrada ? "La sesión está cerrada: el contenido queda congelado." : "Lo que escribas aquí sale en el acta en PDF junto con la lista de asistencia."}
@@ -117,7 +119,7 @@ export default async function SesionReunionPage({ params }: { params: Promise<{ 
               />
             </div>
           </SeccionActividad>
-          <div className="space-y-5">
+          <div className="grid gap-6 xl:grid-cols-2">
             <SeccionActividad titulo="Acta firmada" bajada="Descarga el PDF, fírmalo y súbelo escaneado: queda archivado como evidencia.">
               <div className="barra-modulo form-premium p-5">
                 <SubirActaFirmada action={subirActaFirmadaAction.bind(null, id, activityId)} />
@@ -158,6 +160,8 @@ export default async function SesionReunionPage({ params }: { params: Promise<{ 
       ]}
       estado={d.estado}
       acciones={
+        <div className="flex flex-wrap items-center gap-2">
+        <a href={acta} className={cn(buttonVariants({ variant: "outline" }), "gap-2")}><FileDown className="h-4 w-4" />Descargar acta PDF</a>
         <AccionesSesion
           estado={d.estado}
           esAdmin={sesion.user.role === "ADMIN"}
@@ -165,6 +169,7 @@ export default async function SesionReunionPage({ params }: { params: Promise<{ 
           onReabrir={reabrirSesionAction.bind(null, id, activityId)}
           onEliminar={eliminarSesionAction.bind(null, id, activityId)}
         />
+        </div>
       }
       kpis={[
         { valor: d.resumen.registrados, etiqueta: "Asistentes", detalle: "registrados" },

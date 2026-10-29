@@ -167,7 +167,7 @@ export function FormularioActa({
         <Campo etiqueta="Objetivo de la sesión">
           <textarea name="objetivo" rows={2} defaultValue={valores.objetivo} className="w-full" />
         </Campo>
-        <Campo etiqueta="Orden del día de la reunión" ayuda="Un punto por línea. Es el mismo para todas las sesiones.">
+        <Campo etiqueta="Orden del día de esta sesión" ayuda="Un punto por línea. Los cambios solo se aplican al acta de esta sesión.">
           <textarea name="ordenDelDia" rows={3} defaultValue={valores.ordenDelDia} className="w-full" />
         </Campo>
         <Campo etiqueta="Desarrollo · temas tratados">

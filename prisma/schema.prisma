@@ -946,6 +946,7 @@ model TrainingActivity {
   audienceCommitteePlanId String?
   /** "Seguimiento": evidencias que el PIC exige para dar la actividad por cumplida. */
   followUpEvidence  String[] @default([])
+  meetingAgenda     String?
   /** Fila del Excel de origen. Permite rastrear cada actividad hasta el PIC firmado. */
   sourceRow         Int?
 

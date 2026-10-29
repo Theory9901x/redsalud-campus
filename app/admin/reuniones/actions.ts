@@ -137,16 +137,17 @@ export async function agregarSesionAction(planId: string, _prev: EstadoReunion, 
 
 /** Contenido del acta: objetivo de la sesión, desarrollo y compromisos (uno por línea). */
 export async function guardarActaAction(planId: string, activityId: string, _prev: EstadoReunion, fd: FormData): Promise<EstadoReunion> {
-  await requireReunionAccess(planId, activityId, true);
+  const sesion = await requireReunionAccess(planId, activityId, true);
   const act = await prisma.trainingActivity.findFirst({ where: { id: activityId, planId }, select: { status: true } });
   if (!act) return { error: "La sesión no existe." };
+  if (act.status === "CLOSED") return { error: "La sesión está cerrada; el contenido del acta no se puede modificar." };
   const compromisos = texto(fd, "compromisos").split("\n").map((l) => l.trim()).filter(Boolean);
-  await prisma.trainingActivity.update({
-    where: { id: activityId },
-    data: { objective: texto(fd, "objetivo") || null, methodology: texto(fd, "desarrollo") || null, followUpEvidence: compromisos },
+  const guardada = await prisma.trainingActivity.updateMany({
+    where: { id: activityId, planId, status: { not: "CLOSED" } },
+    data: { objective: texto(fd, "objetivo"), methodology: texto(fd, "desarrollo") || null, followUpEvidence: compromisos, ...(fd.has("ordenDelDia") ? { meetingAgenda: texto(fd, "ordenDelDia") } : {}) },
   });
-  const orden = fd.get("ordenDelDia");
-  if (orden !== null) await prisma.trainingPlan.update({ where: { id: planId }, data: { summary: String(orden).trim() || null } });
+  if (!guardada.count) return { error: "La sesión está cerrada; vuelve a cargar la página." };
+  await registrarAuditoria({ userId: sesion.user.id, action: "UPDATE", entity: "TrainingActivity", entityId: activityId, description: "Contenido del acta guardado para esta sesión" }).catch(() => {});
   revalidatePath(`${BASE}/${planId}/sesiones/${activityId}`);
   revalidatePath(`/tutor/reuniones/${planId}/sesiones/${activityId}`);
   return { error: null, ok: true };
