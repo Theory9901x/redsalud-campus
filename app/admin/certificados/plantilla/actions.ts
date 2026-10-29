@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/auth-helpers";
 import { saveCertificateTemplateAsset } from "@/lib/storage";
 import { DEFAULT_CERTIFICATE_LAYOUT, type CertificateLayout } from "@/lib/certificate-template";
 import { certificateLayoutSchema } from "@/lib/validations/certificate-template";
-import { REDSALUD_CERTIFICATE_BACKGROUND_URL, REDSALUD_CERTIFICATE_LAYOUT } from "@/lib/certificate-redsalud-design";
+import { REDSALUD_CERTIFICATE_LAYOUT } from "@/lib/certificate-redsalud-design";
 
 export type AssetUploadState = { error: string | null; url?: string };
 
@@ -43,7 +43,7 @@ export async function resetCertificateLayoutAction(): Promise<{ error: string | 
 
   await prisma.certificateTemplate.update({
     where: { id: template.id },
-    data: { layoutJson: (template.backgroundImageUrl === REDSALUD_CERTIFICATE_BACKGROUND_URL ? REDSALUD_CERTIFICATE_LAYOUT : DEFAULT_CERTIFICATE_LAYOUT) as unknown as object },
+    data: { layoutJson: (template.backgroundImageUrl?.startsWith("/uploads/plantillas/fondo/constancia-redsalud-v") ? REDSALUD_CERTIFICATE_LAYOUT : DEFAULT_CERTIFICATE_LAYOUT) as unknown as object },
   });
 
   revalidatePath("/admin/certificados/plantilla");

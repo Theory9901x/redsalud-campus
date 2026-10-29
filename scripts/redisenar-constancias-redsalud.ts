@@ -31,8 +31,8 @@ async function main() {
   const svg = redSaludCertificateSvg(`data:image/png;base64,${logo.toString("base64")}`);
   certificateLayoutSchema.parse(REDSALUD_CERTIFICATE_LAYOUT);
   await mkdir(outputDir, { recursive: true });
-  const backgroundPath = path.join(outputDir, "fondo-constancia-redsalud-v3.png");
-  await writeFile(path.join(outputDir, "fondo-constancia-redsalud-v3.svg"), svg);
+  const backgroundPath = path.join(outputDir, path.basename(REDSALUD_CERTIFICATE_BACKGROUND_URL));
+  await writeFile(backgroundPath.replace(/\.png$/, ".svg"), svg);
   await sharp(Buffer.from(svg)).png().toFile(backgroundPath);
   const preview = await renderCertificatePdf({
     layout: REDSALUD_CERTIFICATE_LAYOUT,
