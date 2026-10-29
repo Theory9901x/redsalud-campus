@@ -113,7 +113,6 @@ export function SalaVirtual({
   esPresentador = false,
   grabacion,
   panelDerecho,
-  herramientas,
 }: {
   domain: string;
   roomName: string;
@@ -130,8 +129,6 @@ export function SalaVirtual({
   grabacion?: React.ReactNode;
   /** Lo que va debajo del chat en la columna derecha (informe, evaluación, métricas…). */
   panelDerecho?: React.ReactNode;
-  /** Panel amplio de gestión junto a la llamada, antes del chat. */
-  herramientas?: React.ReactNode;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiApi | null>(null);
@@ -479,7 +476,7 @@ export function SalaVirtual({
   }
 
   return (
-    <div className={cn("grid grid-cols-1 gap-5", herramientas ? "xl:grid-cols-[minmax(0,1fr)_minmax(440px,0.9fr)]" : "xl:grid-cols-[minmax(0,1fr)_400px]")}>
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
     <div ref={escenarioRef} className={cn("min-w-0 space-y-5", ampliado && "overflow-y-auto bg-background p-4")}>
       {/* ---------------- Video ---------------- */}
       <section
@@ -689,7 +686,6 @@ export function SalaVirtual({
 
     {/* ---------------- Columna derecha: chat + panel ---------------- */}
     <div className="min-w-0 space-y-5">
-      {herramientas}
       <ChatSala
         mensajes={mensajes}
         dentro={dentro}

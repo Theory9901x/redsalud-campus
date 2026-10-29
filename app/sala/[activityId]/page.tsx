@@ -193,7 +193,7 @@ export default async function SalaVirtualPage({
               </div>
             </header>
 
-            <ControlSalaReunion esReunion={esReunion} activityId={activityId} cerradaInicial={actividad.status === "CLOSED"} gestion={herramientas}>
+            <ControlSalaReunion esReunion={esReunion} activityId={activityId} cerradaInicial={actividad.status === "CLOSED"}>
             <SalaVirtual
               domain={jitsiDomain}
               roomName={`RedSaludTeForma-${actividad.id}`}
@@ -203,7 +203,6 @@ export default async function SalaVirtualPage({
               subject={actividad.title}
               jwt={tokenSala}
               esPresentador={esPersonal}
-              herramientas={herramientas}
               grabacion={esPersonal ? <GrabacionJornada activityId={actividad.id} /> : undefined}
               panelDerecho={
                 <div id="informe" className="space-y-4 scroll-mt-24">
@@ -275,6 +274,7 @@ export default async function SalaVirtualPage({
               }
             />
             </ControlSalaReunion>
+            {herramientas}
 
             <p className="flex items-center gap-2 text-xs text-muted-foreground">
               <ShieldCheck className="h-4 w-4 text-success" aria-hidden="true" />

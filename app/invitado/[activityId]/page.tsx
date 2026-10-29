@@ -175,7 +175,7 @@ export default async function InvitadoPage({
                 {actividad.title}
               </h1>
             </div>
-            <ControlSalaReunion esReunion={reunionAbierta} activityId={activityId} cerradaInicial={actividad.status === "CLOSED"} gestion={contenidoPanel}>
+            <ControlSalaReunion esReunion={reunionAbierta} activityId={activityId} cerradaInicial={actividad.status === "CLOSED"}>
             <SalaVirtual
               domain={process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si"}
               roomName={`RedSaludTeForma-${actividad.id}`}
@@ -186,7 +186,6 @@ export default async function InvitadoPage({
               externalParticipantId={participante.id}
               sessionId={participante.sessionId ?? jornada?.id ?? null}
               esPresentador={puedeGrabar}
-              herramientas={contenidoPanel}
               grabacion={puedeGrabar ? <GrabacionJornada activityId={actividad.id} /> : undefined}
               panelDerecho={
                 <div className="space-y-4">
@@ -258,6 +257,7 @@ export default async function InvitadoPage({
               }
             />
             </ControlSalaReunion>
+            {contenidoPanel}
           </div>
 
         </div>
