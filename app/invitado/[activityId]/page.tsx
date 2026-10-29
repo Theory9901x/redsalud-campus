@@ -17,6 +17,7 @@ import { auth } from "@/auth";
 import { estadoPresaber, estadoPostsaber, momentoParaPersona, cicloEsAutomatico } from "@/lib/presaber-postsaber";
 import { SalaVirtual } from "@/components/training-plans/sala-virtual";
 import { fuenteSala } from "@/lib/fuente-sala";
+import { SelectorVistaSala } from "@/components/training-plans/selector-vista-sala";
 import { RegistroInvitado } from "@/components/invitado/registro-invitado";
 import { AbrirEvaluacionPopup } from "@/components/training-plans/abrir-evaluacion-popup";
 import { GrabacionJornada } from "@/components/training-plans/grabacion-jornada";
@@ -166,6 +167,7 @@ export default async function InvitadoPage({
             <CircleDot className="h-3 w-3 animate-pulse" aria-hidden="true" />
             Acceso externo
           </span>
+          <SelectorVistaSala />
         </div>
 
         <div className="space-y-3">
@@ -176,7 +178,7 @@ export default async function InvitadoPage({
                 {actividad.title}
               </h1>
             </div>
-            <div className="xl:h-[calc(100dvh-150px)] xl:min-h-[560px]">
+            <div className="sala-alto xl:h-[calc(100dvh-150px)] xl:min-h-[560px]">
             <ControlSalaReunion esReunion={reunionAbierta} activityId={activityId} cerradaInicial={actividad.status === "CLOSED"}>
             <SalaVirtual
               domain={process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si"}

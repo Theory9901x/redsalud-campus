@@ -19,6 +19,7 @@ import { SalaVirtual } from "@/components/training-plans/sala-virtual";
 import { GrabacionJornada } from "@/components/training-plans/grabacion-jornada";
 import { AbrirEvaluacionPopup } from "@/components/training-plans/abrir-evaluacion-popup";
 import { ThemeToggle } from "@/components/brand/theme-toggle";
+import { SelectorVistaSala } from "@/components/training-plans/selector-vista-sala";
 import { getMomentoParaUsuario } from "@/lib/training-plans";
 import { firmarTokenJitsi } from "@/lib/jitsi";
 import { etiquetaJornada } from "@/components/training-plans/labels";
@@ -230,6 +231,7 @@ export default async function SalaVirtualPage({
           <span className="sh-live-dot" aria-hidden="true" />
           <span className="text-[11px] font-semibold text-[var(--sh-text)]">En vivo</span>
         </span>
+        <SelectorVistaSala />
         <span className="sh-panel flex items-center rounded-full px-1 py-0.5">
           <ThemeToggle />
         </span>
