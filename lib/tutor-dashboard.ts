@@ -179,7 +179,7 @@ export async function getTutorCommandCenter(tutorId: string, ahora = new Date())
     quizIds.length
       ? prisma.quizAttempt.findMany({ where: { quizId: { in: quizIds }, finishedAt: { gte: desdeSerie } }, select: { finishedAt: true } })
       : Promise.resolve([]),
-    ids.length ? getCapacitacionesEnVivo({ verPruebas: true }) : Promise.resolve([]),
+    ids.length ? getCapacitacionesEnVivo({ verPruebas: false }) : Promise.resolve([]),
     ids.length
       ? prisma.trainingAttendance.findMany({
           where: { activityId: { in: ids }, attended: true },

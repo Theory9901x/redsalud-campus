@@ -3,7 +3,7 @@ import { requireSession } from "@/lib/auth-helpers";
 import { CalendarDays } from "lucide-react";
 import { getStudentPlansOverview } from "@/lib/training-plans";
 import { getCapacitacionesEnVivo } from "@/lib/en-vivo";
-import { veComoAdmin } from "@/lib/roles";
+import { veePruebas } from "@/lib/pruebas";
 import { PestanasCapacitaciones } from "@/components/en-vivo/pestanas-capacitaciones";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import {
@@ -28,7 +28,7 @@ export default async function MisCapacitacionesPage() {
 
   const [planes, enVivo] = await Promise.all([
     getStudentPlansOverview(userId),
-    getCapacitacionesEnVivo({ viewer: session.user, verPruebas: veComoAdmin(session.user.role) || session.user.role === "TUTOR" }).then(
+    getCapacitacionesEnVivo({ viewer: session.user, verPruebas: veePruebas(session.user.role) }).then(
       (f) => f.filter((x) => x.estado === "EN_VIVO").length
     ),
   ]);

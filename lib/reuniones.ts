@@ -3,6 +3,7 @@ export type { AsistenteSesion } from "@/lib/reunion-asistencia";
 import { accesoReuniones } from "@/lib/reuniones-access";
 import { alcanceSesionReunion } from "@/lib/reuniones-policy";
 import { prisma } from "@/lib/prisma";
+import { SIN_PRUEBAS, veePruebas } from "@/lib/pruebas";
 
 /**
  * REUNIONES ABIERTAS (PlanKind REUNION): reuniones fuera del PIC y de los
@@ -36,7 +37,7 @@ export type ResumenSesion = {
 export async function listarReuniones() {
   const acceso = await accesoReuniones();
   const planes = await prisma.trainingPlan.findMany({
-    where: { ...acceso.where, status: { not: "ARCHIVED" } },
+    where: { ...acceso.where, status: { not: "ARCHIVED" }, ...(veePruebas(acceso.user.role) ? {} : SIN_PRUEBAS) },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,

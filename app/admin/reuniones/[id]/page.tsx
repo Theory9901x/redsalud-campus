@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
-import { ArrowLeft, CalendarClock, ExternalLink, FileCheck2, FileDown, ListOrdered, MapPin, Pencil, Presentation, Target, Users2, Video } from "lucide-react";
+import { ArrowLeft, CalendarClock, ExternalLink, Eye, FileCheck2, FileDown, ListOrdered, MapPin, Pencil, Presentation, Target, Users2, Video } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getReunion } from "@/lib/reuniones";
 import { agregarSesionAction, eliminarReunionAction, reprogramarSesionAction } from "@/app/admin/reuniones/actions";
@@ -27,6 +27,8 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const r = await getReunion(id);
   if (!r) notFound();
+  // Una sola sesión: se abre directo su vista completa (consulta); editar es un botón aparte.
+  if (r.sesiones.length === 1) redirect(`${basePath}/${r.id}/sesiones/${r.sesiones[0].id}`);
   const puedeEscribir = sesion.user.role !== "SEGUIMIENTO";
 
   const accesos = await Promise.all(r.sesiones.map(async (s) => {
@@ -134,9 +136,12 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
                         <FileDown className="h-3.5 w-3.5" aria-hidden="true" /> Acta PDF
                       </a>
                       {puedeEscribir && <ReprogramarSesion action={reprogramarSesionAction.bind(null, r.id, s.id)} {...horarioBogota(s.inicio, s.fin)} />}
-                      <Link href={`${basePath}/${r.id}/sesiones/${s.id}${puedeEscribir ? "?editar=1" : ""}`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
-                        {puedeEscribir ? <><Pencil className="h-3.5 w-3.5" aria-hidden="true" /> Editar</> : "Ver detalle"}
+                      <Link href={`${basePath}/${r.id}/sesiones/${s.id}`} className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}>
+                        <Eye className="h-3.5 w-3.5" aria-hidden="true" /> Ver
                       </Link>
+                      {puedeEscribir && <Link href={`${basePath}/${r.id}/sesiones/${s.id}?editar=1`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
+                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" /> Editar
+                      </Link>}
                     </div>
                   </div>
                 </article>

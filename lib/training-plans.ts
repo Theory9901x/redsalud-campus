@@ -1,3 +1,4 @@
+import { SIN_PRUEBAS, esPrueba } from "@/lib/pruebas";
 import { prisma } from "@/lib/prisma";
 import {
   compararAdherencia,
@@ -74,8 +75,8 @@ export async function getTrainingPlanDetail(id: string) {
  * edición — es el mismo criterio de audiencia que ya usan encuestas y
  * adherencia (targetAudienceUserWhere), visto desde el lado del estudiante.
  */
-/** Planes marcados [PRUEBA] o [DEMO]: existen para revisar pantallas, nunca se le muestran al personal. */
-const NO_PRUEBAS = { NOT: [{ title: { startsWith: "[PRUEBA]" } }, { title: { startsWith: "[DEMO]" } }] };
+/** Planes de prueba: existen para revisar pantallas, nunca se le muestran al personal (lib/pruebas). */
+const NO_PRUEBAS = SIN_PRUEBAS;
 
 export async function getTrainingPlansForStudent(userId: string) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { department: true } });
@@ -217,7 +218,7 @@ export async function getTrainingPlanDetailForStudent(id: string, userId: string
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { department: true } });
 
   const plan = await getTrainingPlanDetail(id);
-  if (!plan || plan.isIndependent || /^\s*\[(PRUEBA|DEMO)\]/i.test(plan.title)) return null;
+  if (!plan || plan.isIndependent || esPrueba(plan.title)) return null;
 
   const matchesDepartment =
     !plan.targetDepartment ||

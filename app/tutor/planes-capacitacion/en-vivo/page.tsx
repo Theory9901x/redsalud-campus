@@ -8,6 +8,6 @@ export const dynamic = "force-dynamic";
 /** Planes de capacitación · En vivo (tutor): las llamadas abiertas ahora, sin salir de su panel. */
 export default async function TutorEnVivoPage() {
   await requireTutorOrAdmin();
-  const fichas = await getCapacitacionesEnVivo({ verPruebas: true });
+  const fichas = await getCapacitacionesEnVivo({ verPruebas: false });
   return <VistaEnVivo fichas={fichas} pestanas={<PestanasPlanTutor activa="en-vivo" enVivo={fichas.filter((f) => f.estado === "EN_VIVO").length} />} />;
 }

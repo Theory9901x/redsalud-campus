@@ -1,5 +1,7 @@
 import type { CourseAudience, PlanKind, TrainingModality, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { registrarAuditoria } from "@/lib/audit";
+import { esPrueba } from "@/lib/pruebas";
 
 /**
  * CAPACITACIONES EN VIVO: las llamadas vigentes de toda la institución, para
@@ -10,7 +12,7 @@ import { prisma } from "@/lib/prisma";
  * margen para entrar antes y para la que se alarga), o una sala con gente
  * conectada en los últimos minutos aunque la jornada no tenga hora (los
  * tramos de conexión se registran al salir y cada 5 minutos).
- * Lo marcado [PRUEBA] solo lo ve el personal (admin y tutores).
+ * Lo que se llame "prueba" solo lo ve el rol ADMIN (lib/pruebas).
  */
 export type CapacitacionEnVivo = {
   id: string;
@@ -38,10 +40,36 @@ const DESPUES = 15 * MIN; // y la jornada se puede alargar un poco
 const SIN_FIN = 3 * 60 * MIN; // jornada sin hora de fin: se asume de tres horas
 const RECIENTE = 10 * MIN; // gente conectada hace menos de esto = sala activa
 const HORIZONTE = 7 * 24 * 60 * MIN; // próximas: una semana
+const VIDA_REUNION = 24 * 60 * MIN; // una reunión sigue en vivo hasta 24 h después de su inicio
 
-const esPrueba = (...textos: string[]) => textos.some((t) => /^\s*\[(PRUEBA|DEMO)\]/i.test(t));
+
+/**
+ * Cierra las reuniones que llevan más de 24 h abiertas desde su inicio y que
+ * nadie cerró a mano. Una sala con gente conectada en los últimos minutos no
+ * se toca: el cierre automático nunca saca a nadie de una llamada en curso.
+ */
+export async function cerrarReunionesVencidas() {
+  const ahora = new Date();
+  const vencidas = await prisma.trainingActivity.findMany({
+    where: {
+      status: { not: "CLOSED" },
+      plan: { kind: "REUNION" },
+      sessions: { some: { startsAt: { lt: new Date(ahora.getTime() - VIDA_REUNION) } }, none: { startsAt: { gte: new Date(ahora.getTime() - VIDA_REUNION) } } },
+      callConnections: { none: { createdAt: { gte: new Date(ahora.getTime() - RECIENTE) } } },
+    },
+    select: { id: true, title: true },
+  });
+  if (!vencidas.length) return;
+  const ids = vencidas.map((a) => a.id);
+  await prisma.$transaction([
+    prisma.trainingActivity.updateMany({ where: { id: { in: ids }, status: { not: "CLOSED" } }, data: { status: "CLOSED", closedAt: ahora } }),
+    prisma.trainingSession.updateMany({ where: { activityId: { in: ids }, status: { not: "CLOSED" } }, data: { status: "CLOSED", fase: "CERRADA", cerradaEl: ahora } }),
+  ]);
+  await Promise.all(vencidas.map((a) => registrarAuditoria({ action: "UPDATE", entity: "TrainingActivity", entityId: a.id, description: `Reunión cerrada automáticamente: más de 24 h abierta (${a.title})` }).catch(() => {})));
+}
 
 export async function getCapacitacionesEnVivo(opciones: { verPruebas: boolean; viewer?: { id: string; role: Role } }): Promise<CapacitacionEnVivo[]> {
+  await cerrarReunionesVencidas().catch((e) => console.error("No se pudieron cerrar las reuniones vencidas", e));
   const ahora = new Date();
   const seleccion = {
     id: true,
@@ -60,7 +88,12 @@ export async function getCapacitacionesEnVivo(opciones: { verPruebas: boolean; v
   const actividadVisible = {
     status: { not: "CLOSED" as const },
     manuallyHidden: false,
-    ...(estudiante ? { targetAudience: { in: [estudiante.personnelType, "AMBOS" as const] }, status: "OPEN" as const } : {}),
+    // Las reuniones no tienen público: se entra por enlace o QR. Al estudiante
+    // solo le aparece la reunión en la que ya estuvo, para que pueda volver.
+    ...(estudiante ? {
+      targetAudience: { in: [estudiante.personnelType, "AMBOS" as const] }, status: "OPEN" as const,
+      OR: [{ plan: { kind: { not: "REUNION" as const } } }, { callConnections: { some: { userId: opciones.viewer!.id } } }],
+    } : {}),
     plan: { status: "ACTIVE" as const, ...(estudiante ? { OR: [{ targetDepartment: null }, ...(estudiante.department ? [{ targetDepartment: { equals: estudiante.department, mode: "insensitive" as const } }] : [])] } : {}) },
   };
 
@@ -68,10 +101,7 @@ export async function getCapacitacionesEnVivo(opciones: { verPruebas: boolean; v
     prisma.trainingSession.findMany({
       where: {
         status: { not: "CLOSED" },
-        OR: [
-          { startsAt: { gte: new Date(ahora.getTime() - 24 * 60 * MIN), lte: new Date(ahora.getTime() + HORIZONTE) } },
-          { startsAt: { lte: new Date(ahora.getTime() + HORIZONTE) }, activity: { plan: { kind: "REUNION" } } },
-        ],
+        startsAt: { gte: new Date(ahora.getTime() - VIDA_REUNION), lte: new Date(ahora.getTime() + HORIZONTE) },
         activity: actividadVisible,
       },
       orderBy: { startsAt: "asc" },
@@ -114,7 +144,8 @@ export async function getCapacitacionesEnVivo(opciones: { verPruebas: boolean; v
   const resultado = new Map<string, CapacitacionEnVivo>();
   for (const j of jornadas) {
     const fin = j.endsAt ?? new Date(j.startsAt.getTime() + SIN_FIN);
-    const enVivo = ahora.getTime() >= j.startsAt.getTime() - ANTES && (j.activity.plan.kind === "REUNION" || ahora.getTime() <= fin.getTime() + DESPUES);
+    const enVivo = ahora.getTime() >= j.startsAt.getTime() - ANTES &&
+      (j.activity.plan.kind === "REUNION" ? ahora.getTime() <= j.startsAt.getTime() + VIDA_REUNION : ahora.getTime() <= fin.getTime() + DESPUES);
     const proxima = j.startsAt.getTime() - ANTES > ahora.getTime();
     if (!enVivo && !proxima) continue;
     const previa = resultado.get(j.activity.id);

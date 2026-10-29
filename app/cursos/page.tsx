@@ -1,3 +1,4 @@
+import { SIN_PRUEBAS, veePruebas } from "@/lib/pruebas";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { CatalogoResultados } from "@/components/cursos/catalogo-resultados";
@@ -40,6 +41,7 @@ export default async function CatalogoCursosPage({
   if (session?.user) {
     where.targetAudience = { in: [session.user.personnelType, "AMBOS"] };
   }
+  if (!veePruebas(session?.user?.role)) Object.assign(where, SIN_PRUEBAS);
 
   // Se traen los cursos que le corresponden al usuario y los contadores de
   // cada faceta se calculan sobre ese conjunto, en el servidor: así el número
