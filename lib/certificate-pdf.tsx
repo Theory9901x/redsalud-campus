@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import type { ComponentProps, ComponentType } from "react";
 import QRCode from "qrcode";
-import { Document, Page, View, Text, Image, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, Font, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
 import { publicUploadDiskPath } from "@/lib/storage";
 import type { CertificateElement, CertificateFieldValues, CertificateLayout } from "@/lib/certificate-template";
 
@@ -180,7 +180,26 @@ function CertificateDocument({
   );
 }
 
+/** Usa las métricas de la misma fuente del PDF para no cortar nombres o cursos largos. */
+export async function fitCertificateLayout(layout: CertificateLayout, values: CertificateFieldValues): Promise<CertificateLayout> {
+  const elements = await Promise.all(layout.elements.map(async (element) => {
+    if (element.type !== "text" || !element.fitToWidth) return element;
+    const text = values[element.fieldKey] ?? "";
+    if (!text) return element;
+    const descriptor = { fontFamily: element.fontFamily };
+    await Font.load(descriptor);
+    const data = Font.getFont(descriptor).data;
+    if (!data) return element;
+    const textWidth = data.layout(text).advanceWidth / data.unitsPerEm;
+    const available = element.widthPct * CERTIFICATE_PAGE_WIDTH_PT / 100;
+    const fontSize = Math.min(element.fontSize, available * 0.98 / textWidth);
+    return { ...element, fontSize };
+  }));
+  return { ...layout, elements };
+}
+
 export async function renderCertificatePdf(input: RenderCertificateInput): Promise<Buffer> {
+  const layout = await fitCertificateLayout(input.layout, input.fieldValues);
   const customImagePublicUrls = [
     ...new Set(
       input.layout.elements
@@ -207,7 +226,7 @@ export async function renderCertificatePdf(input: RenderCertificateInput): Promi
 
   return renderToBuffer(
     <CertificateDocument
-      layout={input.layout}
+      layout={layout}
       fieldValues={input.fieldValues}
       backgroundImage={backgroundImage}
       logoImage={logoImage}

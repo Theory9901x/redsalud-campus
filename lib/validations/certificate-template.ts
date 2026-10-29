@@ -34,6 +34,7 @@ const textElementSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   align: alignSchema,
   widthPct: pctSchema,
+  fitToWidth: z.boolean().optional(),
 });
 
 const imageElementSchema = z.object({

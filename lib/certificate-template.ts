@@ -91,6 +91,8 @@ export type CertificateTextElement = {
   color: string; // hex
   align: "left" | "center" | "right";
   widthPct: number; // ancho de la caja de texto, % del ancho de la página
+  /** Reduce el tamaño para conservar completo un nombre/título largo en una línea. */
+  fitToWidth?: boolean;
 };
 
 export type CertificateImageElement = {
