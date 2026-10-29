@@ -57,6 +57,7 @@ export function TrainingSessionList({
   onDelete,
   vivoBaseUrl,
   conEvaluacion = false,
+  independiente = false,
 }: {
   sessions: Sesion[];
   onEnable: (sessionId: string) => Promise<void>;
@@ -66,13 +67,14 @@ export function TrainingSessionList({
   vivoBaseUrl?: string;
   /** Mostrar evaluación en los contadores (solo si la capacitación tiene evaluación). */
   conEvaluacion?: boolean;
+  independiente?: boolean;
 }) {
   const [pendiente, iniciar] = useTransition();
 
   if (sessions.length === 0) {
     return (
       <p className="surface p-5 text-sm leading-relaxed text-muted-foreground">
-        Todavía no hay jornadas agendadas. El plan la programa por trimestre; aquí se agenda el día exacto.
+        {independiente ? "Todavía no hay jornadas agendadas. Define la fecha y hora de tu capacitación con el botón Agendar jornada." : "Todavía no hay jornadas agendadas. El plan la programa por trimestre; aquí se agenda el día exacto."}
       </p>
     );
   }

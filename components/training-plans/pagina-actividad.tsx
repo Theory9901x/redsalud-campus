@@ -29,6 +29,8 @@ import {
   getExternosDeActividad,
   fichaCompletaParaPublicar,
   trimestresDeActividad,
+  trimestreActual,
+  filtroTrimestre,
 } from "@/lib/training-plans";
 import { getSurveysForActivity } from "@/lib/surveys";
 import { getEvaluacionCapacitacion } from "@/lib/evaluacion-capacitacion";
@@ -130,27 +132,29 @@ export async function PaginaActividad({
   // trimestres no se duplica; se elige cuál revisar y todo lo de abajo sale
   // solo de ese trimestre.
   const vistaTrimestre = await trimestresDeActividad(activity, trimestreParam);
-  const filtro = vistaTrimestre.filtro;
-  const jornadas = activity.sessions.filter((ses) => ses.startsAt >= filtro.desde && ses.startsAt < filtro.hasta);
+  const actual = trimestreActual();
+  const filtro = activity.plan.isIndependent ? filtroTrimestre(actual.anio, actual.trimestre) : vistaTrimestre.filtro;
+  const filtroDatos = activity.plan.isIndependent ? undefined : filtro;
+  const jornadas = activity.plan.isIndependent ? activity.sessions : activity.sessions.filter((ses) => ses.startsAt >= filtro.desde && ses.startsAt < filtro.hasta);
 
   const [conteosAsistencia, roster, surveys, evaluacion, conteosJornada, vigente, externos, municipios] = await Promise.all([
-    getActivityAttendanceCounts(activityForAudience, filtro),
+    getActivityAttendanceCounts(activityForAudience, filtroDatos),
     getActivityAttendancePage(activityForAudience, {
       buscar: buscarAsistencia,
       pagina: Number(paginaParam) || 1,
-      trimestre: filtro.trimestre,
+      trimestre: activity.plan.isIndependent ? undefined : filtro.trimestre,
     }),
     getSurveysForActivity(activityId),
     getEvaluacionCapacitacion(activityId),
     getConteosPorJornada(jornadas.map((j) => j.id)),
     resolverJornadaVigente(activityId),
-    getExternosDeActividad(activityId, filtro),
+    getExternosDeActividad(activityId, filtroDatos),
     getMunicipioOptions(),
   ]);
   const quiz = evaluacion?.quiz ?? null;
   const conEvaluacion = !!quiz && quiz.questions.length > 0;
   const [resumenCiclo, resultadosCiclo] = activity.courseId
-    ? await Promise.all([getPresaberPostsaberSummary(activityId, filtro), getCycleResults(activityId, filtro)])
+    ? await Promise.all([getPresaberPostsaberSummary(activityId, filtroDatos), getCycleResults(activityId, filtroDatos)])
     : [null, null];
 
   const nonAdherentUsers = roster.filas.filter((u) => !u.attended);
@@ -245,7 +249,7 @@ export async function PaginaActividad({
     {
       etiqueta: "Jornadas",
       valor: String(jornadas.length),
-      detalle: jornadas.length === 1 ? "agendada en el trimestre" : "agendadas en el trimestre",
+      detalle: activity.plan.isIndependent ? "agendadas por el \u00e1rea" : jornadas.length === 1 ? "agendada en el trimestre" : "agendadas en el trimestre",
     },
     {
       etiqueta: "Invitados",
@@ -284,6 +288,7 @@ export async function PaginaActividad({
               onDelete={deleteSessionAction}
               vivoBaseUrl={sesionesUrl}
               conEvaluacion={conEvaluacion}
+              independiente={activity.plan.isIndependent}
             />
           </SeccionActividad>
           <EnlacesGenerales enlaces={enlacesGenerales} jornadaVigente={vigente ? etiquetaJornada(vigente) : null} />
@@ -312,7 +317,7 @@ export async function PaginaActividad({
             />
             {isClosed && <NonAdherentList users={nonAdherentUsers} />}
           </SeccionActividad>
-          <RegistroConexiones activityId={activityId} desde={filtro.desde} hasta={filtro.hasta} />
+          <RegistroConexiones activityId={activityId} desde={filtroDatos?.desde} hasta={filtroDatos?.hasta} />
           {externos.length > 0 && (
             <ExternalParticipantsPanel
               externos={externos.map((e) => ({
@@ -402,7 +407,7 @@ export async function PaginaActividad({
         <ActivityReportPanel
           activityId={activityId}
           cerrada={isClosed}
-          trimestre={vistaTrimestre.opciones.length > 1 ? filtro.trimestre : undefined}
+          trimestre={!activity.plan.isIndependent && vistaTrimestre.opciones.length > 1 ? filtro.trimestre : undefined}
           trimestreTerminado={filtro.hasta <= new Date()}
         />
       ),
