@@ -1,4 +1,4 @@
-import type { CourseAudience, PlanKind, TrainingModality } from "@prisma/client";
+import type { CourseAudience, PlanKind, TrainingModality, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -41,7 +41,7 @@ const HORIZONTE = 7 * 24 * 60 * MIN; // próximas: una semana
 
 const esPrueba = (...textos: string[]) => textos.some((t) => /^\s*\[(PRUEBA|DEMO)\]/i.test(t));
 
-export async function getCapacitacionesEnVivo(opciones: { verPruebas: boolean }): Promise<CapacitacionEnVivo[]> {
+export async function getCapacitacionesEnVivo(opciones: { verPruebas: boolean; viewer?: { id: string; role: Role } }): Promise<CapacitacionEnVivo[]> {
   const ahora = new Date();
   const seleccion = {
     id: true,
@@ -56,10 +56,12 @@ export async function getCapacitacionesEnVivo(opciones: { verPruebas: boolean })
     responsibleUser: { select: { fullName: true } },
     plan: { select: { title: true, kind: true } },
   } as const;
+  const estudiante = opciones.viewer?.role === "STUDENT" ? await prisma.user.findUniqueOrThrow({ where: { id: opciones.viewer.id }, select: { personnelType: true, department: true } }) : null;
   const actividadVisible = {
     status: { not: "CLOSED" as const },
     manuallyHidden: false,
-    plan: { status: "ACTIVE" as const },
+    ...(estudiante ? { targetAudience: { in: [estudiante.personnelType, "AMBOS" as const] }, status: "OPEN" as const } : {}),
+    plan: { status: "ACTIVE" as const, ...(estudiante ? { OR: [{ targetDepartment: null }, ...(estudiante.department ? [{ targetDepartment: { equals: estudiante.department, mode: "insensitive" as const } }] : [])] } : {}) },
   };
 
   const [jornadas, tramosRecientes] = await Promise.all([

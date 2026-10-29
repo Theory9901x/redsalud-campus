@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 /** Mis capacitaciones · En vivo: las llamadas vigentes y las próximas, para entrar directo. */
 export default async function EnVivoPage() {
   const session = await requireSession("/mis-capacitaciones/en-vivo");
-  const fichas = await getCapacitacionesEnVivo({ verPruebas: veComoAdmin(session.user.role) || session.user.role === "TUTOR" });
+  const fichas = await getCapacitacionesEnVivo({ viewer: session.user, verPruebas: veComoAdmin(session.user.role) || session.user.role === "TUTOR" });
   return (
     <main className="canvas-formacion min-h-full flex-1">
       <div className="mx-auto w-full max-w-[1480px] px-4 py-8 sm:px-6 lg:px-8">

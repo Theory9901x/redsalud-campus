@@ -28,7 +28,7 @@ export default async function MisCapacitacionesPage() {
 
   const [planes, enVivo] = await Promise.all([
     getStudentPlansOverview(userId),
-    getCapacitacionesEnVivo({ verPruebas: veComoAdmin(session.user.role) || session.user.role === "TUTOR" }).then(
+    getCapacitacionesEnVivo({ viewer: session.user, verPruebas: veComoAdmin(session.user.role) || session.user.role === "TUTOR" }).then(
       (f) => f.filter((x) => x.estado === "EN_VIVO").length
     ),
   ]);

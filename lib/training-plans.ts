@@ -130,6 +130,7 @@ export async function getStudentPlansOverview(userId: string) {
           title: true,
           courseId: true,
           targetAudience: true,
+          manuallyHidden: true,
           status: true,
           presaberOpenedAt: true,
           presaberClosedAt: true,
@@ -153,7 +154,7 @@ export async function getStudentPlansOverview(userId: string) {
   return planes.map((plan) => {
     // Solo lo que le aplica a ESTA persona, igual que en la ficha del plan.
     const aplicables = plan.activities.filter(
-      (a) => a.targetAudience === "AMBOS" || a.targetAudience === user.personnelType
+      (a) => !a.manuallyHidden && (a.targetAudience === "AMBOS" || a.targetAudience === user.personnelType)
     );
 
     let completadas = 0;
@@ -221,7 +222,7 @@ export async function getTrainingPlanDetailForStudent(id: string, userId: string
     (!!user.department && user.department.trim().toLowerCase() === plan.targetDepartment.trim().toLowerCase());
   if (!matchesDepartment) return null;
 
-  return plan;
+  return { ...plan, activities: plan.activities.filter((a) => !a.manuallyHidden) };
 }
 
 /**

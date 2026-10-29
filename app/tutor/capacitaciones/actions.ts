@@ -3,7 +3,8 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireTutorOrAdmin } from "@/lib/auth-helpers";
+import { requireTutorOrAdmin, requireTrainingActivityAccess } from "@/lib/auth-helpers";
+import { alcanceAdscripcion } from "@/lib/encuestas/adscripcion";
 import { prisma } from "@/lib/prisma";
 
 const schema = z.object({
@@ -13,6 +14,7 @@ const schema = z.object({
   objective: z.string().trim().min(10, "Describe el objetivo de la capacitación."),
   modality: z.enum(["VIRTUAL", "PRESENCIAL", "MIXTA"]),
   targetAudience: z.enum(["AMBOS", "ASISTENCIAL", "ADMINISTRATIVO"]),
+  quarter: z.coerce.number().int().min(1).max(4),
 });
 
 export async function crearCapacitacionAreaAction(_prev: { error: string | null }, fd: FormData): Promise<{ error: string | null }> {
@@ -34,6 +36,7 @@ export async function crearCapacitacionAreaAction(_prev: { error: string | null 
       planId: plan.id, areaId: area.id, title: data.title, objective: data.objective,
       modality: data.modality, targetAudience: data.targetAudience, type: "EXTERNAL_EVENT",
       responsibleUserId: session.user.id, status: "DRAFT", isRequired: true,
+      manuallyHidden: true, quarters: [data.quarter],
     }, select: { id: true } });
     await tx.auditLog.create({ data: { userId: session.user.id, action: "CREATE", entity: "TrainingActivity", entityId: created.id, description: `Capacitación creada por su área: ${data.title}` } });
     return created;
@@ -41,4 +44,29 @@ export async function crearCapacitacionAreaAction(_prev: { error: string | null 
   revalidatePath("/tutor/planes-capacitacion");
   revalidatePath(`/tutor/planes-capacitacion/${plan.id}`);
   redirect(`/tutor/planes-capacitacion/${plan.id}/actividades/${actividad.id}`);
+}
+
+export async function guardarAudienciaCapacitacionAction(activityId: string, _prev: { error: string | null; ok?: string }, fd: FormData): Promise<{ error: string | null; ok?: string }> {
+  const { session } = await requireTrainingActivityAccess(activityId);
+  if (!["ADMIN", "TUTOR"].includes(session.user.role)) return { error: "No tienes permiso de escritura." };
+  const alcance = await alcanceAdscripcion(session.user);
+  const activity = await prisma.trainingActivity.findFirst({ where: { ...alcance.actividades, id: activityId }, select: { planId: true, status: true, quarters: true, startDate: true, plan: { select: { status: true } } } });
+  if (!activity) return { error: "Solo puedes habilitar capacitaciones de tu propia área." };
+  if (activity.status === "CLOSED" || activity.plan.status !== "ACTIVE") return { error: "La capacitación o el plan no están disponibles para edición." };
+  const parsed = z.enum(["ADMINISTRATIVO", "ASISTENCIAL", "AMBOS"]).safeParse(fd.get("targetAudience"));
+  if (!parsed.success) return { error: "Selecciona administrativos, asistenciales o ambos." };
+  const habilitar = fd.get("habilitar") === "on";
+  if (habilitar && !activity.quarters.length && !activity.startDate) return { error: "Define primero el trimestre o fecha de la capacitación." };
+  await prisma.$transaction([
+    prisma.trainingActivity.update({ where: { id: activityId }, data: { targetAudience: parsed.data, ...(habilitar ? { status: "OPEN", manuallyHidden: false, enabledAt: new Date() } : {}) } }),
+    prisma.auditLog.create({ data: { userId: session.user.id, action: "UPDATE", entity: "TrainingActivity", entityId: activityId, description: `Audiencia definida por el área: ${parsed.data}. ${habilitar ? "Capacitación habilitada." : "Audiencia guardada."}` } }),
+  ]);
+  for (const base of ["/tutor/planes-capacitacion", "/admin/planes-capacitacion"]) {
+    revalidatePath(`${base}/${activity.planId}/actividades/${activityId}`);
+    revalidatePath(`${base}/${activity.planId}`);
+  }
+  revalidatePath("/mis-capacitaciones");
+  revalidatePath("/mis-capacitaciones/en-vivo");
+  revalidatePath(`/mis-capacitaciones/${activity.planId}`);
+  return { error: null, ok: habilitar ? "Capacitación habilitada para el personal seleccionado." : "Audiencia actualizada." };
 }

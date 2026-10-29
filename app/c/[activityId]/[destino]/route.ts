@@ -1,3 +1,4 @@
+import { coincideAudienciaCapacitacion } from "@/lib/audiencia-capacitacion";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -44,6 +45,8 @@ export async function GET(
     where: { id: activityId },
     select: {
       planId: true,
+      targetAudience: true,
+      plan: { select: { kind: true } },
       courseId: true,
       status: true,
       presaberOpenedAt: true,
@@ -53,6 +56,8 @@ export async function GET(
     },
   });
   if (!actividad) return NextResponse.redirect(`${base}/mis-capacitaciones`);
+  const viewer = await auth();
+  if (viewer?.user.role === "STUDENT" && actividad.plan.kind === "CAPACITACION" && (actividad.status !== "OPEN" || !coincideAudienciaCapacitacion(actividad.targetAudience, viewer.user.personnelType))) return NextResponse.redirect(`${base}/mis-capacitaciones`);
 
   // La jornada del enlace: la del token, o -enlace general- la vigente.
   const { jornada, explicita } = await jornadaDeEnlace(activityId, tokenPedido);

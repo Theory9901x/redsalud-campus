@@ -1,3 +1,4 @@
+import { coincideAudienciaCapacitacion } from "@/lib/audiencia-capacitacion";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import {
@@ -68,6 +69,7 @@ export default async function SalaVirtualPage({
     },
   });
   if (!actividad) notFound();
+  if (session.user.role === "STUDENT" && actividad.plan.kind === "CAPACITACION" && (actividad.status !== "OPEN" || !coincideAudienciaCapacitacion(actividad.targetAudience, session.user.personnelType))) notFound();
 
   // La jornada de esta sala: la del enlace (?s=) o, con el enlace general, la
   // vigente. Cada conexión queda en ella.

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { AudienciaCapacitacion } from "@/components/training-plans/audiencia-capacitacion";
 import Link from "next/link";
 import QRCode from "qrcode";
 import {
@@ -260,6 +261,7 @@ export async function PaginaActividad({
       conteo: jornadas.length,
       contenido: (
         <div className="space-y-4">
+          {!isClosed && !planCerrado && activity.plan.kind === "CAPACITACION" && <AudienciaCapacitacion activityId={activityId} audience={activity.targetAudience} visible={activity.status === "OPEN"} />}
           <SeccionActividad
             titulo="Jornadas agendadas"
             bajada="Cada jornada tiene sus propios enlaces y QR; lo que se registre por ellos queda en esa jornada."
