@@ -23,7 +23,11 @@ export default async function ReunionesPage() {
   const [reuniones, anfitriones] = await Promise.all([
     listarReuniones(),
     prisma.user.findMany({
-      where: { role: { in: ["ADMIN", "TUTOR"] }, status: "ACTIVE" },
+      where: {
+        role: { in: ["ADMIN", "TUTOR"] },
+        status: "ACTIVE",
+        NOT: { role: "TUTOR", fullName: { equals: "Talento Humano", mode: "insensitive" } },
+      },
       orderBy: { fullName: "asc" },
       select: { id: true, fullName: true },
     }),
