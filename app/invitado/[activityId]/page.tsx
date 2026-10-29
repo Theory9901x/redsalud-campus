@@ -16,6 +16,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { estadoPresaber, estadoPostsaber, momentoParaPersona, cicloEsAutomatico } from "@/lib/presaber-postsaber";
 import { SalaVirtual } from "@/components/training-plans/sala-virtual";
+import { fuenteSala } from "@/lib/fuente-sala";
 import { RegistroInvitado } from "@/components/invitado/registro-invitado";
 import { AbrirEvaluacionPopup } from "@/components/training-plans/abrir-evaluacion-popup";
 import { GrabacionJornada } from "@/components/training-plans/grabacion-jornada";
@@ -154,8 +155,8 @@ export default async function InvitadoPage({
   ];
 
   return (
-    <main className="aula-canvas min-h-screen">
-      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
+    <main className={cn(fuenteSala.variable, "sala-hud dark min-h-screen font-sans")}>
+      <div className="mx-auto w-full max-w-[1720px] px-3 py-4 sm:px-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
             {actividad.plan.title} · {actividad.plan.kind === "REUNION" ? "Participante" : "Invitado"}: <span className="font-semibold text-foreground">{participante.fullName}</span>{" "}

@@ -5,6 +5,8 @@
 @plugin "@tailwindcss/typography";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+/* Consola de la sala de reunión (entorno oscuro propio). */
+@import "./sala.css";
 
 @custom-variant dark (&:is(.dark *));
 

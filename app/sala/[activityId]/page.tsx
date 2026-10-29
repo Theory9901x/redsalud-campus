@@ -8,19 +8,17 @@ import {
   ListChecks,
   Users2,
   CalendarClock,
-  Video,
-  CircleDot,
-  ChevronRight,
+  ChevronLeft,
   ShieldCheck,
-  FileText,
 } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { cn } from "@/lib/utils";
+import { fuenteSala } from "@/lib/fuente-sala";
 import { SalaVirtual } from "@/components/training-plans/sala-virtual";
 import { NavSala } from "@/components/training-plans/nav-sala";
 import { GrabacionJornada } from "@/components/training-plans/grabacion-jornada";
 import { AbrirEvaluacionPopup } from "@/components/training-plans/abrir-evaluacion-popup";
-import { ThemeToggle } from "@/components/brand/theme-toggle";
 import { getMomentoParaUsuario } from "@/lib/training-plans";
 import { firmarTokenJitsi } from "@/lib/jitsi";
 import { etiquetaJornada } from "@/components/training-plans/labels";
@@ -32,14 +30,14 @@ import { ContenidoSalaReunion } from "@/components/reuniones/contenido-sala";
 import { ControlSalaReunion } from "@/components/reuniones/control-sala";
 
 /**
- * SALA VIRTUAL INTEGRADA de una capacitación del plan: la videollamada
- * embebida (Jitsi) con la barra de controles de la plataforma, junto al
- * informe de la jornada -qué área la genera, qué profesional responde por
- * ella, objetivo, metodología y programación-.
+ * SALA VIRTUAL INTEGRADA: la videollamada embebida (Jitsi) con la barra de
+ * controles de la plataforma, dentro de una CONSOLA propia -siempre oscura,
+ * independiente del tema del campus- donde el video es el protagonista y
+ * todo lo demás (riel, telemetría, chat, personas, bitácora, notas, informe)
+ * es instrumental.
  *
  * Exige sesión iniciada a propósito: como quien entra está identificado, el
- * ingreso a la sala registra su ASISTENCIA automáticamente, igual que
- * ocurre al abrir la evaluación.
+ * ingreso a la llamada registra su ASISTENCIA automáticamente.
  */
 export default async function SalaVirtualPage({
   params,
@@ -112,8 +110,7 @@ export default async function SalaVirtualPage({
    * responsable del plan. Solo el anfitrión recibe el token de Jitsi
    * (moderar, silenciar, expulsar, iniciar la sala) y los controles de
    * grabación. Todos los demás -estudiantes y tutores de otras áreas-
-   * entran como participantes normales. Antes se firmaba token para
-   * cualquiera con cuenta, y eso volvía moderador a todo el auditorio.
+   * entran como participantes normales.
    */
   const uid = session.user.id;
   const esReunion = actividad.plan.kind === "REUNION";
@@ -140,148 +137,140 @@ export default async function SalaVirtualPage({
   const herramientas = contenido ? <ContenidoSalaReunion activityId={activityId} inicial={contenido} anfitrion={gestion?.puedeGestionar ? { planId: actividad.plan.id, desarrollo: gestion.desarrollo } : undefined} /> : undefined;
 
   const FICHA = [
-    { icon: Building2, etiqueta: "Área que la genera", valor: actividad.area?.name ?? "Sin área" },
-    { icon: User, etiqueta: "Profesional responsable", valor: profesional },
+    { icon: Building2, etiqueta: "Área", valor: actividad.area?.name ?? "Sin área" },
+    { icon: User, etiqueta: "Responsable", valor: profesional },
     { icon: Users2, etiqueta: "Dirigida a", valor: actividad.targetAudienceNote ?? COURSE_AUDIENCE_LABELS[actividad.targetAudience] },
     ...(proximaJornada ? [{ icon: CalendarClock, etiqueta: "Jornada", valor: proximaJornada }] : []),
   ];
 
+  const panelInfo = (
+    <div className="space-y-5">
+      {evaluacion && (
+        <section className="space-y-2.5">
+          <h2 className="sh-label">Tu evaluación</h2>
+          {[
+            { etiqueta: "Presaber", hecho: evaluacion.preHecho, activo: evaluacion.momento === "PRESABER" },
+            { etiqueta: "Postsaber", hecho: evaluacion.postHecho, activo: evaluacion.momento === "POSTSABER" },
+          ].map((m) => (
+            <div key={m.etiqueta} className="flex items-center justify-between gap-2 rounded-2xl border border-[var(--sh-line)] bg-[var(--sh-panel-2)] px-3.5 py-3">
+              <span className="text-[13px] font-semibold">{m.etiqueta}</span>
+              {m.hecho ? (
+                <span className="sh-label text-[var(--sh-live)]">Presentado</span>
+              ) : m.activo ? (
+                <AbrirEvaluacionPopup
+                  href={`/c/${actividad.id}/${m.etiqueta === "Presaber" ? "presaber" : "postsaber"}${sufijoJornada}`}
+                  etiqueta={`Presentar ${m.etiqueta.toLowerCase()}`}
+                />
+              ) : (
+                <span className="sh-label text-[var(--sh-dim)]">No disponible</span>
+              )}
+            </div>
+          ))}
+          <p className="text-[11px] leading-snug text-[var(--sh-dim)]">Se abre en una ventana aparte: no te saca de la sala.</p>
+        </section>
+      )}
+
+      <section className="space-y-2.5">
+        <h2 className="sh-label">{esReunion ? "Información de la reunión" : "Informe de la capacitación"}</h2>
+        <dl className="divide-y divide-[var(--sh-line)] rounded-2xl border border-[var(--sh-line)]">
+          {FICHA.map((f) => (
+            <div key={f.etiqueta} className="flex items-start gap-3 px-3.5 py-3">
+              <f.icon className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sh-signal)]" aria-hidden="true" />
+              <div className="min-w-0">
+                <dt className="sh-label text-[0.58rem]">{f.etiqueta}</dt>
+                <dd className="text-[13px] leading-snug">{f.valor}</dd>
+              </div>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      {actividad.objective && (
+        <section className="space-y-2">
+          <h2 className="sh-label flex items-center gap-1.5"><Target className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> Objetivo</h2>
+          <p className="text-[13px] leading-relaxed text-[var(--sh-muted)]">{actividad.objective}</p>
+        </section>
+      )}
+
+      {actividad.methodology && (
+        <section className="space-y-2">
+          <h2 className="sh-label flex items-center gap-1.5"><ListChecks className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> {esReunion ? "Desarrollo registrado" : "Metodología"}</h2>
+          <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-[var(--sh-muted)]">{actividad.methodology}</p>
+        </section>
+      )}
+    </div>
+  );
+
   return (
-    <main className="aula-canvas min-h-screen">
-      <div className="mx-auto w-full max-w-[1560px] px-3 py-4 sm:px-5 lg:px-6">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-          {/* Barra lateral de la sala */}
+    <main className={cn(fuenteSala.variable, "sala-hud dark min-h-screen font-sans")}>
+      <div className="mx-auto w-full max-w-[1720px] px-3 py-4 sm:px-5">
+        {/* ---------------- Cabecera ---------------- */}
+        <header className="sh-rise mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-3" style={{ "--i": 0 } as React.CSSProperties}>
+          <div className="min-w-0">
+            <Link href={volverHref} className="sh-label inline-flex items-center gap-1 transition-colors hover:text-[var(--sh-text)]">
+              <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              {esReunion ? "Reuniones" : "Capacitaciones"}
+              <span className="mx-1 text-[var(--sh-dim)]">/</span>
+              <span className="text-[var(--sh-text)]">Sala</span>
+            </Link>
+            <h1 className="sh-display mt-1.5 max-w-[22ch] text-[clamp(1.5rem,2.6vw,2.4rem)] font-bold uppercase leading-[1.02] tracking-tight">
+              {actividad.title}
+            </h1>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              {FICHA.map((f) => (
+                <span key={f.etiqueta} className="sh-chip">
+                  <f.icon className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" />
+                  <span className="truncate">{f.valor}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="sh-chip border-[color-mix(in_oklch,var(--sh-live)_40%,transparent)] bg-[color-mix(in_oklch,var(--sh-live)_12%,transparent)]">
+              <span className="sh-live-dot" aria-hidden="true" />
+              <span className="sh-label text-[var(--sh-text)]">Sala en vivo</span>
+            </span>
+            <span
+              className="sh-display grid h-10 w-10 place-items-center rounded-full border border-[var(--sh-line-strong)] bg-gradient-to-br from-[var(--sh-signal)] to-[var(--sh-live)] text-[13px] font-bold text-white shadow-[0_0_24px_-6px_var(--sh-signal)]"
+              title={nombre}
+            >
+              {inicialesUsuario || "?"}
+            </span>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[76px_minmax(0,1fr)]">
           <div className="hidden lg:block">
             <NavSala archivosHref={volverHref} conGrabacion={esPersonal} conGestion={!!contenido} />
           </div>
 
-          {/* Columna principal */}
-          <div className="min-w-0 space-y-4">
-            <header className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0">
-                <nav aria-label="Ruta" className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
-                  <Link href={volverHref} className="hover:text-foreground">
-                    {esReunion ? "Reuniones" : "Capacitaciones"}
-                  </Link>
-                  <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span className="text-foreground">Sala de reunión</span>
-                </nav>
-                <div className="mt-1.5 flex flex-wrap items-center gap-3">
-                  <h1 className="font-display text-[clamp(1.25rem,2.4vw,1.7rem)] font-extrabold leading-tight tracking-tight text-foreground">
-                    {actividad.title}
-                  </h1>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11.5px] font-bold text-primary">
-                    <Video className="h-3.5 w-3.5" aria-hidden="true" />
-                    Sala activa
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-success/25 bg-success/10 px-3 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-success">
-                  <CircleDot className="h-3 w-3 animate-pulse" aria-hidden="true" />
-                  Sala en vivo
-                </span>
-                <div className="surface-glass flex items-center gap-1 px-2 py-1">
-                  <ThemeToggle />
-                  <span
-                    className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-primary to-success text-[12px] font-extrabold text-white"
-                    title={nombre}
-                  >
-                    {inicialesUsuario || "?"}
-                  </span>
-                </div>
-              </div>
-            </header>
-
+          <div className="min-w-0">
             <ControlSalaReunion esReunion={esReunion} activityId={activityId} cerradaInicial={actividad.status === "CLOSED"}>
-            <SalaVirtual
-              domain={jitsiDomain}
-              roomName={`RedSaludTeForma-${actividad.id}`}
-              activityId={actividad.id}
-              sessionId={jornada?.id ?? null}
-              displayName={nombre}
-              subject={actividad.title}
-              jwt={tokenSala}
-              esPresentador={esPersonal}
-              grabacion={esPersonal ? <GrabacionJornada activityId={actividad.id} /> : undefined}
-              panelDerecho={
-                <div id="informe" className="space-y-4 scroll-mt-24">
-            {evaluacion && (
-              <section className="surface-glass space-y-3 p-5">
-                <h2 className="font-display text-[14px] font-bold text-foreground">Tu evaluación</h2>
-                {[
-                  { etiqueta: "Presaber", hecho: evaluacion.preHecho, activo: evaluacion.momento === "PRESABER" },
-                  { etiqueta: "Postsaber", hecho: evaluacion.postHecho, activo: evaluacion.momento === "POSTSABER" },
-                ].map((m) => (
-                  <div key={m.etiqueta} className="flex items-center justify-between gap-2">
-                    <span className="text-[13px] font-semibold text-foreground">{m.etiqueta}</span>
-                    {m.hecho ? (
-                      <span className="text-xs font-semibold text-success">Presentado</span>
-                    ) : m.activo ? (
-                      <AbrirEvaluacionPopup
-                        href={`/c/${actividad.id}/${m.etiqueta === "Presaber" ? "presaber" : "postsaber"}${sufijoJornada}`}
-                        etiqueta={`Presentar ${m.etiqueta.toLowerCase()}`}
-                      />
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Aún no disponible</span>
-                    )}
-                  </div>
-                ))}
-                <p className="text-[11px] leading-snug text-muted-foreground">
-                  Se abre en una ventana aparte: no te saca de la sala.
-                </p>
-              </section>
-            )}
-
-            <section className="surface-glass space-y-3 p-5">
-              <h2 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground">
-                <FileText className="h-4 w-4 text-primary" aria-hidden="true" />
-                {esReunion ? "Información de la reunión" : "Informe de la capacitación"}
-              </h2>
-              {FICHA.map((f) => (
-                <div key={f.etiqueta} className="flex items-start gap-3 rounded-xl bg-card/50 p-2.5">
-                  <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <f.icon className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-[12px] font-bold text-foreground">{f.etiqueta}</p>
-                    <p className="text-[12.5px] leading-snug text-muted-foreground">{f.valor}</p>
-                  </div>
-                </div>
-              ))}
-            </section>
-
-            {actividad.objective && (
-              <section className="surface-glass space-y-2 p-5">
-                <h2 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground">
-                  <Target className="h-4 w-4 text-primary" aria-hidden="true" />
-                  Objetivo
-                </h2>
-                <p className="text-[13px] leading-relaxed text-muted-foreground">{actividad.objective}</p>
-              </section>
-            )}
-
-            {actividad.methodology && (
-              <section className="surface-glass space-y-2 p-5">
-                <h2 className="flex items-center gap-2 font-display text-[14px] font-bold text-foreground">
-                  <ListChecks className="h-4 w-4 text-primary" aria-hidden="true" />
-                  {esReunion ? "Desarrollo registrado" : "Metodología"}
-                </h2>
-                <p className="text-[13px] leading-relaxed text-muted-foreground">{actividad.methodology}</p>
-              </section>
-            )}
-                </div>
-              }
-            />
+              <SalaVirtual
+                domain={jitsiDomain}
+                roomName={`RedSaludTeForma-${actividad.id}`}
+                activityId={actividad.id}
+                sessionId={jornada?.id ?? null}
+                displayName={nombre}
+                subject={actividad.title}
+                jwt={tokenSala}
+                esPresentador={esPersonal}
+                grabacion={esPersonal ? <GrabacionJornada activityId={actividad.id} /> : undefined}
+                panelDerecho={panelInfo}
+              />
             </ControlSalaReunion>
-            {herramientas}
 
-            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              <ShieldCheck className="h-4 w-4 text-success" aria-hidden="true" />
-              La asistencia se registra automáticamente cuando ingresas a la llamada.
+            {herramientas && (
+              <div className="sh-rise mt-4" style={{ "--i": 6 } as React.CSSProperties}>
+                {herramientas}
+              </div>
+            )}
+
+            <p className="sh-label mt-5 flex items-center justify-center gap-2 text-[0.6rem]">
+              <ShieldCheck className="h-3.5 w-3.5 text-[var(--sh-live)]" aria-hidden="true" />
+              La asistencia se registra automáticamente al entrar a la llamada
             </p>
           </div>
-
         </div>
       </div>
     </main>
