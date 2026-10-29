@@ -101,7 +101,7 @@ export async function PaginaActividad({
   trimestreParam,
   panelEnVivo = false,
 }: {
-  basePath: "/admin/planes-capacitacion" | "/tutor/planes-capacitacion";
+  basePath: "/admin/planes-capacitacion" | "/tutor/planes-capacitacion" | "/tutor/capacitaciones";
   planId: string;
   activityId: string;
   buscarAsistencia: string;
@@ -115,6 +115,7 @@ export async function PaginaActividad({
 
   const activity = await getTrainingActivityDetail(activityId);
   if (!activity || activity.planId !== id) notFound();
+  if (basePath === "/tutor/capacitaciones" && !activity.plan.isIndependent) notFound();
 
   const activityForAudience = {
     id: activity.id,
@@ -389,9 +390,9 @@ export async function PaginaActividad({
     },
     {
       valor: "ficha",
-      etiqueta: "Ficha del plan",
+      etiqueta: basePath === "/tutor/capacitaciones" ? "Ficha de la capacitación" : "Ficha del plan",
       Icono: ScrollText,
-      contenido: <ActivityPlanCard activity={activity} responsibleUserName={activity.responsibleUser?.fullName ?? null} />,
+      contenido: <ActivityPlanCard independiente={basePath === "/tutor/capacitaciones"} activity={activity} responsibleUserName={activity.responsibleUser?.fullName ?? null} />,
     },
     {
       valor: "informe",
@@ -410,7 +411,7 @@ export async function PaginaActividad({
 
   return (
     <VistaActividad
-      volver={{ href: `${basePath}/${id}`, etiqueta: activity.plan.title }}
+      volver={{ href: basePath === "/tutor/capacitaciones" ? basePath : `${basePath}/${id}`, etiqueta: basePath === "/tutor/capacitaciones" ? "Capacitaciones independientes" : activity.plan.title }}
       eyebrow={`${activity.area?.name ?? "Capacitación del plan"}${activity.programa ? ` · ${activity.programa}` : ""} · ${nombreTrimestre(filtro.trimestre, false)}`}
       titulo={activity.title}
       chips={[
@@ -432,7 +433,7 @@ export async function PaginaActividad({
             status={activity.status}
             closedAtLabel={activity.closedAt ? DATETIME_FORMAT.format(activity.closedAt) : null}
             puedeReabrir={session.user.role === "ADMIN"}
-            fichaCompleta={fichaCompletaParaPublicar(activity)}
+            fichaCompleta={activity.plan.isIndependent || fichaCompletaParaPublicar(activity)}
             onClose={closeAction}
             onReopen={reopenAction}
             onHide={hideAction}

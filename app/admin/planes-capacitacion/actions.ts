@@ -324,10 +324,10 @@ export async function showActivityAction(
 
   const activity = await prisma.trainingActivity.findUniqueOrThrow({
     where: { id: activityId },
-    select: { status: true, title: true, quarters: true, startDate: true },
+    select: { status: true, title: true, quarters: true, startDate: true, plan: { select: { isIndependent: true } } },
   });
   if (activity.status !== "DRAFT") return { error: "Esta capacitación ya está visible." };
-  if (!fichaCompletaParaPublicar(activity)) {
+  if (!activity.plan.isIndependent && !fichaCompletaParaPublicar(activity)) {
     return { error: "Para mostrarla hace falta completar la ficha: un título y el trimestre o la fecha en que se dicta." };
   }
 

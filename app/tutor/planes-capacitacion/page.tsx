@@ -26,7 +26,7 @@ export default async function TutorPlanesCapacitacionPage() {
         descripcion={`${plans.length} ${plans.length === 1 ? "plan" : "planes"} a tu cargo. Entra a uno para gestionar el cronograma, la asistencia y las métricas de tus capacitaciones.`}
         acciones={
           <>
-            <Link href="/tutor/capacitaciones/nueva" className="boton-hero"><Plus className="h-4 w-4" aria-hidden="true" />Crear capacitación de mi área</Link>
+
             {session.user.role === "ADMIN" && (
               <Link
                 href="/tutor/planes-capacitacion/nuevo"

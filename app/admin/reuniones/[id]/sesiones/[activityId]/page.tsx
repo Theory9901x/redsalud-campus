@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { CalendarClock, FileDown, FileText, MapPin, QrCode, UserRound, Users2 } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getSesionReunion } from "@/lib/reuniones";
+import { RefrescarAsistencia } from "@/components/reuniones/refrescar-asistencia";
 import {
   cerrarSesionAction,
   eliminarSesionAction,
@@ -49,15 +50,13 @@ export default async function SesionReunionPage({ params }: { params: Promise<{ 
       contenido: (
         <SeccionActividad
           titulo="Lista de asistencia"
-          bajada="Registro por el enlace (nombre y cargo) y permanencia real en la sala. Es la misma lista que sale en el acta."
+          bajada="Asistencia automática de quienes ingresaron a la sala. Una fila por persona, con nombre, cargo y permanencia. Se actualiza cada 30 segundos mientras la reunión está abierta."
           accion={
-            <a href={acta} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
-              <FileDown className="h-3.5 w-3.5" aria-hidden="true" /> Acta PDF
-            </a>
+            <div className="flex flex-wrap items-center gap-2"><RefrescarAsistencia abierta={!cerrada} /><a href={`/api/reuniones/${id}/sesiones/${activityId}/asistencia/excel`} className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}>Asistencia Excel</a><a href={`/api/reuniones/${id}/sesiones/${activityId}/asistencia/pdf`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>Asistencia e informe PDF</a></div>
           }
         >
           {d.asistentes.length === 0 ? (
-            <EmptyState icon={Users2} title="Nadie se ha registrado todavía" description="Comparte el enlace o el QR de la pestaña «Accesos»." className="py-12" />
+            <EmptyState icon={Users2} title="Nadie ha ingresado a la sala todavía" description="La asistencia aparece automáticamente cuando una persona entra a la reunión." className="py-12" />
           ) : (
             <div className="tabla-modulo">
               <Table>
@@ -66,7 +65,8 @@ export default async function SesionReunionPage({ params }: { params: Promise<{ 
                     <TableHead className="w-12">#</TableHead>
                     <TableHead>Nombre</TableHead>
                     <TableHead>Cargo</TableHead>
-                    <TableHead>Registro</TableHead>
+                    <TableHead>Ingreso</TableHead>
+                    <TableHead>Salida / estado</TableHead>
                     <TableHead className="text-right">Permanencia</TableHead>
                     <TableHead className="text-right">Conexiones</TableHead>
                   </TableRow>
@@ -81,6 +81,7 @@ export default async function SesionReunionPage({ params }: { params: Promise<{ 
                       </TableCell>
                       <TableCell className="text-muted-foreground">{a.cargo}</TableCell>
                       <TableCell className="font-mono text-[12px] text-muted-foreground">{a.registradoEl ? HORA.format(a.registradoEl) : "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{a.salidaEl ? HORA.format(a.salidaEl) : a.estado}</TableCell>
                       <TableCell className="text-right font-mono text-[12px]">{a.minutos > 0 ? `${a.minutos} min` : <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-right font-mono text-[12px] text-muted-foreground">{a.conexiones || "—"}</TableCell>
                     </TableRow>

@@ -68,9 +68,18 @@ export async function requireCourseAccess(courseId: string) {
   return session;
 }
 
+async function requireIndependentAreaAccess(planId: string) {
+  const session = await requireTutorOrAdmin();
+  const scope = await alcanceAdscripcion(session.user);
+  const plan = await prisma.trainingPlan.findFirst({ where: { id: planId, isIndependent: true, ...(scope.soloDeArea ? { independentArea: { tutorId: session.user.id } } : {}) }, select: { id: true } });
+  if (!plan) throw new Error("No autorizado: la capacitación independiente no pertenece a tu área.");
+  return session;
+}
+
 /** Verifica que el usuario sea ADMIN, o TUTOR responsable del plan. Lanza si no cumple. */
 export async function requireTrainingPlanAccess(planId: string) {
-  const meeting = await prisma.trainingPlan.findUnique({ where: { id: planId }, select: { kind: true } });
+  const meeting = await prisma.trainingPlan.findUnique({ where: { id: planId }, select: { kind: true, isIndependent: true } });
+  if (meeting?.isIndependent) return requireIndependentAreaAccess(planId);
   if (meeting?.kind === "REUNION") return requireReunionAccess(planId);
   const session = await requireTutorOrAdmin();
   if (veComoAdmin(session.user.role)) return session;
@@ -92,7 +101,8 @@ export async function requireTrainingPlanAccess(planId: string) {
  * puede modificar el plan sigue decidiéndolo requireTrainingPlanAccess.
  */
 export async function requireTrainingPlanRead(planId: string) {
-  const meeting = await prisma.trainingPlan.findUnique({ where: { id: planId }, select: { kind: true } });
+  const meeting = await prisma.trainingPlan.findUnique({ where: { id: planId }, select: { kind: true, isIndependent: true } });
+  if (meeting?.isIndependent) return requireIndependentAreaAccess(planId);
   if (meeting?.kind === "REUNION") return requireReunionAccess(planId);
   const session = await requireTutorOrAdmin();
   if (veComoAdmin(session.user.role)) return session;
@@ -121,12 +131,13 @@ export async function requireTrainingPlanRead(planId: string) {
 export async function requireTrainingActivityAccess(activityId: string) {
   const activity = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
-    select: { planId: true, plan: { select: { kind: true } }, area: { select: { tutorId: true } } },
+    select: { planId: true, plan: { select: { kind: true, isIndependent: true } }, area: { select: { tutorId: true } } },
   });
   if (!activity) {
     throw new Error("Actividad no encontrada.");
   }
 
+  if (activity.plan.isIndependent) return { session: await requireIndependentAreaAccess(activity.planId), planId: activity.planId };
   if (activity.plan.kind === "REUNION") return { session: await requireReunionAccess(activity.planId, activityId), planId: activity.planId };
 
   const session = await requireTutorOrAdmin();

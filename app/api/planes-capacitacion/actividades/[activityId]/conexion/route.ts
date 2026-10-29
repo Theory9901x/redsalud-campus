@@ -1,46 +1,42 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { registrarConexionLlamada } from "@/lib/call-connections";
+import { getParticipanteDeCookie } from "@/app/invitado/[activityId]/actions";
+import { registrarIngresoLlamada, registrarConexionLlamada } from "@/lib/call-connections";
 
-/**
- * Recibe UN tramo de conexión a la videollamada, enviado por
- * `navigator.sendBeacon` justo cuando la persona sale de la sala (o cierra
- * la pestaña). Nunca se sondea ni se llama mientras la llamada sigue activa.
- *
- * Sin autorización de rol: cualquiera que estuvo en la sala -personal,
- * tutor o invitado externo- puede reportar SU PROPIO tramo. La identidad
- * sale de la sesión si la hay; si no, del `externalParticipantId` que la
- * página del invitado ya conocía, validado contra esta misma actividad
- * dentro de `registrarConexionLlamada`.
- *
- * Es telemetría interna disparada por sendBeacon -nadie lee la respuesta ni
- * reintenta-: cualquier fallo se registra en el log del servidor y jamás se
- * deja ver, para no interferir con la salida de la sala de nadie.
+/** Recibe ingreso, permanencia y salida de la llamada.
+ * La identidad procede de la sesión autenticada o de la cookie del invitado.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ activityId: string }> }) {
   const { activityId } = await params;
 
-  let body: { joinedAt?: string; leftAt?: string; displayName?: string; externalParticipantId?: string; sessionId?: string };
+  let body: { event?: string; joinedAt?: string; leftAt?: string; displayName?: string; externalParticipantId?: string; sessionId?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
-  if (!body.joinedAt || !body.leftAt || !body.displayName) {
+  if (!body.joinedAt || (body.event !== "JOIN" && !body.leftAt) || !body.displayName) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
   const session = await auth();
   const userId = session?.user?.id ?? null;
+  const invitado = userId ? null : await getParticipanteDeCookie(activityId);
+  if (!userId && !invitado) return NextResponse.json({ ok: false }, { status: 401 });
 
   try {
+    if (body.event === "JOIN") {
+      await registrarIngresoLlamada({ activityId, userId, externalParticipantId: invitado?.id ?? null, displayName: session?.user?.name ?? invitado?.fullName ?? body.displayName, joinedAt: new Date(body.joinedAt), sessionId: typeof body.sessionId === "string" ? body.sessionId : invitado?.sessionId ?? null });
+      return NextResponse.json({ ok: true });
+    }
     await registrarConexionLlamada({
+      event: body.event === "HEARTBEAT" ? "HEARTBEAT" : "LEAVE",
       activityId,
       userId,
-      externalParticipantId: userId ? null : (body.externalParticipantId ?? null),
+      externalParticipantId: invitado?.id ?? null,
       displayName: body.displayName,
       joinedAt: new Date(body.joinedAt),
-      leftAt: new Date(body.leftAt),
+      leftAt: new Date(body.leftAt!),
       sessionId: typeof body.sessionId === "string" ? body.sessionId : null,
     });
   } catch (error) {

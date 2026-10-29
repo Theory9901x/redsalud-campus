@@ -26,7 +26,7 @@ export function trainingPlanScopeWhere(role: Role, userId: string) {
 export async function getTrainingPlans(role: Role, userId: string) {
   return prisma.trainingPlan.findMany({
     // Los comités viven en su propio módulo (/admin/comites).
-    where: { kind: "CAPACITACION", ...trainingPlanScopeWhere(role, userId) },
+    where: { kind: "CAPACITACION", isIndependent: false, ...trainingPlanScopeWhere(role, userId) },
     orderBy: [{ year: "desc" }, { createdAt: "desc" }],
     include: {
       tutor: { select: { fullName: true } },
@@ -83,6 +83,7 @@ export async function getTrainingPlansForStudent(userId: string) {
   return prisma.trainingPlan.findMany({
     where: {
       kind: "CAPACITACION",
+      isIndependent: false,
       ...NO_PRUEBAS,
       OR: [
         { targetDepartment: null },
@@ -115,6 +116,7 @@ export async function getStudentPlansOverview(userId: string) {
 
   const planes = await prisma.trainingPlan.findMany({
     where: {
+      isIndependent: false,
       ...NO_PRUEBAS,
       OR: [
         { targetDepartment: null },
@@ -215,7 +217,7 @@ export async function getTrainingPlanDetailForStudent(id: string, userId: string
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { department: true } });
 
   const plan = await getTrainingPlanDetail(id);
-  if (!plan || /^\s*\[(PRUEBA|DEMO)\]/i.test(plan.title)) return null;
+  if (!plan || plan.isIndependent || /^\s*\[(PRUEBA|DEMO)\]/i.test(plan.title)) return null;
 
   const matchesDepartment =
     !plan.targetDepartment ||
@@ -307,7 +309,7 @@ export async function getTrainingActivityDetail(activityId: string) {
   return prisma.trainingActivity.findUnique({
     where: { id: activityId },
     include: {
-      plan: { select: { id: true, title: true, year: true, tutorId: true, targetDepartment: true, kind: true, status: true } },
+      plan: { select: { id: true, title: true, year: true, tutorId: true, targetDepartment: true, kind: true, status: true, isIndependent: true } },
       course: { select: { id: true, title: true, slug: true } },
       area: { select: { id: true, name: true } },
       responsibleUser: { select: { id: true, fullName: true, username: true } },

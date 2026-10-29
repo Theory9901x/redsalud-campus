@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils";
  * Submódulos de «Mis capacitaciones» (personal): sus planes y lo que está en
  * vivo ahora. Con llamadas abiertas, la pestaña En vivo lo dice con su conteo.
  */
-export function PestanasCapacitaciones({ activa, enVivo }: { activa: "planes" | "en-vivo"; enVivo: number }) {
+export function PestanasCapacitaciones({ activa, enVivo }: { activa: "planes" | "en-vivo" | "independientes"; enVivo: number }) {
   const pestanas = [
     { clave: "planes", href: "/mis-capacitaciones", etiqueta: "Mis planes", Icono: CalendarRange },
+    { clave: "independientes", href: "/mis-capacitaciones/independientes", etiqueta: "Capacitaciones independientes", Icono: CalendarRange },
     { clave: "en-vivo", href: "/mis-capacitaciones/en-vivo", etiqueta: "En vivo", Icono: Radio },
   ] as const;
   return (

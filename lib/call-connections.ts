@@ -3,28 +3,16 @@ import { trimestreActual } from "@/lib/training-plans";
 import type { Prisma } from "@prisma/client";
 import { registrarAsistenciaSesion } from "@/lib/sesiones-presenciales";
 
-/**
- * TRAZABILIDAD DE CONEXIÓN A LA VIDEOLLAMADA.
- *
- * Cada tramo (join → leave) se escribe UNA sola vez, cuando la persona sale
- * de la sala -nunca mientras está dentro-: no hay nada que sondear ni pintar
- * en vivo, así que este módulo no le agrega trabajo a la jornada mientras
- * ocurre. Es una tabla de anexar (los tramos nunca se editan) que se agrega
- * al leer, no al escribir.
- *
- * ES LA FUENTE DE LA ASISTENCIA VIRTUAL: una persona con cuenta queda como
- * "asistió" en el momento en que se registra su primer tramo real en la
- * llamada (al salir, o en el control periódico cada 5 minutos), y su
- * permanencia es la suma de sus tramos. Abrir la página de la sala sin
- * llegar a conectarse ya no marca asistencia: no quedan registros sueltos.
- * El anfitrión (quien dicta) no se cuenta como asistente.
+/** Registro de ingresos, controles cada minuto y salidas reales de la sala.
+ * Los eventos se anexan y los intervalos se consolidan al consultar la asistencia.
+ * Abrir la página sin conectarse a la llamada no acredita presencia.
  */
-
-const DURACION_MINIMA_S = 5; // reconexiones instantáneas / recargas: ruido, no un tramo real.
+const DURACION_MINIMA_S = 0;
 const DURACION_MAXIMA_S = 12 * 3600; // salvaguarda ante un reloj de cliente desfasado.
 
 export type RegistrarConexionInput = {
   activityId: string;
+  event?: "HEARTBEAT" | "LEAVE";
   userId?: string | null;
   externalParticipantId?: string | null;
   displayName: string;
@@ -73,6 +61,7 @@ export async function registrarConexionLlamada(input: RegistrarConexionInput): P
   await prisma.callConnectionLog.create({
     data: {
       activityId,
+      event: input.event ?? "LEAVE",
       userId: userId ?? null,
       externalParticipantId: externalParticipantId ?? null,
       displayName,
@@ -84,6 +73,20 @@ export async function registrarConexionLlamada(input: RegistrarConexionInput): P
   });
 
   if (userId) await marcarAsistenciaPorConexion(activityId, userId, sessionId);
+}
+
+/** El evento real de ingreso marca presencia incluso antes del primer corte de tiempo. */
+export async function registrarIngresoLlamada(input: Omit<RegistrarConexionInput, "leftAt" | "event">) {
+  if (!input.userId && !input.externalParticipantId) return;
+  const activity = await prisma.trainingActivity.findUnique({ where: { id: input.activityId }, select: { status: true } });
+  if (!activity || activity.status === "CLOSED") return;
+  if (input.sessionId) {
+    const session = await prisma.trainingSession.findUnique({ where: { id: input.sessionId }, select: { activityId: true } });
+    if (session?.activityId !== input.activityId) return;
+  }
+  const joinedAt = Math.abs(Date.now() - input.joinedAt.getTime()) < 300000 ? input.joinedAt : new Date();
+  await prisma.callConnectionLog.create({ data: { activityId: input.activityId, userId: input.userId ?? null, externalParticipantId: input.externalParticipantId ?? null, displayName: input.displayName, joinedAt, leftAt: joinedAt, durationSeconds: 0, sessionId: input.sessionId ?? null, event: "JOIN" } });
+  if (input.userId) await marcarAsistenciaPorConexion(input.activityId, input.userId, input.sessionId ?? null);
 }
 
 /**

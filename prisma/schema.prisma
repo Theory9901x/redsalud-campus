@@ -742,6 +742,9 @@ enum TrainingPlanStatus {
 model TrainingPlan {
   id               String             @id @default(cuid())
   title            String
+  isIndependent    Boolean @default(false)
+  independentAreaId String? @unique
+  independentArea TrainingArea? @relation("IndependentAreaPlan", fields: [independentAreaId], references: [id], onDelete: SetNull)
   year             Int
   description      String?
   targetDepartment String? // mismo texto libre que User.department: sin modelo Department separado; null = todo el personal, cualquier área
@@ -817,6 +820,7 @@ model TrainingArea {
   name      String  @unique
   sortOrder Int
   isActive  Boolean @default(true)
+  independentPlan TrainingPlan? @relation("IndependentAreaPlan")
 
   /**
    * Quién responde por las capacitaciones del área.
@@ -1182,6 +1186,7 @@ model TrainingAttendance {
  * llamada, por plan de capacitación.
  */
 model CallConnectionLog {
+  event String @default("LEAVE")
   id         String           @id @default(cuid())
   activityId String
   activity   TrainingActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)

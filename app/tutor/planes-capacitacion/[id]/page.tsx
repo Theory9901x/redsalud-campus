@@ -120,7 +120,7 @@ export default async function TutorPlanCapacitacionDetallePage({
   return (
     <div className="space-y-6">
       <PlanHero basePath={BASE_PATH} plan={plan} cumplimiento={adherenceSummary.overallPercentage} />
-      {plan.status === "ACTIVE" && <Link href={`/tutor/capacitaciones/nueva?plan=${plan.id}`} className={cn(buttonVariants(), "gap-2")}><Plus className="h-4 w-4" />Crear capacitación de mi área</Link>}
+
 
       {puedeEditarPlan && (
         <ClosePlanPanel

@@ -1,3 +1,5 @@
+import { consolidarAsistencia } from "@/lib/reunion-asistencia";
+export type { AsistenteSesion } from "@/lib/reunion-asistencia";
 import { accesoReuniones } from "@/lib/reuniones-access";
 import { prisma } from "@/lib/prisma";
 
@@ -126,16 +128,6 @@ export async function getReunion(planId: string) {
   };
 }
 
-export type AsistenteSesion = {
-  clave: string;
-  nombre: string;
-  cargo: string;
-  registradoEl: Date | null;
-  minutos: number;
-  conexiones: number;
-  tipo: "registro" | "cuenta";
-};
-
 export async function getSesionReunion(planId: string, activityId: string) {
   const acceso = await accesoReuniones();
   const act = await prisma.trainingActivity.findFirst({
@@ -164,37 +156,14 @@ export async function getSesionReunion(planId: string, activityId: string) {
       orderBy: { registeredAt: "asc" },
       select: { registeredAt: true, user: { select: { id: true, fullName: true, position: true } } },
     }),
-    prisma.callConnectionLog.groupBy({
-      by: ["userId", "externalParticipantId"],
-      where: { activityId },
-      _sum: { durationSeconds: true },
-      _count: { _all: true },
+    prisma.callConnectionLog.findMany({
+      where: { activityId }, orderBy: { createdAt: "asc" },
+      include: { user: { select: { fullName: true, position: true } }, externalParticipant: { select: { fullName: true, company: true } } },
     }),
   ]);
-  const permanencia = new Map(conexiones.map((c) => [c.userId ?? c.externalParticipantId ?? "", { min: Math.round((c._sum.durationSeconds ?? 0) / 60), n: c._count._all }]));
+  const asistentes = consolidarAsistencia(conexiones, new Date(), act.closedAt);
 
-  const asistentes: AsistenteSesion[] = [
-    ...externos.map((e) => ({
-      clave: e.id,
-      nombre: e.fullName,
-      cargo: e.company,
-      registradoEl: e.createdAt,
-      minutos: permanencia.get(e.id)?.min ?? 0,
-      conexiones: permanencia.get(e.id)?.n ?? 0,
-      tipo: "registro" as const,
-    })),
-    ...asistencias.map((a) => ({
-      clave: a.user.id,
-      nombre: a.user.fullName,
-      cargo: a.user.position ?? "—",
-      registradoEl: a.registeredAt,
-      minutos: permanencia.get(a.user.id)?.min ?? 0,
-      conexiones: permanencia.get(a.user.id)?.n ?? 0,
-      tipo: "cuenta" as const,
-    })),
-  ].sort((x, y) => (x.registradoEl?.getTime() ?? 0) - (y.registradoEl?.getTime() ?? 0));
-
-  const conectados = asistentes.filter((a) => a.minutos > 0);
+  const conectados = asistentes;
   return {
     id: act.id,
     titulo: act.title,
@@ -210,8 +179,9 @@ export async function getSesionReunion(planId: string, activityId: string) {
     documentos: act.documents,
     actaFirmada: act.documents.some((d) => d.fileName.includes("ACTA")),
     asistentes,
+    tramos: conexiones,
     resumen: {
-      registrados: asistentes.length,
+      registrados: externos.length + new Set(asistencias.map(a => a.user.id)).size,
       conectados: conectados.length,
       permanenciaPromedio: conectados.length ? Math.round(conectados.reduce((s, a) => s + a.minutos, 0) / conectados.length) : 0,
       minutosTotales: asistentes.reduce((s, a) => s + a.minutos, 0),

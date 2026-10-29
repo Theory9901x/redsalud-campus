@@ -15,6 +15,7 @@ type ActivityPlanCardProps = {
     sourceRow: number | null;
   };
   responsibleUserName: string | null;
+  independiente?: boolean;
 };
 
 /**
@@ -28,7 +29,7 @@ type ActivityPlanCardProps = {
  * es un documento con más matices que eso, y esos matices son justo los que
  * un área necesita para saber qué le están pidiendo.
  */
-export function ActivityPlanCard({ activity, responsibleUserName }: ActivityPlanCardProps) {
+export function ActivityPlanCard({ activity, responsibleUserName, independiente = false }: ActivityPlanCardProps) {
   const tieneAlgo =
     activity.objective ||
     activity.methodology ||
@@ -43,7 +44,7 @@ export function ActivityPlanCard({ activity, responsibleUserName }: ActivityPlan
     <div className="surface-panel space-y-5 p-6">
       <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
         <h2 className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
-          Ficha del plan institucional
+          {independiente ? "Ficha de la capacitación independiente" : "Ficha del plan institucional"}
         </h2>
         {activity.programa && (
           <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">

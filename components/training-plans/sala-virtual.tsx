@@ -191,11 +191,12 @@ export function SalaVirtual({
     let api: JitsiApi | null = null;
     let cancelado = false;
 
-    function reportarTramo() {
+    function reportarTramo(event: "HEARTBEAT" | "LEAVE" = "LEAVE") {
       const joinedAt = joinedAtRef.current;
       joinedAtRef.current = null;
       if (!joinedAt) return;
       const payload = JSON.stringify({
+        event,
         joinedAt: joinedAt.toISOString(),
         leftAt: new Date().toISOString(),
         displayName,
@@ -310,6 +311,7 @@ export function SalaVirtual({
         const datos = args[0] as { id?: string } | undefined;
         localIdRef.current = datos?.id ?? null;
         joinedAtRef.current = new Date();
+        void fetch(`/api/planes-capacitacion/actividades/${activityId}/conexion`, { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ event: "JOIN", joinedAt: joinedAtRef.current.toISOString(), displayName, ...(externalParticipantId ? { externalParticipantId } : {}), ...(sessionId ? { sessionId } : {}) }) }).catch(() => {});
         setDentro(true);
         setSalio(false);
         registrar(`${displayName} se unió a la sesión`);
@@ -395,17 +397,18 @@ export function SalaVirtual({
       document.body.appendChild(script);
     }
 
-    window.addEventListener("pagehide", reportarTramo);
+    const alSalir = () => reportarTramo();
+    window.addEventListener("pagehide", alSalir);
     // Corte periódico: cierra el tramo en curso y abre otro desde ahora.
     const corte = setInterval(() => {
       if (!joinedAtRef.current) return;
-      reportarTramo();
+      reportarTramo("HEARTBEAT");
       joinedAtRef.current = new Date();
-    }, 5 * 60 * 1000);
+    }, 60_000);
     return () => {
       cancelado = true;
       clearInterval(corte);
-      window.removeEventListener("pagehide", reportarTramo);
+      window.removeEventListener("pagehide", alSalir);
       reportarTramo();
       api?.dispose();
       apiRef.current = null;
