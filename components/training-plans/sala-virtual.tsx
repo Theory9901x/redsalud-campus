@@ -28,7 +28,11 @@ import {
   PanelRight,
   Presentation,
   Info,
+  ClipboardList,
+  CircleDot,
 } from "lucide-react";
+
+type IconoSala = React.ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" }>;
 import { cn } from "@/lib/utils";
 import { etiquetaHora } from "@/components/training-plans/labels";
 
@@ -67,10 +71,12 @@ export type ComandoSala =
   | "abrirParticipantes"
   | "abrirBitacora"
   | "abrirNotas"
-  | "abrirInfo";
+  | "abrirInfo"
+  | "abrirActa"
+  | "abrirGrabacion";
 
 /** Pestaña activa de la consola lateral (chat, personas, bitácora, notas, info). */
-export type PanelSala = "chat" | "participantes" | "bitacora" | "notas" | "info";
+export type PanelSala = "chat" | "participantes" | "bitacora" | "notas" | "info" | "acta" | "grabar";
 export const EVENTO_COMANDO_SALA = "sala:comando";
 
 type Participante = { id: string; nombre: string; esLocal: boolean; manoAlzada: boolean };
@@ -114,6 +120,7 @@ export function SalaVirtual({
   esPresentador = false,
   grabacion,
   panelDerecho,
+  panelActa,
 }: {
   domain: string;
   roomName: string;
@@ -128,8 +135,10 @@ export function SalaVirtual({
   esPresentador?: boolean;
   /** Control de grabación (solo personal), se pinta en su tarjeta al pie. */
   grabacion?: React.ReactNode;
-  /** Lo que va debajo del chat en la columna derecha (informe, evaluación, métricas…). */
+  /** Pestaña «Info» de la consola (informe, evaluación, ficha). */
   panelDerecho?: React.ReactNode;
+  /** Pestaña «Acta» de la consola (compromisos y documentos de una reunión). */
+  panelActa?: React.ReactNode;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiApi | null>(null);
@@ -438,6 +447,8 @@ export function SalaVirtual({
       if (tipo === "abrirBitacora") { setPanel("bitacora"); irAConsola(); }
       if (tipo === "abrirNotas") { setPanel("notas"); irAConsola(); }
       if (tipo === "abrirInfo") { setPanel("info"); irAConsola(); }
+      if (tipo === "abrirActa") { setPanel("acta"); irAConsola(); }
+      if (tipo === "abrirGrabacion") { setPanel("grabar"); irAConsola(); }
     }
     window.addEventListener(EVENTO_COMANDO_SALA, alComando);
     return () => window.removeEventListener(EVENTO_COMANDO_SALA, alComando);
@@ -485,81 +496,198 @@ export function SalaVirtual({
   })();
   const manos = participantes.filter((p) => p.manoAlzada).length;
 
+  type Pestana = { clave: PanelSala; etiqueta: string; icono: IconoSala; contador?: number; subtitulo?: string };
+  const pestanas: Pestana[] = [
+    { clave: "chat", etiqueta: "Chat", icono: MessageCircle, contador: noLeidos > 0 ? noLeidos : undefined, subtitulo: dentro ? `${participantes.length} en línea` : "Sin conectar" },
+    { clave: "participantes", etiqueta: "Personas", icono: Users, contador: dentro ? participantes.length : undefined, subtitulo: manos ? `${manos} con la mano alzada` : undefined },
+    { clave: "bitacora", etiqueta: "Bitácora", icono: Activity, subtitulo: eventos.length ? `${eventos.length} eventos` : undefined },
+    { clave: "notas", etiqueta: "Notas", icono: StickyNote, subtitulo: "Privadas" },
+    ...(panelDerecho ? [{ clave: "info" as const, etiqueta: "Info", icono: Info }] : []),
+    ...(panelActa ? [{ clave: "acta" as const, etiqueta: "Acta", icono: ClipboardList }] : []),
+    ...(grabacion ? [{ clave: "grabar" as const, etiqueta: "Grabar", icono: CircleDot }] : []),
+  ];
+  const pestanaActiva = pestanas.find((p) => p.clave === panel) ?? pestanas[0];
+
   return (
-    <div className="sala-scope grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_384px]">
-    <div ref={escenarioRef} className={cn("min-w-0", ampliado && "overflow-y-auto bg-[var(--sh-bg)] p-4")}>
-      {/* ---------------- Escenario ---------------- */}
+    <div className="sala-scope flex h-full min-h-0 flex-col gap-3 xl:flex-row">
+    {/* ---------------- Escenario ---------------- */}
+    <div ref={escenarioRef} className={cn("relative min-h-0 min-w-0 flex-1", ampliado && "bg-black")}>
       <section
         id="llamada"
         data-dentro={dentro}
-        className="sh-stage sh-rise relative overflow-hidden rounded-[var(--sh-radius)] border border-[var(--sh-line-strong)] bg-black shadow-[0_40px_90px_-40px_rgba(0,0,0,0.9)] scroll-mt-24"
-        style={{ "--i": 2 } as React.CSSProperties}
+        className="sh-stage sh-rise relative h-[58vh] min-h-[420px] overflow-hidden rounded-[var(--sh-radius)] border border-[var(--sh-line-strong)] bg-black shadow-[0_40px_90px_-40px_rgba(0,0,0,0.8)] xl:h-full"
+        style={{ "--i": 1 } as React.CSSProperties}
       >
-        <div className={cn("relative", ampliado ? "h-[calc(100vh-150px)] min-h-[320px]" : "h-[calc(100vh-250px)] min-h-[460px] max-h-[860px]")}>
-          <div ref={contenedor} className="h-full w-full" />
-          <div className="sh-corners pointer-events-none absolute inset-0" aria-hidden="true" />
-          <div className="sh-scan" aria-hidden="true" />
+        <div ref={contenedor} className="h-full w-full" />
+        <div className="sh-corners pointer-events-none absolute inset-0" aria-hidden="true" />
+        <div className="sh-scan" aria-hidden="true" />
 
-          {cargando && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/70 text-white">
-              <Loader2 className="h-5 w-5 animate-spin text-[var(--sh-signal)]" aria-hidden="true" />
-              <span className="sh-label">Preparando la sala</span>
-            </div>
-          )}
-          {error && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center px-6 text-center text-sm text-white/80">
-              No se pudo cargar la sala. Verifica tu conexión e intenta de nuevo.
-            </div>
-          )}
-          {salio && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/90 px-6 text-center text-white">
-              <span className="grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-white/10">
-                <PhoneOff className="h-6 w-6 text-white/70" aria-hidden="true" />
+        {cargando && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/70 text-white">
+            <Loader2 className="h-5 w-5 animate-spin text-[var(--sh-signal)]" aria-hidden="true" />
+            <span className="sh-label">Preparando la sala</span>
+          </div>
+        )}
+        {error && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center px-6 text-center text-sm text-white/80">
+            No se pudo cargar la sala. Verifica tu conexión e intenta de nuevo.
+          </div>
+        )}
+        {salio && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/90 px-6 text-center text-white">
+            <span className="grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-white/10">
+              <PhoneOff className="h-6 w-6 text-white/70" aria-hidden="true" />
+            </span>
+            <p className="sh-display text-2xl font-semibold tracking-tight">Saliste de la reunión</p>
+            <p className="max-w-sm text-[13px] leading-relaxed text-white/75">
+              Tu tiempo de conexión quedó registrado. Puedes volver a entrar mientras la jornada siga abierta.
+            </p>
+            <button
+              type="button"
+              onClick={() => { setSalio(false); setCargando(true); setReintento((n) => n + 1); }}
+              className="sh-display mt-2 inline-flex items-center gap-2 rounded-full bg-[var(--sh-signal)] px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_0_30px_-6px_var(--sh-signal)] transition-transform hover:-translate-y-0.5"
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+              Volver a entrar
+            </button>
+          </div>
+        )}
+
+        {/* Telemetría sobre el video: solo escritorio (en móvil manda la barra nativa). */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[6] hidden items-start justify-between p-4 lg:flex">
+          <span className="sh-chip bg-black/55 backdrop-blur-sm">
+            {dentro ? <span className="sh-live-dot" aria-hidden="true" /> : <span className="h-2 w-2 rounded-full bg-white/40" aria-hidden="true" />}
+            <span className="sh-label">{dentro ? "En vivo" : "En espera"}</span>
+          </span>
+          <div className="flex items-center gap-2">
+            {dentro && manos > 0 && (
+              <span className="sh-chip bg-black/55 backdrop-blur-sm">
+                <Hand className="h-3.5 w-3.5 text-warning" aria-hidden="true" />
+                <span className="sh-mono text-[12px]">{manos}</span>
               </span>
-              <p className="sh-display text-2xl font-semibold tracking-tight">Saliste de la reunión</p>
-              <p className="max-w-sm text-[13px] leading-relaxed text-white/75">
-                Tu tiempo de conexión quedó registrado. Puedes volver a entrar mientras la jornada siga abierta.
-              </p>
+            )}
+            {dentro && (
+              <span className="sh-chip bg-black/55 backdrop-blur-sm">
+                <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                <span className="sh-mono text-[12px]">{participantes.length}</span>
+              </span>
+            )}
+            <span className="sh-chip bg-black/55 backdrop-blur-sm">
+              <span className="sh-mono text-[13px]">{reloj}</span>
+            </span>
+            {compartiendo && (
+              <span className="sh-chip border-[var(--sh-signal)] bg-[var(--sh-signal)]/40">
+                <MonitorUp className="h-3.5 w-3.5" aria-hidden="true" />
+                <span className="sh-label">Compartiendo</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* ---------------- Dock de controles, dentro del video ---------------- */}
+        <div className="absolute inset-x-0 bottom-4 z-20 hidden justify-center px-4 lg:flex">
+          <div className="relative">
+            <div className="sh-dock flex items-center gap-0.5 rounded-full border border-white/12 bg-black/60 px-2.5 py-2 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.9)] backdrop-blur-xl">
+              <BotonControl
+                etiqueta="Micrófono"
+                activo={!micSilenciado}
+                alerta={micSilenciado}
+                icono={micSilenciado ? MicOff : Mic}
+                disabled={inactivo}
+                onClick={() => comando("toggleAudio")}
+                desplegable={{ abierto: menu === "mic", onClick: () => abrirMenuDispositivos("mic") }}
+              />
+              <BotonControl
+                etiqueta="Cámara"
+                activo={!camaraApagada}
+                alerta={camaraApagada}
+                icono={camaraApagada ? CameraOff : Camera}
+                disabled={inactivo}
+                onClick={() => comando("toggleVideo")}
+                desplegable={{ abierto: menu === "cam", onClick: () => abrirMenuDispositivos("cam") }}
+              />
+              <BotonControl etiqueta="Mano" activo={manoAlzada} icono={Hand} disabled={inactivo} onClick={() => comando("toggleRaiseHand")} />
+              <BotonControl etiqueta="Compartir" activo={compartiendo} icono={MonitorUp} disabled={inactivo} onClick={() => comando("toggleShareScreen")} />
+              <span className="mx-1 h-8 w-px bg-white/15" aria-hidden="true" />
+              <BotonControl etiqueta="Personas" icono={Users} activo={panel === "participantes"} contador={dentro ? participantes.length : undefined} onClick={() => setPanel("participantes")} />
+              <BotonControl etiqueta="Chat" activo={panel === "chat"} icono={MessageCircle} contador={noLeidos > 0 ? noLeidos : undefined} onClick={() => { setNoLeidos(0); setPanel("chat"); setTimeout(() => chatInputRef.current?.focus(), 50); }} />
+              <BotonControl etiqueta={ampliado ? "Reducir" : "Ampliar"} activo={ampliado} icono={ampliado ? Minimize2 : Maximize2} onClick={alternarAmpliado} />
+              <BotonControl etiqueta="Ajustes" activo={menu === "config"} icono={Settings} disabled={inactivo} onClick={() => setMenu((m) => (m === "config" ? null : "config"))} />
+              <span className="mx-1 h-8 w-px bg-white/15" aria-hidden="true" />
               <button
                 type="button"
-                onClick={() => { setSalio(false); setCargando(true); setReintento((n) => n + 1); }}
-                className="sh-display mt-2 inline-flex items-center gap-2 rounded-full bg-[var(--sh-signal)] px-5 py-2.5 text-[13px] font-bold uppercase tracking-[0.14em] text-white shadow-[0_0_30px_-6px_var(--sh-signal)] transition-transform hover:-translate-y-0.5"
+                disabled={inactivo}
+                onClick={() => comando("hangup")}
+                className="sh-display inline-flex h-12 items-center gap-2 rounded-full bg-[var(--sh-danger)] px-5 text-[13px] font-semibold text-white shadow-[0_0_28px_-4px_var(--sh-danger)] transition-transform hover:-translate-y-0.5 disabled:opacity-35 disabled:shadow-none disabled:hover:translate-y-0"
               >
-                <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                Volver a entrar
+                <PhoneOff className="h-4.5 w-4.5" aria-hidden="true" />
+                Salir
               </button>
             </div>
-          )}
 
-          {/* Telemetría sobre el video: solo escritorio (en móvil manda la barra nativa). */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-[6] hidden items-start justify-between p-4 lg:flex">
-            <span className="sh-chip bg-black/50 backdrop-blur-sm">
-              {dentro ? <span className="sh-live-dot" aria-hidden="true" /> : <span className="h-2 w-2 rounded-full bg-[var(--sh-dim)]" aria-hidden="true" />}
-              <span className="sh-label text-[var(--sh-text)]">{dentro ? "En vivo" : "En espera"}</span>
-            </span>
-            <div className="flex items-center gap-2">
-              {dentro && manos > 0 && (
-                <span className="sh-chip bg-black/50 text-warning backdrop-blur-sm">
-                  <Hand className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span className="sh-mono text-[12px]">{manos}</span>
-                </span>
-              )}
-              {dentro && (
-                <span className="sh-chip bg-black/50 backdrop-blur-sm">
-                  <Users className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span className="sh-mono text-[12px] text-[var(--sh-text)]">{participantes.length}</span>
-                </span>
-              )}
-              <span className="sh-chip bg-black/50 backdrop-blur-sm">
-                <span className="sh-mono text-[13px] text-[var(--sh-text)]">{reloj}</span>
-              </span>
-              {compartiendo && (
-                <span className="sh-chip border-[var(--sh-signal)] bg-[var(--sh-signal)]/25 text-white">
-                  <MonitorUp className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span className="sh-label text-white">Compartiendo</span>
-                </span>
-              )}
-            </div>
+            {menu === "mic" && (
+              <MenuFlotante titulo="Micrófono" onCerrar={() => setMenu(null)}>
+                {dispositivos.mic.length === 0 ? (
+                  <p className="px-2 py-1.5 text-xs text-[var(--sh-dim)]">Sin dispositivos detectados.</p>
+                ) : (
+                  dispositivos.mic.map((d) => (
+                    <OpcionMenu key={d.deviceId} onClick={() => { apiRef.current?.setAudioInputDevice(d.label, d.deviceId); setMenu(null); }}>
+                      <Mic className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> {d.label || "Micrófono"}
+                    </OpcionMenu>
+                  ))
+                )}
+              </MenuFlotante>
+            )}
+            {menu === "cam" && (
+              <MenuFlotante titulo="Cámara" onCerrar={() => setMenu(null)}>
+                {dispositivos.cam.length === 0 ? (
+                  <p className="px-2 py-1.5 text-xs text-[var(--sh-dim)]">Sin cámaras detectadas.</p>
+                ) : (
+                  dispositivos.cam.map((d) => (
+                    <OpcionMenu key={d.deviceId} onClick={() => { apiRef.current?.setVideoInputDevice(d.label, d.deviceId); setMenu(null); }}>
+                      <Camera className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> {d.label || "Cámara"}
+                    </OpcionMenu>
+                  ))
+                )}
+                <OpcionMenu onClick={() => { comando("toggleVirtualBackgroundDialog"); setMenu(null); }}>
+                  <Sparkles className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> Fondo virtual…
+                </OpcionMenu>
+              </MenuFlotante>
+            )}
+            {menu === "config" && (
+              <MenuFlotante titulo="Ajustes de la sala" onCerrar={() => setMenu(null)}>
+                {esPresentador && (
+                  <OpcionMenu onClick={() => { const v = !sigueme; comando("setFollowMe", v); setSigueme(v); }}>
+                    <Presentation className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> Todos siguen mi vista
+                    {sigueme && <Check className="ml-auto h-3.5 w-3.5 text-[var(--sh-live)]" aria-hidden="true" />}
+                  </OpcionMenu>
+                )}
+                <OpcionMenu onClick={() => { comando("toggleFilmStrip"); setMenu(null); }}>
+                  <PanelRight className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> Mostrar u ocultar miniaturas
+                </OpcionMenu>
+                <OpcionMenu onClick={() => comando("toggleTileView")}>
+                  <LayoutGrid className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> Vista en mosaico
+                  {mosaico && <Check className="ml-auto h-3.5 w-3.5 text-[var(--sh-live)]" aria-hidden="true" />}
+                </OpcionMenu>
+                <OpcionMenu onClick={() => comando("setNoiseSuppressionEnabled", { enabled: true })}>
+                  <Volume2 className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> Activar supresión de ruido
+                </OpcionMenu>
+                <p className="sh-label mt-2 flex items-center gap-1.5 px-2 pt-2">
+                  <Gauge className="h-3.5 w-3.5" aria-hidden="true" /> Calidad de video
+                </p>
+                {[
+                  { valor: 180, etiqueta: "Baja · ahorra datos" },
+                  { valor: 360, etiqueta: "Media" },
+                  { valor: 480, etiqueta: "Estándar (recomendada)" },
+                  { valor: 720, etiqueta: "Alta · solo buena red" },
+                ].map((o) => (
+                  <OpcionMenu key={o.valor} onClick={() => { comando("setVideoQuality", o.valor); setCalidad(o.valor); }}>
+                    {o.etiqueta}
+                    {calidad === o.valor && <Check className="ml-auto h-3.5 w-3.5 text-[var(--sh-live)]" aria-hidden="true" />}
+                  </OpcionMenu>
+                ))}
+              </MenuFlotante>
+            )}
           </div>
         </div>
       </section>
@@ -570,247 +698,110 @@ export function SalaVirtual({
         <Mic className="h-4 w-4 shrink-0 text-[var(--sh-signal)]" aria-hidden="true" />
         Para hablar, toca el micrófono en la barra del video y permite el acceso.
       </p>
-
-      {/* ---------------- Dock de controles (flota sobre el borde del escenario) ---------------- */}
-      <div className="sh-rise relative z-20 mx-auto -mt-9 hidden w-fit max-w-full lg:block" style={{ "--i": 4 } as React.CSSProperties}>
-        <div className="sh-panel flex flex-wrap items-center justify-center gap-1 rounded-full bg-[color-mix(in_oklch,var(--sh-bg)_78%,transparent)] px-3 py-2 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.9)]">
-          <BotonControl
-            etiqueta="Micrófono"
-            activo={!micSilenciado}
-            alerta={micSilenciado}
-            icono={micSilenciado ? MicOff : Mic}
-            disabled={inactivo}
-            onClick={() => comando("toggleAudio")}
-            desplegable={{ abierto: menu === "mic", onClick: () => abrirMenuDispositivos("mic") }}
-          />
-          <BotonControl
-            etiqueta="Cámara"
-            activo={!camaraApagada}
-            alerta={camaraApagada}
-            icono={camaraApagada ? CameraOff : Camera}
-            disabled={inactivo}
-            onClick={() => comando("toggleVideo")}
-            desplegable={{ abierto: menu === "cam", onClick: () => abrirMenuDispositivos("cam") }}
-          />
-          <BotonControl etiqueta="Mano" activo={manoAlzada} icono={Hand} disabled={inactivo} onClick={() => comando("toggleRaiseHand")} />
-          <BotonControl etiqueta="Compartir" activo={compartiendo} icono={MonitorUp} disabled={inactivo} onClick={() => comando("toggleShareScreen")} />
-          <BotonControl
-            etiqueta="Personas"
-            icono={Users}
-            activo={panel === "participantes"}
-            contador={dentro ? participantes.length : undefined}
-            onClick={() => setPanel("participantes")}
-          />
-          <BotonControl
-            etiqueta="Chat"
-            activo={panel === "chat"}
-            icono={MessageCircle}
-            contador={noLeidos > 0 ? noLeidos : undefined}
-            onClick={() => { setNoLeidos(0); setPanel("chat"); setTimeout(() => chatInputRef.current?.focus(), 50); }}
-          />
-          <BotonControl
-            etiqueta={ampliado ? "Reducir" : "Ampliar"}
-            activo={ampliado}
-            icono={ampliado ? Minimize2 : Maximize2}
-            onClick={alternarAmpliado}
-          />
-          <BotonControl
-            etiqueta="Ajustes"
-            activo={menu === "config"}
-            icono={Settings}
-            disabled={inactivo}
-            onClick={() => setMenu((m) => (m === "config" ? null : "config"))}
-          />
-          <span className="mx-1 h-9 w-px bg-[var(--sh-line-strong)]" aria-hidden="true" />
-          <button
-            type="button"
-            disabled={inactivo}
-            onClick={() => comando("hangup")}
-            className="sh-display inline-flex h-[52px] items-center gap-2 rounded-full bg-[var(--sh-danger)] px-5 text-[12px] font-bold uppercase tracking-[0.16em] text-white shadow-[0_0_28px_-4px_var(--sh-danger)] transition-transform hover:-translate-y-0.5 disabled:opacity-35 disabled:shadow-none disabled:hover:translate-y-0"
-          >
-            <PhoneOff className="h-5 w-5" aria-hidden="true" />
-            Salir
-          </button>
-        </div>
-
-        {/* Menús desplegables de los botones dinámicos */}
-        {menu === "mic" && (
-          <MenuFlotante titulo="Micrófono" onCerrar={() => setMenu(null)}>
-            {dispositivos.mic.length === 0 ? (
-              <p className="px-2 py-1.5 text-xs text-[var(--sh-dim)]">Sin dispositivos detectados.</p>
-            ) : (
-              dispositivos.mic.map((d) => (
-                <OpcionMenu key={d.deviceId} onClick={() => { apiRef.current?.setAudioInputDevice(d.label, d.deviceId); setMenu(null); }}>
-                  <Mic className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> {d.label || "Micrófono"}
-                </OpcionMenu>
-              ))
-            )}
-          </MenuFlotante>
-        )}
-        {menu === "cam" && (
-          <MenuFlotante titulo="Cámara" onCerrar={() => setMenu(null)}>
-            {dispositivos.cam.length === 0 ? (
-              <p className="px-2 py-1.5 text-xs text-[var(--sh-dim)]">Sin cámaras detectadas.</p>
-            ) : (
-              dispositivos.cam.map((d) => (
-                <OpcionMenu key={d.deviceId} onClick={() => { apiRef.current?.setVideoInputDevice(d.label, d.deviceId); setMenu(null); }}>
-                  <Camera className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> {d.label || "Cámara"}
-                </OpcionMenu>
-              ))
-            )}
-            <OpcionMenu onClick={() => { comando("toggleVirtualBackgroundDialog"); setMenu(null); }}>
-              <Sparkles className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> Fondo virtual…
-            </OpcionMenu>
-          </MenuFlotante>
-        )}
-        {menu === "config" && (
-          <MenuFlotante titulo="Ajustes de la sala" onCerrar={() => setMenu(null)}>
-            {esPresentador && (
-              <OpcionMenu onClick={() => { const v = !sigueme; comando("setFollowMe", v); setSigueme(v); }}>
-                <Presentation className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> Todos siguen mi vista
-                {sigueme && <Check className="ml-auto h-3.5 w-3.5 text-[var(--sh-live)]" aria-hidden="true" />}
-              </OpcionMenu>
-            )}
-            <OpcionMenu onClick={() => { comando("toggleFilmStrip"); setMenu(null); }}>
-              <PanelRight className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> Mostrar u ocultar miniaturas
-            </OpcionMenu>
-            <OpcionMenu onClick={() => comando("toggleTileView")}>
-              <LayoutGrid className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> Vista en mosaico
-              {mosaico && <Check className="ml-auto h-3.5 w-3.5 text-[var(--sh-live)]" aria-hidden="true" />}
-            </OpcionMenu>
-            <OpcionMenu onClick={() => comando("setNoiseSuppressionEnabled", { enabled: true })}>
-              <Volume2 className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" /> Activar supresión de ruido
-            </OpcionMenu>
-            <p className="sh-label mt-2 flex items-center gap-1.5 px-2 pt-2">
-              <Gauge className="h-3.5 w-3.5" aria-hidden="true" /> Calidad de video
-            </p>
-            {[
-              { valor: 180, etiqueta: "Baja · ahorra datos" },
-              { valor: 360, etiqueta: "Media" },
-              { valor: 480, etiqueta: "Estándar (recomendada)" },
-              { valor: 720, etiqueta: "Alta · solo buena red" },
-            ].map((o) => (
-              <OpcionMenu key={o.valor} onClick={() => { comando("setVideoQuality", o.valor); setCalidad(o.valor); }}>
-                {o.etiqueta}
-                {calidad === o.valor && <Check className="ml-auto h-3.5 w-3.5 text-[var(--sh-live)]" aria-hidden="true" />}
-              </OpcionMenu>
-            ))}
-          </MenuFlotante>
-        )}
-      </div>
-
-      {grabacion && (
-        <div id="grabacion" className="sh-rise mt-4 scroll-mt-24" style={{ "--i": 5 } as React.CSSProperties}>
-          {grabacion}
-        </div>
-      )}
     </div>
 
     {/* ---------------- Consola lateral ---------------- */}
     <aside
       id="consola-sala"
-      className="sh-panel sh-rise flex min-h-[520px] flex-col overflow-hidden scroll-mt-24 xl:sticky xl:top-4 xl:h-[calc(100vh-250px)] xl:min-h-[460px] xl:max-h-[860px]"
-      style={{ "--i": 3 } as React.CSSProperties}
+      className="sh-panel sh-rise flex h-[560px] min-h-0 overflow-hidden scroll-mt-24 xl:h-full xl:w-[400px] xl:shrink-0"
+      style={{ "--i": 2 } as React.CSSProperties}
       aria-label="Consola de la sala"
     >
-      <div role="tablist" aria-label="Paneles de la sala" className="flex items-stretch border-b border-[var(--sh-line)] px-2">
-        <PestanaConsola activa={panel === "chat"} onClick={() => { setPanel("chat"); setNoLeidos(0); }} icono={MessageCircle} etiqueta="Chat" contador={noLeidos > 0 ? noLeidos : undefined} />
-        <PestanaConsola activa={panel === "participantes"} onClick={() => setPanel("participantes")} icono={Users} etiqueta="Personas" contador={dentro ? participantes.length : undefined} />
-        <PestanaConsola activa={panel === "bitacora"} onClick={() => setPanel("bitacora")} icono={Activity} etiqueta="Bitácora" />
-        <PestanaConsola activa={panel === "notas"} onClick={() => setPanel("notas")} icono={StickyNote} etiqueta="Notas" />
-        {panelDerecho && <PestanaConsola activa={panel === "info"} onClick={() => setPanel("info")} icono={Info} etiqueta="Info" />}
+      <div role="tablist" aria-label="Paneles de la sala" className="flex w-[60px] shrink-0 flex-col items-center gap-1 border-r border-[var(--sh-line)] py-3">
+        {pestanas.map((t) => (
+          <button
+            key={t.clave}
+            type="button"
+            role="tab"
+            aria-selected={panel === t.clave}
+            title={t.etiqueta}
+            onClick={() => { setPanel(t.clave); if (t.clave === "chat") { setNoLeidos(0); setTimeout(() => chatInputRef.current?.focus(), 50); } }}
+            className="sh-tab-icono"
+          >
+            <t.icono className="h-[18px] w-[18px]" aria-hidden="true" />
+            <span>{t.etiqueta}</span>
+            {t.contador !== undefined && <span className="sh-mono sh-badge">{t.contador}</span>}
+          </button>
+        ))}
       </div>
 
-      {panel === "chat" && (
-        <ChatSala
-          mensajes={mensajes}
-          dentro={dentro}
-          inputRef={chatInputRef}
-          onEnviar={enviarMensaje}
-          onLeer={() => setNoLeidos(0)}
-          participantes={participantes.length}
-        />
-      )}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <header className="flex items-baseline justify-between gap-3 border-b border-[var(--sh-line)] px-4 py-3">
+          <h3 className="sh-display text-[15px] font-semibold">{pestanaActiva.etiqueta}</h3>
+          {pestanaActiva.subtitulo && <span className="sh-label text-[0.6rem]">{pestanaActiva.subtitulo}</span>}
+        </header>
 
-      {panel === "participantes" && (
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-          {!dentro ? (
-            <AvisoConsola>Únete a la reunión para ver quiénes están conectados.</AvisoConsola>
-          ) : (
-            <ul className="space-y-0.5">
-              {participantes.map((p) => (
-                <li key={p.id} className="flex items-center gap-3 rounded-2xl px-2.5 py-2.5 transition-colors hover:bg-[var(--sh-panel-2)]">
-                  <span className="sh-display grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[var(--sh-line-strong)] bg-[var(--sh-panel-2)] text-[13px] font-bold text-[var(--sh-text)]">
-                    {iniciales(p.nombre)}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13.5px] font-semibold">
-                      {p.nombre}
-                      {p.esLocal && <span className="text-[var(--sh-dim)]"> · tú</span>}
+        {panel === "chat" && (
+          <ChatSala mensajes={mensajes} dentro={dentro} inputRef={chatInputRef} onEnviar={enviarMensaje} onLeer={() => setNoLeidos(0)} participantes={participantes.length} />
+        )}
+
+        {panel === "participantes" && (
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+            {!dentro ? (
+              <AvisoConsola>Únete a la reunión para ver quiénes están conectados.</AvisoConsola>
+            ) : (
+              <ul className="space-y-0.5">
+                {participantes.map((p) => (
+                  <li key={p.id} className="flex items-center gap-3 rounded-2xl px-2.5 py-2.5 transition-colors hover:bg-[var(--sh-panel-2)]">
+                    <span className="sh-display grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[var(--sh-signal)] to-[var(--sh-live)] text-[13px] font-semibold text-white">
+                      {iniciales(p.nombre)}
                     </span>
-                    <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                      {p.esLocal && esPresentador && <span className="sh-label rounded-md bg-[var(--sh-signal)]/20 px-1.5 py-0.5 text-[0.58rem] text-[var(--sh-text)]">Presentador</span>}
-                      {p.manoAlzada && (
-                        <span className="sh-label inline-flex items-center gap-1 rounded-md bg-warning/20 px-1.5 py-0.5 text-[0.58rem] text-warning">
-                          <Hand className="h-3 w-3" aria-hidden="true" /> Mano
-                        </span>
-                      )}
-                      {p.esLocal && micSilenciado && (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-[var(--sh-dim)]">
-                          <MicOff className="h-3 w-3 text-[var(--sh-danger)]" aria-hidden="true" /> Micrófono apagado
-                        </span>
-                      )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13.5px] font-semibold">
+                        {p.nombre}
+                        {p.esLocal && <span className="font-normal text-[var(--sh-dim)]"> · tú</span>}
+                      </span>
+                      <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                        {p.esLocal && esPresentador && <span className="sh-label rounded-md bg-[var(--sh-signal)]/15 px-1.5 py-0.5 text-[0.58rem] text-[var(--sh-signal)]">Presentador</span>}
+                        {p.manoAlzada && (
+                          <span className="sh-label inline-flex items-center gap-1 rounded-md bg-warning/20 px-1.5 py-0.5 text-[0.58rem] text-warning-foreground">
+                            <Hand className="h-3 w-3" aria-hidden="true" /> Mano
+                          </span>
+                        )}
+                        {p.esLocal && micSilenciado && (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-[var(--sh-dim)]">
+                            <MicOff className="h-3 w-3 text-[var(--sh-danger)]" aria-hidden="true" /> Micrófono apagado
+                          </span>
+                        )}
+                      </span>
                     </span>
-                  </span>
-                  {p.manoAlzada && <span className="sh-live-dot" style={{ background: "var(--warning)" }} aria-hidden="true" />}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
-      {panel === "bitacora" && (
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-          {eventos.length === 0 ? (
-            <AvisoConsola>Aquí verás entradas, salidas y manos levantadas.</AvisoConsola>
-          ) : (
-            <ol className="relative space-y-4 border-l border-[var(--sh-line-strong)] pl-4">
-              {eventos.map((e, i) => (
-                <li key={i} className="relative text-[13px] leading-snug">
-                  <span className="absolute -left-[21px] top-[5px] h-2 w-2 rounded-full bg-[var(--sh-signal)] shadow-[0_0_10px_var(--sh-signal)]" aria-hidden="true" />
-                  <span className="sh-mono block text-[11px] text-[var(--sh-dim)]">{e.hora}</span>
-                  <span className="text-[var(--sh-text)]">{e.texto}</span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
-      )}
+        {panel === "bitacora" && (
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+            {eventos.length === 0 ? (
+              <AvisoConsola>Aquí verás entradas, salidas y manos levantadas.</AvisoConsola>
+            ) : (
+              <ol className="relative space-y-4 border-l border-[var(--sh-line-strong)] pl-4">
+                {eventos.map((e, i) => (
+                  <li key={i} className="relative text-[13px] leading-snug">
+                    <span className="absolute -left-[21px] top-[5px] h-2 w-2 rounded-full bg-[var(--sh-signal)] shadow-[0_0_10px_var(--sh-signal)]" aria-hidden="true" />
+                    <span className="sh-mono block text-[11px] text-[var(--sh-dim)]">{e.hora}</span>
+                    <span>{e.texto}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        )}
 
-      {panel === "notas" && (
-        <div className="flex min-h-0 flex-1 flex-col px-4 py-4">
-          <NotasRapidas activityId={activityId} textareaRef={notasRef} />
-        </div>
-      )}
+        {panel === "notas" && (
+          <div className="flex min-h-0 flex-1 flex-col px-4 py-4">
+            <NotasRapidas activityId={activityId} textareaRef={notasRef} />
+          </div>
+        )}
 
-      {panel === "info" && <div className="min-h-0 flex-1 overflow-y-auto p-4">{panelDerecho}</div>}
+        {panel === "info" && <div className="min-h-0 flex-1 overflow-y-auto p-4">{panelDerecho}</div>}
+        {panel === "acta" && <div className="sh-consola-acta min-h-0 flex-1 overflow-y-auto p-4">{panelActa}</div>}
+        {panel === "grabar" && <div id="grabacion" className="min-h-0 flex-1 overflow-y-auto p-4">{grabacion}</div>}
+      </div>
     </aside>
     </div>
-  );
-}
-
-function PestanaConsola({ activa, onClick, icono: Icono, etiqueta, contador }: {
-  activa: boolean; onClick: () => void; icono: React.ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" }>; etiqueta: string; contador?: number;
-}) {
-  return (
-    <button type="button" role="tab" aria-selected={activa} onClick={onClick} className="sh-tab flex-1 justify-center">
-      <Icono className="h-3.5 w-3.5" aria-hidden="true" />
-      <span className="hidden sm:inline">{etiqueta}</span>
-      {contador !== undefined && (
-        <span className="sh-mono grid h-4 min-w-4 place-items-center rounded-full bg-[var(--sh-signal)] px-1 text-[10px] font-bold text-white">{contador}</span>
-      )}
-    </button>
   );
 }
 
@@ -869,7 +860,7 @@ function ChatSala({
               {!m.propio && (
                 <span className="sh-label mb-1 px-1 text-[0.6rem]">
                   {m.autor}
-                  {m.privado && <span className="ml-1 text-warning">· privado</span>}
+                  {m.privado && <span className="ml-1 text-warning-foreground">· privado</span>}
                 </span>
               )}
               <div
@@ -877,7 +868,7 @@ function ChatSala({
                   "max-w-[88%] rounded-2xl px-3.5 py-2 text-[13px] leading-snug break-words",
                   m.propio
                     ? "rounded-br-md bg-[var(--sh-signal)] text-white shadow-[0_8px_24px_-12px_var(--sh-signal)]"
-                    : "rounded-bl-md border border-[var(--sh-line)] bg-[var(--sh-panel-2)] text-[var(--sh-text)]"
+                    : "rounded-bl-md border border-[var(--sh-line)] bg-[var(--sh-panel-2)]"
                 )}
               >
                 {m.texto}
@@ -923,7 +914,7 @@ function BotonControl({
   desplegable,
 }: {
   etiqueta: string;
-  icono: React.ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" }>;
+  icono: IconoSala;
   activo?: boolean;
   alerta?: boolean;
   disabled?: boolean;
@@ -944,7 +935,7 @@ function BotonControl({
         <Icono className="h-5 w-5" aria-hidden="true" />
         {etiqueta}
         {contador !== undefined && (
-          <span className="sh-mono absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-[var(--sh-signal)] px-1 text-[10px] font-bold text-white">
+          <span className="sh-mono absolute right-1.5 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[var(--sh-signal)] px-1 text-[10px] font-bold text-white">
             {contador}
           </span>
         )}
@@ -957,8 +948,8 @@ function BotonControl({
           aria-label={`Opciones de ${etiqueta.toLowerCase()}`}
           aria-expanded={desplegable.abierto}
           className={cn(
-            "inline-flex w-6 items-center justify-center rounded-r-2xl border-l border-[var(--sh-line)] text-[var(--sh-dim)] transition-colors hover:bg-[var(--sh-panel-2)] hover:text-[var(--sh-text)] disabled:opacity-35",
-            desplegable.abierto && "bg-[var(--sh-signal)]/20 text-[var(--sh-text)]"
+            "inline-flex w-6 items-center justify-center rounded-r-2xl border-l border-white/12 text-white/55 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-35",
+            desplegable.abierto && "bg-white/15 text-white"
           )}
         >
           <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
@@ -970,7 +961,7 @@ function BotonControl({
 
 function MenuFlotante({ titulo, onCerrar, children }: { titulo: string; onCerrar: () => void; children: React.ReactNode }) {
   return (
-    <div className="sh-panel absolute bottom-[calc(100%+10px)] left-1/2 z-30 w-72 -translate-x-1/2 bg-[color-mix(in_oklch,var(--sh-bg)_88%,transparent)] p-2">
+    <div className="sh-panel absolute bottom-[calc(100%+10px)] left-1/2 z-30 w-72 -translate-x-1/2 bg-[color-mix(in_oklch,var(--sh-bg)_92%,transparent)] p-2">
       <div className="flex items-center justify-between px-2 pb-1.5">
         <p className="sh-label">{titulo}</p>
         <button type="button" onClick={onCerrar} className="text-xs text-[var(--sh-dim)] hover:text-[var(--sh-text)]">

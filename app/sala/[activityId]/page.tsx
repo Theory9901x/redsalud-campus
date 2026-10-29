@@ -16,7 +16,6 @@ import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { fuenteSala } from "@/lib/fuente-sala";
 import { SalaVirtual } from "@/components/training-plans/sala-virtual";
-import { NavSala } from "@/components/training-plans/nav-sala";
 import { GrabacionJornada } from "@/components/training-plans/grabacion-jornada";
 import { AbrirEvaluacionPopup } from "@/components/training-plans/abrir-evaluacion-popup";
 import { ThemeToggle } from "@/components/brand/theme-toggle";
@@ -199,83 +198,66 @@ export default async function SalaVirtualPage({
           <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-[var(--sh-muted)]">{actividad.methodology}</p>
         </section>
       )}
+      <p className="flex items-center gap-2 border-t border-[var(--sh-line)] pt-4 text-[11.5px] leading-snug text-[var(--sh-muted)]">
+        <ShieldCheck className="h-4 w-4 shrink-0 text-[var(--sh-live)]" aria-hidden="true" />
+        La asistencia se registra automáticamente al entrar a la llamada.
+      </p>
     </div>
   );
 
   return (
-    <main className={cn(fuenteSala.variable, "sala-hud min-h-screen font-sans")}>
-      <div className="mx-auto w-full max-w-[1720px] px-3 py-4 sm:px-5">
-        {/* ---------------- Cabecera ---------------- */}
-        <header className="sh-rise mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-3" style={{ "--i": 0 } as React.CSSProperties}>
-          <div className="min-w-0">
-            <Link href={volverHref} className="sh-label inline-flex items-center gap-1 transition-colors hover:text-[var(--sh-text)]">
-              <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
-              {esReunion ? "Reuniones" : "Capacitaciones"}
-              <span className="mx-1 text-[var(--sh-dim)]">/</span>
-              <span className="text-[var(--sh-text)]">Sala</span>
-            </Link>
-            <h1 className="sh-display mt-1.5 max-w-[26ch] text-[clamp(1.35rem,2.3vw,2.1rem)] font-semibold leading-[1.1] tracking-[-0.02em]">
-              {actividad.title}
-            </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              {FICHA.map((f) => (
-                <span key={f.etiqueta} className="sh-chip">
-                  <f.icon className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" />
-                  <span className="truncate">{f.valor}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="sh-chip border-[color-mix(in_oklch,var(--sh-live)_40%,transparent)] bg-[color-mix(in_oklch,var(--sh-live)_12%,transparent)]">
-              <span className="sh-live-dot" aria-hidden="true" />
-              <span className="sh-label text-[var(--sh-text)]">Sala en vivo</span>
-            </span>
-            <span className="sh-panel flex items-center gap-1 rounded-full px-1.5 py-1">
-              <ThemeToggle />
-            </span>
-            <span
-              className="sh-display grid h-10 w-10 place-items-center rounded-full border border-[var(--sh-line-strong)] bg-gradient-to-br from-[var(--sh-signal)] to-[var(--sh-live)] text-[13px] font-bold text-white shadow-[0_0_24px_-6px_var(--sh-signal)]"
-              title={nombre}
-            >
-              {inicialesUsuario || "?"}
-            </span>
-          </div>
-        </header>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[76px_minmax(0,1fr)]">
-          <div className="hidden lg:block">
-            <NavSala archivosHref={volverHref} conGrabacion={esPersonal} conGestion={!!contenido} />
-          </div>
-
-          <div className="min-w-0">
-            <ControlSalaReunion esReunion={esReunion} activityId={activityId} cerradaInicial={actividad.status === "CLOSED"}>
-              <SalaVirtual
-                domain={jitsiDomain}
-                roomName={`RedSaludTeForma-${actividad.id}`}
-                activityId={actividad.id}
-                sessionId={jornada?.id ?? null}
-                displayName={nombre}
-                subject={actividad.title}
-                jwt={tokenSala}
-                esPresentador={esPersonal}
-                grabacion={esPersonal ? <GrabacionJornada activityId={actividad.id} /> : undefined}
-                panelDerecho={panelInfo}
-              />
-            </ControlSalaReunion>
-
-            {herramientas && (
-              <div className="sh-rise mt-4" style={{ "--i": 6 } as React.CSSProperties}>
-                {herramientas}
-              </div>
-            )}
-
-            <p className="sh-label mt-5 flex items-center justify-center gap-2 text-[0.6rem]">
-              <ShieldCheck className="h-3.5 w-3.5 text-[var(--sh-live)]" aria-hidden="true" />
-              La asistencia se registra automáticamente al entrar a la llamada
-            </p>
-          </div>
+    <main className={cn(fuenteSala.variable, "sala-hud flex min-h-dvh flex-col font-sans xl:h-dvh xl:overflow-hidden")}>
+      {/* ---------------- Barra superior: una línea, nada más ---------------- */}
+      <header className="sh-rise flex h-14 shrink-0 items-center gap-3 px-3 sm:px-5" style={{ "--i": 0 } as React.CSSProperties}>
+        <Link
+          href={volverHref}
+          title={esReunion ? "Volver a reuniones" : "Volver a capacitaciones"}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--sh-line-strong)] bg-[var(--sh-panel)] text-[var(--sh-muted)] transition-colors hover:text-[var(--sh-text)]"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <p className="sh-label text-[0.58rem] leading-none">{esReunion ? "Sala de reunión" : "Sala de capacitación"}</p>
+          <h1 className="sh-display mt-1 truncate text-[15px] font-semibold leading-tight tracking-[-0.01em]" title={actividad.title}>
+            {actividad.title}
+          </h1>
         </div>
+        <span className="hidden items-center gap-1.5 text-[12px] text-[var(--sh-muted)] md:inline-flex">
+          <CalendarClock className="h-3.5 w-3.5 text-[var(--sh-signal)]" aria-hidden="true" />
+          {proximaJornada ?? profesional}
+        </span>
+        <span className="sh-chip hidden border-[color-mix(in_oklch,var(--sh-live)_40%,transparent)] bg-[color-mix(in_oklch,var(--sh-live)_12%,transparent)] sm:inline-flex">
+          <span className="sh-live-dot" aria-hidden="true" />
+          <span className="text-[11px] font-semibold text-[var(--sh-text)]">En vivo</span>
+        </span>
+        <span className="sh-panel flex items-center rounded-full px-1 py-0.5">
+          <ThemeToggle />
+        </span>
+        <span
+          className="sh-display grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[var(--sh-signal)] to-[var(--sh-live)] text-[12px] font-semibold text-white"
+          title={nombre}
+        >
+          {inicialesUsuario || "?"}
+        </span>
+      </header>
+
+      {/* ---------------- Sala: video + consola, toda la altura restante ---------------- */}
+      <div className="min-h-0 flex-1 px-3 pb-3 sm:px-5 sm:pb-5">
+        <ControlSalaReunion esReunion={esReunion} activityId={activityId} cerradaInicial={actividad.status === "CLOSED"}>
+          <SalaVirtual
+            domain={jitsiDomain}
+            roomName={`RedSaludTeForma-${actividad.id}`}
+            activityId={actividad.id}
+            sessionId={jornada?.id ?? null}
+            displayName={nombre}
+            subject={actividad.title}
+            jwt={tokenSala}
+            esPresentador={esPersonal}
+            grabacion={esPersonal ? <GrabacionJornada activityId={actividad.id} /> : undefined}
+            panelDerecho={panelInfo}
+            panelActa={herramientas}
+          />
+        </ControlSalaReunion>
       </div>
     </main>
   );

@@ -176,6 +176,7 @@ export default async function InvitadoPage({
                 {actividad.title}
               </h1>
             </div>
+            <div className="xl:h-[calc(100dvh-150px)] xl:min-h-[560px]">
             <ControlSalaReunion esReunion={reunionAbierta} activityId={activityId} cerradaInicial={actividad.status === "CLOSED"}>
             <SalaVirtual
               domain={process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si"}
@@ -188,6 +189,7 @@ export default async function InvitadoPage({
               sessionId={participante.sessionId ?? jornada?.id ?? null}
               esPresentador={puedeGrabar}
               grabacion={puedeGrabar ? <GrabacionJornada activityId={actividad.id} /> : undefined}
+              panelActa={contenidoPanel}
               panelDerecho={
                 <div className="space-y-4">
             {/* Evaluaciones del ciclo: SOLO si la actividad tiene curso con
@@ -258,7 +260,7 @@ export default async function InvitadoPage({
               }
             />
             </ControlSalaReunion>
-            {contenidoPanel}
+            </div>
           </div>
 
         </div>
