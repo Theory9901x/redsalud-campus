@@ -6,8 +6,29 @@
    los tokens (lo usa el componente embebido en cualquier página);
    `.sala-hud` además pinta el lienzo.
    ===================================================================== */
+/* Tema CLARO (el del campus por defecto). */
 .sala-scope,
 .sala-hud {
+  --sh-bg: oklch(95% 0.012 250);
+  --sh-bg-2: oklch(91% 0.018 252);
+  --sh-line: color-mix(in oklch, var(--navy) 9%, transparent);
+  --sh-line-strong: color-mix(in oklch, var(--navy) 16%, transparent);
+  --sh-text: oklch(22% 0.035 250);
+  --sh-muted: oklch(46% 0.03 250);
+  --sh-dim: oklch(62% 0.025 250);
+  --sh-signal: var(--primary);
+  --sh-live: var(--success);
+  --sh-danger: oklch(58% 0.2 25);
+  --sh-panel: color-mix(in oklch, white 66%, transparent);
+  --sh-panel-2: color-mix(in oklch, var(--navy) 5%, transparent);
+  --sh-input-bg: color-mix(in oklch, white 70%, transparent);
+  --sh-shadow: 0 24px 60px -30px color-mix(in oklch, var(--navy) 35%, transparent);
+  --sh-radius: 22px;
+  color: var(--sh-text);
+}
+/* Tema OSCURO: mismas piezas, otra atmósfera. */
+.dark .sala-scope,
+.dark .sala-hud {
   --sh-bg: oklch(13.5% 0.026 252);
   --sh-bg-2: oklch(18% 0.032 250);
   --sh-line: color-mix(in oklch, white 9%, transparent);
@@ -15,25 +36,25 @@
   --sh-text: oklch(96.5% 0.008 250);
   --sh-muted: oklch(74% 0.018 250);
   --sh-dim: oklch(56% 0.02 250);
-  --sh-signal: var(--primary);
-  --sh-live: var(--success);
   --sh-danger: oklch(63% 0.2 25);
   --sh-panel: color-mix(in oklch, white 4.5%, transparent);
   --sh-panel-2: color-mix(in oklch, white 8%, transparent);
-  --sh-radius: 22px;
-  color: var(--sh-text);
-  color-scheme: dark;
+  --sh-input-bg: color-mix(in oklch, black 25%, transparent);
+  --sh-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.7);
 }
 .sala-hud {
   position: relative;
   isolation: isolate;
   background-color: var(--sh-bg);
   background-image:
-    radial-gradient(1000px 520px at 12% -12%, color-mix(in oklch, var(--sh-signal) 26%, transparent), transparent 62%),
-    radial-gradient(760px 420px at 104% 108%, color-mix(in oklch, var(--sh-live) 14%, transparent), transparent 62%),
+    radial-gradient(1000px 520px at 12% -12%, color-mix(in oklch, var(--sh-signal) 22%, transparent), transparent 62%),
+    radial-gradient(760px 420px at 104% 108%, color-mix(in oklch, var(--sh-live) 12%, transparent), transparent 62%),
     linear-gradient(180deg, var(--sh-bg) 0%, var(--sh-bg-2) 100%);
   background-attachment: fixed;
 }
+/* Sobre el video todo es claro, sea cual sea el tema. */
+.sh-stage .sh-chip { color: white; border-color: color-mix(in oklch, white 22%, transparent); }
+.sh-stage .sh-label, .sh-stage .sh-mono { color: white; }
 /* Malla técnica, desvanecida hacia abajo: da profundidad sin ruido. */
 .sala-hud::before {
   content: "";
@@ -55,7 +76,7 @@
   font-family: var(--font-sala), var(--font-cuerpo), sans-serif;
   font-weight: 600;
   font-size: 0.66rem;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--sh-muted);
 }
@@ -73,8 +94,8 @@
   -webkit-backdrop-filter: blur(14px) saturate(140%);
   backdrop-filter: blur(14px) saturate(140%);
   box-shadow:
-    inset 0 1px 0 0 color-mix(in oklch, white 7%, transparent),
-    0 24px 60px -30px rgba(0, 0, 0, 0.7);
+    inset 0 1px 0 0 color-mix(in oklch, white 60%, transparent),
+    var(--sh-shadow);
 }
 .sh-chip {
   display: inline-flex;
@@ -144,7 +165,7 @@
   font-family: var(--font-sala), var(--font-cuerpo), sans-serif;
   font-size: 0.62rem;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
@@ -198,7 +219,7 @@
   font-family: var(--font-sala), var(--font-cuerpo), sans-serif;
   font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--sh-dim);
   transition: color 0.18s ease;
@@ -222,7 +243,7 @@
   width: 100%;
   border: 1px solid var(--sh-line-strong);
   border-radius: 14px;
-  background-color: color-mix(in oklch, black 25%, transparent);
+  background-color: var(--sh-input-bg);
   color: var(--sh-text);
   outline: none;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;

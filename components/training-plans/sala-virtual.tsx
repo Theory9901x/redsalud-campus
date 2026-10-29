@@ -501,23 +501,23 @@ export function SalaVirtual({
           <div className="sh-scan" aria-hidden="true" />
 
           {cargando && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[var(--sh-bg)]/80 text-[var(--sh-muted)]">
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/70 text-white">
               <Loader2 className="h-5 w-5 animate-spin text-[var(--sh-signal)]" aria-hidden="true" />
               <span className="sh-label">Preparando la sala</span>
             </div>
           )}
           {error && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center px-6 text-center text-sm text-[var(--sh-muted)]">
+            <div className="absolute inset-0 z-10 flex items-center justify-center px-6 text-center text-sm text-white/80">
               No se pudo cargar la sala. Verifica tu conexión e intenta de nuevo.
             </div>
           )}
           {salio && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[var(--sh-bg)]/95 px-6 text-center">
-              <span className="grid h-14 w-14 place-items-center rounded-full border border-[var(--sh-line-strong)] bg-[var(--sh-panel-2)]">
-                <PhoneOff className="h-6 w-6 text-[var(--sh-muted)]" aria-hidden="true" />
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/90 px-6 text-center text-white">
+              <span className="grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-white/10">
+                <PhoneOff className="h-6 w-6 text-white/70" aria-hidden="true" />
               </span>
-              <p className="sh-display text-2xl font-bold uppercase tracking-wide">Saliste de la reunión</p>
-              <p className="max-w-sm text-[13px] leading-relaxed text-[var(--sh-muted)]">
+              <p className="sh-display text-2xl font-semibold tracking-tight">Saliste de la reunión</p>
+              <p className="max-w-sm text-[13px] leading-relaxed text-white/75">
                 Tu tiempo de conexión quedó registrado. Puedes volver a entrar mientras la jornada siga abierta.
               </p>
               <button

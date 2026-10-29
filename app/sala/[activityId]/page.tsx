@@ -19,6 +19,7 @@ import { SalaVirtual } from "@/components/training-plans/sala-virtual";
 import { NavSala } from "@/components/training-plans/nav-sala";
 import { GrabacionJornada } from "@/components/training-plans/grabacion-jornada";
 import { AbrirEvaluacionPopup } from "@/components/training-plans/abrir-evaluacion-popup";
+import { ThemeToggle } from "@/components/brand/theme-toggle";
 import { getMomentoParaUsuario } from "@/lib/training-plans";
 import { firmarTokenJitsi } from "@/lib/jitsi";
 import { etiquetaJornada } from "@/components/training-plans/labels";
@@ -202,7 +203,7 @@ export default async function SalaVirtualPage({
   );
 
   return (
-    <main className={cn(fuenteSala.variable, "sala-hud dark min-h-screen font-sans")}>
+    <main className={cn(fuenteSala.variable, "sala-hud min-h-screen font-sans")}>
       <div className="mx-auto w-full max-w-[1720px] px-3 py-4 sm:px-5">
         {/* ---------------- Cabecera ---------------- */}
         <header className="sh-rise mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-3" style={{ "--i": 0 } as React.CSSProperties}>
@@ -213,7 +214,7 @@ export default async function SalaVirtualPage({
               <span className="mx-1 text-[var(--sh-dim)]">/</span>
               <span className="text-[var(--sh-text)]">Sala</span>
             </Link>
-            <h1 className="sh-display mt-1.5 max-w-[22ch] text-[clamp(1.5rem,2.6vw,2.4rem)] font-bold uppercase leading-[1.02] tracking-tight">
+            <h1 className="sh-display mt-1.5 max-w-[26ch] text-[clamp(1.35rem,2.3vw,2.1rem)] font-semibold leading-[1.1] tracking-[-0.02em]">
               {actividad.title}
             </h1>
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -229,6 +230,9 @@ export default async function SalaVirtualPage({
             <span className="sh-chip border-[color-mix(in_oklch,var(--sh-live)_40%,transparent)] bg-[color-mix(in_oklch,var(--sh-live)_12%,transparent)]">
               <span className="sh-live-dot" aria-hidden="true" />
               <span className="sh-label text-[var(--sh-text)]">Sala en vivo</span>
+            </span>
+            <span className="sh-panel flex items-center gap-1 rounded-full px-1.5 py-1">
+              <ThemeToggle />
             </span>
             <span
               className="sh-display grid h-10 w-10 place-items-center rounded-full border border-[var(--sh-line-strong)] bg-gradient-to-br from-[var(--sh-signal)] to-[var(--sh-live)] text-[13px] font-bold text-white shadow-[0_0_24px_-6px_var(--sh-signal)]"

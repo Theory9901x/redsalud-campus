@@ -155,7 +155,7 @@ export default async function InvitadoPage({
   ];
 
   return (
-    <main className={cn(fuenteSala.variable, "sala-hud dark min-h-screen font-sans")}>
+    <main className={cn(fuenteSala.variable, "sala-hud min-h-screen font-sans")}>
       <div className="mx-auto w-full max-w-[1720px] px-3 py-4 sm:px-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
