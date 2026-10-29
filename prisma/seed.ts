@@ -18,7 +18,7 @@ async function main() {
       canManageAllMeetings: true,
       status: "ACTIVE",
       personnelType: "ADMINISTRATIVO",
-      position: "Director de Talento Humano",
+      position: "Administrador del sistema",
       mustChangePassword: true,
     },
   });
