@@ -13,7 +13,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-cuerpo);
   --font-mono: var(--font-datos);
-  --font-display: var(--font-titulo);
+  --font-display: var(--font-cuerpo);
+  --font-heading: var(--font-cuerpo);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
@@ -4379,3 +4380,29 @@ a.st-opcion:hover { border-color: color-mix(in oklch, var(--primary) 45%, var(--
 .reunion-form textarea { resize: vertical; }
 .reunion-form input[type="radio"] { min-height: 1rem; padding: 0; }
 .reunion-dialog [data-slot="dialog-close"] { min-width: 2.5rem; min-height: 2.5rem; }
+
+/* Una familia en todo el campus; jerarqu?a por tama?o y peso. */
+:root { --font-titulo: var(--font-cuerpo); --font-datos: var(--font-cuerpo); }
+body, button, input, textarea, select { font-family: var(--font-cuerpo), sans-serif; }
+.mono-label { font-family: var(--font-cuerpo), sans-serif; font-size: .8125rem; font-weight: 600; letter-spacing: normal; text-transform: none; line-height: 1.5; }
+.form-premium label, .form-premium [data-slot="label"] { font-family: var(--font-cuerpo), sans-serif; font-size: .875rem; letter-spacing: normal; text-transform: none; }
+/* Fichas t?cnicas: lectura estable, sin t?tulos animados ni etiquetas diminutas. */
+.vivo-ficha { padding: 1.5rem; gap: 1rem; background: var(--card); backdrop-filter: none; box-shadow: 0 5px 18px rgb(15 36 56 / .06); border-radius: 18px; }
+.vivo-ficha:hover { transform: none; box-shadow: 0 7px 22px rgb(15 36 56 / .09); }
+.vivo-aurora { display: none; }
+.vivo-titulo, .vivo-ficha-compacta .vivo-titulo { font-family: var(--font-cuerpo), sans-serif; font-size: 1.25rem; font-weight: 650; line-height: 1.35; letter-spacing: normal; color: var(--foreground); background: none; -webkit-text-fill-color: currentColor; animation: none; }
+.vivo-publico { border-radius: 12px; background: var(--muted); padding: 1rem; }
+.vivo-publico b { font-family: var(--font-cuerpo), sans-serif; font-size: 1rem; font-weight: 600; color: var(--foreground); }
+.vivo-publico small { display: block; font-size: .875rem; line-height: 1.5; white-space: normal; }
+.vivo-datos { grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+.vivo-datos > div:nth-child(3) { grid-column: 1 / -1; }
+.vivo-datos dt { font-family: var(--font-cuerpo), sans-serif; font-size: .875rem; font-weight: 500; letter-spacing: normal; text-transform: none; }
+.vivo-datos dd { font-size: 1rem; font-weight: 600; line-height: 1.5; white-space: normal; }
+.vivo-datos dd small { font-size: .8125rem; font-weight: 400; }
+.vivo-espera { font-family: var(--font-cuerpo), sans-serif; font-size: .8125rem; font-weight: 500; letter-spacing: normal; text-transform: none; background: var(--muted); border-radius: 8px; padding: .45rem .65rem; }
+.tutor-workspace [class*="tracking-"] { letter-spacing: normal; }
+
+.vivo-etiqueta { font-size: .8125rem; font-weight: 500; }
+.vivo-desc { font-size: .9375rem; line-height: 1.6; }
+.vivo-pulso { font-family: var(--font-cuerpo), sans-serif; letter-spacing: normal; text-transform: none; font-size: .8125rem; }
+.vivo-publico > span:last-child { gap: .2rem; line-height: 1.5; }

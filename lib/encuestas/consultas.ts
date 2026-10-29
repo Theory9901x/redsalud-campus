@@ -93,11 +93,7 @@ function whereDeAlcance(alcance: AlcanceEncuestas): Prisma.SurveyWhereInput {
         AND: [
           { NOT: { code: { startsWith: CODIGO_SIAU } } },
           {
-            OR: [
-              { createdBy: alcance.userId, trainingActivityId: { not: null } },
-              { trainingActivity: { plan: { tutorId: alcance.userId } } },
-              ...(alcance.areaIds.length > 0 ? [{ trainingActivity: { areaId: { in: alcance.areaIds } } }] : []),
-            ],
+            trainingActivity: { plan: { kind: "CAPACITACION" }, areaId: { in: alcance.areaIds } },
           },
         ],
       };

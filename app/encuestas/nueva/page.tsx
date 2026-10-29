@@ -3,6 +3,7 @@ import { ArrowLeft, ClipboardList } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { FormularioNuevaEncuesta } from "@/components/encuestas/formulario-nueva";
+import { alcanceAdscripcion } from "@/lib/encuestas/adscripcion";
 import { CODIGO_SIAU } from "@/lib/encuestas/metrics";
 
 /**
@@ -17,15 +18,16 @@ import { CODIGO_SIAU } from "@/lib/encuestas/metrics";
 export default async function NuevaEncuestaPage({ searchParams }: { searchParams: Promise<{ plan?: string; actividad?: string }> }) {
   const { plan: planInicial, actividad: actividadInicial } = await searchParams;
   const sesion = await requireTutorOrAdmin();
-  const esAdmin = sesion.user.role === "ADMIN";
-  const deMiArea = { OR: [{ area: { tutorId: sesion.user.id } }, { plan: { tutorId: sesion.user.id } }] };
+  const alcance = await alcanceAdscripcion(sesion.user);
+  const esAdmin = !alcance.soloDeArea;
+  const deMiArea = alcance.actividades;
 
   // Un tutor solo ve sus áreas y lo que cuelga de ellas; el administrador,
   // todo. Es la misma trazabilidad área › plan › capacitación del resto
   // del sistema.
   const [areas, actividades] = await Promise.all([
     prisma.trainingArea.findMany({
-      where: esAdmin ? {} : { tutorId: sesion.user.id },
+      where: esAdmin ? {} : { tutorId: sesion.user.id, isActive: true },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),

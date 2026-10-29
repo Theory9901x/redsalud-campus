@@ -2,12 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { alcanceAdscripcion, resolverAdscripcion } from "@/lib/encuestas/adscripcion";
 import { requireTutorOrAdmin, requireSurveyAccess } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { registrarAuditoria } from "@/lib/audit";
 import { generarCodigoEncuesta, generarSlug } from "@/lib/encuestas/consultas";
 import { CODIGO_SIAU } from "@/lib/encuestas/metrics";
-import { admiteClave, esTipoDeOpcion, leerConfig, type ConfigPregunta } from "@/lib/encuestas/tipos";
+import { admiteClave, esTipoDeOpcion, type ConfigPregunta } from "@/lib/encuestas/tipos";
 import type { SurveyAudience, SurveyQuestionType } from "@prisma/client";
 
 /**
@@ -19,18 +20,7 @@ import type { SurveyAudience, SurveyQuestionType } from "@prisma/client";
  * cada una vuelve a verificar el rol de todos modos.
  */
 async function puedeGestionarEncuesta(surveyId: string) {
-  const sesion = await requireTutorOrAdmin();
-  if (sesion.user.role === "ADMIN") return sesion;
-
-  const encuesta = await prisma.survey.findUniqueOrThrow({
-    where: { id: surveyId },
-    select: { createdBy: true },
-  });
-  if (encuesta.createdBy === sesion.user.id) return sesion;
-
-  // No es suya: vale también ser tutor del área de la jornada adscrita.
-  await requireSurveyAccess(surveyId);
-  return sesion;
+  return (await requireSurveyAccess(surveyId)).session;
 }
 
 // ---------------------------------------------------------------- encuesta
@@ -55,29 +45,16 @@ export async function crearEncuestaAction(_prev: EstadoAccion, formData: FormDat
   // plan, cuando mide la satisfacción del plan completo.
   // El tutor (un área del plan) solo crea la encuesta de SATISFACCIÓN de una
   // de sus capacitaciones: siempre adscrita a ella y nunca desde la SIAU.
-  const esTutor = sesion.user.role === "TUTOR";
+  const esTutor = (await alcanceAdscripcion(sesion.user)).soloDeArea;
   if (esTutor && !trainingActivityId) return { error: "Elige la capacitación de tu área cuya satisfacción quieres medir." };
   if (esTutor && desdePlantilla) {
     const plantilla = await prisma.survey.findUnique({ where: { id: desdePlantilla }, select: { code: true, isTemplate: true } });
     if (!plantilla?.isTemplate || plantilla.code.startsWith(CODIGO_SIAU)) return { error: "Esa plantilla no está disponible para las capacitaciones." };
   }
 
-  let trainingPlanId: string | null = null;
-  if (trainingActivityId) {
-    const actividad = await prisma.trainingActivity.findUnique({
-      where: { id: trainingActivityId },
-      select: { planId: true, area: { select: { tutorId: true } }, plan: { select: { tutorId: true } } },
-    });
-    if (!actividad) return { error: "La capacitación elegida no existe." };
-    if (esTutor && actividad.area?.tutorId !== sesion.user.id && actividad.plan.tutorId !== sesion.user.id) {
-      return { error: "Solo puedes crear encuestas para las capacitaciones de tu área." };
-    }
-    trainingPlanId = actividad.planId;
-  } else if (planElegido) {
-    const plan = await prisma.trainingPlan.findUnique({ where: { id: planElegido }, select: { id: true } });
-    if (!plan) return { error: "El plan elegido no existe." };
-    trainingPlanId = plan.id;
-  }
+  const adscripcion = await resolverAdscripcion(sesion.user, trainingActivityId, planElegido);
+  if ("error" in adscripcion) return adscripcion;
+  const trainingPlanId = adscripcion.trainingPlanId;
 
   const [code, slug] = [await generarCodigoEncuesta(), generarSlug()];
 
@@ -157,7 +134,7 @@ export async function actualizarEncuestaAction(surveyId: string, datos: {
   trainingActivityId?: string | null;
   trainingPlanId?: string | null;
 }): Promise<EstadoAccion> {
-  await puedeGestionarEncuesta(surveyId);
+  const sesion = await puedeGestionarEncuesta(surveyId);
 
   if (datos.title !== undefined && datos.title.trim().length < 5) {
     return { error: "El título debe tener al menos 5 caracteres." };
@@ -167,23 +144,10 @@ export async function actualizarEncuestaAction(surveyId: string, datos: {
   // capacitación, puede colgar solo del plan; sin ninguno, institucional.
   let planPatch = {};
   if (datos.trainingActivityId !== undefined || datos.trainingPlanId !== undefined) {
-    if (datos.trainingActivityId) {
-      const actividad = await prisma.trainingActivity.findUnique({
-        where: { id: datos.trainingActivityId },
-        select: { planId: true },
-      });
-      if (!actividad) return { error: "La capacitación elegida no existe." };
-      planPatch = { trainingActivityId: datos.trainingActivityId, trainingPlanId: actividad.planId };
-    } else if (datos.trainingPlanId) {
-      const plan = await prisma.trainingPlan.findUnique({
-        where: { id: datos.trainingPlanId },
-        select: { id: true },
-      });
-      if (!plan) return { error: "El plan elegido no existe." };
-      planPatch = { trainingActivityId: null, trainingPlanId: plan.id };
-    } else {
-      planPatch = { trainingActivityId: null, trainingPlanId: null };
-    }
+    const actual = await prisma.survey.findUniqueOrThrow({ where: { id: surveyId }, select: { trainingActivityId: true } });
+    const adscripcion = await resolverAdscripcion(sesion.user, datos.trainingActivityId ?? null, datos.trainingPlanId ?? null, actual.trainingActivityId);
+    if ("error" in adscripcion) return adscripcion;
+    planPatch = adscripcion;
   }
 
   await prisma.survey.update({

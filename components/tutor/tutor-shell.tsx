@@ -38,6 +38,7 @@ const NAV_GROUPS: GrupoNav[] = [
     label: "Plan de capacitación",
     items: [
       { href: "/tutor/planes-capacitacion", label: "Planes de capacitación", icon: CalendarRange, excluir: ["/tutor/planes-capacitacion/en-vivo"] },
+      { href: "/tutor/capacitaciones/nueva", label: "Crear capacitaci?n", icon: CalendarRange },
       { href: "/tutor/reuniones", label: "Mis reuniones", icon: CalendarRange },
       { href: "/tutor/planes-capacitacion/en-vivo", label: "En vivo", icon: Radio },
       // Vista de OBSERVACIÓN, no de acción: el tutor abre las ventanas del
@@ -67,6 +68,7 @@ const GRUPO_SIAU: GrupoNav = {
 const NAV_GROUPS_SIAU: GrupoNav[] = [...NAV_GROUPS.slice(0, 2), GRUPO_SIAU, ...NAV_GROUPS.slice(2)];
 
 const BREADCRUMBS: [string, string][] = [
+  ["/tutor/capacitaciones/nueva", "Crear capacitación de mi área"],
   ["/tutor/planes-capacitacion/en-vivo", "Plan · En vivo"],
   ["/tutor/planes-capacitacion", "Plan · Planes de capacitación"],
   ["/tutor/mis-encuestas", "Plan · Evaluaciones en vivo"],
@@ -114,7 +116,7 @@ export function TutorShell({
           onMenuClick={() => setSidebarOpen(true)}
         />
         {banner}
-        <main className="mx-auto w-full min-w-0 max-w-[1600px] flex-1 overflow-x-hidden p-4 sm:p-6">{children}</main>
+        <main className="tutor-workspace mx-auto w-full min-w-0 max-w-[1600px] flex-1 overflow-x-hidden p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

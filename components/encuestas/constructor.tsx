@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { leerConfig, ETIQUETA_TIPO, type ConfigPregunta } from "@/lib/encuestas/tipos";
+import { leerConfig, ETIQUETA_TIPO } from "@/lib/encuestas/tipos";
 import { SURVEY_QUESTION_TYPE_ICONS } from "@/components/training-plans/survey-labels";
 import { EditorPregunta } from "@/components/encuestas/editor-pregunta";
 import { BotonEnlacePublico } from "@/components/encuestas/boton-enlace-publico";
@@ -74,6 +74,7 @@ export type EncuestaConstructor = {
 };
 
 export type OpcionesAdscripcion = {
+  soloCapacitacion?: boolean;
   planes: { id: string; titulo: string }[];
   actividades: { id: string; titulo: string; planId: string; plan: string }[];
 };
@@ -509,7 +510,7 @@ function PanelAjustes({
   const [planId, setPlanId] = useState(encuesta.trainingPlan?.id ?? "");
   const [actividadId, setActividadId] = useState(encuesta.trainingActivity?.id ?? "");
 
-  const actividadesDelPlan = planId
+  const actividadesDelPlan = !adscripcion.soloCapacitacion && planId
     ? adscripcion.actividades.filter((a) => a.planId === planId)
     : adscripcion.actividades;
 
@@ -570,7 +571,7 @@ function PanelAjustes({
       <div className="space-y-3">
         {/* Trazabilidad: plan y capacitación, alineado con el resto del sistema */}
         <div className="grid grid-cols-1 gap-3">
-          <div className="space-y-1">
+          {!adscripcion.soloCapacitacion && <div className="space-y-1">
             <label htmlFor="ads-plan" className="text-[12.5px] font-semibold text-foreground">
               Plan de capacitación
             </label>
@@ -587,13 +588,14 @@ function PanelAjustes({
                 </option>
               ))}
             </select>
-          </div>
+          </div>}
           <div className="space-y-1">
             <label htmlFor="ads-actividad" className="text-[12.5px] font-semibold text-foreground">
               Capacitación concreta
             </label>
             <select
               id="ads-actividad"
+              required={adscripcion.soloCapacitacion}
               value={actividadId}
               onChange={(e) => {
                 const id = e.target.value;
@@ -602,7 +604,7 @@ function PanelAjustes({
               }}
               className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none"
             >
-              <option value="">{planId ? "Todo el plan (sin jornada concreta)" : "Ninguna"}</option>
+              <option value="" disabled={adscripcion.soloCapacitacion}>{adscripcion.soloCapacitacion ? "Elige una capacitación de tu área" : planId ? "Todo el plan (sin jornada concreta)" : "Ninguna"}</option>
               {actividadesDelPlan.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.titulo} · {a.plan}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useActionState } from "react";
 import { Info, Loader2, Sparkles } from "lucide-react";
 import { crearEncuestaAction, type EstadoAccion } from "@/app/encuestas/acciones-constructor";
@@ -75,9 +76,9 @@ export function FormularioNuevaEncuesta({
   const actividadesFiltradas = useMemo(
     () =>
       actividades.filter(
-        (a) => (!areaId || a.areaId === areaId) && (!planId || a.planId === planId)
+        (a) => satisfaccion || ((!areaId || a.areaId === areaId) && (!planId || a.planId === planId))
       ),
-    [areaId, planId, actividades]
+    [areaId, planId, actividades, satisfaccion]
   );
 
   function elegirActividad(id: string) {
@@ -188,6 +189,12 @@ export function FormularioNuevaEncuesta({
           )}
         </legend>
 
+        {satisfaccion ? (
+          <>
+            <input type="hidden" name="trainingPlanId" value={planId} />
+            <p className="text-sm leading-relaxed text-muted-foreground">Elige una sola capacitación de tu área. Esta encuesta se aplicará únicamente a la capacitación seleccionada.</p>
+          </>
+        ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <label htmlFor="areaFiltro" className="text-[12px] font-semibold text-muted-foreground">
@@ -235,6 +242,7 @@ export function FormularioNuevaEncuesta({
             </select>
           </div>
         </div>
+        )}
 
         <div className="space-y-1.5">
           <label htmlFor="trainingActivityId" className="text-[12px] font-semibold text-muted-foreground">
@@ -246,6 +254,7 @@ export function FormularioNuevaEncuesta({
             value={actividadId}
             onChange={(e) => elegirActividad(e.target.value)}
             required={satisfaccion}
+            disabled={satisfaccion && actividades.length === 0}
             className={campo}
           >
             <option value="" disabled={satisfaccion}>
@@ -257,6 +266,7 @@ export function FormularioNuevaEncuesta({
               </option>
             ))}
           </select>
+          {satisfaccion && actividades.length === 0 && <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3 text-sm"><p>Tu área aún no tiene capacitaciones disponibles. Crea una capacitación propia para poder asignarle la encuesta.</p><Link href="/tutor/capacitaciones/nueva" className="inline-flex min-h-10 items-center font-semibold text-primary hover:underline">Crear capacitación de mi área →</Link></div>}
           <p className="text-[11.5px] leading-snug text-muted-foreground">
             {satisfaccion
               ? "Los resultados se consultan en Encuestas, adscritos a esa capacitación como su medición de satisfacción."
@@ -289,7 +299,7 @@ export function FormularioNuevaEncuesta({
 
       <button
         type="submit"
-        disabled={pendiente}
+        disabled={pendiente || (satisfaccion && !actividadId)}
         className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-success px-5 py-3.5 text-[14px] font-bold text-white shadow-lg shadow-primary/25 transition-transform hover:translate-y-[-1px] disabled:opacity-60"
       >
         {pendiente ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}

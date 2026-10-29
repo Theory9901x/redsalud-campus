@@ -1,37 +1,15 @@
 import type { Metadata } from "next";
-import { Sora, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { Instrument_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/brand/theme-provider";
 import { NativeCssBypass } from "@/components/brand/native-css-bypass";
 import { NativeViewTransitions } from "@/components/brand/native-view-transitions";
 import "./globals.css";
 
-// Tipografía del sistema (oct-2026), "centro de mando":
-//  · Sora (títulos): geométrica y precisa, con aire tecnológico sin perder
-//    seriedad institucional.
-//  · Instrument Sans (texto): contemporánea y muy legible en tamaños chicos
-//    -tablas, formularios, metadatos-.
-//  · JetBrains Mono (datos): cifras y etiquetas de telemetría con carácter.
-// display: "swap" en las tres: el texto se pinta de inmediato con la fuente
-// del sistema y se sustituye al llegar la definitiva.
+// Una sola familia tipográfica para todo el campus.
 const cuerpo = Instrument_Sans({
   variable: "--font-cuerpo",
   subsets: ["latin"],
-  display: "swap",
-});
-
-const titulo = Sora({
-  variable: "--font-titulo",
-  subsets: ["latin"],
-  // Pesos que usa la interfaz en títulos (semibold, bold, extrabold).
-  weight: ["600", "700", "800"],
-  display: "swap",
-});
-
-const mono = JetBrains_Mono({
-  variable: "--font-datos",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -52,7 +30,7 @@ export default function RootLayout({
     <html
       lang="es"
       suppressHydrationWarning
-      className={`${cuerpo.variable} ${titulo.variable} ${mono.variable} h-full antialiased`}
+      className={`${cuerpo.variable} h-full antialiased`}
     >
       <head>
         <NativeCssBypass />

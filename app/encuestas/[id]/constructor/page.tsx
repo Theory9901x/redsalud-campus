@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { requireSurveyAccess } from "@/lib/auth-helpers";
 import { getEncuestaParaConstructor } from "@/lib/encuestas/consultas";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { alcanceAdscripcion } from "@/lib/encuestas/adscripcion";
 import { Constructor } from "@/components/encuestas/constructor";
 
 /**
@@ -13,17 +13,17 @@ import { Constructor } from "@/components/encuestas/constructor";
  */
 export default async function ConstructorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requireSurveyAccess(id).catch(() => notFound());
+  const { session: sesion } = await requireSurveyAccess(id).catch(() => notFound());
 
   const encuesta = await getEncuestaParaConstructor(id);
   if (!encuesta) notFound();
 
   // Opciones de adscripción (plan y capacitación), con el alcance del rol.
-  const sesion = await auth();
-  const esAdmin = sesion?.user?.role === "ADMIN";
+  const alcance = await alcanceAdscripcion(sesion.user);
+  const esAdmin = !alcance.soloDeArea;
   const [planes, actividades] = await Promise.all([
     prisma.trainingPlan.findMany({
-      where: esAdmin ? {} : { activities: { some: { area: { tutorId: sesion?.user?.id } } } },
+      where: esAdmin ? {} : { activities: { some: alcance.actividades } },
       select: { id: true, title: true },
       orderBy: { title: "asc" },
     }),
@@ -31,10 +31,9 @@ export default async function ConstructorPage({ params }: { params: Promise<{ id
       // La actividad YA adscrita entra siempre, aunque esté cerrada: si no,
       // el select la mostraría vacía y guardar la borraría en silencio.
       where: {
+        ...alcance.actividades,
         OR: [
-          esAdmin
-            ? { status: { not: "CLOSED" } }
-            : { status: { not: "CLOSED" }, area: { tutorId: sesion?.user?.id } },
+          { status: { not: "CLOSED" } },
           ...(encuesta.trainingActivityId ? [{ id: encuesta.trainingActivityId }] : []),
         ],
       },
@@ -57,6 +56,7 @@ export default async function ConstructorPage({ params }: { params: Promise<{ id
         <Constructor
           encuesta={JSON.parse(JSON.stringify(encuesta))}
           adscripcion={{
+            soloCapacitacion: alcance.soloDeArea,
             planes: planes.map((p) => ({ id: p.id, titulo: p.title })),
             actividades: actividades.map((a) => ({
               id: a.id,

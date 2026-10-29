@@ -12,7 +12,8 @@ import { Segmento } from "@/components/encuestas/ficha-encuesta";
 import { cn } from "@/lib/utils";
 import type { SurveyStatus, SurveyAudience } from "@prisma/client";
 import { veComoAdmin } from "@/lib/roles";
-import { puedeGestionarSiau } from "@/lib/encuestas/acceso-siau";
+import { alcanceAdscripcion } from "@/lib/encuestas/adscripcion";
+import { puedeGestionarSiau, esCuentaSiau } from "@/lib/encuestas/acceso-siau";
 import { CODIGO_SIAU } from "@/lib/encuestas/metrics";
 
 /**
@@ -38,15 +39,16 @@ export default async function EncuestasPage({
   const { q, estado, audiencia, vista, area, capacitacion } = await searchParams;
   const sesion = await requireSession("/encuestas");
   const rol = sesion.user.role;
-  const esTutor = rol === "TUTOR";
+  const soloDeArea = (veComoAdmin(rol) || rol === "TUTOR") && (await alcanceAdscripcion(sesion.user)).soloDeArea;
+  const esTutor = rol === "TUTOR" || soloDeArea;
   const esGestor = veComoAdmin(rol) || esTutor;
   // Administrador o cuenta del área SIAU: ven la encuesta y el Centro de datos.
-  const veSiau = esGestor && (await puedeGestionarSiau(sesion));
+  const veSiau = esGestor && (!soloDeArea || await esCuentaSiau(sesion)) && (await puedeGestionarSiau(sesion));
 
   const alcance: AlcanceEncuestas =
-    veComoAdmin(rol)
+    veComoAdmin(rol) && !soloDeArea
       ? { tipo: "todas" }
-      : rol === "TUTOR"
+      : esTutor
         ? {
             tipo: "emitidas",
             userId: sesion.user.id,
@@ -62,14 +64,14 @@ export default async function EncuestasPage({
   const [areasFiltro, actividadesFiltro] = esGestor
     ? await Promise.all([
         prisma.trainingArea.findMany({
-          where: veComoAdmin(rol) ? {} : { tutorId: sesion.user.id },
+          where: veComoAdmin(rol) && !soloDeArea ? {} : { tutorId: sesion.user.id, isActive: true },
           select: { id: true, name: true },
           orderBy: { name: "asc" },
         }),
         prisma.trainingActivity.findMany({
           where: {
             surveys: { some: {} },
-            ...(veComoAdmin(rol) ? {} : { area: { tutorId: sesion.user.id } }),
+            ...(veComoAdmin(rol) && !soloDeArea ? {} : { area: { tutorId: sesion.user.id, isActive: true } }),
           },
           select: { id: true, title: true },
           orderBy: { title: "asc" },
@@ -79,7 +81,7 @@ export default async function EncuestasPage({
 
   // Las plantillas son institucionales: el tutor parte de ellas al crear su
   // encuesta (en /encuestas/nueva), no las administra aquí.
-  const verPlantillas = veComoAdmin(rol) && vista === "plantillas";
+  const verPlantillas = veComoAdmin(rol) && !soloDeArea && vista === "plantillas";
   const encuestas = await listarEncuestas(
     {
       buscar: q,

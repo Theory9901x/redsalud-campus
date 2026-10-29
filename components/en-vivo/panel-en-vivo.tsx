@@ -258,7 +258,7 @@ function Ficha({ f, ahora, i, compacta = false }: { f: FichaVivo; ahora: number 
           {f.area ?? "Institucional"}
           {f.programa ? ` · ${f.programa}` : ""}
         </p>
-        <h3 className="vivo-titulo">{tituloLegible(f.titulo)}</h3>
+        <h3 className="vivo-titulo">{tituloLegible(f.categoria === "REUNION" ? f.plan : f.titulo)}</h3>
         {!compacta && f.objetivo && <p className="vivo-desc">{f.objetivo}</p>}
       </div>
 
@@ -268,8 +268,8 @@ function Ficha({ f, ahora, i, compacta = false }: { f: FichaVivo; ahora: number 
         </span>
         <span className="min-w-0">
           <span className="mono-label">Dirigida a</span>
-          <b>Capacitación {pub.etiqueta.toLowerCase()}</b>
-          <small className="truncate">{f.publicoNota || pub.detalle}</small>
+          <b>{pub.detalle}</b>
+          {f.publicoNota && <small>{f.publicoNota}</small>}
         </span>
       </div>
 
@@ -291,9 +291,9 @@ function Ficha({ f, ahora, i, compacta = false }: { f: FichaVivo; ahora: number 
         {f.responsable && (
           <div className="col-span-2 sm:col-span-1">
             <dt>Responsable</dt>
-            <dd className="flex items-center gap-1.5 truncate">
+            <dd className="flex items-start gap-1.5">
               <UserRound className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
-              <span className="truncate">{f.responsable}</span>
+              <span>{f.responsable}</span>
             </dd>
           </div>
         )}

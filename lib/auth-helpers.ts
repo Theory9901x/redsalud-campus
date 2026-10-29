@@ -1,3 +1,4 @@
+import { alcanceAdscripcion } from "@/lib/encuestas/adscripcion";
 import { requireReunionAccess } from "@/lib/reuniones-access";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -144,26 +145,13 @@ export async function requireTrainingActivityAccess(activityId: string) {
  * jornada es parte de gestionar la jornada.
  */
 export async function requireSurveyAccess(surveyId: string) {
-  const survey = await prisma.survey.findUnique({
-    where: { id: surveyId },
-    select: {
-      trainingPlanId: true,
-      trainingActivity: { select: { area: { select: { tutorId: true } } } },
-    },
-  });
-  if (!survey) {
-    throw new Error("Encuesta no encontrada.");
-  }
-
   const session = await requireTutorOrAdmin();
-  if (veComoAdmin(session.user.role) || survey.trainingActivity?.area?.tutorId === session.user.id) {
-    return { session, planId: survey.trainingPlanId };
-  }
-
-  // Una encuesta institucional puede no colgar de ningún plan: en ese caso
-  // no hay adscripción que verificar y solo el administrador llega aquí.
-  if (!survey.trainingPlanId) throw new Error("No autorizado: encuesta sin plan adscrito.");
-  await requireTrainingPlanAccess(survey.trainingPlanId);
+  const alcance = await alcanceAdscripcion(session.user);
+  const survey = await prisma.survey.findFirst({
+    where: { id: surveyId, ...(alcance.soloDeArea ? { trainingActivity: alcance.actividades, NOT: { code: { startsWith: CODIGO_SIAU } } } : {}) },
+    select: { trainingPlanId: true },
+  });
+  if (!survey) throw new Error("No autorizado: esta encuesta no pertenece a una capacitación de tu área.");
   return { session, planId: survey.trainingPlanId };
 }
 
