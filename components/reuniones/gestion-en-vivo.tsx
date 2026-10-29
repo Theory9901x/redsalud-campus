@@ -12,7 +12,8 @@ const control = "w-full rounded-lg border border-input bg-background px-3 py-3 t
 const button = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-primary-foreground disabled:opacity-50";
 const outline = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50";
 
-export function GestionReunionEnVivo({ inicial, areas, formularioActaFirmada, editarInicial = false }: { inicial: GestionReunion; areas: Areas; formularioActaFirmada?: React.ReactNode; editarInicial?: boolean }) {
+/** Con `salirHref` es solo el panel de EDICIÓN: «Terminar edición» vuelve al módulo de consulta. */
+export function GestionReunionEnVivo({ inicial, areas, formularioActaFirmada, editarInicial = false, salirHref }: { inicial: GestionReunion; areas: Areas; formularioActaFirmada?: React.ReactNode; editarInicial?: boolean; salirHref?: string }) {
   const [editando, setEditando] = useState(editarInicial);
   const [d, setDatos] = useState(inicial);
   const [pending, setPending] = useState(false);
@@ -43,7 +44,7 @@ export function GestionReunionEnVivo({ inicial, areas, formularioActaFirmada, ed
   const tabs = [{ id: "compromisos", name: "Compromisos", Icon: ClipboardList }, { id: "documentos", name: "Documentos", Icon: Paperclip }, { id: "asistencia", name: `Asistencia (${d.asistentes.length})`, Icon: Users2 }, { id: "datos", name: "Datos de la reunión", Icon: Settings2 }, { id: "desarrollo", name: "Acta", Icon: Pencil }];
   return <section id="gestion-reunion" className="scroll-mt-6 overflow-hidden rounded-2xl border bg-card text-foreground shadow-sm">
     <header className="space-y-3 border-b bg-primary/5 p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold">{editando ? "Editar reunión" : "Información de la reunión"}</h2>{d.puedeGestionar && <button type="button" disabled={pending || d.cerrada} className={button} onClick={() => { setEditando(!editando); setEdicion(null); setAviso(null); }}><Pencil className="h-4 w-4" />{editando ? "Volver a consulta" : "Editar"}</button>}</div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold">{editando ? "Editar reunión" : "Información de la reunión"}</h2>{salirHref ? <a href={salirHref} className={button}><CheckCircle2 className="h-4 w-4" />Terminar edición</a> : d.puedeGestionar && <button type="button" disabled={pending || d.cerrada} className={button} onClick={() => { setEditando(!editando); setEdicion(null); setAviso(null); }}><Pencil className="h-4 w-4" />{editando ? "Volver a consulta" : "Editar"}</button>}</div>
       <p className="text-base leading-relaxed text-muted-foreground">{editando ? "Guarda los cambios de cada sección antes de volver a consulta." : "Consulta los datos, la asistencia, el acta y los documentos de esta sesión."}</p>
       <p className="text-sm font-medium">La hora de fin es orientativa. La reunión permanece abierta hasta que su creador o anfitrión pulse Cerrar reunión.</p>
       <div className="flex flex-wrap gap-2">
@@ -52,7 +53,7 @@ export function GestionReunionEnVivo({ inicial, areas, formularioActaFirmada, ed
         <a className={outline} href={`${base}/asistencia/pdf`}>Asistencia PDF</a>
         {d.puedeGestionar && <button type="button" disabled={pending} className={outline} onClick={() => {
           if (!d.cerrada && !window.confirm("¿Estás seguro de cerrar la reunión?")) return;
-          void ejecutar(() => d.cerrada ? reabrirSesionAction(d.planId, d.activityId) : cerrarSesionAction(d.planId, d.activityId), d.cerrada ? "Reunión reabierta." : "Reunión cerrada manualmente.", () => { setEditando(false); setEdicion(null); });
+          void ejecutar(() => d.cerrada ? reabrirSesionAction(d.planId, d.activityId) : cerrarSesionAction(d.planId, d.activityId), d.cerrada ? "Reunión reabierta." : "Reunión cerrada manualmente.", () => { if (!salirHref) setEditando(false); setEdicion(null); });
         }}>{d.cerrada ? "Reabrir reunión" : "Cerrar reunión"}</button>}
       </div>
       {d.cerrada && <p className="rounded-lg border bg-background p-3 text-sm">La sesión fue cerrada manualmente. Puedes consultar y descargar su información; para editarla, pulsa Reabrir reunión.</p>}
