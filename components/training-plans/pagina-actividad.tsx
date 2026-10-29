@@ -412,7 +412,7 @@ export async function PaginaActividad({
   return (
     <VistaActividad
       volver={{ href: basePath === "/tutor/capacitaciones" ? basePath : `${basePath}/${id}`, etiqueta: basePath === "/tutor/capacitaciones" ? "Capacitaciones independientes" : activity.plan.title }}
-      eyebrow={`${activity.area?.name ?? "Capacitación del plan"}${activity.programa ? ` · ${activity.programa}` : ""} · ${nombreTrimestre(filtro.trimestre, false)}`}
+      eyebrow={`${activity.area?.name ?? "Capacitación"}${activity.programa ? ` · ${activity.programa}` : ""} · ${activity.plan.isIndependent ? "Capacitación independiente" : nombreTrimestre(filtro.trimestre, false)}`}
       titulo={activity.title}
       chips={[
         { Icono: CalendarRange, contenido: etiquetaProgramacion(activity) },
@@ -426,7 +426,7 @@ export async function PaginaActividad({
         ...(externos.length > 0 ? [{ Icono: UserPlus, contenido: `${externos.length} invitados` }] : []),
       ]}
       estado={activity.status}
-      trimestres={{ opciones: vistaTrimestre.opciones, elegido: filtro.trimestre, enCurso: vistaTrimestre.enCurso }}
+      trimestres={activity.plan.isIndependent ? undefined : { opciones: vistaTrimestre.opciones, elegido: filtro.trimestre, enCurso: vistaTrimestre.enCurso }}
       acciones={
         <>
           <ActivityLifecycleActions

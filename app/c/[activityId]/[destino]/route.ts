@@ -46,7 +46,7 @@ export async function GET(
     select: {
       planId: true,
       targetAudience: true,
-      plan: { select: { kind: true } },
+      plan: { select: { kind: true, isIndependent: true } },
       courseId: true,
       status: true,
       presaberOpenedAt: true,
@@ -56,6 +56,7 @@ export async function GET(
     },
   });
   if (!actividad) return NextResponse.redirect(`${base}/mis-capacitaciones`);
+  const destinoListado = actividad.plan.isIndependent ? "/mis-capacitaciones/independientes" : `/mis-capacitaciones/${actividad.planId}`;
   const viewer = await auth();
   if (viewer?.user.role === "STUDENT" && actividad.plan.kind === "CAPACITACION" && (actividad.status !== "OPEN" || !coincideAudienciaCapacitacion(actividad.targetAudience, viewer.user.personnelType))) return NextResponse.redirect(`${base}/mis-capacitaciones`);
 
@@ -104,12 +105,12 @@ export async function GET(
     const estadoVentana = destino === "presaber" ? estadoPresaber(actividad) : estadoPostsaber(actividad);
     if (estadoVentana !== "DISPONIBLE") {
       const aviso = `${destino}-${estadoVentana === "CERRADO" ? "cerrado" : "sin-habilitar"}`;
-      return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}?aviso=${aviso}`);
+      return NextResponse.redirect(`${base}${destinoListado}?aviso=${aviso}`);
     }
   } else if (actividad.status === "CLOSED") {
     // Modo automático con la jornada cerrada: el ciclo quedó congelado.
     const aviso = `${destino}-cerrado`;
-    return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}?aviso=${aviso}`);
+    return NextResponse.redirect(`${base}${destinoListado}?aviso=${aviso}`);
   }
 
   // ---- Gate por FASE de la jornada (server-side) --------------------------
@@ -157,10 +158,10 @@ export async function GET(
           where: { quizId: quizAuto.id, userId: session.user.id, moment: "PRESABER", score: { not: null } },
         })) > 0;
       if (destino === "postsaber" && !prePresentado) {
-        return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}?aviso=postsaber-requiere-presaber`);
+        return NextResponse.redirect(`${base}${destinoListado}?aviso=postsaber-requiere-presaber`);
       }
       if (destino === "presaber" && prePresentado) {
-        return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}?aviso=presaber-ya-presentado`);
+        return NextResponse.redirect(`${base}${destinoListado}?aviso=presaber-ya-presentado`);
       }
     }
   }
@@ -171,10 +172,10 @@ export async function GET(
   // planilla al entrar.
   const entrada = await ensureEnrollment(session.user.id, activityId);
   if (!entrada.ok) {
-    return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}?aviso=${AVISO_POR_BLOQUEO[entrada.motivo]}`);
+    return NextResponse.redirect(`${base}${destinoListado}?aviso=${AVISO_POR_BLOQUEO[entrada.motivo]}`);
   }
   if (!entrada.quizId) {
-    return NextResponse.redirect(`${base}/mis-capacitaciones/${actividad.planId}`);
+    return NextResponse.redirect(`${base}${destinoListado}`);
   }
 
   // El destino final es la evaluación; qué momento corre (presaber,

@@ -85,7 +85,7 @@ export function ActivityPlanCard({ activity, responsibleUserName, independiente 
         )}
 
         {(activity.responsibleLabel || responsibleUserName) && (
-          <Campo icono={UserCog} etiqueta="Responsable según el plan">
+          <Campo icono={UserCog} etiqueta={independiente ? "Responsable de la capacitación" : "Responsable según el plan"}>
             {activity.responsibleLabel}
             {responsibleUserName && (
               <span className="mt-0.5 block text-xs text-muted-foreground">
@@ -103,7 +103,7 @@ export function ActivityPlanCard({ activity, responsibleUserName, independiente 
       </div>
 
       {activity.followUpEvidence.length > 0 && (
-        <Campo icono={ListChecks} etiqueta="Evidencias que exige el plan">
+        <Campo icono={ListChecks} etiqueta={independiente ? "Evidencias y compromisos" : "Evidencias que exige el plan"}>
           <ul className="mt-1 space-y-1">
             {activity.followUpEvidence.map((ev, i) => (
               <li key={i} className="flex items-start gap-1.5">
