@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { privateMediaDiskPath } from "@/lib/storage";
 import { veComoAdmin } from "@/lib/roles";
+import { requireReunionAccess } from "@/lib/reuniones-access";
 
 /** Si el archivo es un adjunto de lección ("lessons/{lessonId}"), ¿el usuario está inscrito en ese curso? */
 async function isEnrolledInLessonCourse(folder: string, userId: string) {
@@ -108,6 +109,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 
   const cacheKey = `${session.user.id}:${media.id}`;
+  const folderPlan = media.folder?.match(/^training-plans\/([^/]+)$/)?.[1];
+  const folderActivity = media.folder?.match(/^training-activities\/([^/]+)$/)?.[1];
+  const activityId = media.trainingActivityId ?? folderActivity;
+  const planId = media.trainingPlanId ?? folderPlan ?? (activityId
+    ? (await prisma.trainingActivity.findUnique({ where: { id: activityId }, select: { planId: true } }))?.planId
+    : null);
+  if (planId) {
+    const plan = await prisma.trainingPlan.findUnique({ where: { id: planId }, select: { kind: true } });
+    if (plan?.kind === "REUNION") {
+      try {
+        await requireReunionAccess(planId, activityId);
+      } catch {
+        return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+      }
+      memorizar(cacheKey);
+    }
+  }
   if (!autorizado(cacheKey)) {
     const isOwner = media.uploadedBy === session.user.id;
     const isAdmin = veComoAdmin(session.user.role);

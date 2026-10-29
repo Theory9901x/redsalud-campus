@@ -21,7 +21,8 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const ESTADO = { DRAFT: "Borrador", OPEN: "Abierta", CLOSED: "Cerrada" } as const;
 
 export default async function ReunionPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireTutorOrAdmin();
+  const sesion = await requireTutorOrAdmin();
+  const basePath = sesion.user.role === "TUTOR" ? "/tutor/reuniones" : "/admin/reuniones";
   const { id } = await params;
   const r = await getReunion(id);
   if (!r) notFound();
@@ -36,7 +37,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-6">
-      <Link href="/admin/reuniones" className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">
+      <Link href={basePath} className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Reuniones
       </Link>
 
@@ -127,7 +128,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
                       <a href={`/api/reuniones/${r.id}/sesiones/${s.id}/acta`} className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}>
                         <FileDown className="h-3.5 w-3.5" aria-hidden="true" /> Acta PDF
                       </a>
-                      <Link href={`/admin/reuniones/${r.id}/sesiones/${s.id}`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
+                      <Link href={`${basePath}/${r.id}/sesiones/${s.id}`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
                         Asistencia y acta <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                       </Link>
                     </div>

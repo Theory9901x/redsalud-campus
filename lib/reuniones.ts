@@ -1,3 +1,4 @@
+import { accesoReuniones } from "@/lib/reuniones-access";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -30,14 +31,16 @@ export type ResumenSesion = {
 };
 
 export async function listarReuniones() {
+  const acceso = await accesoReuniones();
   const planes = await prisma.trainingPlan.findMany({
-    where: { kind: "REUNION", status: { not: "ARCHIVED" } },
+    where: { ...acceso.where, status: { not: "ARCHIVED" } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
       title: true,
       description: true,
       createdAt: true,
+      createdBy: { select: { fullName: true } },
       tutor: { select: { fullName: true } },
       activities: {
         select: {
@@ -56,6 +59,7 @@ export async function listarReuniones() {
     return {
       id: p.id,
       titulo: p.title,
+      creador: p.createdBy?.fullName ?? "Sin creador registrado",
       descripcion: p.description,
       responsable: p.activities.find((a) => a.responsibleLabel)?.responsibleLabel ?? p.tutor.fullName,
       sesiones: p.activities.length,
@@ -70,8 +74,9 @@ export async function listarReuniones() {
 }
 
 export async function getReunion(planId: string) {
+  const acceso = await accesoReuniones();
   const plan = await prisma.trainingPlan.findFirst({
-    where: { id: planId, kind: "REUNION" },
+    where: { ...acceso.where, id: planId },
     select: {
       id: true,
       title: true,
@@ -132,8 +137,9 @@ export type AsistenteSesion = {
 };
 
 export async function getSesionReunion(planId: string, activityId: string) {
+  const acceso = await accesoReuniones();
   const act = await prisma.trainingActivity.findFirst({
-    where: { id: activityId, planId, plan: { kind: "REUNION" } },
+    where: { id: activityId, planId, plan: acceso.where },
     select: {
       id: true,
       title: true,

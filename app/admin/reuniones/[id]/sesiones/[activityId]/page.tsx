@@ -25,6 +25,7 @@ const HORA = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", 
 
 export default async function SesionReunionPage({ params }: { params: Promise<{ id: string; activityId: string }> }) {
   const sesion = await requireTutorOrAdmin();
+  const basePath = sesion.user.role === "TUTOR" ? "/tutor/reuniones" : "/admin/reuniones";
   const { id, activityId } = await params;
   const d = await getSesionReunion(id, activityId);
   if (!d) notFound();
@@ -146,7 +147,7 @@ export default async function SesionReunionPage({ params }: { params: Promise<{ 
 
   return (
     <VistaActividad
-      volver={{ href: `/admin/reuniones/${id}`, etiqueta: d.reunion.titulo }}
+      volver={{ href: `${basePath}/${id}`, etiqueta: d.reunion.titulo }}
       eyebrow="Sesión de reunión abierta"
       titulo={d.titulo}
       chips={[

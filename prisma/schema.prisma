@@ -157,6 +157,8 @@ model User {
   certificates   Certificate[]
   mediaUploads   Media[]
   auditLogs      AuditLog[]
+  canManageAllMeetings Boolean @default(false)
+  trainingPlansCreated TrainingPlan[] @relation("TrainingPlanCreator")
   trainingPlansAsTutor TrainingPlan[] @relation("TrainingPlanTutor")
   trainingPlansClosed  TrainingPlan[] @relation("TrainingPlanClosedBy")
   trainingActivitiesResponsible TrainingActivity[] @relation("TrainingActivityResponsible")
@@ -743,6 +745,8 @@ model TrainingPlan {
   year             Int
   description      String?
   targetDepartment String? // mismo texto libre que User.department: sin modelo Department separado; null = todo el personal, cualquier área
+  createdById      String?
+  createdBy        User? @relation("TrainingPlanCreator", fields: [createdById], references: [id], onDelete: SetNull)
   tutorId          String
   tutor            User               @relation("TrainingPlanTutor", fields: [tutorId], references: [id])
   status           TrainingPlanStatus @default(DRAFT)
@@ -777,6 +781,7 @@ model TrainingPlan {
   planesMejora      PlanMejora[]
 
   @@index([tutorId])
+  @@index([createdById])
   @@index([targetDepartment])
   @@index([kind])
 }

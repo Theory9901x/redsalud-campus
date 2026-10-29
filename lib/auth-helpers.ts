@@ -1,3 +1,4 @@
+import { requireReunionAccess } from "@/lib/reuniones-access";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -68,6 +69,8 @@ export async function requireCourseAccess(courseId: string) {
 
 /** Verifica que el usuario sea ADMIN, o TUTOR responsable del plan. Lanza si no cumple. */
 export async function requireTrainingPlanAccess(planId: string) {
+  const meeting = await prisma.trainingPlan.findUnique({ where: { id: planId }, select: { kind: true } });
+  if (meeting?.kind === "REUNION") return requireReunionAccess(planId);
   const session = await requireTutorOrAdmin();
   if (veComoAdmin(session.user.role)) return session;
 
@@ -88,6 +91,8 @@ export async function requireTrainingPlanAccess(planId: string) {
  * puede modificar el plan sigue decidiéndolo requireTrainingPlanAccess.
  */
 export async function requireTrainingPlanRead(planId: string) {
+  const meeting = await prisma.trainingPlan.findUnique({ where: { id: planId }, select: { kind: true } });
+  if (meeting?.kind === "REUNION") return requireReunionAccess(planId);
   const session = await requireTutorOrAdmin();
   if (veComoAdmin(session.user.role)) return session;
 
@@ -115,11 +120,13 @@ export async function requireTrainingPlanRead(planId: string) {
 export async function requireTrainingActivityAccess(activityId: string) {
   const activity = await prisma.trainingActivity.findUnique({
     where: { id: activityId },
-    select: { planId: true, area: { select: { tutorId: true } } },
+    select: { planId: true, plan: { select: { kind: true } }, area: { select: { tutorId: true } } },
   });
   if (!activity) {
     throw new Error("Actividad no encontrada.");
   }
+
+  if (activity.plan.kind === "REUNION") return { session: await requireReunionAccess(activity.planId, activityId), planId: activity.planId };
 
   const session = await requireTutorOrAdmin();
   if (veComoAdmin(session.user.role) || activity.area?.tutorId === session.user.id) {

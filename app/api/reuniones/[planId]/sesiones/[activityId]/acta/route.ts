@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireTutorOrAdmin } from "@/lib/auth-helpers";
+import { accesoReuniones } from "@/lib/reuniones-access";
 import { getSesionReunion } from "@/lib/reuniones";
 import { renderActaReunionPdf } from "@/lib/acta-reunion-pdf";
 import { registrarAuditoria } from "@/lib/audit";
@@ -8,7 +8,7 @@ import { registrarAuditoria } from "@/lib/audit";
 export async function GET(_req: Request, { params }: { params: Promise<{ planId: string; activityId: string }> }) {
   let sesion;
   try {
-    sesion = await requireTutorOrAdmin();
+    sesion = (await accesoReuniones()).session;
   } catch {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }

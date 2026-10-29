@@ -15,6 +15,7 @@ async function main() {
       email: "redsaludteforma@gmail.com",
       passwordHash: adminPasswordHash,
       role: "ADMIN",
+      canManageAllMeetings: true,
       status: "ACTIVE",
       personnelType: "ADMINISTRATIVO",
       position: "Director de Talento Humano",

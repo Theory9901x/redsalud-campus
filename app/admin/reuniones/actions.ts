@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireTutorOrAdmin } from "@/lib/auth-helpers";
+import { accesoReuniones, requireReunionAccess } from "@/lib/reuniones-access";
 import { saveTrainingActivityDocument, fichaDesdeFormulario } from "@/lib/storage";
 import { registrarAuditoria } from "@/lib/audit";
 
@@ -82,7 +82,7 @@ function tituloSesion(reunion: string, n: number, total: number, s: SesionEntrad
 }
 
 export async function crearReunionAction(_prev: EstadoReunion, fd: FormData): Promise<EstadoReunion> {
-  const sesion = await requireTutorOrAdmin();
+  const { session: sesion } = await accesoReuniones(true);
   const titulo = texto(fd, "titulo");
   if (titulo.length < 4) return { error: "Escribe el nombre de la reunión." };
   const sesiones = leerSesiones(fd);
@@ -94,7 +94,7 @@ export async function crearReunionAction(_prev: EstadoReunion, fd: FormData): Pr
 
   const anio = Number(sesiones[0].fecha.slice(0, 4)) || new Date().getFullYear();
   const plan = await prisma.trainingPlan.create({
-    data: { title: titulo, year: anio, kind: "REUNION", status: "ACTIVE", tutorId: anfitrionId, description: objetivo, summary: ordenDelDia },
+    data: { title: titulo, year: anio, kind: "REUNION", status: "ACTIVE", createdById: sesion.user.id, tutorId: anfitrionId, description: objetivo, summary: ordenDelDia },
     select: { id: true },
   });
   for (const [i, s] of sesiones.entries()) {
@@ -102,11 +102,12 @@ export async function crearReunionAction(_prev: EstadoReunion, fd: FormData): Pr
   }
   await registrarAuditoria({ userId: sesion.user.id, action: "CREATE", entity: "TrainingPlan", entityId: plan.id, description: `Reunión abierta creada: ${titulo} · ${sesiones.length} sesión(es)` }).catch(() => {});
   revalidatePath(BASE);
-  redirect(`${BASE}/${plan.id}`);
+  revalidatePath("/tutor/reuniones");
+  redirect(`${sesion.user.role === "TUTOR" ? "/tutor/reuniones" : BASE}/${plan.id}`);
 }
 
 export async function agregarSesionAction(planId: string, _prev: EstadoReunion, fd: FormData): Promise<EstadoReunion> {
-  const sesion = await requireTutorOrAdmin();
+  const sesion = await requireReunionAccess(planId, undefined, true);
   const plan = await prisma.trainingPlan.findFirst({
     where: { id: planId, kind: "REUNION" },
     select: { title: true, description: true, tutorId: true, _count: { select: { activities: true } }, activities: { take: 1, select: { responsibleLabel: true } } },
@@ -121,12 +122,13 @@ export async function agregarSesionAction(planId: string, _prev: EstadoReunion, 
   }
   await registrarAuditoria({ userId: sesion.user.id, action: "CREATE", entity: "TrainingActivity", entityId: planId, description: `${sesiones.length} sesión(es) nuevas` }).catch(() => {});
   revalidatePath(`${BASE}/${planId}`);
+  revalidatePath(`/tutor/reuniones/${planId}`);
   return { error: null, ok: true };
 }
 
 /** Contenido del acta: objetivo de la sesión, desarrollo y compromisos (uno por línea). */
 export async function guardarActaAction(planId: string, activityId: string, _prev: EstadoReunion, fd: FormData): Promise<EstadoReunion> {
-  await requireTutorOrAdmin();
+  await requireReunionAccess(planId, activityId, true);
   const act = await prisma.trainingActivity.findFirst({ where: { id: activityId, planId }, select: { status: true } });
   if (!act) return { error: "La sesión no existe." };
   const compromisos = texto(fd, "compromisos").split("\n").map((l) => l.trim()).filter(Boolean);
@@ -137,12 +139,13 @@ export async function guardarActaAction(planId: string, activityId: string, _pre
   const orden = fd.get("ordenDelDia");
   if (orden !== null) await prisma.trainingPlan.update({ where: { id: planId }, data: { summary: String(orden).trim() || null } });
   revalidatePath(`${BASE}/${planId}/sesiones/${activityId}`);
+  revalidatePath(`/tutor/reuniones/${planId}/sesiones/${activityId}`);
   return { error: null, ok: true };
 }
 
 /** Acta firmada (escaneo o PDF): queda en los documentos de la sesión con prefijo ACTA. */
 export async function subirActaFirmadaAction(planId: string, activityId: string, _prev: EstadoReunion, fd: FormData): Promise<EstadoReunion> {
-  const sesion = await requireTutorOrAdmin();
+  const sesion = await requireReunionAccess(planId, activityId, true);
   const file = fd.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Selecciona el archivo del acta firmada." };
   const act = await prisma.trainingActivity.findFirst({ where: { id: activityId, planId }, select: { id: true } });
@@ -151,13 +154,15 @@ export async function subirActaFirmadaAction(planId: string, activityId: string,
   await saveTrainingActivityDocument(new File([await file.arrayBuffer()], nombre, { type: file.type || "application/octet-stream" }), activityId, sesion.user.id, { ...fichaDesdeFormulario(fd), kind: "ACTA" });
   await registrarAuditoria({ userId: sesion.user.id, action: "UPDATE", entity: "TrainingActivity", entityId: activityId, description: `Acta firmada cargada: ${nombre}` }).catch(() => {});
   revalidatePath(`${BASE}/${planId}/sesiones/${activityId}`);
+  revalidatePath(`/tutor/reuniones/${planId}/sesiones/${activityId}`);
   revalidatePath(`${BASE}/${planId}`);
+  revalidatePath(`/tutor/reuniones/${planId}`);
   return { error: null, ok: true };
 }
 
 /** Cerrar la sesión: congela la asistencia (no admite nuevos registros). */
 export async function cerrarSesionAction(planId: string, activityId: string): Promise<EstadoReunion> {
-  const sesion = await requireTutorOrAdmin();
+  const sesion = await requireReunionAccess(planId, activityId, true);
   const act = await prisma.trainingActivity.findFirst({ where: { id: activityId, planId }, select: { status: true } });
   if (!act) return { error: "La sesión no existe." };
   if (act.status === "CLOSED") return { error: "La sesión ya está cerrada." };
@@ -167,13 +172,15 @@ export async function cerrarSesionAction(planId: string, activityId: string): Pr
   ]);
   await registrarAuditoria({ userId: sesion.user.id, action: "UPDATE", entity: "TrainingActivity", entityId: activityId, description: "Sesión cerrada" }).catch(() => {});
   revalidatePath(`${BASE}/${planId}/sesiones/${activityId}`);
+  revalidatePath(`/tutor/reuniones/${planId}/sesiones/${activityId}`);
   revalidatePath(`${BASE}/${planId}`);
+  revalidatePath(`/tutor/reuniones/${planId}`);
   return { error: null, ok: true };
 }
 
 /** Reabrir: solo administración, queda en la bitácora. */
 export async function reabrirSesionAction(planId: string, activityId: string): Promise<EstadoReunion> {
-  const sesion = await requireTutorOrAdmin();
+  const sesion = await requireReunionAccess(planId, activityId, true);
   if (sesion.user.role !== "ADMIN") return { error: "Reabrir una sesión cerrada requiere permiso de administrador." };
   await prisma.$transaction([
     prisma.trainingActivity.update({ where: { id: activityId }, data: { status: "OPEN", closedAt: null } }),
@@ -181,13 +188,15 @@ export async function reabrirSesionAction(planId: string, activityId: string): P
   ]);
   await registrarAuditoria({ userId: sesion.user.id, action: "UPDATE", entity: "TrainingActivity", entityId: activityId, description: "Sesión reabierta" }).catch(() => {});
   revalidatePath(`${BASE}/${planId}/sesiones/${activityId}`);
+  revalidatePath(`/tutor/reuniones/${planId}/sesiones/${activityId}`);
   revalidatePath(`${BASE}/${planId}`);
+  revalidatePath(`/tutor/reuniones/${planId}`);
   return { error: null, ok: true };
 }
 
 /** Eliminar una sesión SIN registros (los registros son evidencia y no se borran). */
 export async function eliminarSesionAction(planId: string, activityId: string): Promise<EstadoReunion> {
-  await requireTutorOrAdmin();
+  await requireReunionAccess(planId, activityId, true);
   const act = await prisma.trainingActivity.findFirst({
     where: { id: activityId, planId },
     select: { _count: { select: { externalParticipants: true, attendances: { where: { attended: true } }, callConnections: true } } },
@@ -198,5 +207,6 @@ export async function eliminarSesionAction(planId: string, activityId: string): 
   }
   await prisma.trainingActivity.delete({ where: { id: activityId } });
   revalidatePath(`${BASE}/${planId}`);
+  revalidatePath(`/tutor/reuniones/${planId}`);
   return { error: null, ok: true };
 }
