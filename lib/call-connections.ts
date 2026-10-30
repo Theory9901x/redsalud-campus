@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { trimestreActual } from "@/lib/training-plans";
 import type { Prisma } from "@prisma/client";
 import { registrarAsistenciaSesion } from "@/lib/sesiones-presenciales";
+import { excluidoDeAsistencia } from "@/lib/excluidos-asistencia";
 
 /** Registro de ingresos, controles cada minuto y salidas reales de la sala.
  * Los eventos se anexan y los intervalos se consolidan al consultar la asistencia.
@@ -33,6 +34,7 @@ export async function registrarConexionLlamada(input: RegistrarConexionInput): P
   let sessionId = input.sessionId ?? null;
   if (!userId && !externalParticipantId) return;
   if (userId && externalParticipantId) return; // uno de los dos, nunca los dos.
+  if (userId && await excluidoDeAsistencia(userId)) return;
 
   const durationSeconds = Math.floor((leftAt.getTime() - joinedAt.getTime()) / 1000);
   if (!Number.isFinite(durationSeconds) || durationSeconds < DURACION_MINIMA_S || durationSeconds > DURACION_MAXIMA_S) {
@@ -78,7 +80,8 @@ export async function registrarConexionLlamada(input: RegistrarConexionInput): P
 /** El evento real de ingreso marca presencia incluso antes del primer corte de tiempo. */
 export async function registrarIngresoLlamada(input: Omit<RegistrarConexionInput, "leftAt" | "event">) {
   if (!input.userId && !input.externalParticipantId) return;
-  const activity = await prisma.trainingActivity.findUnique({ where: { id: input.activityId }, select: { status: true } });
+  if (input.userId && await excluidoDeAsistencia(input.userId)) return;
+  const activity =await prisma.trainingActivity.findUnique({ where: { id: input.activityId }, select: { status: true } });
   if (!activity || activity.status === "CLOSED") return;
   if (input.sessionId) {
     const session = await prisma.trainingSession.findUnique({ where: { id: input.sessionId }, select: { activityId: true } });

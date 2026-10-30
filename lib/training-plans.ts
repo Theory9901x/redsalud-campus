@@ -1,5 +1,6 @@
 import { SIN_PRUEBAS, esPrueba } from "@/lib/pruebas";
 import { prisma } from "@/lib/prisma";
+import { excluidoDeAsistencia } from "@/lib/excluidos-asistencia";
 import {
   compararAdherencia,
   momentoActivo,
@@ -1461,6 +1462,7 @@ export async function getActivityLiveMetrics(activityId: string): Promise<Activi
  * cerrar la jornada, igual que rige para el registro manual.
  */
 export async function registrarAsistenciaAutomatica(courseId: string, userId: string, activityId?: string) {
+  if (await excluidoDeAsistencia(userId)) return;
   const actividades = await prisma.trainingActivity.findMany({
     where: { courseId, status: { not: "CLOSED" }, ...(activityId ? { id: activityId } : {}) },
     select: { id: true },

@@ -4,6 +4,7 @@ import { trimestreActual } from "@/lib/training-plans";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { excluidoDeAsistencia } from "@/lib/excluidos-asistencia";
 import { requireTutorOrAdmin, requireTrainingPlanAccess, requireTrainingActivityAccess } from "@/lib/auth-helpers";
 import { saveTrainingPlanDocument, saveTrainingActivityDocument, fichaDesdeFormulario } from "@/lib/storage";
 import { trainingPlanSchema, trainingActivitySchema, trainingSessionSchema } from "@/lib/validations/training-plan";
@@ -254,6 +255,8 @@ export async function setAttendanceAction(activityId: string, userId: string, at
   if (activity.status === "CLOSED") {
     throw new Error("La capacitación ya cerró: la participación está congelada y no admite más cambios.");
   }
+
+  if (await excluidoDeAsistencia(userId)) return;
 
   // Se marca en el trimestre que se está revisando (o el que está en curso).
   const t = trimestre && trimestre >= 1 && trimestre <= 4 ? trimestre : trimestreActual().trimestre;

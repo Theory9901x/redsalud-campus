@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { excluidoDeAsistencia } from "@/lib/excluidos-asistencia";
 import { compararAdherencia } from "@/lib/presaber-postsaber";
 import { trimestreActual } from "@/lib/training-plans";
 import type { FaseSesion } from "@prisma/client";
@@ -62,6 +63,7 @@ export async function registrarAsistenciaSesion(
   medio: "QR" | "MANUAL" | "SALA",
   registradoPor?: string
 ): Promise<{ yaEstaba: boolean }> {
+  if (await excluidoDeAsistencia(userId)) return { yaEstaba: true };
   let yaEstaba = false;
   try {
     await prisma.asistenciaSesion.create({ data: { sesionId, userId, medio } });

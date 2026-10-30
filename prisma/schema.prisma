@@ -158,6 +158,8 @@ model User {
   mediaUploads   Media[]
   auditLogs      AuditLog[]
   canManageAllMeetings Boolean @default(false)
+  /// Cuenta que entra a las salas a revisar: nunca figura en asistencias, conexiones ni actas.
+  excludeFromAttendance Boolean @default(false)
   trainingPlansCreated TrainingPlan[] @relation("TrainingPlanCreator")
   trainingPlansAsTutor TrainingPlan[] @relation("TrainingPlanTutor")
   trainingPlansClosed  TrainingPlan[] @relation("TrainingPlanClosedBy")
