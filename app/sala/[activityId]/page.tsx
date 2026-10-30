@@ -140,7 +140,7 @@ export default async function SalaVirtualPage({
   const FICHA = [
     { icon: Building2, etiqueta: "Área", valor: actividad.area?.name ?? "Sin área" },
     { icon: User, etiqueta: "Responsable", valor: profesional },
-    { icon: Users2, etiqueta: "Dirigida a", valor: actividad.targetAudienceNote ?? COURSE_AUDIENCE_LABELS[actividad.targetAudience] },
+    ...(esReunion && !actividad.targetAudienceNote ? [] : [{ icon: Users2, etiqueta: "Dirigida a", valor: actividad.targetAudienceNote ?? COURSE_AUDIENCE_LABELS[actividad.targetAudience] }]),
     ...(proximaJornada ? [{ icon: CalendarClock, etiqueta: "Jornada", valor: proximaJornada }] : []),
   ];
 

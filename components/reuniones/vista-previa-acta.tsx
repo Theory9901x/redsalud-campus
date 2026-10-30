@@ -14,7 +14,6 @@ export function VistaPreviaActa({ sesion: d }: { sesion: SesionReunion }) {
       {bloques.map(([titulo, texto], i) => <section key={titulo}><h4 className="mb-2 font-semibold">{i + 2}. {titulo}</h4><p className="whitespace-pre-wrap leading-relaxed text-muted-foreground">{texto}</p></section>)}
       <section><h4 className="mb-2 font-semibold">6. Documentos y evidencias</h4>{d.documentos.length ? <ul className="list-inside list-disc space-y-1 text-muted-foreground">{d.documentos.map(doc => <li key={doc.id}>{doc.fileName}{doc.description ? ` · ${doc.description}` : ""}</li>)}</ul> : <p className="text-muted-foreground">Sin documentos registrados.</p>}</section>
       <section><h4 className="mb-2 font-semibold">7. Resumen y anexo de asistencia</h4><p className="text-muted-foreground">{d.asistentes.length} personas con ingreso real a la sala. El PDF incluye la tabla completa con nombre, cargo, ingreso, salida, permanencia y número de ingresos.</p></section>
-      <section><h4 className="mb-2 font-semibold">8. Revisión y firmas</h4><p className="text-muted-foreground">Espacios para el responsable de la reunión y quien elabora o revisa el acta. El archivo firmado se adjunta a esta sesión.</p></section>
       <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">Esta vista y el PDF usan la información guardada. Guarda los cambios del formulario antes de descargar.</p>
     </div>
   </details>;

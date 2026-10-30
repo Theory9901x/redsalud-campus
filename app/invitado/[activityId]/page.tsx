@@ -151,7 +151,7 @@ export default async function InvitadoPage({
   const FICHA = [
     { icon: Building2, etiqueta: "Área que la genera", valor: actividad.area?.name ?? "Sin área" },
     { icon: User, etiqueta: "Profesional responsable", valor: profesional },
-    { icon: Users2, etiqueta: "Dirigida a", valor: actividad.targetAudienceNote ?? COURSE_AUDIENCE_LABELS[actividad.targetAudience] },
+    ...(actividad.plan.kind === "REUNION" && !actividad.targetAudienceNote ? [] : [{ icon: Users2, etiqueta: "Dirigida a", valor: actividad.targetAudienceNote ?? COURSE_AUDIENCE_LABELS[actividad.targetAudience] }]),
     ...(proximaJornada ? [{ icon: CalendarClock, etiqueta: "Jornada", valor: proximaJornada }] : []),
   ];
 

@@ -45,7 +45,7 @@ export async function renderDocumentoActa({ d, codigo, logo, institucion, genera
     ["Horario programado", j ? `${hour(j.startsAt)}${j.endsAt ? ` – ${hour(j.endsAt)}` : ""}` : "Sin horario registrado"],
     ["Modalidad", modalidad], ["Lugar / sala", j?.location || (j?.modality === "VIRTUAL" ? "Sala virtual" : "Sin lugar registrado")],
     ["Responsable", d.responsable || "Sin responsable registrado"], ["Participantes", participantes],
-    ["Dirigida a / zonas", d.dirigidoA || "Sin información registrada"],
+    ...(d.dirigidoA ? [["Dirigida a / zonas", d.dirigidoA]] : []),
     ...(d.cerradaEl ? [["Cierre registrado", datetime(d.cerradaEl)]] : []),
   ];
   const widths = ["4%", "25%", "22%", "17%", "17%", "8%", "7%"];
@@ -63,10 +63,7 @@ export async function renderDocumentoActa({ d, codigo, logo, institucion, genera
         <Text style={s.text}>Personas con ingreso real a la sala: {d.asistentes.length}. Permanencia promedio: {d.resumen.permanenciaPromedio} minutos. Tiempo total registrado: {d.resumen.minutosTotales.toFixed(1)} minutos.</Text>
         <Text style={[s.muted, { marginTop: 5 }]}>El anexo de asistencia contiene una fila por persona. El registro de invitación por sí solo no acredita presencia. Los tiempos corresponden a las conexiones registradas por la plataforma.</Text>
       </Section>
-      <Section title="08 · Revisión y firmas">
-        <Text style={s.muted}>Este archivo reúne la información guardada de la sesión. Los espacios de firma se diligencian durante la revisión del acta. El acta firmada se carga y consulta como documento de la sesión.</Text>
-        <View wrap={false} style={[s.row, { gap: 30, marginTop: 40 }]}>{[["Responsable de la reunión", d.responsable || "Nombre y cargo"], ["Quien elabora / revisa el acta", "Nombre y cargo"]].map(([label, value]) => <View key={label} style={{ flex: 1, borderTopWidth: 1, borderTopColor: C.ink, paddingTop: 6 }}><Text style={{ fontFamily: "Helvetica-Bold", fontSize: 9 }}>{label}</Text><Text style={[s.muted, { marginTop: 4 }]}>{value}</Text><Text style={s.muted}>Firma</Text></View>)}</View>
-      </Section>{footer}
+      {footer}
     </Page>
     <Page size="A4" orientation="landscape" style={[s.page, { paddingTop: 176 }]}>{header}
       <View fixed style={{ position: "absolute", top: 112, left: 34, right: 34 }}><Text style={s.sectionTitle}>Anexo 1 · Asistencia de la sesión</Text><Text style={s.muted}>{d.titulo} · {d.asistentes.length} personas con ingreso registrado</Text></View>

@@ -160,12 +160,12 @@ export async function getSesionReunion(planId: string, activityId: string) {
   const [externos, asistencias, conexiones] = await Promise.all([
     prisma.externalParticipant.findMany({ where: { activityId }, orderBy: { createdAt: "asc" }, select: { id: true, fullName: true, company: true, createdAt: true } }),
     prisma.trainingAttendance.findMany({
-      where: { activityId, attended: true },
+      where: { activityId, attended: true, user: { excludeFromAttendance: false } },
       orderBy: { registeredAt: "asc" },
       select: { registeredAt: true, user: { select: { id: true, fullName: true, position: true } } },
     }),
     prisma.callConnectionLog.findMany({
-      where: { activityId }, orderBy: { createdAt: "asc" },
+      where: { activityId, OR: [{ userId: null }, { user: { excludeFromAttendance: false } }] }, orderBy: { createdAt: "asc" },
       include: { user: { select: { fullName: true, position: true } }, externalParticipant: { select: { fullName: true, company: true } } },
     }),
   ]);
