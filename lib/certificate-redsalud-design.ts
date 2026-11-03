@@ -1,6 +1,6 @@
 import type { CertificateLayout } from "@/lib/certificate-template";
 
-export const REDSALUD_CERTIFICATE_BACKGROUND_URL = "/uploads/plantillas/fondo/constancia-redsalud-v5-20261103.png";
+export const REDSALUD_CERTIFICATE_BACKGROUND_URL = "/uploads/plantillas/fondo/constancia-redsalud-v6-20261103.png";
 
 /** El sello se dibuja centrado en x=624 y se corre a la izquierda (centro en x=300, 25 % del ancho). */
 const SEAL_SHIFT_X = -324;
@@ -96,9 +96,6 @@ export function redSaludCertificateSvg(logoDataUri: string): string {
     <rect x="144" y="509" width="288" height="78" rx="9" fill="#EDF8FE" stroke="#C7E6F5" stroke-width="0.8"/>
     <rect x="456" y="509" width="288" height="78" rx="9" fill="#EEF8F0" stroke="#D1E9D4" stroke-width="0.8"/>
     <rect x="768" y="509" width="288" height="78" rx="9" fill="#FFF8E9" stroke="#EDDFBD" stroke-width="0.8"/>
-    <path d="M157 509H419" stroke="#0094CA" stroke-width="3"/>
-    <path d="M469 509H731" stroke="#38A34A" stroke-width="3"/>
-    <path d="M781 509H1043" stroke="#E9B947" stroke-width="3"/>
     <g fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
       <g stroke="#2797BC"><circle cx="406" cy="534" r="10"/><path d="M406 528V534L410 537"/></g>
       <g stroke="#439759"><rect x="708" y="525" width="19" height="18" rx="3"/><path d="M708 531H727M713 523V528M722 523V528M713 536H717M720 536H722"/></g>
