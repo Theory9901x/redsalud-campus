@@ -5,6 +5,7 @@ import { toCsv, csvResponse } from "@/lib/csv";
 import { CERTIFICATE_STATUS_LABELS } from "@/components/certificados/labels";
 import type { CertificateStatus, Prisma } from "@prisma/client";
 import { veComoAdmin } from "@/lib/roles";
+import { nombrePropio } from "@/lib/nombre-propio";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
     ["Código", "Estudiante", "Documento", "Curso", "Emitido", "Estado", "Anulado", "Motivo de anulación"],
     certificates.map((c) => [
       c.certificateCode,
-      c.user.fullName,
+      nombrePropio(c.user.fullName),
       `${c.user.documentType} ${c.user.documentNumber}`,
       c.course.title,
       c.issuedAt.toLocaleDateString("es-CO"),

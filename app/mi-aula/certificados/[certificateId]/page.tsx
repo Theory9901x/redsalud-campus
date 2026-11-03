@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { nombrePropio, tituloCurso } from "@/lib/nombre-propio";
 import { CertificateReveal } from "@/components/certificates/certificate-reveal";
 import { COURSE_TYPE_LABELS } from "@/components/cursos/labels";
 
@@ -36,8 +37,8 @@ export default async function CertificateRevealPage({
       certificateCode={certificate.certificateCode}
       issuedAt={certificate.issuedAt.toISOString()}
       status={certificate.status}
-      studentName={certificate.user.fullName}
-      courseTitle={certificate.course.title}
+      studentName={nombrePropio(certificate.user.fullName)}
+      courseTitle={tituloCurso(certificate.course.title)}
       courseTypeLabel={COURSE_TYPE_LABELS[certificate.course.courseType]}
       courseType={certificate.course.courseType}
       durationHours={certificate.course.durationHours}

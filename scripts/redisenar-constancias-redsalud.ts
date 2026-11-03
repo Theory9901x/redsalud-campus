@@ -39,7 +39,7 @@ async function main() {
     fieldValues: {
       ...SAMPLE_FIELD_VALUES,
       nombreCompleto: "María Fernanda Rodríguez Pérez", tipoDocumento: "CC", numeroDocumento: "1234567890",
-      curso: "Inducción y reinducción", intensidadHoraria: "40 horas", fecha: "29 de octubre de 2026",
+      curso: "Inducción y Reinducción", intensidadHoraria: "40 horas", fecha: "29 de octubre de 2026",
       cargoFirmante: "PROFESIONAL UNIVERSITARIO TALENTO HUMANO",
     },
     backgroundDiskPath: backgroundPath, signatureDiskPath: signaturePath, logoDiskPath: null,

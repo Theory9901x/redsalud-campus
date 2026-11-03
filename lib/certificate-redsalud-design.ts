@@ -1,6 +1,9 @@
 import type { CertificateLayout } from "@/lib/certificate-template";
 
-export const REDSALUD_CERTIFICATE_BACKGROUND_URL = "/uploads/plantillas/fondo/constancia-redsalud-v4-20261029.png";
+export const REDSALUD_CERTIFICATE_BACKGROUND_URL = "/uploads/plantillas/fondo/constancia-redsalud-v5-20261103.png";
+
+/** El sello se dibuja centrado en x=624 y se corre a la izquierda (centro en x=300, 25 % del ancho). */
+const SEAL_SHIFT_X = -324;
 
 /** Diseño original de RedSalud. Los datos, firma y QR siguen siendo elementos editables. */
 export const REDSALUD_CERTIFICATE_LAYOUT: CertificateLayout = {
@@ -14,9 +17,9 @@ export const REDSALUD_CERTIFICATE_LAYOUT: CertificateLayout = {
     { id: "intensidad", type: "text", fieldKey: "intensidadHoraria", x: 13.5, y: 64, widthPct: 21, fontSize: 12, fontFamily: "Helvetica-Bold", color: "#102E45", align: "left" },
     { id: "fecha", type: "text", fieldKey: "fecha", x: 39.5, y: 64, widthPct: 23, fontSize: 11, fontFamily: "Helvetica-Bold", color: "#102E45", align: "left" },
     { id: "ciudad", type: "text", fieldKey: "ciudad", x: 65.5, y: 64, widthPct: 21, fontSize: 12, fontFamily: "Helvetica-Bold", color: "#102E45", align: "left" },
-    { id: "firma", type: "image", kind: "firma", src: null, x: 12.5, y: 73.2, widthPct: 25, heightPct: 10.3 },
-    { id: "cargo-firmante", type: "text", fieldKey: "cargoFirmante", x: 7.8, y: 85.5, widthPct: 34.4, fontSize: 7.6, fontFamily: "Helvetica-Bold", color: "#102E45", align: "center" },
-    { id: "firma-entidad", type: "static", text: "Red Salud Casanare E.S.E.", x: 9, y: 88.2, widthPct: 32, fontSize: 8, fontFamily: "Helvetica", color: "#536C7C", align: "center" },
+    { id: "firma", type: "image", kind: "firma", src: null, x: 37.5, y: 73.2, widthPct: 25, heightPct: 10.3 },
+    { id: "cargo-firmante", type: "text", fieldKey: "cargoFirmante", x: 32.8, y: 85.5, widthPct: 34.4, fontSize: 7.6, fontFamily: "Helvetica-Bold", color: "#102E45", align: "center" },
+    { id: "firma-entidad", type: "static", text: "Red Salud Casanare E.S.E.", x: 34, y: 88.2, widthPct: 32, fontSize: 8, fontFamily: "Helvetica", color: "#536C7C", align: "center" },
     { id: "qr", type: "qr", x: 78.3, y: 73.9, sizePct: 9 },
     { id: "codigo", type: "text", fieldKey: "codigo", x: 70.5, y: 88, widthPct: 24.6, fontSize: 9, fontFamily: "Helvetica-Bold", color: "#0079AD", align: "center" },
     { id: "qr-ayuda", type: "static", text: "Consulta su validez con este QR", x: 70.5, y: 90.6, widthPct: 24.6, fontSize: 7.2, fontFamily: "Helvetica", color: "#536C7C", align: "center" },
@@ -83,16 +86,12 @@ export function redSaludCertificateSvg(logoDataUri: string): string {
   <image x="62" y="47" width="151" height="139" preserveAspectRatio="xMidYMid meet" xlink:href="${logoDataUri}"/>
   <g font-family="Arial, Helvetica, sans-serif">
     <text x="259" y="80" font-size="12" letter-spacing="2.5" font-weight="700" fill="#8FE6ED">RED SALUD CASANARE E.S.E.</text>
-    <text x="257" y="127" font-size="36" font-weight="700" fill="#FFFFFF">Constancia de formación</text>
+    <text x="257" y="127" font-size="36" font-weight="700" fill="#FFFFFF">Constancia de Formación</text>
     <text x="259" y="154" font-size="13" fill="#D1E8F3">Desarrollo del talento humano · Formación institucional</text>
     <image x="720" y="232" width="430" height="395" opacity="0.065" preserveAspectRatio="xMidYMid meet" xlink:href="${logoDataUri}"/>
     <text transform="translate(45 600) rotate(-90)" font-size="6" letter-spacing="1.5" fill="#76A3B7">REDSALUD · TALENTO HUMANO · FORMACIÓN INSTITUCIONAL</text>
     <rect x="419" y="216" width="362" height="33" rx="16.5" fill="#EDF8FC" stroke="#CDE8F2" stroke-width="0.7"/>
     <text x="600" y="236" text-anchor="middle" font-size="12.5" letter-spacing="4" font-weight="700" fill="#0079AD">DA CONSTANCIA DE QUE</text>
-    <path d="M542 308H602" stroke="#008EC3" stroke-width="3"/>
-    <path d="M606 308H633" stroke="#39A64B" stroke-width="3"/>
-    <path d="M637 308H650" stroke="#E9B947" stroke-width="3"/>
-    <path d="M654 308H661" stroke="#DD3D45" stroke-width="3"/>
     <rect x="210" y="414" width="780" height="59" rx="29.5" fill="url(#course)"/>
     <rect x="144" y="509" width="288" height="78" rx="9" fill="#EDF8FE" stroke="#C7E6F5" stroke-width="0.8"/>
     <rect x="456" y="509" width="288" height="78" rx="9" fill="#EEF8F0" stroke="#D1E9D4" stroke-width="0.8"/>
@@ -110,7 +109,9 @@ export function redSaludCertificateSvg(logoDataUri: string): string {
       <text x="474" y="534">FECHA DE EXPEDICIÓN</text>
       <text x="786" y="534">LUGAR DE EXPEDICIÓN</text>
     </g>
-    <path d="M134 713H466" stroke="#123A56" stroke-width="1"/>
+    <path d="M434 713H766" stroke="#123A56" stroke-width="1"/>
+    <!-- Sello a la izquierda; la firma queda al centro, entre el sello y el QR. -->
+    <g transform="translate(${SEAL_SHIFT_X} 0)">
     <path d="M590 742L578 786L604 777L620 789L631 747Z" fill="#00669F"/>
     <path d="M631 747L646 789L660 776L681 782L660 739Z" fill="url(#gold)"/>
     <polygon points="${rosette}" fill="url(#gold)" stroke="#C49841" stroke-width="0.6"/>
@@ -125,8 +126,8 @@ export function redSaludCertificateSvg(logoDataUri: string): string {
       ${arcText("FORMACIÓN INSTITUCIONAL", 158, 22, true)}
     </g>
     <circle cx="565" cy="694" r="2.1" fill="#35A144"/><circle cx="683" cy="694" r="2.1" fill="#35A144"/>
-    <image x="592" y="654" width="64" height="59" preserveAspectRatio="xMidYMid meet" xlink:href="${logoDataUri}"/>
-    <text x="624" y="728" text-anchor="middle" font-size="7.2" font-weight="700" letter-spacing="1" fill="#0079AD">TALENTO HUMANO</text>
+    <image x="590" y="663" width="68" height="63" preserveAspectRatio="xMidYMid meet" xlink:href="${logoDataUri}"/>
+    </g>
     <rect x="916" y="601" width="156" height="183" rx="12" fill="#FFFFFF" stroke="#D1E4ED" stroke-width="0.8" filter="url(#shadow)"/>
     <path d="M927 628V616H939M1049 616H1061V628M927 736V748H939M1049 748H1061V736" fill="none" stroke="#0092C3" stroke-width="2"/>
     <text x="994" y="613" text-anchor="middle" font-size="8" letter-spacing="1.05" font-weight="700" fill="#0079AD">VALIDACIÓN EN LÍNEA</text>

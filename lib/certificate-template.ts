@@ -1,3 +1,5 @@
+import { nombrePropio, tituloCurso } from "@/lib/nombre-propio";
+
 export type CertificateFieldKey =
   | "nombreCompleto"
   | "tipoDocumento"
@@ -261,10 +263,10 @@ export function buildFieldValues(input: {
   certificateText: string | null;
 }): CertificateFieldValues {
   return {
-    nombreCompleto: input.fullName,
+    nombreCompleto: nombrePropio(input.fullName),
     tipoDocumento: input.documentType,
     numeroDocumento: input.documentNumber,
-    curso: input.courseTitle,
+    curso: tituloCurso(input.courseTitle),
     tipoCurso: input.courseTypeLabel,
     intensidadHoraria: `${input.durationHours} horas`,
     ciudad: input.city,

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Download, RotateCcw, RefreshCcw, LayoutTemplate } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { nombrePropio } from "@/lib/nombre-propio";
 import {
   Table,
   TableBody,
@@ -103,7 +104,7 @@ export default async function AdminCertificadosPage({
             {certificates.map((certificate) => (
               <TableRow key={certificate.id}>
                 <TableCell>
-                  <p className="font-medium text-foreground">{certificate.user.fullName}</p>
+                  <p className="font-medium text-foreground">{nombrePropio(certificate.user.fullName)}</p>
                   <p className="text-xs text-muted-foreground">{certificate.user.documentNumber}</p>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{certificate.course.title}</TableCell>
@@ -139,7 +140,7 @@ export default async function AdminCertificadosPage({
                       </Button>
                     </form>
                     {certificate.status === "VALID" ? (
-                      <RevokeCertificateDialog certificateId={certificate.id} studentName={certificate.user.fullName} />
+                      <RevokeCertificateDialog certificateId={certificate.id} studentName={nombrePropio(certificate.user.fullName)} />
                     ) : (
                       <form
                         action={async () => {

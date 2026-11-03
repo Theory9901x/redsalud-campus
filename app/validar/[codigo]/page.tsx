@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { maskDocumentNumber } from "@/lib/certificates";
+import { nombrePropio, tituloCurso } from "@/lib/nombre-propio";
 import { CertificateValidation } from "@/components/certificates/certificate-validation";
 
 export default async function ValidarCodigoPage({
@@ -42,10 +43,10 @@ export default async function ValidarCodigoPage({
       result={{
         state: "valid",
         certificateCode: certificate.certificateCode,
-        studentName: certificate.user.fullName,
+        studentName: nombrePropio(certificate.user.fullName),
         documentType: certificate.user.documentType,
         documentNumber: maskDocumentNumber(certificate.user.documentNumber),
-        courseTitle: certificate.course.title,
+        courseTitle: tituloCurso(certificate.course.title),
         courseType: certificate.course.courseType,
         issuedAtLabel: certificate.issuedAt.toLocaleDateString("es-CO", {
           day: "numeric",
