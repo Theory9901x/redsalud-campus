@@ -170,7 +170,7 @@ export function CertificateReveal({
             <h2 className="mt-6 font-display text-3xl font-extrabold leading-tight text-balance sm:text-4xl">
               {studentName}
             </h2>
-            <p className="mt-2 text-sm text-muted-foreground">ha completado satisfactoriamente el curso</p>
+            <p className="mt-2 text-sm text-muted-foreground">ha completado satisfactoriamente los módulos de</p>
             <p className="mt-1 text-lg font-bold text-navy text-balance sm:text-xl">{courseTitle}</p>
 
             <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-navy/10 pt-5 text-left text-xs text-muted-foreground">

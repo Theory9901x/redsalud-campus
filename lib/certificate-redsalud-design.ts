@@ -12,7 +12,7 @@ export const REDSALUD_CERTIFICATE_LAYOUT: CertificateLayout = {
     { id: "identificado", type: "static", text: "Identificado(a) con", x: 26, y: 39.1, widthPct: 23, fontSize: 10, fontFamily: "Helvetica", color: "#536C7C", align: "right" },
     { id: "tipo-documento", type: "text", fieldKey: "tipoDocumento", x: 50, y: 39.1, widthPct: 4, fontSize: 10, fontFamily: "Helvetica-Bold", color: "#102E45", align: "center" },
     { id: "numero-documento", type: "text", fieldKey: "numeroDocumento", x: 55, y: 39.1, widthPct: 20, fontSize: 10, fontFamily: "Helvetica-Bold", color: "#102E45", align: "left" },
-    { id: "curso-intro", type: "static", text: "Completó satisfactoriamente el curso de", x: 12, y: 45.8, widthPct: 76, fontSize: 11, fontFamily: "Helvetica", color: "#536C7C", align: "center" },
+    { id: "curso-intro", type: "static", text: "Completó satisfactoriamente los módulos de", x: 12, y: 45.8, widthPct: 76, fontSize: 11, fontFamily: "Helvetica", color: "#536C7C", align: "center" },
     { id: "curso", type: "text", fieldKey: "curso", x: 10, y: 50.3, widthPct: 80, fontSize: 20, fontFamily: "Helvetica-Bold", color: "#0079AD", align: "center", fitToWidth: true },
     { id: "intensidad", type: "text", fieldKey: "intensidadHoraria", x: 13.5, y: 64, widthPct: 21, fontSize: 12, fontFamily: "Helvetica-Bold", color: "#102E45", align: "left" },
     { id: "fecha", type: "text", fieldKey: "fecha", x: 39.5, y: 64, widthPct: 23, fontSize: 11, fontFamily: "Helvetica-Bold", color: "#102E45", align: "left" },
