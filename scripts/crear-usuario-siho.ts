@@ -4,8 +4,8 @@ import type { AdminSection } from "@prisma/client";
 
 /**
  * USUARIO SIHO: administrador con acceso ÚNICAMENTE al módulo de encuestas
- * y su centro de datos (sección ENCUESTAS); todas las demás secciones de
- * administración quedan restringidas. Idempotente: si existe, actualiza
+ * y su centro de datos (sección ENCUESTAS) y a REUNIONES (crea y gestiona
+ * las suyas); todas las demás secciones de administración quedan restringidas. Idempotente: si existe, actualiza
  * restricciones y contraseña.
  *
  * Uso: npx tsx --env-file=.env scripts/crear-usuario-siho.ts [contraseña]

@@ -15,7 +15,8 @@ const ADMIN_SECTION_PREFIXES: [string, AdminSection][] = [
   ["/admin/cursos", "CURSOS"],
   ["/admin/planes-capacitacion", "PLANES_CAPACITACION"],
   ["/admin/comites", "PLANES_CAPACITACION"],
-  ["/admin/reuniones", "PLANES_CAPACITACION"],
+  ["/admin/reuniones", "REUNIONES"],
+  ["/admin/videos", "CURSOS"],
   ["/admin/inscripciones", "INSCRIPCIONES"],
   ["/admin/certificados", "CERTIFICADOS"],
   ["/admin/notificaciones", "NOTIFICACIONES"],
@@ -28,6 +29,7 @@ const ADMIN_SECTION_PREFIXES: [string, AdminSection][] = [
 // seguimiento en cualquier ruta), pero solo estas redirigen a login.
 const RUTAS_PROTEGIDAS = [
   "/admin",
+  "/videos",
   "/tutor",
   "/inicio",
   "/perfil",
@@ -76,6 +78,7 @@ export default auth((request) => {
     session?.user?.role === "SEGUIMIENTO" &&
     !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
     !pathname.startsWith("/api/auth") &&
+    !/^\/api\/videos\/[^/]+\/progreso$/.test(pathname) &&
     pathname !== CAMBIO_CLAVE
   ) {
     return NextResponse.json({ error: "Perfil de seguimiento: solo lectura. No se permiten cambios." }, { status: 403 });
@@ -133,7 +136,9 @@ export default auth((request) => {
     const restricted = session.user.restrictedAdminSections ?? [];
     // Gestor de encuestas (sin ninguna sección del panel): el Dashboard no le
     // aplica; su inicio es el módulo de encuestas.
-    if (soloEncuestas(restricted)) {
+    // Excepción: un gestor de encuestas con Reuniones habilitada sí entra a /admin/reuniones.
+    const reunionesHabilitada = pathname.startsWith("/admin/reuniones") && !restricted.includes("REUNIONES");
+    if (soloEncuestas(restricted) && !reunionesHabilitada) {
       return NextResponse.redirect(new URL("/encuestas", request.url));
     }
     const matchedSection = ADMIN_SECTION_PREFIXES.find(([prefix]) => pathname.startsWith(prefix))?.[1];
@@ -157,6 +162,7 @@ export default auth((request) => {
 export const config = {
   // Todo menos archivos estáticos: el corte de escrituras del rol de
   // seguimiento tiene que ver cada petición. Las reglas de sesión y rol
-  // siguen aplicando solo a RUTAS_PROTEGIDAS.
-  matcher: ["/((?!_next/static|_next/image|uploads/|favicon\\.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|css|js|woff2?|ttf|map|txt|xml)$).*)"],
+  // siguen aplicando solo a RUTAS_PROTEGIDAS. La carga de grabaciones queda
+  // fuera: el proxy solo deja pasar 10 MB de cuerpo y esa ruta valida sola.
+  matcher: ["/((?!_next/static|_next/image|uploads/|api/planes-capacitacion/actividades/.+/grabacion|favicon\\.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|css|js|woff2?|ttf|map|txt|xml)$).*)"],
 };

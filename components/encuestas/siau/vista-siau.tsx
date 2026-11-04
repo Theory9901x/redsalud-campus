@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, BarChart3, Building2, Gauge, Inbox, MessageSquareText, Sparkles, TrendingUp, Users2 } from "lucide-react";
+import { ArrowLeft, BarChart3, PlayCircle, Building2, Gauge, Inbox, MessageSquareText, Sparkles, TrendingUp, Users2 } from "lucide-react";
 import type { InformeSiau, Periodo } from "@/lib/encuestas/metrics";
 import { TEMAS_SUGERENCIAS } from "@/lib/encuestas/temas";
 import { etiquetaFecha, etiquetaHora } from "@/components/training-plans/labels";
@@ -39,6 +39,7 @@ export function VistaSiau({
   filtros,
   consulta,
   exportaciones,
+  videoAyuda = null,
 }: {
   informe: InformeSiau;
   encuesta: { id: string; code: string; title: string; slug: string };
@@ -47,6 +48,8 @@ export function VistaSiau({
   filtros: { sede?: string; servicio?: string; sexo?: string; eps?: string };
   consulta: string;
   exportaciones: ExportacionRegistrada[];
+  /** Video de la Videoteca que enseña a exportar (categoría SIAU). */
+  videoAyuda?: { id: string; titulo: string; duracion: string | null } | null;
 }) {
   const { metricas: m, metricasPrevias: prev, rango, rangoPrevio } = informe;
   const hoy = new Date();
@@ -259,6 +262,23 @@ export function VistaSiau({
         <div className="siau-revelar" style={{ ["--i" as string]: 2 }}>
           <PestanasSiau pestanas={pestanas} />
         </div>
+      )}
+
+      {videoAyuda && (
+        <Link
+          href={`/videos/${videoAyuda.id}`}
+          className="group flex items-center gap-3 rounded-2xl border border-primary/25 bg-primary/[0.06] px-4 py-3 transition-colors hover:border-primary/50 hover:bg-primary/10"
+        >
+          <PlayCircle className="h-8 w-8 shrink-0 text-primary transition-transform group-hover:scale-110" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <b className="block text-[14px] text-foreground">¿Cómo exportar la información? Mira el video</b>
+            <span className="block truncate text-[12.5px] text-muted-foreground">
+              {videoAyuda.titulo}
+              {videoAyuda.duracion ? ` · ${videoAyuda.duracion}` : ""}
+            </span>
+          </span>
+          <span className="hidden text-[12.5px] font-semibold text-primary sm:inline">Ver ahora</span>
+        </Link>
       )}
 
       <ExportablesSiau

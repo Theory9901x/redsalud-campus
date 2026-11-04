@@ -14,6 +14,8 @@ import {
   Users,
   Gavel,
   Trophy,
+  Presentation,
+  Clapperboard,
 } from "lucide-react";
 import { AppSidebar, type GrupoNav, type ItemNav } from "@/components/shell/app-sidebar";
 import type { AdminSection } from "@prisma/client";
@@ -24,7 +26,8 @@ import { soloEncuestas } from "@/lib/admin-sections";
  * corresponde. Va junto al ítem, no en una lista aparte, para que agregar una
  * pantalla nueva no implique acordarse de tocar dos sitios.
  */
-type ItemAdmin = ItemNav & { section?: AdminSection };
+/** `siempre`: visible para todo administrador, aunque sea un gestor de encuestas. */
+type ItemAdmin = ItemNav & { section?: AdminSection; siempre?: boolean };
 
 const GRUPOS: { label: string | null; items: ItemAdmin[] }[] = [
   {
@@ -46,6 +49,7 @@ const GRUPOS: { label: string | null; items: ItemAdmin[] }[] = [
     label: "Formación",
     items: [
       { href: "/admin/cursos", label: "Cursos", icon: BookOpen, section: "CURSOS" },
+      { href: "/admin/videos", label: "Videos de capacitación", icon: Clapperboard, section: "CURSOS" },
       {
         href: "/admin/planes-capacitacion",
         label: "Planes de capacitación",
@@ -53,11 +57,14 @@ const GRUPOS: { label: string | null; items: ItemAdmin[] }[] = [
         section: "PLANES_CAPACITACION",
       },
       { href: "/admin/comites", label: "Comités", icon: Gavel, section: "PLANES_CAPACITACION" },
+      { href: "/admin/reuniones", label: "Reuniones", icon: Presentation, section: "REUNIONES" },
       { href: "/tutor/capacitaciones", label: "Capacitaciones del área", icon: BookOpen, section: "PLANES_CAPACITACION" },
       // Módulo transversal: el enlace no vive bajo /admin, pero la gestión
       // es de admin y tutor (el estudiante ve solo sus respuestas).
       { href: "/encuestas", label: "Encuestas", icon: ClipboardList, section: "ENCUESTAS" },
       { href: "/encuestas/siau", label: "Centro de datos SIAU", icon: PieChart, section: "ENCUESTAS" },
+      // Ver la videoteca: para todos (también la cuenta de consulta SIAU).
+      { href: "/videos", label: "Videoteca", icon: Clapperboard, siempre: true },
       { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell, section: "NOTIFICACIONES" },
     ],
   },
@@ -88,7 +95,7 @@ export function AdminSidebar({
   const grupos: GrupoNav[] = GRUPOS.map((g) => ({
     label: g.label,
     items: g.items.filter((item) =>
-      item.section ? !restrictedSections.includes(item.section) : !soloEncuestas(restrictedSections),
+      item.siempre || (item.section ? !restrictedSections.includes(item.section) : !soloEncuestas(restrictedSections)),
     ),
   })).filter((g) => g.items.length > 0);
 

@@ -287,6 +287,11 @@ function montar(THREE: Three, RoomEnvironment: ClaseAmbiente, el: HTMLDivElement
     ctx.beginPath();
     ctx.arc(256, 256, 206, 0, Math.PI * 2);
     ctx.stroke();
+    // La tapa del cilindro, ya girado hacia la cámara, mapea la textura
+    // rotada 90°: se dibuja girada al revés para que el texto quede derecho.
+    ctx.translate(256, 256);
+    ctx.rotate(-Math.PI / 2);
+    ctx.translate(-256, -256);
     ctx.fillStyle = "rgba(120,78,12,0.85)";
     estrella(ctx, 256, 178, 62);
     ctx.fill();
@@ -492,7 +497,13 @@ function montar(THREE: Three, RoomEnvironment: ClaseAmbiente, el: HTMLDivElement
     const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     // Que quepan los anillos de lado a lado y, en alto, la medalla y el pie.
     distancia = Math.max(6.7 / (tan * camera.aspect), 5.6 / tan);
-    objetivo.set(0, w < 700 ? 0.9 : 0.55, 0);
+    objetivo.set(0, w < 700 ? 0.9 : 0.3, 0);
+    // La niebla da profundidad, pero relativa a la cámara: en vertical la
+    // cámara se aleja y con niebla fija todo se veía lavado.
+    if (scene.fog instanceof THREE.Fog) {
+      scene.fog.near = distancia * 0.95;
+      scene.fog.far = distancia * 2.4;
+    }
     camera.updateProjectionMatrix();
   };
   encuadrar();

@@ -6,13 +6,13 @@ import { cn } from "@/lib/utils";
  * Pestañas submodulares: Planes de capacitación · Comités · Reuniones · En vivo. Son
  * módulos con gestión y medición aparte que comparten el mismo espacio del menú.
  */
-export function PestanasModulo({ activa }: { activa: "planes" | "comites" | "reuniones" | "en-vivo" }) {
+export function PestanasModulo({ activa, soloReuniones = false }: { activa: "planes" | "comites" | "reuniones" | "en-vivo"; soloReuniones?: boolean }) {
   const pestanas = [
     { clave: "planes", href: "/admin/planes-capacitacion", etiqueta: "Planes de capacitación", Icono: CalendarRange },
     { clave: "comites", href: "/admin/comites", etiqueta: "Comités", Icono: Gavel },
     { clave: "reuniones", href: "/admin/reuniones", etiqueta: "Reuniones", Icono: Presentation },
     { clave: "en-vivo", href: "/admin/planes-capacitacion/en-vivo", etiqueta: "En vivo", Icono: Radio },
-  ] as const;
+  ].filter((p) => !soloReuniones || p.clave === "reuniones");
 
   return (
     <nav aria-label="Submódulos" className="inline-flex max-w-full flex-wrap rounded-[14px] border border-border/70 bg-card/80 p-1 shadow-[var(--shadow-1)]">

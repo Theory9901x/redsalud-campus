@@ -105,6 +105,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Archivo no encontrado." }, { status: 404 });
   }
 
+  // Videoteca: la ve cualquier persona con cuenta activa (si está publicado).
+  let accesoVideo = false;
+  if (media.folder === "videoteca") {
+    if (!session?.user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+    const clave = `${session.user.id}:${media.id}`;
+    if (!autorizado(clave)) {
+      const [video, usuario] = await Promise.all([
+        prisma.videoCapacitacion.findUnique({ where: { mediaId: media.id }, select: { publicado: true } }),
+        prisma.user.findUnique({ where: { id: session.user.id }, select: { status: true } }),
+      ]);
+      if (!video || usuario?.status !== "ACTIVE" || (!video.publicado && !veComoAdmin(session.user.role))) {
+        return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+      }
+      memorizar(clave);
+    }
+    accesoVideo = true;
+  }
+
   let accesoReunion = false;
   const folderPlan = media.folder?.match(/^training-plans\/([^/]+)$/)?.[1];
   const folderActivity = media.folder?.match(/^training-activities\/([^/]+)$/)?.[1];
@@ -124,7 +142,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       if (!accesoReunion) return NextResponse.json({ error: "No autorizado." }, { status: session?.user ? 403 : 401 });
     }
   }
-  if (!accesoReunion) {
+  if (!accesoReunion && !accesoVideo) {
     if (!session?.user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
     const cacheKey = `${session.user.id}:${media.id}`;
     if (!autorizado(cacheKey)) {

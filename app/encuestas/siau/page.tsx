@@ -6,6 +6,8 @@ import { leerPeriodo, periodoActual } from "@/lib/encuestas/periodo-url";
 import { leerConfig } from "@/lib/encuestas/tipos";
 import { ultimasExportacionesSiau } from "@/lib/encuestas/registro-exportacion";
 import { VistaSiau } from "@/components/encuestas/siau/vista-siau";
+import { ultimoVideoDe } from "@/lib/videoteca/consultas";
+import { duracionTexto } from "@/lib/videoteca/formato";
 
 /**
  * CENTRO DE DATOS SIAU: informe general de la Encuesta de Atención al
@@ -25,7 +27,12 @@ export default async function CentroDatosSiauPage({ searchParams }: { searchPara
   const periodo = leerPeriodo(params) ?? periodoActual((sp.tipo as "mensual" | "trimestral" | "anual") || "mensual");
   const filtros = { sede: sp.sede || undefined, servicio: sp.servicio || undefined, sexo: sp.sexo || undefined, eps: sp.eps || undefined };
 
-  const [informe, estructura, exportaciones] = await Promise.all([getInformeSiau(periodo, filtros), getEstructuraSiau(), ultimasExportacionesSiau(8)]);
+  const [informe, estructura, exportaciones, video] = await Promise.all([
+    getInformeSiau(periodo, filtros),
+    getEstructuraSiau(),
+    ultimasExportacionesSiau(8),
+    ultimoVideoDe("SIAU").catch(() => null),
+  ]);
   if (!informe || !estructura) notFound();
   const encuesta = estructura.encuesta;
   const opcionesDe = (rol?: string, estilo?: string) => encuesta.pages.flatMap((p) => p.questions).find((q) => (rol && leerConfig(q.config).rol === rol) || (estilo && leerConfig(q.config).estilo === estilo));
@@ -43,6 +50,7 @@ export default async function CentroDatosSiauPage({ searchParams }: { searchPara
       filtros={filtros}
       consulta={params.toString()}
       exportaciones={exportaciones}
+      videoAyuda={video ? { id: video.id, titulo: video.titulo, duracion: duracionTexto(video.duracionSeg) } : null}
     />
   );
 }

@@ -42,7 +42,7 @@ export default async function ReunionesPage() {
 
   return (
     <div className="space-y-6">
-      {session.user.role !== "TUTOR" && <PestanasModulo activa="reuniones" />}
+      {session.user.role !== "TUTOR" && <PestanasModulo activa="reuniones" soloReuniones={(session.user.restrictedAdminSections ?? []).includes("PLANES_CAPACITACION")} />}
       <ModuloHero
         eyebrow="Reuniones abiertas"
         Icono={Presentation}

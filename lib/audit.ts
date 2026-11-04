@@ -40,7 +40,8 @@ export type AuditEntity =
   | "Report"
   | "QuizAttempt"
   | "Survey"
-  | "Galardon";
+  | "Galardon"
+  | "Video";
 
 export async function registrarAuditoria(params: {
   userId?: string | null;

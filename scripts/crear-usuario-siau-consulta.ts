@@ -20,7 +20,7 @@ async function main() {
   const clave = process.argv[2];
   if (!clave) throw new Error("Falta la contraseña.");
   const status: UserStatus = process.argv[3] === "inactivo" ? "INACTIVE" : "ACTIVE";
-  const restringidas: AdminSection[] = ["USUARIOS", "CURSOS", "PLANES_CAPACITACION", "INSCRIPCIONES", "CERTIFICADOS", "NOTIFICACIONES", "REPORTES", "CONFIGURACION"];
+  const restringidas: AdminSection[] = ["USUARIOS", "CURSOS", "PLANES_CAPACITACION", "REUNIONES", "INSCRIPCIONES", "CERTIFICADOS", "NOTIFICACIONES", "REPORTES", "CONFIGURACION"];
   const datos = {
     fullName: "SIAU · Consulta municipios",
     username: USERNAME,

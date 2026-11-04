@@ -4,6 +4,7 @@ const adminSectionSchema = z.enum([
   "USUARIOS",
   "CURSOS",
   "PLANES_CAPACITACION",
+  "REUNIONES",
   "INSCRIPCIONES",
   "CERTIFICADOS",
   "NOTIFICACIONES",

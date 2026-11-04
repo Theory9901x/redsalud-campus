@@ -54,6 +54,8 @@ enum AdminSection {
   ENCUESTAS
   CURSOS
   PLANES_CAPACITACION
+  /// Reuniones abiertas (/admin/reuniones). Antes iba dentro de PLANES_CAPACITACION.
+  REUNIONES
   INSCRIPCIONES
   CERTIFICADOS
   NOTIFICACIONES
@@ -146,6 +148,7 @@ model User {
   // tiene acceso (vacío = admin principal, con acceso total). Nunca restringe
   // Dashboard.
   restrictedAdminSections AdminSection[] @default([])
+  vistasVideo             VideoVista[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   lastLoginAt    DateTime?
@@ -609,6 +612,9 @@ model Media {
   trainingPlan       TrainingPlan?     @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
   trainingActivityId String?
   trainingActivity   TrainingActivity? @relation(fields: [trainingActivityId], references: [id], onDelete: Cascade)
+
+  /// Si el archivo es un video de la Videoteca.
+  video VideoCapacitacion?
 
   @@index([folder])
   @@index([trainingPlanId])
@@ -1696,4 +1702,48 @@ model GalardonDecision {
 
   @@unique([ips, valor])
   @@index([candidatoId])
+}
+
+/// VIDEOTECA (/videos): videos de capacitación que sube un administrador y que
+/// cualquier persona con cuenta activa ve desde el celular o el computador,
+/// sin Drive ni descargas. El archivo vive en Media (carpeta "videoteca").
+model VideoCapacitacion {
+  id           String       @id @default(cuid())
+  titulo       String
+  descripcion  String?
+  /// Área o tema (p. ej. "SIAU"): agrupa la videoteca.
+  categoria    String?
+  mediaId      String       @unique
+  media        Media        @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  duracionSeg  Int?
+  /// Imagen de portada generada con ffmpeg (archivo en la misma carpeta).
+  portada      String?
+  /// PROCESANDO mientras se optimiza para celular; LISTO; ERROR si ffmpeg falló (el original se sigue viendo).
+  estado       String       @default("LISTO")
+  publicado    Boolean      @default(true)
+  creadoPor    String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  vistas       VideoVista[]
+
+  @@index([publicado, createdAt])
+}
+
+/// Quién vio cada video y hasta dónde: evidencia para Talento Humano.
+model VideoVista {
+  id         String            @id @default(cuid())
+  videoId    String
+  video      VideoCapacitacion @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Punto más lejano alcanzado, en segundos.
+  segundos   Int               @default(0)
+  /// Último punto donde iba (para retomar).
+  posicion   Int               @default(0)
+  completado Boolean           @default(false)
+  primeraVez DateTime          @default(now())
+  ultimaVez  DateTime          @default(now())
+
+  @@unique([videoId, userId])
+  @@index([userId])
 }

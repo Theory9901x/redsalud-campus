@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   ArrowLeft,
   CalendarRange,
+  Clapperboard,
   ClipboardCheck,
   LayoutDashboard,
   MessageSquareText,
@@ -41,6 +42,7 @@ const NAV_GROUPS: GrupoNav[] = [
       { href: "/tutor/planes-capacitacion", label: "Planes de capacitación", icon: CalendarRange, excluir: ["/tutor/planes-capacitacion/en-vivo"] },
       { href: "/tutor/capacitaciones", label: "Capacitaciones independientes", icon: CalendarRange },
       { href: "/tutor/reuniones", label: "Mis reuniones", icon: CalendarRange },
+      { href: "/videos", label: "Videoteca", icon: Clapperboard },
       { href: "/tutor/planes-capacitacion/en-vivo", label: "En vivo", icon: Radio },
       // Vista de OBSERVACIÓN, no de acción: el tutor abre las ventanas del
       // ciclo, no las presenta, así que aquí ve en vivo quién está
