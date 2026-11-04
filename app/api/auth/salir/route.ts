@@ -1,4 +1,3 @@
-import { NextResponse, type NextRequest } from "next/server";
 import { signOut } from "@/auth";
 
 /**
@@ -6,7 +5,9 @@ import { signOut } from "@/auth";
  * también funcione con los perfiles de solo lectura, a los que el proxy les
  * rechaza cualquier otra petición que no sea de lectura.
  */
-export async function POST(request: NextRequest) {
+export async function POST() {
   await signOut({ redirect: false });
-  return NextResponse.redirect(new URL("/login", request.url), 303);
+  // Ubicación relativa: detrás de nginx, request.url trae el host interno
+  // (localhost) y el navegador terminaría en una página caída.
+  return new Response(null, { status: 303, headers: { Location: "/login" } });
 }
