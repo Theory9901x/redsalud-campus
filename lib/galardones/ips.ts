@@ -26,6 +26,19 @@ export const IPS_GALARDONES = [
 
 export type IpsGalardon = (typeof IPS_GALARDONES)[number];
 
+/**
+ * Cómo se MUESTRA cada centro. El valor guardado sigue siendo el de la lista
+ * (las postulaciones ya registradas dicen "Yopal"); solo cambia el nombre en
+ * pantalla. Yopal no es una IPS: es la Sede Administrativa.
+ */
+const NOMBRES_PANTALLA: Partial<Record<IpsGalardon, string>> = { Yopal: "Yopal - Sede Administrativa" };
+export function nombreCentro(ips: string) {
+  return NOMBRES_PANTALLA[ips as IpsGalardon] ?? ips;
+}
+export function tipoCentro(ips: string) {
+  return ips === "Yopal" ? "Sede administrativa" : "IPS";
+}
+
 const sinTildes = (s: string) =>
   s
     .normalize("NFD")

@@ -20,6 +20,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Hand, RotateCcw } from "lucide-react";
 import { ORDEN_VALORES, VALORES_GALARDON, valorInfo } from "@/lib/galardones/valores";
 import type { GanadoresIps } from "@/lib/galardones/consultas";
+import { nombreCentro } from "@/lib/galardones/ips";
 
 type Props = { centros: GanadoresIps[]; anio: number; institucion: string; onIr: (i: number) => void };
 type Hover = { ips: string; valor: string; matiz: number } | null;
@@ -92,7 +93,7 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
         <div className="cer-a3d-respaldo">
           {centros.map((c, i) => (
             <button key={c.ips} type="button" onClick={() => onIr(i)}>
-              {c.ips}
+              {nombreCentro(c.ips)}
             </button>
           ))}
         </div>
@@ -182,7 +183,7 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
       <nav className="sr-only" aria-label="Centros">
         {centros.map((c, i) => (
           <button key={c.ips} type="button" onClick={() => onIr(i)}>
-            Ir a {c.ips}
+            Ir a {nombreCentro(c.ips)}
           </button>
         ))}
       </nav>
@@ -607,7 +608,7 @@ function montar(m: Modulos, el: HTMLDivElement, o: Opciones) {
             let lineas: string[] = [];
             for (;;) {
               ctx.font = `800 ${tam}px ${fuente}`;
-              lineas = envolver(ctx, centro.ips, 210);
+              lineas = envolver(ctx, nombreCentro(centro.ips), 210);
               const cabe = lineas.length <= 3 && lineas.every((l) => ctx.measureText(l).width <= 220);
               if (cabe || tam <= 22) break;
               tam -= 2;
@@ -642,7 +643,7 @@ function montar(m: Modulos, el: HTMLDivElement, o: Opciones) {
       const rad = 5 + azar(k + 13) * 6;
       const dispersa = new THREE.Vector3(Math.sin(w) * Math.cos(u) * rad, Math.cos(w) * rad * 0.55 + 1, Math.sin(w) * Math.sin(u) * rad);
       const giroDisperso = new THREE.Quaternion().setFromEuler(new THREE.Euler((azar(k + 3) - 0.5) * 2.4, azar(k + 5) * Math.PI * 2, (azar(k + 9) - 0.5) * 1.6));
-      cartas.push({ grupo, frente, borde, bordeMat, k, c, v, ips: centro.ips, valor: info.nombre, matiz: info.matiz, dispersa, giroDisperso, retraso: azar(k + 21) * 0.6 + v * 0.22, hover: 0 });
+      cartas.push({ grupo, frente, borde, bordeMat, k, c, v, ips: nombreCentro(centro.ips), valor: info.nombre, matiz: info.matiz, dispersa, giroDisperso, retraso: azar(k + 21) * 0.6 + v * 0.22, hover: 0 });
     });
   });
   const mallas = cartas.map((x) => x.frente);

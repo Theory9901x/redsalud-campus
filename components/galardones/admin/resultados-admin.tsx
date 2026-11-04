@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { valorInfo } from "@/lib/galardones/valores";
 import type { CandidatoResultado, ResultadoIps, ResultadosGalardones } from "@/lib/galardones/consultas";
 import { fusionarCandidatos, separarVariante } from "@/app/galardones/acciones";
+import { nombreCentro } from "@/lib/galardones/ips";
 
 const TODAS = "__todas";
 type Ejecutar = (fn: () => Promise<{ ok: true } | { ok: false; error: string }>, exito: string) => void;
@@ -47,7 +48,7 @@ export function ResultadosGalardonesAdmin({ resultados, soloLectura }: { resulta
         </Chip>
         {resultados.porIps.map((i) => (
           <Chip key={i.ips} activo={ips === i.ips} vacio={i.total === 0} onClick={() => setIps(i.ips)}>
-            {i.ips}
+            {nombreCentro(i.ips)}
             <span className="ml-1.5 rounded-full bg-foreground/[0.06] px-1.5 text-[10px] tabular-nums">{i.total}</span>
           </Chip>
         ))}
@@ -87,7 +88,7 @@ function Podio({ porIps, onVer }: { porIps: ResultadoIps[]; onVer: (ips: string)
       {porIps.map((i) => (
         <article key={i.ips} className={cn("surface-panel flex flex-col p-5", i.total === 0 && "opacity-70")}>
           <div className="flex items-start justify-between gap-3">
-            <h3 className="font-display text-[1.05rem] font-extrabold text-foreground">{i.ips}</h3>
+            <h3 className="font-display text-[1.05rem] font-extrabold text-foreground">{nombreCentro(i.ips)}</h3>
             <span className="shrink-0 text-[11.5px] text-muted-foreground">
               {i.total} postulaciones · {i.votantes} personas
             </span>

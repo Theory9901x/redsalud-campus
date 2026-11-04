@@ -5,7 +5,7 @@ import { veComoAdmin } from "@/lib/roles";
 import { CabeceraGalardones } from "@/components/galardones/escena";
 import { FormularioPostulacion } from "@/components/galardones/formulario-postulacion";
 import { estadoConvocatoria, postulacionDe } from "@/lib/galardones/consultas";
-import { ipsDesdeMunicipio } from "@/lib/galardones/ips";
+import { ipsDesdeMunicipio, nombreCentro } from "@/lib/galardones/ips";
 import { NOMBRE_RECONOCIMIENTO, valorInfo } from "@/lib/galardones/valores";
 import { nombrePropio } from "@/lib/nombre-propio";
 
@@ -63,7 +63,7 @@ export default async function GalardonesPage() {
             Gracias, {nombrePropio(usuario.fullName).split(" ")[0]}
           </h2>
           <p className="mx-auto mt-2 max-w-[48ch] text-sm" style={{ color: "var(--g-muted)" }}>
-            Tu postulación para el centro <b style={{ color: "var(--g-text)" }}>{hecha.ips}</b> quedó registrada el{" "}
+            Tu postulación para el centro <b style={{ color: "var(--g-text)" }}>{nombreCentro(hecha.ips)}</b> quedó registrada el{" "}
             {FECHA_HORA.format(hecha.enviadaEl)}. Cada colaborador la diligencia una única vez.
           </p>
           {hecha.estado === "POR_VERIFICAR" && (

@@ -6,7 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Building2, Check, ChevronDown, HandHeart, Loader2, Search, Send, ShieldCheck, Sparkles, UserCheck, Users, X } from "lucide-react";
 import type { GalardonValor } from "@prisma/client";
 import { toast } from "sonner";
-import { IPS_GALARDONES, type IpsGalardon } from "@/lib/galardones/ips";
+import { IPS_GALARDONES, nombreCentro, tipoCentro, type IpsGalardon } from "@/lib/galardones/ips";
 import { VALORES_GALARDON } from "@/lib/galardones/valores";
 import { buscarPersonas, enviarPostulacion, type PersonaDirectorio } from "@/app/galardones/acciones";
 import { SIGNATURE_EASE } from "@/lib/motion";
@@ -170,7 +170,7 @@ export function FormularioPostulacion({ nombreVotante, ipsSugerida, cierraEl }: 
       {borrador && (
         <motion.div className="gala-borrador" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
           <span>
-            Tienes una postulación a medias{borrador.ips ? ` para ${borrador.ips}` : ""} guardada en este dispositivo.
+            Tienes una postulación a medias{borrador.ips ? ` para ${nombreCentro(borrador.ips)}` : ""} guardada en este dispositivo.
           </span>
           <button type="button" className="gala-btn gala-btn-principal gala-btn-mini" onClick={() => recuperar(borrador)}>
             Continuar donde quedé
@@ -263,7 +263,7 @@ export function FormularioPostulacion({ nombreVotante, ipsSugerida, cierraEl }: 
               </span>
               <div>
                 <span className="gala-mono" data-tono="a">
-                  Paso 5 de 5 · {ips}
+                  Paso 5 de 5 · {ips ? nombreCentro(ips) : ""}
                 </span>
                 <h2>
                   Revisa y <em>confirma</em>
@@ -349,7 +349,7 @@ function PasoIps({ nombreVotante, ipsSugerida, ips, onElegir }: { nombreVotante:
   const lista = useMemo(() => {
     const orden = ipsSugerida ? [ipsSugerida, ...IPS_GALARDONES.filter((x) => x !== ipsSugerida)] : [...IPS_GALARDONES];
     const f = sinTildes(filtro.trim());
-    return f ? orden.filter((x) => sinTildes(x).includes(f)) : orden;
+    return f ? orden.filter((x) => sinTildes(nombreCentro(x)).includes(f)) : orden;
   }, [filtro, ipsSugerida]);
 
   return (
@@ -364,12 +364,12 @@ function PasoIps({ nombreVotante, ipsSugerida, ips, onElegir }: { nombreVotante:
             Paso 1 de 5
           </span>
           <h2>
-            ¿En qué <em>centro IPS</em> trabajas?
+            ¿En qué <em>centro</em> trabajas?
           </h2>
         </div>
       </div>
       <p className="gala-definicion">
-        Hola, {nombreVotante.split(" ")[0]}. Las personas que postules deben ser de tu mismo centro: el reconocimiento se entrega por IPS y por valor.
+        Hola, {nombreVotante.split(" ")[0]}. Las personas que postules deben ser de tu mismo centro: el reconocimiento se entrega por centro y por valor.
       </p>
       <label className="gala-buscar">
         <Search aria-hidden="true" />
@@ -391,8 +391,8 @@ function PasoIps({ nombreVotante, ipsSugerida, ips, onElegir }: { nombreVotante:
             transition={{ delay: Math.min(i * 0.02, 0.3), duration: 0.35, ease: SIGNATURE_EASE }}
             whileTap={reducir ? undefined : { scale: 0.96 }}
           >
-            {nombre}
-            <small>{nombre === ipsSugerida ? "Tu municipio" : "IPS"}</small>
+            {nombreCentro(nombre)}
+            <small>{nombre === ipsSugerida ? "Tu municipio" : tipoCentro(nombre)}</small>
             <AnimatePresence>
               {ips === nombre && (
                 <motion.span className="gala-marca-ok" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ type: "spring", stiffness: 500, damping: 24 }}>

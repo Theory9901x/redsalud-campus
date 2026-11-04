@@ -10,6 +10,7 @@ import type { GalardonValor } from "@prisma/client";
 import { Apertura3D } from "@/components/galardones/apertura-3d";
 import { ORDEN_VALORES, valorInfo } from "@/lib/galardones/valores";
 import type { Ganador, GanadoresIps } from "@/lib/galardones/consultas";
+import { nombreCentro } from "@/lib/galardones/ips";
 
 type Modo = "presentar" | "tablero" | "apertura";
 type Revelados = Record<string, GalardonValor[]>;
@@ -166,7 +167,7 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
                   <li key={c.ips}>
                     <button type="button" onClick={() => irA(i)} aria-current={i === idx} data-completo={r.length === 3 || undefined}>
                       <span className="n">{r.length === 3 ? "✓" : String(i + 1).padStart(2, "0")}</span>
-                      <span className="nombre">{c.ips}</span>
+                      <span className="nombre">{nombreCentro(c.ips)}</span>
                       <span className="cer-puntos" aria-label={`${r.length} de 3 revelados`}>
                         {ORDEN_VALORES.map((v) => (
                           <i key={v} data-on={r.includes(v) || undefined} style={{ ["--c-v" as string]: `oklch(52% 0.14 ${valorInfo(v).matiz})` }} />
@@ -179,7 +180,7 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
             </ol>
           </nav>
 
-          <section className="cer-escenario" aria-label={`Centro ${centro.ips}`}>
+          <section className="cer-escenario" aria-label={`Centro ${nombreCentro(centro.ips)}`}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={centro.ips}
@@ -194,7 +195,7 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
                     <small>
                       Centro IPS {idx + 1} de {centros.length}
                     </small>
-                    <h1 className="cer-display">{centro.ips}</h1>
+                    <h1 className="cer-display">{nombreCentro(centro.ips)}</h1>
                     <p>
                       {centro.votantes > 0
                         ? `${centro.votantes} ${centro.votantes === 1 ? "colaborador postuló" : "colaboradores postularon"} a sus compañeros`
@@ -233,7 +234,7 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
                   {(() => {
                     const pendiente = ORDEN_VALORES.find((v) => !reveladosDe(centro.ips).includes(v));
                     if (pendiente) return `Revelar ${valorInfo(pendiente).nombre}`;
-                    return idx < centros.length - 1 ? `Siguiente: ${centros[idx + 1].ips}` : "Ver tablero";
+                    return idx < centros.length - 1 ? `Siguiente: ${nombreCentro(centros[idx + 1].ips)}` : "Ver tablero";
                   })()}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
@@ -471,7 +472,7 @@ function Tablero({
               <tr key={c.ips}>
                 <td>
                   <button type="button" onClick={() => onIr(i)}>
-                    {c.ips}
+                    {nombreCentro(c.ips)}
                   </button>
                   <span className="meta">{c.votantes} postulantes</span>
                 </td>

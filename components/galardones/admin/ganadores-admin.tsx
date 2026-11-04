@@ -11,6 +11,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { valorInfo } from "@/lib/galardones/valores";
 import type { Ganador, GanadoresIps, ResultadosGalardones } from "@/lib/galardones/consultas";
 import { definirGanador, quitarDecision } from "@/app/galardones/acciones";
+import { nombreCentro } from "@/lib/galardones/ips";
 
 const ETIQUETA_ORIGEN: Record<Ganador["origen"], { texto: string; clase: string }> = {
   MAYORIA: { texto: "Más postulado", clase: "border-success/30 bg-success/10 text-success" },
@@ -77,7 +78,7 @@ export function GanadoresAdmin({ centros, resultados, soloLectura }: { centros: 
         {lista.map((c) => (
           <article key={c.ips} className="surface-panel overflow-hidden">
             <div className="flex items-baseline justify-between gap-3 border-b border-border/70 px-5 py-3.5">
-              <h3 className="font-display text-[1.05rem] font-extrabold text-foreground">{c.ips}</h3>
+              <h3 className="font-display text-[1.05rem] font-extrabold text-foreground">{nombreCentro(c.ips)}</h3>
               <span className="text-[11.5px] text-muted-foreground">
                 {c.total} postulaciones · {c.votantes} personas
               </span>
