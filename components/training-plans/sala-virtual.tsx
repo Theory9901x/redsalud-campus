@@ -57,6 +57,19 @@ type JitsiApi = {
   addListener: (evento: string, oyente: (...args: unknown[]) => void) => void;
 };
 
+/**
+ * Pone en grande la pantalla que comparte otra persona (no la propia): sale
+ * del mosaico y fija ese video. Con «soloPantalla» también oculta las
+ * miniaturas, para que en la vista ampliada no quede nada más.
+ */
+function enfocarCompartida(api: JitsiApi | null, ids: string[], localId: string | null) {
+  const ajeno = ids.find((id) => id !== localId);
+  if (!api || !ajeno) return false;
+  api.executeCommand("setTileView", false);
+  api.executeCommand("pinParticipant", ajeno, "desktop");
+  return true;
+}
+
 declare global {
   interface Window {
     JitsiMeetExternalAPI?: new (domain: string, options: Record<string, unknown>) => JitsiApi;
@@ -200,6 +213,21 @@ export function SalaVirtual({
     else setAmpliadoCss(true);
   };
   const grande = ampliado || ampliadoCss;
+  /*
+   * PANTALLA COMPARTIDA: quién comparte (lo avisa Jitsi), si sus miniaturas
+   * están visibles y si las ocultamos nosotros al ampliar, para devolverlas
+   * al reducir. Todo en refs: los oyentes de Jitsi viven fuera del render.
+   */
+  const compartidoresRef = useRef<string[]>([]);
+  const [hayCompartida, setHayCompartida] = useState(false);
+  const miniaturasVisiblesRef = useRef(true);
+  const ocultamosMiniaturasRef = useRef(false);
+  const grandeRef = useRef(false);
+  // La barra lateral también amplía (comando externo): usa siempre la versión actual.
+  const alternarRef = useRef(alternarAmpliado);
+  useEffect(() => {
+    alternarRef.current = alternarAmpliado;
+  });
   const [error, setError] = useState(false);
   const [dentro, setDentro] = useState(false);
   const [salio, setSalio] = useState(false);
@@ -391,6 +419,29 @@ export function SalaVirtual({
       api.addListener("displayNameChange", refrescarParticipantes);
       api.addListener("audioMuteStatusChanged", (...args: unknown[]) => setMicSilenciado(Boolean((args[0] as { muted?: boolean })?.muted)));
       api.addListener("videoMuteStatusChanged", (...args: unknown[]) => setCamaraApagada(Boolean((args[0] as { muted?: boolean })?.muted)));
+      api.addListener("filmstripDisplayChanged", (...args: unknown[]) => {
+        miniaturasVisiblesRef.current = Boolean((args[0] as { visible?: boolean })?.visible);
+      });
+      // Alguien empieza a compartir: su pantalla pasa a grande para todos
+      // (fuera del mosaico) y, si la vista está ampliada, sin miniaturas.
+      api.addListener("contentSharingParticipantsChanged", (...args: unknown[]) => {
+        const ids = ((args[0] as { data?: string[] })?.data ?? []).filter(Boolean);
+        const antes = compartidoresRef.current;
+        compartidoresRef.current = ids;
+        const ajenos = ids.filter((id) => id !== localIdRef.current);
+        setHayCompartida(ajenos.length > 0);
+        if (ajenos.some((id) => !antes.includes(id))) {
+          enfocarCompartida(api, ids, localIdRef.current);
+          if (grandeRef.current && miniaturasVisiblesRef.current && api) {
+            api.executeCommand("toggleFilmStrip");
+            ocultamosMiniaturasRef.current = true;
+          }
+        }
+        if (!ajenos.length && ocultamosMiniaturasRef.current && !miniaturasVisiblesRef.current && api) {
+          api.executeCommand("toggleFilmStrip");
+          ocultamosMiniaturasRef.current = false;
+        }
+      });
       api.addListener("screenSharingStatusChanged", (...args: unknown[]) => {
         const on = Boolean((args[0] as { on?: boolean })?.on);
         setCompartiendo(on);
@@ -483,10 +534,7 @@ export function SalaVirtual({
       if (tipo === "abrirInfo") { setPanel("info"); irAConsola(); }
       if (tipo === "abrirActa") { setPanel("acta"); irAConsola(); }
       if (tipo === "abrirGrabacion") { setPanel("grabar"); irAConsola(); }
-      if (tipo === "alternarAmpliado") {
-        if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
-        else void escenarioRef.current?.requestFullscreen().catch(() => {});
-      }
+      if (tipo === "alternarAmpliado") alternarRef.current();
     }
     window.addEventListener(EVENTO_COMANDO_SALA, alComando);
     return () => window.removeEventListener(EVENTO_COMANDO_SALA, alComando);
@@ -517,6 +565,26 @@ export function SalaVirtual({
 
   const comando = (nombre: string, ...args: unknown[]) => apiRef.current?.executeCommand(nombre, ...args);
   const inactivo = !dentro;
+
+  /*
+   * AMPLIAR = SOLO LA PANTALLA COMPARTIDA. Ampliar agranda el contenedor;
+   * si alguien comparte, además se fija su pantalla y se ocultan las
+   * miniaturas. Al reducir vuelven las miniaturas.
+   */
+  useEffect(() => {
+    grandeRef.current = grande;
+    const api = apiRef.current;
+    if (!api) return;
+    if (grande) {
+      if (enfocarCompartida(api, compartidoresRef.current, localIdRef.current) && miniaturasVisiblesRef.current) {
+        api.executeCommand("toggleFilmStrip");
+        ocultamosMiniaturasRef.current = true;
+      }
+    } else if (ocultamosMiniaturasRef.current) {
+      if (!miniaturasVisiblesRef.current) api.executeCommand("toggleFilmStrip");
+      ocultamosMiniaturasRef.current = false;
+    }
+  }, [grande]);
 
   function enviarMensaje(texto: string) {
     const limpio = texto.trim();
@@ -817,7 +885,7 @@ export function SalaVirtual({
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--sh-line-strong)] bg-[var(--sh-panel)] px-4 py-3 text-[14px] font-semibold lg:hidden"
         >
           <Maximize2 className="h-4.5 w-4.5 text-[var(--sh-signal)]" aria-hidden="true" />
-          Ampliar video y pantalla compartida
+          {hayCompartida ? "Ver la pantalla compartida en grande" : "Ampliar video"}
         </button>
       )}
       {dentro && !esPresentador && (
