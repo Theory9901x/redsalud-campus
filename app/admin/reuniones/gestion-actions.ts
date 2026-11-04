@@ -19,7 +19,6 @@ export async function editarDatosReunionAction(planId: string, activityId: strin
   const user = await requireReunionAccess(planId, activityId, true);
   const d = await getSesionReunion(planId, activityId);
   if (!d?.jornada) return { error: "La sesión no existe." };
-  if (d.estado === "CLOSED") return { error: "Reabre la sesión antes de editar sus datos." };
   const parsed = edicionSesionReunion.safeParse(Object.fromEntries(fd));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Revisa los datos." };
   const data = parsed.data;
@@ -30,7 +29,8 @@ export async function editarDatosReunionAction(planId: string, activityId: strin
   const startsAt = new Date(`${data.fecha}T${data.inicio}:00-05:00`);
   const endsAt = data.fin ? new Date(`${data.fecha}T${data.fin}:00-05:00`) : null;
   const saved = await prisma.$transaction(async tx => {
-    const result = await tx.trainingActivity.updateMany({ where: { id: activityId, planId, status: { not: "CLOSED" } }, data: {
+    // El acta se puede corregir siempre, también con la reunión cerrada.
+    const result = await tx.trainingActivity.updateMany({ where: { id: activityId, planId }, data: {
       title: data.titulo, objective: data.objetivo, meetingAgenda: data.ordenDelDia, responsibleLabel: data.responsable, responsibleUserId: area.tutorId, areaId: area.id,
       targetAudienceNote: data.dirigidoA || null, modality: data.modalidad, startDate: startsAt, endDate: endsAt,
     } });
@@ -39,7 +39,7 @@ export async function editarDatosReunionAction(planId: string, activityId: strin
     await tx.trainingSession.update({ where: { id: d.jornada!.id }, data: { startsAt, endsAt, audience: data.audience, modality: data.modalidad, location: data.lugar || null, facilitador: data.responsable } });
     return true;
   });
-  if (!saved) return { error: "La sesión fue cerrada mientras editabas. Vuelve a cargar los datos." };
+  if (!saved) return { error: "La sesión no existe. Vuelve a cargar los datos." };
   await registrarAuditoria({ userId: user.user.id, action: "UPDATE", entity: "TrainingActivity", entityId: activityId, description: "Datos y horario de la reunión actualizados; enlaces y asistencia conservados." }).catch(() => {});
   refrescar(planId, activityId);
   return { error: null, ok: true };
@@ -59,7 +59,7 @@ export async function gestionarCompromisoReunionAction(planId: string, activityI
   if (operacion === "agregar") {
     const actual = await prisma.trainingActivity.findFirst({ where: { id: activityId, planId }, select: { followUpEvidence: true } });
     if (actual?.followUpEvidence.some(c => normal(c) === normal(texto))) return { error: "Ese compromiso ya está en el acta." };
-    guardado = await prisma.trainingActivity.updateMany({ where: { id: activityId, planId, status: { not: "CLOSED" } }, data: { followUpEvidence: { push: texto } } });
+    guardado = await prisma.trainingActivity.updateMany({ where: { id: activityId, planId }, data: { followUpEvidence: { push: texto } } });
   } else {
     let originales: unknown;
     try { originales = JSON.parse(String(fd.get("originales"))); } catch { return { error: "Actualiza la lista de compromisos antes de editar." }; }
@@ -68,9 +68,9 @@ export async function gestionarCompromisoReunionAction(planId: string, activityI
     const lista = [...originales] as string[];
     if (operacion === "editar" && lista.some((c, i) => i !== indice && normal(c) === normal(texto))) return { error: "Ese compromiso ya está en el acta." };
     if (operacion === "editar") lista[indice] = texto; else lista.splice(indice, 1);
-    guardado = await prisma.trainingActivity.updateMany({ where: { id: activityId, planId, status: { not: "CLOSED" }, followUpEvidence: { equals: originales as string[] } }, data: { followUpEvidence: lista } });
+    guardado = await prisma.trainingActivity.updateMany({ where: { id: activityId, planId, followUpEvidence: { equals: originales as string[] } }, data: { followUpEvidence: lista } });
   }
-  if (!guardado.count) return { error: "La sesión se cerró o la lista cambió. Actualiza la lista antes de continuar." };
+  if (!guardado.count) return { error: "La lista de compromisos cambió. Actualiza la lista antes de continuar." };
   await registrarAuditoria({ userId: user.user.id, action: "UPDATE", entity: "TrainingActivity", entityId: activityId, description: `Compromiso de la reunión: ${operacion}` }).catch(() => {});
   refrescar(planId, activityId);
   return { error: null, ok: true };
@@ -90,9 +90,34 @@ export async function adjuntarDocumentoReunionAction(planId: string, activityId:
 
 export async function guardarDesarrolloReunionAction(planId: string, activityId: string, fd: FormData): Promise<EstadoReunion> {
   const user = await requireReunionAccess(planId, activityId, true);
-  const saved = await prisma.trainingActivity.updateMany({ where: { id: activityId, planId, status: { not: "CLOSED" } }, data: { methodology: String(fd.get("desarrollo") ?? "").trim() || null } });
-  if (!saved.count) return { error: "Reabre la sesión antes de editar su desarrollo." };
+  const saved = await prisma.trainingActivity.updateMany({ where: { id: activityId, planId }, data: { methodology: String(fd.get("desarrollo") ?? "").trim() || null } });
+  if (!saved.count) return { error: "La sesión no existe." };
   await registrarAuditoria({ userId: user.user.id, action: "UPDATE", entity: "TrainingActivity", entityId: activityId, description: "Desarrollo de la reunión guardado desde la sala." }).catch(() => {});
+  refrescar(planId, activityId);
+  return { error: null, ok: true };
+}
+
+/**
+ * El ACTA completa en un solo guardado: objetivo, orden del día, responsable
+ * y desarrollo. Se puede corregir siempre, también con la reunión cerrada.
+ * Los compromisos tienen su propia lista.
+ */
+export async function guardarActaReunionAction(planId: string, activityId: string, fd: FormData): Promise<EstadoReunion> {
+  const user = await requireReunionAccess(planId, activityId, true);
+  const texto = (k: string, max: number) => String(fd.get(k) ?? "").trim().slice(0, max);
+  const responsable = texto("responsable", 200);
+  if (!responsable) return { error: "Escribe el responsable como figura en el acta." };
+  const saved = await prisma.trainingActivity.updateMany({
+    where: { id: activityId, planId },
+    data: {
+      objective: texto("objetivo", 5000) || null,
+      meetingAgenda: texto("ordenDelDia", 10000) || null,
+      responsibleLabel: responsable,
+      methodology: texto("desarrollo", 50000) || null,
+    },
+  });
+  if (!saved.count) return { error: "La sesión no existe." };
+  await registrarAuditoria({ userId: user.user.id, action: "UPDATE", entity: "TrainingActivity", entityId: activityId, description: "Acta de la reunión editada (objetivo, orden del día, responsable y desarrollo)." }).catch(() => {});
   refrescar(planId, activityId);
   return { error: null, ok: true };
 }
