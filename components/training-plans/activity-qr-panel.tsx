@@ -165,12 +165,12 @@ function FichaQr({ enlace, contexto, onClose }: { enlace: EnlaceQr | null; conte
   return (
     <Dialog open={enlace !== null} onOpenChange={(abierto) => { if (!abierto) onClose(); }}>
       <DialogContent
-        className="w-[min(100vw-2rem,560px)] gap-0 p-0 sm:max-w-[560px] print:fixed print:inset-0 print:max-w-none print:translate-x-0 print:translate-y-0 print:rounded-none print:ring-0"
+        className="w-[min(100vw-2rem,560px)] gap-0 overflow-hidden p-0 sm:max-w-[560px] print:fixed print:inset-0 print:max-w-none print:translate-x-0 print:translate-y-0 print:rounded-none print:ring-0"
         showCloseButton
         data-ficha-qr
       >
         {enlace && (
-          <div className="flex flex-col items-center px-6 pt-8 pb-6 text-center">
+          <div className="flex w-full min-w-0 flex-col items-center px-6 pt-8 pb-6 text-center">
             {contexto && (
               <p className="mono-label text-primary">{contexto.titulo}{contexto.detalle ? ` · ${contexto.detalle}` : ""}</p>
             )}
@@ -186,7 +186,7 @@ function FichaQr({ enlace, contexto, onClose }: { enlace: EnlaceQr | null; conte
             </div>
             <p className="mt-3 text-[12px] text-muted-foreground print:text-base">Escanea con la cámara del celular</p>
 
-            <div className="mt-4 flex w-full items-center gap-1 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 print:hidden">
+            <div className="mt-4 flex w-full min-w-0 items-center gap-1 overflow-hidden rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 print:hidden">
               <code className="min-w-0 flex-1 truncate text-left font-mono text-[11px] text-foreground">{enlace.url.replace(/^https?:\/\//, "")}</code>
               <Button type="button" variant="ghost" size="icon-sm" onClick={() => copiar(enlace.url)} aria-label="Copiar enlace" title="Copiar enlace">
                 {copiado === enlace.url ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
@@ -195,7 +195,7 @@ function FichaQr({ enlace, contexto, onClose }: { enlace: EnlaceQr | null; conte
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>
-            <p className="hidden break-all font-mono text-sm print:block">{enlace.url}</p>
+            <p className="hidden w-full break-all font-mono text-sm print:block">{enlace.url}</p>
 
             <div className="mt-4 flex w-full flex-wrap justify-center gap-2 print:hidden">
               <Button type="button" size="sm" onClick={() => copiar(enlace.url)} className="gap-1.5">
