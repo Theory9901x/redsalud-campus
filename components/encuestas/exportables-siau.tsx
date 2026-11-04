@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { MotionConfig, motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import {
-  ArrowUp,
   CalendarDays,
   CalendarRange,
   Check,
@@ -16,6 +15,10 @@ import {
   Filter,
   History,
   Infinity as Siempre,
+  MapPin,
+  ShieldCheck,
+  Stethoscope,
+  Users2,
   RotateCcw,
   Sheet,
   Table2,
@@ -24,6 +27,8 @@ import { enfocarExportacion } from "@/components/encuestas/siau/movimiento";
 
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 const NOMBRE_FILTRO: Record<string, string> = { sede: "Sede", servicio: "Servicio", sexo: "Sexo", eps: "EPS" };
+type ClaveFiltro = "sede" | "servicio" | "sexo" | "eps";
+const CLAVES: ClaveFiltro[] = ["sede", "servicio", "sexo", "eps"];
 const TIPOS = [
   ["mensual", "Mensual"],
   ["trimestral", "Trimestral"],
@@ -53,6 +58,7 @@ export function ExportablesSiau({
   inicial,
   anios,
   filtros,
+  opciones,
   slug,
   registro,
 }: {
@@ -60,6 +66,8 @@ export function ExportablesSiau({
   /** Años del selector, calculados en el servidor. */
   anios: number[];
   filtros: Record<string, string | undefined>;
+  /** Valores posibles de cada filtro (los mismos de la barra de arriba). */
+  opciones: { sedes: string[]; servicios: string[]; eps: string[] };
   /** Slug de la encuesta SIAU, para sus descargas de histórico completo. */
   slug: string;
   /** Últimas descargas, con la fecha ya formateada en el servidor. */
@@ -69,6 +77,11 @@ export function ExportablesSiau({
   const [anio, setAnio] = useState(inicial.anio);
   const [mes, setMes] = useState(inicial.mes);
   const [trimestre, setTrimestre] = useState(inicial.trimestre);
+  // Filtros de la descarga: arrancan como la vista y se cambian aquí mismo,
+  // sin tocar la vista de arriba.
+  const filtrosVista = Object.fromEntries(CLAVES.map((k) => [k, filtros[k] ?? ""])) as Record<ClaveFiltro, string>;
+  const [sel, setSel] = useState<Record<ClaveFiltro, string>>(filtrosVista);
+  const mismosFiltros = CLAVES.every((k) => sel[k] === filtrosVista[k]);
 
   // Llegada con #exportar (desde la ficha de resultados u otro enlace).
   useEffect(() => {
@@ -81,10 +94,10 @@ export function ExportablesSiau({
   const q = new URLSearchParams({ tipo, anio: String(anio) });
   if (tipo === "mensual") q.set("mes", String(mes));
   if (tipo === "trimestral") q.set("trimestre", String(trimestre));
-  for (const [k, v] of Object.entries(filtros)) if (v) q.set(k, v);
+  for (const k of CLAVES) if (sel[k]) q.set(k, sel[k]);
   const consulta = q.toString();
   const etiqueta = tipo === "mensual" ? `${MESES[mes - 1]} ${anio}` : tipo === "trimestral" ? `${trimestre}º trimestre ${anio}` : `Año ${anio}`;
-  const filtrosActivos = Object.entries(filtros).filter(([, v]) => v) as [string, string][];
+  const filtrosActivos = CLAVES.filter((k) => sel[k]).map((k) => [k, sel[k]] as [string, string]);
   const alcancePeriodo = `${etiqueta}${filtrosActivos.length ? ` · ${filtrosActivos.length} ${filtrosActivos.length === 1 ? "filtro" : "filtros"}` : ""}`;
   const comoLaVista =
     tipo === inicial.tipo && anio === inicial.anio && (tipo !== "mensual" || mes === inicial.mes) && (tipo !== "trimestral" || trimestre === inicial.trimestre);
@@ -262,8 +275,14 @@ export function ExportablesSiau({
                 <span className="siau-paso-n">2</span>
                 Filtros que se aplican
               </p>
+              <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <FiltroSelector etiqueta="Sede / municipio" Icono={MapPin} valor={sel.sede} todos="Todas las sedes" opciones={opciones.sedes} onCambio={(v) => setSel((s) => ({ ...s, sede: v }))} />
+                <FiltroSelector etiqueta="Servicio" Icono={Stethoscope} valor={sel.servicio} todos="Todos los servicios" opciones={opciones.servicios} onCambio={(v) => setSel((s) => ({ ...s, servicio: v }))} />
+                <FiltroSelector etiqueta="Sexo" Icono={Users2} valor={sel.sexo} todos="Ambos sexos" opciones={["Femenino", "Masculino"]} onCambio={(v) => setSel((s) => ({ ...s, sexo: v }))} />
+                <FiltroSelector etiqueta="EPS" Icono={ShieldCheck} valor={sel.eps} todos="Todas las EPS" opciones={opciones.eps} onCambio={(v) => setSel((s) => ({ ...s, eps: v }))} />
+              </div>
               {filtrosActivos.length > 0 ? (
-                <ul className="mt-2.5 flex flex-wrap gap-1.5">
+                <ul className="mt-2.5 flex flex-wrap gap-1.5" aria-label="Filtros de la descarga">
                   {filtrosActivos.map(([k, v]) => (
                     <li key={k} className="siau-chip">
                       <Filter aria-hidden="true" />
@@ -274,12 +293,26 @@ export function ExportablesSiau({
                   ))}
                 </ul>
               ) : (
-                <p className="mt-2 text-[12.5px] leading-relaxed text-muted-foreground">Ninguno: se exportan todas las sedes, servicios, sexos y EPS.</p>
+                <p className="mt-2 text-[12.5px] leading-relaxed text-muted-foreground">Sin filtros: se exportan todas las sedes, servicios, sexos y EPS.</p>
               )}
-              <a href="#filtros" className="mt-2.5 inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--siau-tinta)] hover:underline">
-                <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
-                Cambiar filtros en la barra de arriba
-              </a>
+              <div className="mt-2 flex min-h-8 flex-wrap items-center gap-2">
+                {mismosFiltros ? (
+                  <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--siau-tinta)]">
+                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                    Mismos filtros de la vista
+                  </span>
+                ) : (
+                  <button type="button" onClick={() => setSel(filtrosVista)} className="siau-boton siau-boton-mini">
+                    <RotateCcw aria-hidden="true" />
+                    Volver a los filtros de la vista
+                  </button>
+                )}
+                {filtrosActivos.length > 0 && (
+                  <button type="button" onClick={() => setSel({ sede: "", servicio: "", sexo: "", eps: "" })} className="siau-boton siau-boton-mini">
+                    Quitar filtros
+                  </button>
+                )}
+              </div>
               <div className="siau-resumen">
                 <span className="siau-mono">Se exportará</span>
                 <b>{etiqueta}</b>
@@ -338,6 +371,42 @@ export function ExportablesSiau({
         </details>
       </section>
     </MotionConfig>
+  );
+}
+
+function FiltroSelector({
+  etiqueta,
+  Icono,
+  valor,
+  todos,
+  opciones,
+  onCambio,
+}: {
+  etiqueta: string;
+  Icono: LucideIcon;
+  valor: string;
+  todos: string;
+  opciones: string[];
+  onCambio: (v: string) => void;
+}) {
+  // Si el valor de la vista ya no está en la lista, se conserva como opción.
+  const lista = valor && !opciones.includes(valor) ? [valor, ...opciones] : opciones;
+  return (
+    <label className="siau-campo">
+      <span>{etiqueta}</span>
+      <span className="siau-selector">
+        <Icono className="siau-selector-icono" aria-hidden="true" />
+        <select value={valor} onChange={(e) => onCambio(e.target.value)} className="siau-control">
+          <option value="">{todos}</option>
+          {lista.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="siau-selector-flecha" aria-hidden="true" />
+      </span>
+    </label>
   );
 }
 

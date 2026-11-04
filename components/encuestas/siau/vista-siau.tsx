@@ -266,6 +266,7 @@ export function VistaSiau({
         inicial={{ tipo: periodo.tipo, anio: periodo.anio, mes: periodo.mes ?? hoy.getMonth() + 1, trimestre: periodo.trimestre ?? Math.floor(hoy.getMonth() / 3) + 1 }}
         anios={anios}
         filtros={filtros}
+        opciones={opciones}
         slug={encuesta.slug}
         registro={exportaciones.map((e) => ({
           id: e.id,
