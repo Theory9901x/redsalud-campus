@@ -22,6 +22,7 @@ import { RegistroInvitado } from "@/components/invitado/registro-invitado";
 import { AbrirEvaluacionPopup } from "@/components/training-plans/abrir-evaluacion-popup";
 import { GrabacionJornada } from "@/components/training-plans/grabacion-jornada";
 import { firmarTokenJitsi } from "@/lib/jitsi";
+import { getGestionReunion } from "@/lib/reuniones-gestion";
 import { registrarInvitadoAction, getParticipanteDeCookie } from "@/app/invitado/[activityId]/actions";
 import { etiquetaJornada } from "@/components/training-plans/labels";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
@@ -66,7 +67,7 @@ export default async function InvitadoPage({
       postsaberOpenedAt: true,
       postsaberClosedAt: true,
       area: { select: { name: true, tutor: { select: { fullName: true } } } },
-      plan: { select: { title: true, kind: true } },
+      plan: { select: { id: true, title: true, kind: true } },
     },
   });
   if (!actividad) notFound();
@@ -99,10 +100,17 @@ export default async function InvitadoPage({
   // REUNIÓN ABIERTA: cualquier participante puede iniciar la sala a la hora
   // citada, sin esperar a un anfitrión con cuenta.
   const reunionAbierta = actividad.plan.kind === "REUNION";
+  // Modera solo el anfitrión: en una reunión, quien la gestiona; en una
+  // capacitación, el personal (como antes). Los externos nunca moderan.
+  const esAnfitrion = puedeGrabar
+    ? reunionAbierta
+      ? !!(await getGestionReunion(actividad.plan.id, activityId).catch(() => null))?.puedeGestionar
+      : true
+    : false;
   const tokenStaff = puedeGrabar
-    ? await firmarTokenJitsi(sesionStaff!.user!.name ?? "Personal")
+    ? await firmarTokenJitsi(sesionStaff!.user!.name ?? "Personal", { moderador: esAnfitrion })
     : reunionAbierta && participante
-      ? await firmarTokenJitsi(`${participante.fullName} (${participante.company})`)
+      ? await firmarTokenJitsi(`${participante.fullName} (${participante.company})`, { moderador: false })
       : null;
 
   if (!participante) {
@@ -189,7 +197,7 @@ export default async function InvitadoPage({
               jwt={tokenStaff}
               externalParticipantId={participante.id}
               sessionId={participante.sessionId ?? jornada?.id ?? null}
-              esPresentador={puedeGrabar}
+              esPresentador={esAnfitrion}
               grabacion={puedeGrabar ? <GrabacionJornada activityId={actividad.id} /> : undefined}
               panelActa={contenidoPanel}
               panelDerecho={

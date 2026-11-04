@@ -127,7 +127,8 @@ export default async function SalaVirtualPage({
 
   const jitsiDomain = process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si";
   // En una REUNIÓN ABIERTA cualquiera inicia la sala; en el resto, solo el anfitrión.
-  const tokenSala = esPersonal || actividad.plan.kind === "REUNION" ? await firmarTokenJitsi(session.user.name ?? "Participante") : null;
+  // Solo el anfitrión (esPersonal) modera: puede terminar la reunión para todos.
+  const tokenSala = esPersonal || actividad.plan.kind === "REUNION" ? await firmarTokenJitsi(session.user.name ?? "Participante", { moderador: esPersonal }) : null;
   const proximaJornada = jornada ? etiquetaJornada(jornada) : null;
   const nombre = session.user.name ?? "Participante";
   const inicialesUsuario = nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");

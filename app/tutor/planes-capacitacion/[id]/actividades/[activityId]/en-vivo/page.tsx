@@ -74,7 +74,7 @@ export default async function JornadaEnVivoPage({
   // Mismo mecanismo que la sala: el personal entra con token firmado (puede
   // moderar); no se duplica nada de la lógica de Jitsi.
   const jitsiDomain = process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? "meet.jit.si";
-  const tokenSala = conVideo ? await firmarTokenJitsi(session.user.name ?? "Tutor") : null;
+  const tokenSala = conVideo ? await firmarTokenJitsi(session.user.name ?? "Tutor", { moderador: true }) : null;
 
   return (
     <main className="canvas-vivo min-h-full flex-1">

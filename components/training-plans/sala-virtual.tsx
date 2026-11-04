@@ -162,11 +162,12 @@ export function SalaVirtual({
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiApi | null>(null);
-  const configSala = useRef({ jwt, subject });
+  // Fijos de la llamada: cambiarlos NO debe recrear Jitsi (sacaría a todos).
+  const configSala = useRef({ jwt, subject, esPresentador });
   useEffect(() => {
-    configSala.current = { jwt, subject };
+    configSala.current = { jwt, subject, esPresentador };
     apiRef.current?.executeCommand("subject", subject);
-  }, [jwt, subject]);
+  }, [jwt, subject, esPresentador]);
   const [cargando, setCargando] = useState(true);
   /*
    * PANTALLA COMPLETA tipo Meet: se amplía el escenario (video + controles)
@@ -222,7 +223,7 @@ export function SalaVirtual({
   }, []);
 
   useEffect(() => {
-    const { jwt, subject } = configSala.current;
+    const { jwt, subject, esPresentador: anfitrion } = configSala.current;
     let api: JitsiApi | null = null;
     let cancelado = false;
 
@@ -300,7 +301,10 @@ export function SalaVirtual({
                 "microphone",
                 "camera",
                 "toggle-camera",
-                "hangup",
+                // El colgar nativo de Jitsi, para un moderador, ofrece
+                // "Terminar la reunión para todos": solo lo ve el anfitrión.
+                // Los demás salen con el botón propio de la plataforma.
+                ...(anfitrion ? ["hangup"] : []),
                 "chat",
                 "participants-pane",
                 "raisehand",
@@ -784,6 +788,18 @@ export function SalaVirtual({
         <Mic className="h-4 w-4 shrink-0 text-[var(--sh-signal)]" aria-hidden="true" />
         Para hablar, toca el micrófono en la barra del video y permite el acceso.
       </p>
+      {/* Salir en el teléfono: solo saca a quien lo toca. Reemplaza el colgar
+          nativo de Jitsi, que a un moderador le ofrece terminar para todos. */}
+      {dentro && !esPresentador && (
+        <button
+          type="button"
+          onClick={() => comando("hangup")}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--sh-danger)] px-4 py-3 text-[14px] font-semibold text-white lg:hidden"
+        >
+          <PhoneOff className="h-4.5 w-4.5" aria-hidden="true" />
+          Salir de la reunión
+        </button>
+      )}
 
       {/* ---------------- Vista completa: indicadores, grabación y acta ---------------- */}
       {completa && !ampliado && (
