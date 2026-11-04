@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Hand, RotateCcw } from "lucide-react";
 import { ORDEN_VALORES, VALORES_GALARDON } from "@/lib/galardones/valores";
 import type { GanadoresIps } from "@/lib/galardones/consultas";
@@ -35,7 +35,9 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
   const chip = useRef<HTMLDivElement>(null);
   const onIrRef = useRef(onIr);
   const control = useRef<Control | null>(null);
-  const reducir = useReducedMotion() ?? false;
+  // La ceremonia se proyecta: el movimiento es el punto. No se apaga aunque el
+  // equipo tenga desactivados los efectos de animación de Windows.
+  const reducir = false;
   const [listo, setListo] = useState(false);
   const [hover, setHover] = useState<Hover>(null);
   const [sinWebgl, setSinWebgl] = useState(false);
@@ -214,7 +216,7 @@ type Opciones = {
 };
 
 /** El anillo: una tarjeta por centro, con sus tres valores. */
-const ANILLO = { r: 5.5, y: 0.15, giro: 0.1 };
+const ANILLO = { r: 5.5, y: 0.15, giro: 0.21 };
 const CARTA = { w: 1.55, h: 2.17 };
 const MEDALLA_Y = 3.5;
 const PISO_Y = -2.75;

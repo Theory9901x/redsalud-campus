@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Eye, EyeOff, HandHeart, Maximize, MessageSquareQuote, Printer, RotateCcw, ShieldCheck, Sparkles, Trophy, Users, X } from "lucide-react";
 import type { GalardonValor } from "@prisma/client";
 import { Apertura3D } from "@/components/galardones/apertura-3d";
@@ -319,7 +319,7 @@ function TarjetaValor({
 }) {
   const info = valorInfo(g.valor);
   const Icono = ICONOS[g.valor];
-  const reducir = useReducedMotion();
+  const reducir = false; // se proyecta: el revelado siempre gira y suelta chispas
   const persona = g.personas[0];
   return (
     <article className="cer-tarjeta" style={{ ["--c-h" as string]: info.matiz, ["--i" as string]: tecla - 1, ["--giro" as string]: `${(2 - tecla) * 9}deg` }}>

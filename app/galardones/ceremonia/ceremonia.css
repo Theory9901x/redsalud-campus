@@ -197,7 +197,7 @@
 
 @keyframes cer-latido { 50% { opacity: 0.35; transform: scale(0.8); } }
 @keyframes cer-brillo { 0%, 55% { translate: -120% 0; } 85%, 100% { translate: 120% 0; } }
-@media (prefers-reduced-motion: reduce) { .cer-a3d-cta::after, .cer-a3d-cejilla .punto { animation: none; } }
+
 
 @media (max-width: 900px) {
   .cer-a3d-hud { grid-template-columns: 1fr; }
@@ -365,6 +365,4 @@
 .cer-presentar .cer-atajos kbd { background: oklch(16% 0.03 255); color: var(--c-tinta-2); border-color: var(--c-linea-2); }
 
 @media (max-width: 1100px) { .cer-presentar .cer-tarjeta { --giro: 0deg !important; } }
-@media (prefers-reduced-motion: reduce) {
-  .cer-presentar .cer-tarjeta, .cer-presentar .cer-tarjeta::after, .cer-presentar .cer-sellada, .cer-presentar .cer-sellada::before, .cer-holo-fondo .aurora, .cer-holo-fondo .rejilla, .cer-holo-fondo .estrellas, .cer-presentar .cer-cabeza h1 { animation: none; }
-}
+/* La ceremonia se proyecta: el movimiento no se apaga por la preferencia del sistema. */
