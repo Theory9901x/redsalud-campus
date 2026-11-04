@@ -41,7 +41,7 @@ const RUTAS_PROTEGIDAS = [
   // El enlace público (/e/:slug) queda deliberadamente FUERA: se responde
   // sin cuenta.
   "/encuestas",
-  // Postulaciones a la Noche de Galardones: una por colaborador, así que
+  // Postulaciones a Galardones: una por colaborador, así que
   // exige cuenta.
   "/galardones",
 ];
