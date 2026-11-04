@@ -1410,6 +1410,32 @@
     max-width: none;
     padding: 0;
   }
+
+  /* Accesos de la jornada (QR): el panel se imprime como cartel. Si la ficha
+     ampliada está abierta, se imprime SOLO esa ficha, a página completa. */
+  [data-qr-panel],
+  [data-qr-panel] * { visibility: visible; }
+  [data-qr-panel] {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    max-width: none;
+  }
+  body:has([data-ficha-qr]) [data-qr-panel],
+  body:has([data-ficha-qr]) [data-qr-panel] * { visibility: hidden; }
+  [data-ficha-qr],
+  [data-ficha-qr] * { visibility: visible; }
+  [data-ficha-qr] {
+    position: absolute !important;
+    inset: 0 !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+  [data-ficha-qr] [data-slot="dialog-close"] { display: none; }
 }
 
 

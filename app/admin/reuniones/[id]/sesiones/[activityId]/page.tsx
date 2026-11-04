@@ -44,7 +44,7 @@ export default async function SesionReunionPage({ params, searchParams }: { para
   const aqui = `${base}/${id}/sesiones/${activityId}`;
   const volver = totalSesiones > 1 ? { href: `${base}/${id}`, etiqueta: d.reunion.titulo } : { href: base, etiqueta: "Reuniones" };
   const acta = `/api/reuniones/${id}/sesiones/${activityId}/acta`;
-  const enlaces = d.jornada ? await Promise.all(accesosDeJornada(APP_URL, activityId, d.jornada.tokenPublico, { conEvaluacion: false, modalidad: d.jornada.modality, audience: d.jornada.audience }).filter(a => a.clave === "sala" || a.clave === "invitados").map(async a => ({ ...a, qrDataUrl: await QRCode.toDataURL(a.url, { width: 320, margin: 1 }) }))) : [];
+  const enlaces = d.jornada ? await Promise.all(accesosDeJornada(APP_URL, activityId, d.jornada.tokenPublico, { conEvaluacion: false, modalidad: d.jornada.modality, audience: d.jornada.audience }).filter(a => a.clave === "sala" || a.clave === "invitados").map(async a => ({ ...a, qrDataUrl: await QRCode.toDataURL(a.url, { width: 640, margin: 2, errorCorrectionLevel: 'M' }) }))) : [];
   const puedeEliminar = session.user.role === "ADMIN" || d.puedeEditarReunion || d.anfitrionId === session.user.id;
 
   if (editar === "1" && d.puedeGestionar) return <div className="space-y-6">
@@ -171,7 +171,7 @@ export default async function SesionReunionPage({ params, searchParams }: { para
       Icono: QrCode,
       contenido: (
         <div className="max-w-2xl">
-          <ActivityQrPanel enlaces={enlaces} />
+          <ActivityQrPanel enlaces={enlaces} contexto={{ titulo: d.titulo, detalle: d.jornada ? etiquetaJornada(d.jornada) : undefined }} />
         </div>
       ),
     },
