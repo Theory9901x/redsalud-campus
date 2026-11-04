@@ -107,8 +107,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   // Videoteca: la ve cualquier persona con cuenta activa (si está publicado).
   let accesoVideo = false;
-  if (media.folder === "videoteca") {
-    if (!session?.user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  if (media.folder === "videoteca" && !session?.user) {
+    const video = await prisma.videoCapacitacion.findUnique({ where: { mediaId: media.id }, select: { publicado: true, publico: true } });
+    if (!video?.publicado || !video.publico) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+    accesoVideo = true;
+  } else if (media.folder === "videoteca" && session?.user) {
     const clave = `${session.user.id}:${media.id}`;
     if (!autorizado(clave)) {
       const [video, usuario] = await Promise.all([

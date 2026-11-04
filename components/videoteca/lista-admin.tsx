@@ -20,6 +20,7 @@ export type FilaVideo = {
   conPortada: boolean;
   estado: string;
   publicado: boolean;
+  publico: boolean;
   creado: Date;
   tamano: number;
   personas: number;
@@ -49,7 +50,7 @@ function FilaAdmin({ v, soloLectura }: { v: FilaVideo; soloLectura: boolean }) {
   const [editando, setEditando] = useState(false);
   const [verVistas, setVerVistas] = useState(false);
   const [copiado, setCopiado] = useState(false);
-  const [f, setF] = useState({ titulo: v.titulo, descripcion: v.descripcion ?? "", categoria: v.categoria ?? "", publicado: v.publicado });
+  const [f, setF] = useState({ titulo: v.titulo, descripcion: v.descripcion ?? "", categoria: v.categoria ?? "", publicado: v.publicado, publico: v.publico });
 
   const ejecutar = (fn: () => Promise<{ ok: true } | { ok: false; error: string }>, exito: string, despues?: () => void) =>
     startTransition(async () => {
@@ -81,6 +82,10 @@ function FilaAdmin({ v, soloLectura }: { v: FilaVideo; soloLectura: boolean }) {
                 <input type="checkbox" checked={f.publicado} onChange={(e) => setF({ ...f, publicado: e.target.checked })} />
                 Publicado (visible para todo el personal)
               </label>
+              <label className="inline-flex items-center gap-2 text-[13px]">
+                <input type="checkbox" checked={f.publico} onChange={(e) => setF({ ...f, publico: e.target.checked })} />
+                Público: se ve con el enlace, sin usuario ni contraseña
+              </label>
               <div className="flex gap-2">
                 <Button type="button" size="sm" disabled={pendiente} onClick={() => ejecutar(() => actualizarVideo(v.id, f), "Video actualizado.", () => setEditando(false))} className="gap-1.5">
                   {pendiente ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
@@ -96,6 +101,7 @@ function FilaAdmin({ v, soloLectura }: { v: FilaVideo; soloLectura: boolean }) {
               <div className="flex flex-wrap items-center gap-2">
                 {v.categoria && <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">{v.categoria}</span>}
                 <span className={cn("rounded-full border px-2 py-0.5 text-[11px] font-bold", v.publicado ? "border-success/30 bg-success/10 text-success" : "border-border bg-muted text-muted-foreground")}>{v.publicado ? "Publicado" : "Oculto"}</span>
+                {v.publico && <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">Público · sin iniciar sesión</span>}
                 {v.estado === "PROCESANDO" && (
                   <span className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-warning/15 px-2 py-0.5 text-[11px] font-bold text-warning-foreground">
                     <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> Optimizando para celular

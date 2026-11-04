@@ -10,7 +10,8 @@ import { prisma } from "@/lib/prisma";
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const sesion = await auth();
-  if (!sesion?.user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  // Sin sesión (video público) no hay a quién registrarle el avance.
+  if (!sesion?.user) return NextResponse.json({ ok: true, anonimo: true });
   const { id } = await params;
   const b = (await request.json().catch(() => ({}))) as { posicion?: number; duracion?: number };
   const posicion = Math.max(0, Math.floor(Number(b.posicion) || 0));

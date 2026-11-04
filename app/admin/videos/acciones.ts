@@ -14,7 +14,7 @@ function revalidar(id?: string) {
   if (id) revalidatePath(`/videos/${id}`);
 }
 
-export async function actualizarVideo(id: string, datos: { titulo: string; descripcion: string; categoria: string; publicado: boolean }): Promise<Resultado> {
+export async function actualizarVideo(id: string, datos: { titulo: string; descripcion: string; categoria: string; publicado: boolean; publico: boolean }): Promise<Resultado> {
   const sesion = await gestorVideoteca();
   if (!sesion) return { ok: false, error: "No autorizado." };
   const titulo = datos.titulo.trim().slice(0, 160);
@@ -26,6 +26,7 @@ export async function actualizarVideo(id: string, datos: { titulo: string; descr
       descripcion: datos.descripcion.trim().slice(0, 2000) || null,
       categoria: datos.categoria.trim().slice(0, 60) || null,
       publicado: datos.publicado,
+      publico: datos.publico,
     },
   });
   await registrarAuditoria({ userId: sesion.user.id, action: "UPDATE", entity: "Video", entityId: id, description: `Video actualizado: «${titulo}»${datos.publicado ? "" : " (oculto)"}` });

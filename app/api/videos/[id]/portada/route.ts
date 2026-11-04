@@ -8,9 +8,9 @@ import { leerPortada, rutaPortada } from "@/lib/videoteca/almacen";
 /** Portada (miniatura) de un video de la Videoteca. Solo con sesión. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const sesion = await auth();
-  if (!sesion?.user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   const { id } = await params;
-  const v = await prisma.videoCapacitacion.findUnique({ where: { id }, select: { portada: true } });
+  const v = await prisma.videoCapacitacion.findUnique({ where: { id }, select: { portada: true, publico: true, publicado: true } });
+  if (!sesion?.user && !(v?.publico && v.publicado)) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   if (!v?.portada) return NextResponse.json({ error: "Sin portada." }, { status: 404 });
   try {
     const { size } = await stat(rutaPortada(v.portada));

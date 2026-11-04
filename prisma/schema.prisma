@@ -1721,6 +1721,8 @@ model VideoCapacitacion {
   /// PROCESANDO mientras se optimiza para celular; LISTO; ERROR si ffmpeg falló (el original se sigue viendo).
   estado       String       @default("LISTO")
   publicado    Boolean      @default(true)
+  /// Público: se ve con el enlace, sin iniciar sesión (no se registra quién lo vio).
+  publico      Boolean      @default(false)
   creadoPor    String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt

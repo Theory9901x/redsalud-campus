@@ -29,7 +29,6 @@ const ADMIN_SECTION_PREFIXES: [string, AdminSection][] = [
 // seguimiento en cualquier ruta), pero solo estas redirigen a login.
 const RUTAS_PROTEGIDAS = [
   "/admin",
-  "/videos",
   "/tutor",
   "/inicio",
   "/perfil",

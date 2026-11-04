@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Clapperboard, Play } from "lucide-react";
-import { requireSession } from "@/lib/auth-helpers";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { veComoAdmin } from "@/lib/roles";
 import { videotecaPara } from "@/lib/videoteca/consultas";
@@ -15,14 +15,16 @@ export const dynamic = "force-dynamic";
  * mismo, sin Drive ni descargas. Arriba el más reciente; abajo, por área.
  */
 export default async function VideotecaPage({ searchParams }: { searchParams: Promise<{ cat?: string }> }) {
-  const sesion = await requireSession("/videos");
-  const esAdmin = veComoAdmin(sesion.user.role);
+  // Sin sesión se ven los videos públicos; con sesión, todos los publicados.
+  const sesion = await auth();
+  const usuario = sesion?.user ?? null;
+  const esAdmin = veComoAdmin(usuario?.role);
   const [{ cat }, videos, ajustes] = await Promise.all([
     searchParams,
-    videotecaPara(sesion.user.id, esAdmin),
+    videotecaPara(usuario?.id ?? null, esAdmin),
     prisma.institutionSettings.findUnique({ where: { id: "singleton" }, select: { institutionName: true, logoUrl: true } }),
   ]);
-  const volverA = esAdmin ? "/admin" : sesion.user.role === "TUTOR" ? "/tutor" : "/inicio";
+  const volverA = !usuario ? "/login?callbackUrl=%2Fvideos" : esAdmin ? "/admin" : usuario.role === "TUTOR" ? "/tutor" : "/inicio";
 
   const categorias = [...new Set(videos.map((v) => v.categoria ?? "General"))].sort((a, b) => a.localeCompare(b, "es"));
   const filtrados = cat ? videos.filter((v) => (v.categoria ?? "General") === cat) : videos;
@@ -33,7 +35,7 @@ export default async function VideotecaPage({ searchParams }: { searchParams: Pr
 
   return (
     <main className="vt">
-      <CabeceraVideoteca logoUrl={ajustes?.logoUrl ?? null} institucion={ajustes?.institutionName ?? "Red Salud Casanare E.S.E."} volverA={volverA} />
+      <CabeceraVideoteca logoUrl={ajustes?.logoUrl ?? null} institucion={ajustes?.institutionName ?? "Red Salud Casanare E.S.E."} volverA={volverA} volverTexto={usuario ? "Volver al campus" : "Iniciar sesión"} />
       <div className="vt-cuerpo">
         <section className="vt-intro vt-entrada">
           <span className="vt-mono">Videoteca · {videos.length} {videos.length === 1 ? "video" : "videos"}</span>

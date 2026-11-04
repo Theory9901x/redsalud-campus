@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
-import { requireSession } from "@/lib/auth-helpers";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { veComoAdmin } from "@/lib/roles";
 import { videoPara, videotecaPara } from "@/lib/videoteca/consultas";
@@ -36,20 +36,23 @@ const FECHA = new Intl.DateTimeFormat("es-CO", { dateStyle: "long", timeZone: "A
 /** Un video de la Videoteca: el reproductor grande y, al lado, los demás. */
 export default async function VerVideoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const sesion = await requireSession(`/videos/${id}`);
-  const esAdmin = veComoAdmin(sesion.user.role);
+  // Un video público se ve sin cuenta; los demás piden iniciar sesión.
+  const sesion = await auth();
+  const usuario = sesion?.user ?? null;
+  const esAdmin = veComoAdmin(usuario?.role);
   const [v, todos, ajustes] = await Promise.all([
-    videoPara(id, sesion.user.id, esAdmin),
-    videotecaPara(sesion.user.id, esAdmin),
+    videoPara(id, usuario?.id ?? null, esAdmin),
+    videotecaPara(usuario?.id ?? null, esAdmin),
     prisma.institutionSettings.findUnique({ where: { id: "singleton" }, select: { institutionName: true, logoUrl: true } }),
   ]);
+  if (v === "LOGIN") redirect(`/login?callbackUrl=${encodeURIComponent(`/videos/${id}`)}`);
   if (!v) notFound();
   const { datos: acceso, texto: descripcion } = separarAcceso(v.descripcion);
   const otros = [...todos.filter((x) => x.id !== v.id && x.categoria === v.categoria), ...todos.filter((x) => x.id !== v.id && x.categoria !== v.categoria)].slice(0, 8);
 
   return (
     <main className="vt" style={{ ["--vt-h" as string]: matizCategoria(v.categoria) }}>
-      <CabeceraVideoteca logoUrl={ajustes?.logoUrl ?? null} institucion={ajustes?.institutionName ?? "Red Salud Casanare E.S.E."} volverA="/videos" volverTexto="Todos los videos" />
+      <CabeceraVideoteca logoUrl={ajustes?.logoUrl ?? null} institucion={ajustes?.institutionName ?? "Red Salud Casanare E.S.E."} volverA="/videos" volverTexto={usuario ? "Todos los videos" : "Más videos"} />
       <div className="vt-cuerpo">
         <div className={otros.length ? "vt-ver" : "vt-ver vt-ver-solo"}>
           <section>
