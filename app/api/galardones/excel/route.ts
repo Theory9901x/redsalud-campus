@@ -12,7 +12,7 @@ export async function GET() {
   if (!session?.user || !veComoAdmin(session.user.role)) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
-  if (session.user.role === "ADMIN" && (session.user.restrictedAdminSections ?? []).includes("USUARIOS")) {
+  if ((session.user.restrictedAdminSections ?? []).includes("USUARIOS")) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 

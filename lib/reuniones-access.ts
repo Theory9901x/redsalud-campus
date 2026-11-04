@@ -11,7 +11,7 @@ export async function accesoReuniones(escritura = false) {
     select: { id: true, role: true, status: true, canManageAllMeetings: true, restrictedAdminSections: true },
   });
   if (!user || user.status !== "ACTIVE" || !["ADMIN", "TUTOR", "SEGUIMIENTO"].includes(user.role)) throw new Error("No autorizado.");
-  if (user.role === "ADMIN" && user.restrictedAdminSections.includes("PLANES_CAPACITACION")) throw new Error("No autorizado.");
+  if (user.restrictedAdminSections.includes("PLANES_CAPACITACION")) throw new Error("No autorizado.");
   if (escritura && !puedeEscribirReuniones(user)) throw new Error("Acceso de solo lectura.");
   return { session, user, where: alcanceReuniones(user) };
 }

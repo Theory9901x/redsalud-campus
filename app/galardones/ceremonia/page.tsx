@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 export default async function CeremoniaPage() {
   const sesion = await requireSession("/galardones/ceremonia");
   if (!veComoAdmin(sesion.user.role)) redirect("/no-autorizado");
-  if (sesion.user.role === "ADMIN" && (sesion.user.restrictedAdminSections ?? []).includes("USUARIOS")) redirect("/no-autorizado");
+  if ((sesion.user.restrictedAdminSections ?? []).includes("USUARIOS")) redirect("/no-autorizado");
 
   const [centros, convocatoria, ajustes] = await Promise.all([
     ganadoresGalardones(),

@@ -42,7 +42,7 @@ type Vista = (typeof VISTAS)[number];
 export default async function GalardonesAdminPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sesion = await requireSession("/admin/galardones");
   if (!veComoAdmin(sesion.user.role)) redirect("/no-autorizado");
-  if (sesion.user.role === "ADMIN" && (sesion.user.restrictedAdminSections ?? []).includes("USUARIOS")) redirect("/no-autorizado");
+  if ((sesion.user.restrictedAdminSections ?? []).includes("USUARIOS")) redirect("/no-autorizado");
   const soloLectura = esSoloLectura(sesion.user.role);
 
   const sp = await searchParams;

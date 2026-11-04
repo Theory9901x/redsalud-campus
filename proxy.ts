@@ -122,8 +122,11 @@ export default auth((request) => {
   }
 
   if (pathname.startsWith(ADMIN_PREFIX)) {
-    if (role === "SEGUIMIENTO") return NextResponse.next();
-    if (role !== "ADMIN") {
+    // Seguimiento sin límites ve todo el panel (Control Interno). Con
+    // secciones restringidas -p. ej. la cuenta de consulta SIAU, solo
+    // Encuestas- se le aplican igual que a un administrador restringido.
+    if (role === "SEGUIMIENTO" && !(session.user.restrictedAdminSections ?? []).length) return NextResponse.next();
+    if (role !== "ADMIN" && role !== "SEGUIMIENTO") {
       return NextResponse.redirect(new URL("/no-autorizado", request.url));
     }
 
@@ -140,7 +143,7 @@ export default auth((request) => {
   }
 
   // Administrador con la sección ENCUESTAS restringida: tampoco entra por /encuestas.
-  if (pathname.startsWith("/encuestas") && role === "ADMIN" && (session.user.restrictedAdminSections ?? []).includes("ENCUESTAS")) {
+  if (pathname.startsWith("/encuestas") && (role === "ADMIN" || role === "SEGUIMIENTO") && (session.user.restrictedAdminSections ?? []).includes("ENCUESTAS")) {
     return NextResponse.redirect(new URL("/no-autorizado", request.url));
   }
 
