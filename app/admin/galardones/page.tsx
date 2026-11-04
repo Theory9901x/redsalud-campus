@@ -1,16 +1,16 @@
 import { redirect } from "next/navigation";
-import { Trophy, UserRound, Vote } from "lucide-react";
-import type { GalardonValor } from "@prisma/client";
+import { ShieldCheck, Trophy, UserRound, Vote } from "lucide-react";
+import type { GalardonEstado, GalardonValor } from "@prisma/client";
 import { requireSession } from "@/lib/auth-helpers";
 import { esSoloLectura, veComoAdmin } from "@/lib/roles";
 import { parsePageSize } from "@/lib/pagination";
 import { IPS_GALARDONES } from "@/lib/galardones/ips";
 import { ORDEN_VALORES, valorInfo } from "@/lib/galardones/valores";
-import { estadoConvocatoria, listadoCandidatos, postulacionesPaginadas, resultadosGalardones } from "@/lib/galardones/consultas";
+import { estadoConvocatoria, listadoCandidatos, postulacionesPaginadas, resultadosGalardones, votantesPorVerificar } from "@/lib/galardones/consultas";
 import { eliminarCandidato, eliminarPostulacion } from "@/app/galardones/acciones";
 import { CabeceraGalardonesAdmin, PestanasGalardones } from "@/components/galardones/admin/cabecera-admin";
 import { ResultadosGalardonesAdmin } from "@/components/galardones/admin/resultados-admin";
-import { FormularioConvocatoria, NombreCandidatoEditable } from "@/components/galardones/admin/tablas-admin";
+import { FormularioConvocatoria, NombreCandidatoEditable, RevisionVotante } from "@/components/galardones/admin/tablas-admin";
 import { AutoFilterSelect, AutoSearchInput } from "@/components/admin/auto-search-input";
 import { TablePagination } from "@/components/admin/table-pagination";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
@@ -19,7 +19,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { nombrePropio } from "@/lib/nombre-propio";
 
 const FECHA_HORA = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Bogota" });
-const VISTAS = ["resultados", "postulaciones", "candidatos", "convocatoria"] as const;
+const VISTAS = ["resultados", "postulaciones", "verificacion", "candidatos", "convocatoria"] as const;
+const FECHA_CORTA = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeZone: "America/Bogota" });
+const ESTADOS: { value: GalardonEstado; label: string }[] = [
+  { value: "VALIDA", label: "Válidas" },
+  { value: "POR_VERIFICAR", label: "Por verificar" },
+  { value: "ANULADA", label: "Anuladas" },
+];
+const ETIQUETA_ESTADO: Record<GalardonEstado, { texto: string; clase: string }> = {
+  VALIDA: { texto: "Válida", clase: "border-success/30 bg-success/10 text-success" },
+  POR_VERIFICAR: { texto: "Por verificar", clase: "border-warning/40 bg-warning/15 text-warning-foreground" },
+  ANULADA: { texto: "Anulada", clase: "border-destructive/30 bg-destructive/10 text-destructive" },
+};
 type Vista = (typeof VISTAS)[number];
 
 /**
@@ -38,6 +49,7 @@ export default async function GalardonesAdminPage({ searchParams }: { searchPara
   const vista: Vista = (VISTAS as readonly string[]).includes(sp.vista ?? "") ? (sp.vista as Vista) : "resultados";
   const ipsFiltro = (IPS_GALARDONES as readonly string[]).includes(sp.ips ?? "") ? sp.ips : undefined;
   const valorFiltro = (ORDEN_VALORES as readonly string[]).includes(sp.valor ?? "") ? (sp.valor as GalardonValor) : undefined;
+  const estadoFiltro = ESTADOS.some((e) => e.value === sp.estado) ? (sp.estado as GalardonEstado) : undefined;
   const page = Math.max(1, Number(sp.page) || 1);
   const pageSize = parsePageSize(sp.pageSize);
 
@@ -46,19 +58,27 @@ export default async function GalardonesAdminPage({ searchParams }: { searchPara
   return (
     <div className="space-y-6">
       <CabeceraGalardonesAdmin convocatoria={convocatoria} resultados={resultados} />
-      <PestanasGalardones activa={vista} />
+      <PestanasGalardones activa={vista} porVerificar={resultados.porVerificar} />
 
       {vista === "resultados" && <ResultadosGalardonesAdmin resultados={resultados} soloLectura={soloLectura} />}
 
       {vista === "postulaciones" && (
-        <Postulaciones q={sp.q} ips={ipsFiltro} valor={valorFiltro} page={page} pageSize={pageSize} soloLectura={soloLectura} />
+        <Postulaciones q={sp.q} ips={ipsFiltro} valor={valorFiltro} estado={estadoFiltro} page={page} pageSize={pageSize} soloLectura={soloLectura} />
       )}
+
+      {vista === "verificacion" && <Verificacion soloLectura={soloLectura} />}
 
       {vista === "candidatos" && <Candidatos q={sp.q} ips={ipsFiltro} soloLectura={soloLectura} />}
 
       {vista === "convocatoria" && (
         <FormularioConvocatoria
-          inicial={{ abierta: convocatoria.abierta, cierraEl: convocatoria.cierraEl ? convocatoria.cierraEl.toISOString() : null, anio: convocatoria.anio }}
+          inicial={{
+            abierta: convocatoria.abierta,
+            cierraEl: convocatoria.cierraEl ? convocatoria.cierraEl.toISOString() : null,
+            anio: convocatoria.anio,
+            // Fecha local de Colombia (el corte se guarda a las 00:00 -05:00).
+            cuentasNuevasDesde: new Date(convocatoria.cuentasNuevasDesde.getTime() - 5 * 3600_000).toISOString().slice(0, 10),
+          }}
           soloLectura={soloLectura}
         />
       )}
@@ -69,8 +89,8 @@ export default async function GalardonesAdminPage({ searchParams }: { searchPara
 const OPCIONES_IPS = IPS_GALARDONES.map((i) => ({ value: i, label: i }));
 const OPCIONES_VALOR = ORDEN_VALORES.map((v) => ({ value: v, label: valorInfo(v).nombre }));
 
-async function Postulaciones({ q, ips, valor, page, pageSize, soloLectura }: { q?: string; ips?: string; valor?: GalardonValor; page: number; pageSize: number; soloLectura: boolean }) {
-  const { total, filas } = await postulacionesPaginadas({ q, ips, valor, page, pageSize });
+async function Postulaciones({ q, ips, valor, estado, page, pageSize, soloLectura }: { q?: string; ips?: string; valor?: GalardonValor; estado?: GalardonEstado; page: number; pageSize: number; soloLectura: boolean }) {
+  const { total, filas } = await postulacionesPaginadas({ q, ips, valor, estado, page, pageSize });
   return (
     <section className="surface-panel overflow-hidden" aria-label="Postulaciones">
       <div className="flex flex-wrap items-end gap-3 border-b border-border/70 p-4">
@@ -79,6 +99,7 @@ async function Postulaciones({ q, ips, valor, page, pageSize, soloLectura }: { q
         </div>
         <AutoFilterSelect paramName="ips" label="Centro IPS" options={OPCIONES_IPS} allLabel="Todos los centros" />
         <AutoFilterSelect paramName="valor" label="Valor" options={OPCIONES_VALOR} allLabel="Los tres valores" />
+        <AutoFilterSelect paramName="estado" label="Estado" options={ESTADOS} allLabel="Todos los estados" />
         <p className="ml-auto text-[12.5px] text-muted-foreground">
           {total} {total === 1 ? "postulación" : "postulaciones"}
         </p>
@@ -96,6 +117,7 @@ async function Postulaciones({ q, ips, valor, page, pageSize, soloLectura }: { q
               <TableHead>Valor</TableHead>
               <TableHead>Persona postulada</TableHead>
               <TableHead className="min-w-[18rem]">Comportamiento descrito</TableHead>
+              <TableHead>Estado</TableHead>
               {!soloLectura && <TableHead className="w-12" />}
             </TableRow>
           </TableHeader>
@@ -130,6 +152,11 @@ async function Postulaciones({ q, ips, valor, page, pageSize, soloLectura }: { q
                     )}
                   </TableCell>
                   <TableCell className="max-w-[28rem] text-[12.5px] leading-relaxed text-muted-foreground">{p.motivo}</TableCell>
+                  <TableCell>
+                    <span className={`inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-bold ${ETIQUETA_ESTADO[p.estado].clase}`}>
+                      {ETIQUETA_ESTADO[p.estado].texto}
+                    </span>
+                  </TableCell>
                   {!soloLectura && (
                     <TableCell>
                       <DeleteEntityButton
@@ -147,6 +174,64 @@ async function Postulaciones({ q, ips, valor, page, pageSize, soloLectura }: { q
         </Table>
       )}
       <TablePagination total={total} page={page} pageSize={pageSize} />
+    </section>
+  );
+}
+
+async function Verificacion({ soloLectura }: { soloLectura: boolean }) {
+  const cuentas = await votantesPorVerificar();
+  return (
+    <section className="space-y-4" aria-label="Postulaciones por verificar">
+      <div className="surface-panel flex items-start gap-3 p-4 text-[13px] leading-relaxed text-muted-foreground">
+        <ShieldCheck className="mt-0.5 h-4.5 w-4.5 shrink-0 text-primary" aria-hidden="true" />
+        <p>
+          Cada cuenta del campus postula <b className="text-foreground">una sola vez</b>, y un mismo documento no puede tener dos cuentas. Pero el registro
+          es abierto: alguien podría crear cuentas con documentos inventados para postular de nuevo. Por eso las cuentas creadas en la plataforma
+          después del corte quedan aquí y <b className="text-foreground">no suman hasta que las valides</b>. Si la persona no es colaboradora, anula: el
+          registro se conserva, no cuenta y esa cuenta no puede volver a postular.
+        </p>
+      </div>
+
+      {cuentas.length === 0 ? (
+        <EmptyState icon={ShieldCheck} title="Nada por verificar" description="Todas las postulaciones registradas vienen de cuentas confiables o ya fueron revisadas." className="py-14" />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          {cuentas.map((c) => (
+            <article key={c.votante.id} className="surface-panel p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-display text-[1.05rem] font-extrabold text-foreground">{nombrePropio(c.votante.fullName)}</h3>
+                  <p className="mt-0.5 text-[12px] text-muted-foreground">
+                    {c.votante.documentType} {c.votante.documentNumber}
+                    {c.votante.email ? ` · ${c.votante.email}` : ""}
+                  </p>
+                  <p className="text-[12px] text-muted-foreground">
+                    Cuenta creada el {FECHA_HORA.format(c.votante.createdAt)}
+                    {c.votante.position ? ` · ${c.votante.position}` : ""}
+                    {c.votante.municipio ? ` · ${c.votante.municipio.nombre}` : ""}
+                  </p>
+                </div>
+                {!soloLectura && <RevisionVotante votanteId={c.votante.id} nombre={nombrePropio(c.votante.fullName)} />}
+              </div>
+              <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Postuló en {c.ips} · {FECHA_CORTA.format(c.enviadaEl)}
+              </p>
+              <ul className="mt-2 space-y-1.5">
+                {c.postulaciones.map((p) => {
+                  const info = valorInfo(p.valor);
+                  return (
+                    <li key={p.valor} className="rounded-xl border border-border/60 bg-background/70 px-3 py-2 text-[12.5px]">
+                      <span className="font-bold" style={{ color: `oklch(0.5 0.13 ${info.matiz})` }}>{info.nombre}:</span>{" "}
+                      <b className="text-foreground">{p.candidato}</b>
+                      <span className="text-muted-foreground"> — {p.motivo}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

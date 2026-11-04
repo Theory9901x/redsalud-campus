@@ -66,6 +66,11 @@ export default async function GalardonesPage() {
             Tu postulación para el centro <b style={{ color: "var(--g-text)" }}>{hecha.ips}</b> quedó registrada el{" "}
             {FECHA_HORA.format(hecha.enviadaEl)}. Cada colaborador la diligencia una única vez.
           </p>
+          {hecha.estado === "POR_VERIFICAR" && (
+            <p className="gala-sello mx-auto mt-4">
+              Tu cuenta es reciente: Talento Humano verificará tu postulación antes de que sume en los resultados.
+            </p>
+          )}
           <div className="gala-resumen mx-auto mt-6 max-w-2xl text-left">
             {hecha.valores.map((v) => {
               const info = valorInfo(v.valor);

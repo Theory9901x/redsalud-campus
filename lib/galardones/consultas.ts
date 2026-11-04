@@ -1,13 +1,35 @@
-import type { GalardonValor } from "@prisma/client";
+import type { GalardonEstado, GalardonValor, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { IPS_GALARDONES } from "@/lib/galardones/ips";
 import { ORDEN_VALORES } from "@/lib/galardones/valores";
+
+/** Lanzamiento del módulo (3-nov-2026, 00:00 en Colombia): corte por defecto para las cuentas nuevas. */
+export const CORTE_LANZAMIENTO = new Date("2026-11-03T05:00:00.000Z");
 
 /** La convocatoria está abierta si no hay fila, o si está marcada abierta y no pasó la fecha de cierre. */
 export async function estadoConvocatoria() {
   const c = await prisma.galardonConvocatoria.findUnique({ where: { id: "singleton" } });
   const vencida = !!c?.cierraEl && c.cierraEl.getTime() < Date.now();
-  return { abierta: (c?.abierta ?? true) && !vencida, cierraEl: c?.cierraEl ?? null, anio: c?.anio ?? 2026 };
+  return {
+    abierta: (c?.abierta ?? true) && !vencida,
+    cierraEl: c?.cierraEl ?? null,
+    anio: c?.anio ?? 2026,
+    cuentasNuevasDesde: c?.cuentasNuevasDesde ?? CORTE_LANZAMIENTO,
+  };
+}
+
+/**
+ * Una cuenta creada en la plataforma (registro abierto) después del corte no
+ * se da por confiable: cualquiera puede abrir otra con un documento
+ * inventado. Las importadas del plan de cargos, y las de admin o tutor, sí.
+ */
+export function estadoInicialPostulacion(
+  votante: { origenRegistro: "IMPORTACION" | "AUTO"; role: string; createdAt: Date },
+  corte: Date,
+): GalardonEstado {
+  if (votante.origenRegistro === "IMPORTACION") return "VALIDA";
+  if (votante.role !== "STUDENT") return "VALIDA";
+  return votante.createdAt.getTime() >= corte.getTime() ? "POR_VERIFICAR" : "VALIDA";
 }
 
 /** Las postulaciones ya hechas por una persona, en el orden de los valores. */
@@ -21,6 +43,7 @@ export async function postulacionDe(votanteId: string) {
   return {
     ips: filas[0].ips,
     enviadaEl: filas[0].createdAt,
+    estado: filas.some((f) => f.estado === "ANULADA") ? ("ANULADA" as const) : filas.some((f) => f.estado === "POR_VERIFICAR") ? ("POR_VERIFICAR" as const) : ("VALIDA" as const),
     valores: ORDEN_VALORES.map((v) => {
       const f = porValor.get(v);
       return f ? { valor: v, nombre: f.candidato.nombre, nombreEscrito: f.nombreEscrito, motivo: f.motivo } : null;
@@ -55,6 +78,8 @@ export type ResultadoIps = {
 };
 
 export type ResultadosGalardones = {
+  /** Postulaciones de cuentas nuevas que esperan validación: aún no suman. */
+  porVerificar: number;
   totalPostulaciones: number;
   totalVotantes: number;
   totalCandidatos: number;
@@ -69,10 +94,14 @@ export type ResultadosGalardones = {
  * instante.
  */
 export async function resultadosGalardones(): Promise<ResultadosGalardones> {
-  const postulaciones = await prisma.galardonPostulacion.findMany({
-    include: { candidato: { select: { id: true, nombre: true, userId: true } } },
-    orderBy: { createdAt: "asc" },
-  });
+  const [postulaciones, porVerificar] = await Promise.all([
+    prisma.galardonPostulacion.findMany({
+      where: { estado: "VALIDA" },
+      include: { candidato: { select: { id: true, nombre: true, userId: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.galardonPostulacion.count({ where: { estado: "POR_VERIFICAR" } }),
+  ]);
 
   const votantes = new Set(postulaciones.map((p) => p.votanteId));
   const candidatos = new Set(postulaciones.map((p) => p.candidatoId));
@@ -106,6 +135,7 @@ export async function resultadosGalardones(): Promise<ResultadosGalardones> {
   });
 
   return {
+    porVerificar,
     totalPostulaciones: postulaciones.length,
     totalVotantes: votantes.size,
     totalCandidatos: candidatos.size,
@@ -125,14 +155,15 @@ export async function listadoPostulaciones() {
   });
 }
 
-export type FiltroPostulaciones = { q?: string; ips?: string; valor?: GalardonValor; page: number; pageSize: number };
+export type FiltroPostulaciones = { q?: string; ips?: string; valor?: GalardonValor; estado?: GalardonEstado; page: number; pageSize: number };
 
 /** Postulaciones una a una, para la tabla de gestión: con quién postuló, a quién y por qué. */
 export async function postulacionesPaginadas(f: FiltroPostulaciones) {
   const q = f.q?.trim();
-  const where = {
+  const where: Prisma.GalardonPostulacionWhereInput = {
     ...(f.ips ? { ips: f.ips } : {}),
     ...(f.valor ? { valor: f.valor } : {}),
+    ...(f.estado ? { estado: f.estado } : {}),
     ...(q
       ? {
           OR: [
@@ -176,4 +207,72 @@ export async function listadoCandidatos(filtro: { q?: string; ips?: string }) {
     },
     orderBy: [{ ips: "asc" }, { nombre: "asc" }],
   });
+}
+
+/**
+ * Cuentas cuyas postulaciones esperan validación: con lo necesario para que
+ * Talento Humano decida si es un colaborador real (documento, correo, fecha
+ * de creación de la cuenta, cargo, municipio) y lo que postuló.
+ */
+export async function votantesPorVerificar() {
+  const filas = await prisma.galardonPostulacion.findMany({
+    where: { estado: "POR_VERIFICAR" },
+    include: {
+      candidato: { select: { nombre: true } },
+      votante: {
+        select: {
+          id: true,
+          fullName: true,
+          documentType: true,
+          documentNumber: true,
+          email: true,
+          position: true,
+          createdAt: true,
+          lastLoginAt: true,
+          municipio: { select: { nombre: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+  const porVotante = new Map<string, { votante: (typeof filas)[number]["votante"]; ips: string; enviadaEl: Date; postulaciones: { valor: GalardonValor; candidato: string; motivo: string }[] }>();
+  for (const f of filas) {
+    let g = porVotante.get(f.votanteId);
+    if (!g) {
+      g = { votante: f.votante, ips: f.ips, enviadaEl: f.createdAt, postulaciones: [] };
+      porVotante.set(f.votanteId, g);
+    }
+    g.postulaciones.push({ valor: f.valor, candidato: f.candidato.nombre, motivo: f.motivo });
+  }
+  return [...porVotante.values()];
+}
+
+export type Ganador = {
+  valor: GalardonValor;
+  /** Vacío si nadie postuló en ese valor. Con empate, todos los que comparten el primer lugar. */
+  personas: { nombre: string; votos: number; porcentaje: number }[];
+  empate: boolean;
+  total: number;
+};
+
+export type GanadoresIps = { ips: string; total: number; votantes: number; ganadores: Ganador[] };
+
+/**
+ * Los ganadores para la ceremonia: en cada centro, por cada valor, la persona
+ * con más postulaciones válidas (los nombres ya vienen agrupados aunque se
+ * hayan escrito distinto). Si hay empate se devuelven todos los empatados,
+ * para que la ceremonia lo muestre en vez de elegir uno a escondidas.
+ */
+export async function ganadoresGalardones(): Promise<GanadoresIps[]> {
+  const r = await resultadosGalardones();
+  return r.porIps.map((i) => ({
+    ips: i.ips,
+    total: i.total,
+    votantes: i.votantes,
+    ganadores: i.valores.map((v) => {
+      const max = v.candidatos[0]?.votos ?? 0;
+      const personas = max > 0 ? v.candidatos.filter((c) => c.votos === max).map((c) => ({ nombre: c.nombre, votos: c.votos, porcentaje: c.porcentaje })) : [];
+      return { valor: v.valor, personas, empate: personas.length > 1, total: v.total };
+    }),
+  }));
 }

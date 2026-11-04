@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download, ExternalLink, Trophy, Users2, Vote, Building2, UserRound } from "lucide-react";
+import { Download, ExternalLink, Presentation, ShieldAlert, Trophy, Users2, Vote, Building2, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { NOMBRE_EVENTO, NOMBRE_RECONOCIMIENTO } from "@/lib/galardones/valores";
@@ -20,7 +20,7 @@ export function CabeceraGalardonesAdmin({
   resultados: ResultadosGalardones;
 }) {
   const kpis = [
-    { Icono: Vote, etiqueta: "Postulaciones", valor: resultados.totalPostulaciones, nota: "una por valor y persona" },
+    { Icono: Vote, etiqueta: "Postulaciones válidas", valor: resultados.totalPostulaciones, nota: "una por valor y persona" },
     { Icono: Users2, etiqueta: "Colaboradores", valor: resultados.totalVotantes, nota: "ya postularon" },
     { Icono: UserRound, etiqueta: "Personas postuladas", valor: resultados.totalCandidatos, nota: "agrupadas por nombre" },
     { Icono: Building2, etiqueta: "Centros con participación", valor: resultados.ipsConParticipacion, nota: `de ${resultados.porIps.length} IPS` },
@@ -69,16 +69,32 @@ export function CabeceraGalardonesAdmin({
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <Link href="/galardones/ceremonia" target="_blank" className={cn(buttonVariants({ size: "sm" }), "gap-1.5 bg-[oklch(0.72_0.14_75)] text-[oklch(0.2_0.04_60)] hover:bg-[oklch(0.68_0.14_75)]")}>
+            <Presentation className="h-3.5 w-3.5" aria-hidden="true" />
+            Ceremonia de ganadores
+          </Link>
           <Link href="/galardones" target="_blank" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}>
             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
             Ver formulario de postulación
           </Link>
-          <a href="/api/galardones/excel" download className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
+          <a href="/api/galardones/excel" download className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}>
             <Download className="h-3.5 w-3.5" aria-hidden="true" />
             Exportar a Excel
           </a>
         </div>
       </div>
+
+      {resultados.porVerificar > 0 && (
+        <Link
+          href="/admin/galardones?vista=verificacion"
+          className="relative mt-5 flex items-center gap-3 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3 text-[13px] text-foreground transition-colors hover:bg-warning/15"
+        >
+          <ShieldAlert className="h-4.5 w-4.5 shrink-0 text-warning-foreground" aria-hidden="true" />
+          <span>
+            <b>{resultados.porVerificar} postulaciones de cuentas nuevas esperan verificación</b> y todavía no suman en los resultados. Revísalas.
+          </span>
+        </Link>
+      )}
 
       <dl className="relative mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {kpis.map((k) => (
@@ -97,10 +113,11 @@ export function CabeceraGalardonesAdmin({
 }
 
 /** Pestañas de la gestión: resultados, postulaciones (fila a fila), candidatos y convocatoria. */
-export function PestanasGalardones({ activa }: { activa: "resultados" | "postulaciones" | "candidatos" | "convocatoria" }) {
+export function PestanasGalardones({ activa, porVerificar }: { activa: "resultados" | "postulaciones" | "verificacion" | "candidatos" | "convocatoria"; porVerificar: number }) {
   const pestanas = [
     { clave: "resultados", etiqueta: "Resultados" },
     { clave: "postulaciones", etiqueta: "Postulaciones" },
+    { clave: "verificacion", etiqueta: porVerificar ? `Por verificar · ${porVerificar}` : "Por verificar" },
     { clave: "candidatos", etiqueta: "Personas postuladas" },
     { clave: "convocatoria", etiqueta: "Convocatoria" },
   ] as const;

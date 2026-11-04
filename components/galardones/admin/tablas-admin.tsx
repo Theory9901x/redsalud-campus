@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { configurarConvocatoria, renombrarCandidato } from "@/app/galardones/acciones";
+import { configurarConvocatoria, renombrarCandidato, revisarVotante } from "@/app/galardones/acciones";
 
 /** Nombre de candidato editable en línea (lápiz → campo → guardar). */
 export function NombreCandidatoEditable({ id, nombre, soloLectura }: { id: string; nombre: string; soloLectura: boolean }) {
@@ -71,18 +71,19 @@ export function FormularioConvocatoria({
   inicial,
   soloLectura,
 }: {
-  inicial: { abierta: boolean; cierraEl: string | null; anio: number };
+  inicial: { abierta: boolean; cierraEl: string | null; anio: number; cuentasNuevasDesde: string };
   soloLectura: boolean;
 }) {
   const router = useRouter();
   const [abierta, setAbierta] = useState(inicial.abierta);
   const [cierraEl, setCierraEl] = useState(inicial.cierraEl ? inicial.cierraEl.slice(0, 10) : "");
   const [anio, setAnio] = useState(String(inicial.anio));
+  const [corte, setCorte] = useState(inicial.cuentasNuevasDesde);
   const [pendiente, startTransition] = useTransition();
 
   function guardar() {
     startTransition(async () => {
-      const r = await configurarConvocatoria({ abierta, cierraEl: cierraEl || null, anio: Number(anio) });
+      const r = await configurarConvocatoria({ abierta, cierraEl: cierraEl || null, anio: Number(anio), cuentasNuevasDesde: corte || null });
       if (!r.ok) {
         toast.error(r.error);
         return;
@@ -128,6 +129,18 @@ export function FormularioConvocatoria({
           </div>
         </div>
 
+        <div className="space-y-1.5 rounded-xl border border-warning/30 bg-warning/[0.06] p-4">
+          <Label htmlFor="gal-corte" className="text-[13px] font-semibold">
+            Cuentas nuevas por verificar desde
+          </Label>
+          <Input id="gal-corte" type="date" value={corte} onChange={(e) => setCorte(e.target.value)} disabled={soloLectura} className="max-w-[14rem]" />
+          <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+            Cada cuenta postula una sola vez. Como el registro del campus es abierto, alguien podría crear más cuentas para postular de nuevo: las
+            cuentas creadas en la plataforma desde esta fecha quedan <b>por verificar</b> y no suman hasta que las valides. Las cuentas importadas del
+            plan de cargos y las de administradores o tutores siempre cuentan. El cambio aplica a las postulaciones nuevas.
+          </p>
+        </div>
+
         {!soloLectura && (
           <div className="flex justify-end">
             <Button type="button" onClick={guardar} disabled={pendiente} className="gap-1.5">
@@ -137,6 +150,40 @@ export function FormularioConvocatoria({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Botones Validar / Anular de una cuenta por verificar. */
+export function RevisionVotante({ votanteId, nombre }: { votanteId: string; nombre: string }) {
+  const router = useRouter();
+  const [pendiente, startTransition] = useTransition();
+  function decidir(decision: "VALIDA" | "ANULADA") {
+    const texto =
+      decision === "VALIDA"
+        ? `¿${nombre} es colaborador de la institución? Sus postulaciones empezarán a sumar.`
+        : `¿Anular las postulaciones de ${nombre}? No sumarán y esa cuenta no podrá volver a postular.`;
+    if (!confirm(texto)) return;
+    startTransition(async () => {
+      const r = await revisarVotante(votanteId, decision);
+      if (!r.ok) {
+        toast.error(r.error);
+        return;
+      }
+      toast.success(decision === "VALIDA" ? "Postulación validada." : "Postulación anulada.");
+      router.refresh();
+    });
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button type="button" size="sm" onClick={() => decidir("VALIDA")} disabled={pendiente} className="gap-1.5">
+        {pendiente ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+        Validar
+      </Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => decidir("ANULADA")} disabled={pendiente} className="gap-1.5 text-destructive hover:bg-destructive/10">
+        <X className="h-3.5 w-3.5" />
+        Anular
+      </Button>
     </div>
   );
 }

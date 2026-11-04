@@ -1606,6 +1606,18 @@ enum GalardonValor {
   LIDERAZGO
 }
 
+/// El registro del campus es abierto: cualquiera puede crear una cuenta con
+/// un documento inventado y volver a postular. Por eso las postulaciones de
+/// cuentas creadas en la plataforma DESPUÉS del corte de la convocatoria
+/// quedan POR_VERIFICAR y no suman hasta que Talento Humano las valide. Las
+/// ANULADAS se conservan (para auditoría y para que esa cuenta no pueda
+/// volver a postular), pero no cuentan.
+enum GalardonEstado {
+  VALIDA
+  POR_VERIFICAR
+  ANULADA
+}
+
 /// Estado de la convocatoria (fila única). Sin fila = abierta.
 model GalardonConvocatoria {
   id       String    @id @default("singleton")
@@ -1613,6 +1625,9 @@ model GalardonConvocatoria {
   abierta  Boolean   @default(true)
   /// Fecha límite informativa; al pasar, la convocatoria se considera cerrada.
   cierraEl DateTime?
+  /// Corte de confianza: las cuentas creadas en la plataforma desde esta fecha postulan "por verificar".
+  /// Sin valor = el lanzamiento del módulo (CORTE_LANZAMIENTO en lib/galardones/consultas.ts).
+  cuentasNuevasDesde DateTime?
   updatedAt DateTime @updatedAt
 }
 
@@ -1651,10 +1666,16 @@ model GalardonPostulacion {
   candidato     GalardonCandidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
   votanteId     String
   votante       User              @relation("GalardonVotante", fields: [votanteId], references: [id], onDelete: Cascade)
+  /// Solo las VALIDA suman en los resultados.
+  estado        GalardonEstado    @default(VALIDA)
+  /// Quién validó o anuló, y cuándo (id del admin; sin relación para no tocar User).
+  revisadaPor   String?
+  revisadaEl    DateTime?
   createdAt     DateTime          @default(now())
 
   /// Una postulación por valor por persona: es lo que hace que cada colaborador vote una sola vez.
   @@unique([votanteId, valor])
   @@index([ips, valor])
+  @@index([estado])
   @@index([candidatoId])
 }

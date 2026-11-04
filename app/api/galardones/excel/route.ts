@@ -82,6 +82,7 @@ export async function GET() {
       { titulo: "Documento", ancho: 14 },
       { titulo: "Cargo", ancho: 26 },
       { titulo: "Dependencia", ancho: 26 },
+      { titulo: "Estado", ancho: 16 },
     ],
     postulaciones.map((p) => [
       horaColombia(p.createdAt),
@@ -94,17 +95,20 @@ export async function GET() {
       p.votante.documentNumber,
       p.votante.position ?? "",
       p.votante.department ?? "",
+      p.estado === "VALIDA" ? "Válida" : p.estado === "POR_VERIFICAR" ? "Por verificar" : "Anulada",
     ]),
   );
 
   hojaInformacion(wb, [
     ["Archivo", `${NOMBRE_EVENTO} · ${NOMBRE_RECONOCIMIENTO}`],
-    ["Postulaciones", String(resultados.totalPostulaciones)],
+    ["Postulaciones válidas", String(resultados.totalPostulaciones)],
+    ["Por verificar (no suman)", String(resultados.porVerificar)],
+    ["Regla", "Una postulación por cuenta. Las cuentas creadas en la plataforma después del corte quedan por verificar hasta que Talento Humano las valide; ganadores y ranking solo cuentan las válidas."],
     ["Colaboradores que postularon", String(resultados.totalVotantes)],
     ["Personas postuladas (agrupadas)", String(resultados.totalCandidatos)],
     ["Centros con participación", `${resultados.ipsConParticipacion} de ${resultados.porIps.length}`],
     ["Agrupación", "Una misma persona cuenta como una sola aunque su nombre se haya escrito distinto; la hoja Ranking muestra las variantes."],
   ]);
 
-  return respuestaExcel(wb, `noche-de-galardones-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  return respuestaExcel(wb, `galardones-${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
