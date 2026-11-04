@@ -1649,6 +1649,7 @@ model GalardonCandidato {
   createdAt   DateTime @default(now())
 
   postulaciones GalardonPostulacion[]
+  decisiones    GalardonDecision[]
 
   @@index([ips, nombreClave])
   @@index([userId])
@@ -1677,5 +1678,22 @@ model GalardonPostulacion {
   @@unique([votanteId, valor])
   @@index([ips, valor])
   @@index([estado])
+  @@index([candidatoId])
+}
+
+/// Ganador definido a mano por Talento Humano en un centro y un valor:
+/// desempates, o cuando todos los postulados ya ganaron otro valor. Una
+/// decisión por (centro, valor); prima sobre el conteo.
+model GalardonDecision {
+  id          String            @id @default(cuid())
+  ips         String
+  valor       GalardonValor
+  candidatoId String
+  candidato   GalardonCandidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+  /// Id del admin que decidió (sin relación para no tocar User).
+  decididoPor String?
+  createdAt   DateTime          @default(now())
+
+  @@unique([ips, valor])
   @@index([candidatoId])
 }

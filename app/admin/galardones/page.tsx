@@ -6,10 +6,11 @@ import { esSoloLectura, veComoAdmin } from "@/lib/roles";
 import { parsePageSize } from "@/lib/pagination";
 import { IPS_GALARDONES } from "@/lib/galardones/ips";
 import { ORDEN_VALORES, valorInfo } from "@/lib/galardones/valores";
-import { estadoConvocatoria, listadoCandidatos, postulacionesPaginadas, resultadosGalardones, votantesPorVerificar } from "@/lib/galardones/consultas";
+import { estadoConvocatoria, ganadoresGalardones, listadoCandidatos, postulacionesPaginadas, resultadosGalardones, votantesPorVerificar } from "@/lib/galardones/consultas";
 import { eliminarCandidato, eliminarPostulacion } from "@/app/galardones/acciones";
 import { CabeceraGalardonesAdmin, PestanasGalardones } from "@/components/galardones/admin/cabecera-admin";
 import { ResultadosGalardonesAdmin } from "@/components/galardones/admin/resultados-admin";
+import { GanadoresAdmin } from "@/components/galardones/admin/ganadores-admin";
 import { FormularioConvocatoria, NombreCandidatoEditable, RevisionVotante } from "@/components/galardones/admin/tablas-admin";
 import { AutoFilterSelect, AutoSearchInput } from "@/components/admin/auto-search-input";
 import { TablePagination } from "@/components/admin/table-pagination";
@@ -19,7 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { nombrePropio } from "@/lib/nombre-propio";
 
 const FECHA_HORA = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Bogota" });
-const VISTAS = ["resultados", "postulaciones", "verificacion", "candidatos", "convocatoria"] as const;
+const VISTAS = ["resultados", "ganadores", "postulaciones", "verificacion", "candidatos", "convocatoria"] as const;
 const FECHA_CORTA = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeZone: "America/Bogota" });
 const ESTADOS: { value: GalardonEstado; label: string }[] = [
   { value: "VALIDA", label: "Válidas" },
@@ -53,14 +54,17 @@ export default async function GalardonesAdminPage({ searchParams }: { searchPara
   const page = Math.max(1, Number(sp.page) || 1);
   const pageSize = parsePageSize(sp.pageSize);
 
-  const [convocatoria, resultados] = await Promise.all([estadoConvocatoria(), resultadosGalardones()]);
+  const [convocatoria, resultados, ganadores] = await Promise.all([estadoConvocatoria(), resultadosGalardones(), ganadoresGalardones()]);
+  const porDefinir = ganadores.reduce((n, c) => n + c.ganadores.filter((g) => g.origen === "EMPATE" || (g.origen === "SIN_POSTULACIONES" && !!g.nota)).length, 0);
 
   return (
     <div className="space-y-6">
-      <CabeceraGalardonesAdmin convocatoria={convocatoria} resultados={resultados} />
-      <PestanasGalardones activa={vista} porVerificar={resultados.porVerificar} />
+      <CabeceraGalardonesAdmin convocatoria={convocatoria} resultados={resultados} porDefinir={porDefinir} />
+      <PestanasGalardones activa={vista} porVerificar={resultados.porVerificar} porDefinir={porDefinir} />
 
       {vista === "resultados" && <ResultadosGalardonesAdmin resultados={resultados} soloLectura={soloLectura} />}
+
+      {vista === "ganadores" && <GanadoresAdmin centros={ganadores} resultados={resultados} soloLectura={soloLectura} />}
 
       {vista === "postulaciones" && (
         <Postulaciones q={sp.q} ips={ipsFiltro} valor={valorFiltro} estado={estadoFiltro} page={page} pageSize={pageSize} soloLectura={soloLectura} />

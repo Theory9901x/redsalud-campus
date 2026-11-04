@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { veComoAdmin } from "@/lib/roles";
 import { hojaInformacion, hojaTabla, nuevoLibro, respuestaExcel, horaColombia } from "@/lib/excel-tabla";
-import { listadoPostulaciones, resultadosGalardones } from "@/lib/galardones/consultas";
+import { ganadoresGalardones, listadoPostulaciones, resultadosGalardones } from "@/lib/galardones/consultas";
 import { NOMBRE_EVENTO, NOMBRE_RECONOCIMIENTO, valorInfo } from "@/lib/galardones/valores";
 import { nombrePropio } from "@/lib/nombre-propio";
 
@@ -16,7 +16,8 @@ export async function GET() {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 
-  const [resultados, postulaciones] = await Promise.all([resultadosGalardones(), listadoPostulaciones()]);
+  const [resultados, postulaciones, ganadores] = await Promise.all([resultadosGalardones(), listadoPostulaciones(), ganadoresGalardones()]);
+  const ORIGEN: Record<string, string> = { MAYORIA: "Más postulado", REASIGNADO: "Siguiente más postulado", DECISION: "Definido por Talento Humano", EMPATE: "Empate por definir", SIN_POSTULACIONES: "Sin ganador" };
   const wb = nuevoLibro();
 
   hojaTabla(
@@ -25,16 +26,17 @@ export async function GET() {
     [
       { titulo: "Centro IPS", ancho: 22 },
       { titulo: "Valor", ancho: 16 },
-      { titulo: "Persona con más postulaciones", ancho: 36 },
+      { titulo: "Ganador", ancho: 36 },
       { titulo: "Postulaciones", ancho: 14 },
       { titulo: "% del valor en la IPS", ancho: 18 },
-      { titulo: "Empate", ancho: 10 },
+      { titulo: "Cómo se definió", ancho: 26 },
+      { titulo: "Nota", ancho: 50 },
       { titulo: "Total del valor en la IPS", ancho: 20 },
     ],
-    resultados.porIps.flatMap((i) =>
-      i.valores.map((v) => {
-        const lider = v.candidatos[0];
-        return [i.ips, valorInfo(v.valor).nombre, lider?.nombre ?? "", lider?.votos ?? 0, lider ? lider.porcentaje / 100 : 0, v.empate ? "Sí" : "", v.total];
+    ganadores.flatMap((i) =>
+      i.ganadores.map((g) => {
+        const p = g.personas[0];
+        return [i.ips, valorInfo(g.valor).nombre, g.personas.map((x) => x.nombre).join(" · "), p?.votos ?? 0, p ? p.porcentaje / 100 : 0, ORIGEN[g.origen], g.nota ?? "", g.total];
       }),
     ),
   ).getColumn(5).numFmt = "0%";

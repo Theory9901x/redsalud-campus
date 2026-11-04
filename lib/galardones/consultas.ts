@@ -2,6 +2,7 @@ import type { GalardonEstado, GalardonValor, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { IPS_GALARDONES } from "@/lib/galardones/ips";
 import { ORDEN_VALORES } from "@/lib/galardones/valores";
+import { calcularGanadores, type Ganador } from "@/lib/galardones/ganadores";
 
 /** Lanzamiento del módulo (3-nov-2026, 00:00 en Colombia): corte por defecto para las cuentas nuevas. */
 export const CORTE_LANZAMIENTO = new Date("2026-11-03T05:00:00.000Z");
@@ -247,32 +248,19 @@ export async function votantesPorVerificar() {
   return [...porVotante.values()];
 }
 
-export type Ganador = {
-  valor: GalardonValor;
-  /** Vacío si nadie postuló en ese valor. Con empate, todos los que comparten el primer lugar. */
-  personas: { nombre: string; votos: number; porcentaje: number }[];
-  empate: boolean;
-  total: number;
-};
+export type { Ganador, Persona, OrigenGanador } from "@/lib/galardones/ganadores";
 
 export type GanadoresIps = { ips: string; total: number; votantes: number; ganadores: Ganador[] };
 
 /**
- * Los ganadores para la ceremonia: en cada centro, por cada valor, la persona
- * con más postulaciones válidas (los nombres ya vienen agrupados aunque se
- * hayan escrito distinto). Si hay empate se devuelven todos los empatados,
- * para que la ceremonia lo muestre en vez de elegir uno a escondidas.
+ * Los ganadores para la ceremonia y la pestaña Ganadores: tres personas
+ * distintas por centro, una por valor (regla en lib/galardones/ganadores.ts),
+ * con las decisiones de Talento Humano aplicadas.
  */
 export async function ganadoresGalardones(): Promise<GanadoresIps[]> {
-  const r = await resultadosGalardones();
-  return r.porIps.map((i) => ({
-    ips: i.ips,
-    total: i.total,
-    votantes: i.votantes,
-    ganadores: i.valores.map((v) => {
-      const max = v.candidatos[0]?.votos ?? 0;
-      const personas = max > 0 ? v.candidatos.filter((c) => c.votos === max).map((c) => ({ nombre: c.nombre, votos: c.votos, porcentaje: c.porcentaje })) : [];
-      return { valor: v.valor, personas, empate: personas.length > 1, total: v.total };
-    }),
-  }));
+  const [r, decisiones] = await Promise.all([
+    resultadosGalardones(),
+    prisma.galardonDecision.findMany({ select: { ips: true, valor: true, candidatoId: true } }),
+  ]);
+  return r.porIps.map((i) => ({ ips: i.ips, total: i.total, votantes: i.votantes, ganadores: calcularGanadores(i, decisiones) }));
 }

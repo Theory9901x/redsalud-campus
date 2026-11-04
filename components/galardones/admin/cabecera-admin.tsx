@@ -15,9 +15,12 @@ const FECHA = new Intl.DateTimeFormat("es-CO", { dateStyle: "long", timeZone: "A
 export function CabeceraGalardonesAdmin({
   convocatoria,
   resultados,
+  porDefinir = 0,
 }: {
   convocatoria: { abierta: boolean; cierraEl: Date | null; anio: number };
   resultados: ResultadosGalardones;
+  /** Galardones con empate o sin ganador disponible, que Talento Humano debe definir. */
+  porDefinir?: number;
 }) {
   const kpis = [
     { Icono: Vote, etiqueta: "Postulaciones válidas", valor: resultados.totalPostulaciones, nota: "una por valor y persona" },
@@ -84,6 +87,18 @@ export function CabeceraGalardonesAdmin({
         </div>
       </div>
 
+      {porDefinir > 0 && (
+        <Link
+          href="/admin/galardones?vista=ganadores"
+          className="relative mt-5 flex items-center gap-3 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3 text-[13px] text-foreground transition-colors hover:bg-warning/15"
+        >
+          <Trophy className="h-4.5 w-4.5 shrink-0 text-warning-foreground" aria-hidden="true" />
+          <span>
+            <b>{porDefinir} {porDefinir === 1 ? "galardón tiene" : "galardones tienen"} empate</b> y hay que definir el ganador antes de la ceremonia.
+          </span>
+        </Link>
+      )}
+
       {resultados.porVerificar > 0 && (
         <Link
           href="/admin/galardones?vista=verificacion"
@@ -113,9 +128,10 @@ export function CabeceraGalardonesAdmin({
 }
 
 /** Pestañas de la gestión: resultados, postulaciones (fila a fila), candidatos y convocatoria. */
-export function PestanasGalardones({ activa, porVerificar }: { activa: "resultados" | "postulaciones" | "verificacion" | "candidatos" | "convocatoria"; porVerificar: number }) {
+export function PestanasGalardones({ activa, porVerificar, porDefinir = 0 }: { activa: "resultados" | "ganadores" | "postulaciones" | "verificacion" | "candidatos" | "convocatoria"; porVerificar: number; porDefinir?: number }) {
   const pestanas = [
     { clave: "resultados", etiqueta: "Resultados" },
+    { clave: "ganadores", etiqueta: porDefinir ? `Ganadores · ${porDefinir} por definir` : "Ganadores" },
     { clave: "postulaciones", etiqueta: "Postulaciones" },
     { clave: "verificacion", etiqueta: porVerificar ? `Por verificar · ${porVerificar}` : "Por verificar" },
     { clave: "candidatos", etiqueta: "Personas postuladas" },

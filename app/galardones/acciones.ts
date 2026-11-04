@@ -200,6 +200,10 @@ export async function fusionarCandidatos(origenId: string, destinoId: string): P
     if (duplicadas.length) await tx.galardonPostulacion.deleteMany({ where: { id: { in: duplicadas } } });
     await tx.galardonPostulacion.updateMany({ where: { candidatoId: origenId }, data: { candidatoId: destinoId } });
     await tx.galardonCandidato.update({ where: { id: origenId }, data: { fusionadoEnId: destinoId } });
+    // Una decisión de Talento Humano sobre el origen pasa al destino, salvo que choque con otra del destino.
+    const decisionesDestino = await tx.galardonDecision.findMany({ where: { candidatoId: destinoId }, select: { valor: true } });
+    await tx.galardonDecision.deleteMany({ where: { candidatoId: origenId, valor: { in: decisionesDestino.map((d) => d.valor) } } });
+    await tx.galardonDecision.updateMany({ where: { candidatoId: origenId }, data: { candidatoId: destinoId } });
     if (!destino.userId && origen.userId) {
       await tx.galardonCandidato.update({ where: { id: destinoId }, data: { userId: origen.userId } });
     }
@@ -360,6 +364,44 @@ export async function revisarVotante(votanteId: string, decision: "VALIDA" | "AN
     description: `Postulación ${decision === "VALIDA" ? "validada" : "anulada"}: ${votante.fullName} (${votante.documentNumber})`,
   });
   revalidarGestion();
+  return { ok: true };
+}
+
+/**
+ * Talento Humano define el ganador de un centro en un valor: desempates o
+ * cuando todos los postulados ya ganaron otro valor. La persona debe tener
+ * postulaciones válidas en ese centro y ese valor.
+ */
+export async function definirGanador(ips: string, valor: GalardonValor, candidatoId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const sesion = await requireAdminEscritura();
+  if (!esIpsValida(ips) || !ORDEN_VALORES.includes(valor)) return { ok: false, error: "Centro o valor inválido." };
+  const c = await prisma.galardonCandidato.findUnique({ where: { id: candidatoId }, select: { nombre: true, ips: true } });
+  if (!c || c.ips !== ips) return { ok: false, error: "Esa persona no está postulada en este centro." };
+  const votos = await prisma.galardonPostulacion.count({ where: { candidatoId, valor, estado: "VALIDA" } });
+  if (!votos) return { ok: false, error: `${c.nombre} no tiene postulaciones válidas en ${valorInfo(valor).nombre}.` };
+  // Nadie gana dos valores: si esa persona tenía una decisión en otro valor del centro, se retira.
+  await prisma.$transaction([
+    prisma.galardonDecision.deleteMany({ where: { ips, candidatoId, valor: { not: valor } } }),
+    prisma.galardonDecision.upsert({
+      where: { ips_valor: { ips, valor } },
+      update: { candidatoId, decididoPor: sesion.user.id },
+      create: { ips, valor, candidatoId, decididoPor: sesion.user.id },
+    }),
+  ]);
+  await registrarAuditoria({ userId: sesion.user.id, action: "UPDATE", entity: "Galardon", entityId: candidatoId, description: `Ganador definido: ${valorInfo(valor).nombre} en ${ips} → «${c.nombre}»` });
+  revalidarGestion();
+  revalidatePath("/galardones/ceremonia");
+  return { ok: true };
+}
+
+/** Quita la decisión de Talento Humano: vuelve a mandar el conteo. */
+export async function quitarDecision(ips: string, valor: GalardonValor): Promise<{ ok: true } | { ok: false; error: string }> {
+  const sesion = await requireAdminEscritura();
+  const r = await prisma.galardonDecision.deleteMany({ where: { ips, valor } });
+  if (!r.count) return { ok: false, error: "No había una decisión para ese valor." };
+  await registrarAuditoria({ userId: sesion.user.id, action: "UPDATE", entity: "Galardon", description: `Decisión retirada: ${valorInfo(valor).nombre} en ${ips} vuelve al conteo` });
+  revalidarGestion();
+  revalidatePath("/galardones/ceremonia");
   return { ok: true };
 }
 
