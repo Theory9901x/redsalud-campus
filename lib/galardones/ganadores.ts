@@ -21,7 +21,21 @@ import { ORDEN_VALORES, valorInfo } from "@/lib/galardones/valores";
  * escrito distinto.
  */
 
-export type Persona = { id: string; nombre: string; votos: number; porcentaje: number };
+export type Persona = {
+  id: string;
+  nombre: string;
+  votos: number;
+  porcentaje: number;
+  /** Hasta tres testimonios de quienes la postularon, para leer en la ceremonia. */
+  testimonios: string[];
+};
+
+/** Testimonios legibles en voz alta: ni muy cortos ni muy largos, sin repetir. */
+function elegirTestimonios(motivos: string[]): string[] {
+  const unicos = [...new Set(motivos.map((m) => m.trim()).filter(Boolean))];
+  const buenos = unicos.filter((m) => m.length >= 25 && m.length <= 280);
+  return (buenos.length ? buenos : unicos).slice(0, 3);
+}
 
 export type OrigenGanador = "MAYORIA" | "REASIGNADO" | "DECISION" | "EMPATE" | "SIN_POSTULACIONES";
 
@@ -41,7 +55,13 @@ export type Decision = { ips: string; valor: GalardonValor; candidatoId: string 
 
 export function calcularGanadores(centro: ResultadoIps, decisiones: Decision[]): Ganador[] {
   const porValor = new Map(centro.valores.map((v) => [v.valor, v]));
-  const persona = (c: { id: string; nombre: string; votos: number; porcentaje: number }): Persona => ({ id: c.id, nombre: c.nombre, votos: c.votos, porcentaje: c.porcentaje });
+  const persona = (c: { id: string; nombre: string; votos: number; porcentaje: number; motivos?: string[] }): Persona => ({
+    id: c.id,
+    nombre: c.nombre,
+    votos: c.votos,
+    porcentaje: c.porcentaje,
+    testimonios: elegirTestimonios(c.motivos ?? []),
+  });
   const resultado = new Map<GalardonValor, Ganador>();
   const usados = new Map<string, GalardonValor>();
 
