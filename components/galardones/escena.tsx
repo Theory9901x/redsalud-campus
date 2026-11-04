@@ -41,9 +41,9 @@ export function CabeceraGalardones({
           </small>
         </div>
       </div>
-      <Link href={volverA} className="gala-enlace">
+      <Link href={volverA} className="gala-enlace" aria-label={volverTexto}>
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-        {volverTexto}
+        <span>{volverTexto}</span>
       </Link>
     </header>
   );

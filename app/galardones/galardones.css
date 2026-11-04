@@ -315,3 +315,122 @@ textarea.gala-input { min-height: 6.2rem; resize: vertical; line-height: 1.5; fo
   .gala-resumen-fila { grid-template-columns: 1fr; gap: 0.3rem; }
   .gala-valor-num { display: none; }
 }
+
+/* =====================================================================
+   FORMULARIO v2 · dinamismo y celular primero
+   ===================================================================== */
+
+/* Progreso compacto (celular): anillo + barra segmentada. */
+.gala-progreso { display: none; align-items: center; gap: 0.85rem; margin: 1.2rem 0 0.9rem; }
+.gala-anillo { position: relative; width: 3.1rem; height: 3.1rem; flex: none; }
+.gala-anillo svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.gala-anillo circle { fill: none; stroke-width: 5; }
+.gala-anillo .pista { stroke: var(--g-line-strong); }
+.gala-anillo .relleno { stroke: var(--g-a); stroke-linecap: round; transition: stroke-dashoffset .6s var(--g-ease), stroke .4s; }
+.gala-anillo b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.82rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.gala-progreso-texto { min-width: 0; flex: 1; }
+.gala-progreso-texto small { display: block; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--g-dim); }
+.gala-progreso-texto strong { display: block; margin-top: 0.1rem; font-size: 1.02rem; font-weight: 800; letter-spacing: -0.01em; color: var(--g-a); }
+.gala-segmentos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 0.45rem; }
+.gala-segmentos i { display: block; height: 4px; border-radius: 999px; background: var(--g-line-strong); overflow: hidden; position: relative; }
+.gala-segmentos i::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--g-a); transform: scaleX(0); transform-origin: left; transition: transform .5s var(--g-ease); }
+.gala-segmentos i[data-on]::after { transform: scaleX(1); }
+
+/* Riel de escritorio con marca de hecho. */
+.gala-riel button[data-estado="hecho"] span:first-child::after { content: " ✓"; color: var(--g-cyan); }
+
+/* Barra de acciones: pegada abajo mientras se baja por el paso. */
+.gala-barra {
+  position: relative; z-index: 15; margin-top: 1.1rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+}
+.gala-barra .gala-btn { min-height: 3rem; }
+.gala-barra-ayuda { font-size: 0.74rem; color: var(--g-dim); }
+.gala-barra-ayuda b { color: var(--g-a); }
+
+/* Buscador de centros */
+.gala-buscar { position: relative; margin-top: 1rem; }
+.gala-buscar svg { position: absolute; left: 0.9rem; top: 50%; translate: 0 -50%; width: 1rem; height: 1rem; color: var(--g-dim); pointer-events: none; }
+.gala-buscar .gala-input { padding-left: 2.5rem; }
+.gala-ips-vacio { grid-column: 1 / -1; padding: 1rem; text-align: center; font-size: 0.85rem; color: var(--g-dim); }
+.gala-ips button { overflow: hidden; }
+.gala-ips button .gala-marca-ok {
+  position: absolute; top: 8px; right: 8px; width: 1.15rem; height: 1.15rem; border-radius: 50%; display: grid; place-items: center;
+  background: var(--g-cyan); color: #fff; box-shadow: 0 0 0 4px color-mix(in oklch, var(--g-cyan) 20%, transparent);
+}
+.gala-ips button[data-activo]::after { display: none; }
+.gala-ips button[data-sugerida] { border-style: dashed; border-color: color-mix(in oklch, var(--g-cyan) 55%, transparent); }
+
+/* Frases de arranque para el motivo */
+.gala-frases { display: flex; gap: 0.4rem; overflow-x: auto; padding: 0.1rem 0 0.35rem; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.gala-frases::-webkit-scrollbar { display: none; }
+.gala-frases button {
+  flex: none; padding: 0.45rem 0.8rem; border-radius: 999px; border: 1px solid var(--g-a-line); background: var(--g-a-soft); color: var(--g-text);
+  font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: transform .15s, background .2s; white-space: nowrap;
+}
+.gala-frases button:active { transform: scale(0.96); }
+
+/* Contador circular del motivo */
+.gala-mini-anillo { display: inline-flex; align-items: center; gap: 0.4rem; }
+.gala-mini-anillo svg { width: 1.05rem; height: 1.05rem; transform: rotate(-90deg); }
+.gala-mini-anillo circle { fill: none; stroke-width: 3.5; }
+.gala-mini-anillo .pista { stroke: var(--g-line-strong); }
+.gala-mini-anillo .relleno { stroke: var(--g-a); stroke-linecap: round; transition: stroke-dashoffset .3s; }
+
+/* Ficha de la persona elegida del directorio */
+.gala-elegida {
+  display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0.75rem; border-radius: 14px;
+  border: 1px solid var(--g-a-line); background: var(--g-a-soft);
+}
+.gala-avatar { display: grid; place-items: center; flex: none; width: 2.3rem; height: 2.3rem; border-radius: 50%; color: #fff; font-size: 0.8rem; font-weight: 800; background: linear-gradient(135deg, var(--g-a), oklch(40% 0.12 var(--g-h))); }
+.gala-elegida b { display: block; font-size: 0.95rem; }
+.gala-elegida small { display: block; font-size: 0.72rem; color: var(--g-muted); }
+.gala-elegida button { margin-left: auto; border: 0; background: none; color: var(--g-muted); font: inherit; font-size: 0.75rem; font-weight: 700; text-decoration: underline; cursor: pointer; }
+
+/* Detalle desplegable del valor */
+.gala-detalle { margin-top: 0.7rem; border-radius: 14px; border: 1px solid var(--g-line); background: var(--g-panel); }
+.gala-detalle summary { list-style: none; cursor: pointer; padding: 0.7rem 0.9rem; font-size: 0.8rem; font-weight: 700; color: var(--g-a); display: flex; align-items: center; justify-content: space-between; }
+.gala-detalle summary::-webkit-details-marker { display: none; }
+.gala-detalle[open] summary svg { rotate: 180deg; }
+.gala-detalle summary svg { transition: rotate .25s var(--g-ease); }
+.gala-detalle p { margin: 0; padding: 0 0.9rem 0.85rem; font-size: 0.86rem; line-height: 1.55; color: var(--g-muted); }
+
+/* Borrador guardado */
+.gala-borrador {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 1rem; padding: 0.75rem 0.9rem; border-radius: 14px;
+  border: 1px solid color-mix(in oklch, var(--g-gold) 45%, transparent); background: color-mix(in oklch, var(--g-gold) 10%, transparent); font-size: 0.85rem;
+}
+.gala-borrador span { flex: 1; min-width: 12rem; }
+
+/* Confeti al enviar */
+.gala-confeti { position: fixed; inset: 0; z-index: 80; pointer-events: none; overflow: hidden; }
+.gala-confeti i { position: absolute; top: 38%; left: 50%; width: 9px; height: 14px; border-radius: 2px; }
+
+/* Textareas e inputs a 16px en celular: iOS no hace zoom al enfocar. */
+@media (max-width: 640px) {
+  .gala-progreso { display: flex; }
+  .gala-riel { display: none; }
+  .gala-valor { padding: 1.1rem 1rem 0.4rem; border-radius: 20px; }
+  .gala-valor-cab { gap: 0.7rem; }
+  .gala-valor-icono { width: 2.6rem; height: 2.6rem; border-radius: 12px; }
+  .gala-valor h2 { font-size: 1.4rem; }
+  .gala-definicion { font-size: 0.92rem; }
+  .gala-ips { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; }
+  .gala-ips button { padding: 0.8rem 0.75rem; font-size: 0.88rem; min-height: 3.4rem; }
+  .gala-input, textarea.gala-input { font-size: 16px; }
+  .gala-sugerencias li button { padding: 0.8rem 0.75rem; }
+  /* En el celular las acciones quedan pegadas abajo, al alcance del pulgar. */
+  .gala-barra {
+    position: sticky; bottom: 0; margin: 0.6rem -0.75rem 0;
+    padding: 0.9rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, oklch(97.6% 0.008 240 / 0), oklch(97.6% 0.008 240 / 0.92) 30%, var(--g-bg) 60%);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  .gala-barra .gala-btn-principal { flex: 1; justify-content: center; }
+  .gala-barra-ayuda { display: none; }
+  .gala-titulo { font-size: clamp(1.9rem, 8.5vw, 2.6rem); }
+  .gala-lead { font-size: 0.92rem; }
+  .gala-cabecera .gala-enlace span { display: none; }
+  .gala-cabecera .gala-enlace { padding: 0.55rem; }
+  .gala-eyebrow { letter-spacing: 0.16em; font-size: 0.62rem; }
+}
