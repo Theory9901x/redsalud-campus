@@ -313,14 +313,14 @@ export function FormularioPostulacion({ nombreVotante, ipsSugerida, cierraEl }: 
         )}
       </AnimatePresence>
 
-      <div className="gala-barra">
+      <div className="gala-navegacion">
         {hayAtras ? (
           <button type="button" className="gala-btn gala-btn-sutil" onClick={alRetroceder} aria-label="Paso anterior">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             <span className="hidden sm:inline">Atrás</span>
           </button>
         ) : (
-          <span className="gala-barra-ayuda">{cierraEl ? <>Plazo: hasta el <b>{cierraEl}</b></> : "Una sola postulación por colaborador"}</span>
+          <span className="gala-navegacion-ayuda">{cierraEl ? <>Plazo: hasta el <b>{cierraEl}</b></> : "Una sola postulación por colaborador"}</span>
         )}
         <motion.button
           type="button"

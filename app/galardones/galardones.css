@@ -340,13 +340,13 @@ textarea.gala-input { min-height: 6.2rem; resize: vertical; line-height: 1.5; fo
 .gala-riel button[data-estado="hecho"] span:first-child::after { content: " ✓"; color: var(--g-cyan); }
 
 /* Barra de acciones: pegada abajo mientras se baja por el paso. */
-.gala-barra {
+.gala-navegacion {
   position: relative; z-index: 15; margin-top: 1.1rem;
   display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
 }
-.gala-barra .gala-btn { min-height: 3rem; }
-.gala-barra-ayuda { font-size: 0.74rem; color: var(--g-dim); }
-.gala-barra-ayuda b { color: var(--g-a); }
+.gala-navegacion .gala-btn { min-height: 3rem; }
+.gala-navegacion-ayuda { font-size: 0.74rem; color: var(--g-dim); }
+.gala-navegacion-ayuda b { color: var(--g-a); }
 
 /* Buscador de centros */
 .gala-buscar { position: relative; margin-top: 1rem; }
@@ -420,14 +420,14 @@ textarea.gala-input { min-height: 6.2rem; resize: vertical; line-height: 1.5; fo
   .gala-input, textarea.gala-input { font-size: 16px; }
   .gala-sugerencias li button { padding: 0.8rem 0.75rem; }
   /* En el celular las acciones quedan pegadas abajo, al alcance del pulgar. */
-  .gala-barra {
+  .gala-navegacion {
     position: sticky; bottom: 0; margin: 0.6rem -0.75rem 0;
     padding: 0.9rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom));
     background: linear-gradient(180deg, oklch(97.6% 0.008 240 / 0), oklch(97.6% 0.008 240 / 0.92) 30%, var(--g-bg) 60%);
     backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   }
-  .gala-barra .gala-btn-principal { flex: 1; justify-content: center; }
-  .gala-barra-ayuda { display: none; }
+  .gala-navegacion .gala-btn-principal { flex: 1; justify-content: center; }
+  .gala-navegacion-ayuda { display: none; }
   .gala-titulo { font-size: clamp(1.9rem, 8.5vw, 2.6rem); }
   .gala-lead { font-size: 0.92rem; }
   .gala-cabecera .gala-enlace span { display: none; }
