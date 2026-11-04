@@ -13,6 +13,7 @@ import {
   Settings,
   Users,
   Gavel,
+  Trophy,
 } from "lucide-react";
 import { AppSidebar, type GrupoNav, type ItemNav } from "@/components/shell/app-sidebar";
 import type { AdminSection } from "@prisma/client";
@@ -36,6 +37,9 @@ const GRUPOS: { label: string | null; items: ItemAdmin[] }[] = [
       { href: "/admin/usuarios", label: "Usuarios", icon: Users, section: "USUARIOS" },
       { href: "/admin/inscripciones", label: "Inscripciones", icon: ClipboardList, section: "INSCRIPCIONES" },
       { href: "/admin/certificados", label: "Constancias", icon: Award, section: "CERTIFICADOS" },
+      // Resultados de la Noche de Galardones: la postulación en sí (/galardones)
+      // es la misma para todos los roles.
+      { href: "/galardones/resultados", label: "Noche de Galardones", icon: Trophy, section: "USUARIOS" },
     ],
   },
   {

@@ -41,6 +41,9 @@ const RUTAS_PROTEGIDAS = [
   // El enlace público (/e/:slug) queda deliberadamente FUERA: se responde
   // sin cuenta.
   "/encuestas",
+  // Postulaciones a la Noche de Galardones: una por colaborador, así que
+  // exige cuenta.
+  "/galardones",
 ];
 const RUTAS_DE_ACCESO = ["/cambiar-contrasena", "/login", "/registro"];
 

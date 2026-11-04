@@ -1,0 +1,126 @@
+import type { GalardonValor } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { IPS_GALARDONES } from "@/lib/galardones/ips";
+import { ORDEN_VALORES } from "@/lib/galardones/valores";
+
+/** La convocatoria está abierta si no hay fila, o si está marcada abierta y no pasó la fecha de cierre. */
+export async function estadoConvocatoria() {
+  const c = await prisma.galardonConvocatoria.findUnique({ where: { id: "singleton" } });
+  const vencida = !!c?.cierraEl && c.cierraEl.getTime() < Date.now();
+  return { abierta: (c?.abierta ?? true) && !vencida, cierraEl: c?.cierraEl ?? null, anio: c?.anio ?? 2026 };
+}
+
+/** Las postulaciones ya hechas por una persona, en el orden de los valores. */
+export async function postulacionDe(votanteId: string) {
+  const filas = await prisma.galardonPostulacion.findMany({
+    where: { votanteId },
+    include: { candidato: { select: { nombre: true } } },
+  });
+  if (!filas.length) return null;
+  const porValor = new Map(filas.map((f) => [f.valor, f]));
+  return {
+    ips: filas[0].ips,
+    enviadaEl: filas[0].createdAt,
+    valores: ORDEN_VALORES.map((v) => {
+      const f = porValor.get(v);
+      return f ? { valor: v, nombre: f.candidato.nombre, nombreEscrito: f.nombreEscrito, motivo: f.motivo } : null;
+    }).filter((x): x is NonNullable<typeof x> => x !== null),
+  };
+}
+
+export type CandidatoResultado = {
+  id: string;
+  nombre: string;
+  registrado: boolean;
+  votos: number;
+  porcentaje: number;
+  /** Nombres tal como los escribieron quienes postularon, con cuántas veces cada uno. */
+  variantes: { texto: string; veces: number }[];
+  motivos: string[];
+};
+
+export type ResultadoValor = {
+  valor: GalardonValor;
+  total: number;
+  candidatos: CandidatoResultado[];
+  /** Más de un candidato con el máximo de votos. */
+  empate: boolean;
+};
+
+export type ResultadoIps = {
+  ips: string;
+  total: number;
+  votantes: number;
+  valores: ResultadoValor[];
+};
+
+export type ResultadosGalardones = {
+  totalPostulaciones: number;
+  totalVotantes: number;
+  totalCandidatos: number;
+  ipsConParticipacion: number;
+  porIps: ResultadoIps[];
+};
+
+/**
+ * Resultados: por cada centro IPS y cada valor, los candidatos ordenados por
+ * número de postulaciones. Todo se calcula a partir de las postulaciones
+ * vigentes, así que una fusión o separación de candidatos se refleja al
+ * instante.
+ */
+export async function resultadosGalardones(): Promise<ResultadosGalardones> {
+  const postulaciones = await prisma.galardonPostulacion.findMany({
+    include: { candidato: { select: { id: true, nombre: true, userId: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const votantes = new Set(postulaciones.map((p) => p.votanteId));
+  const candidatos = new Set(postulaciones.map((p) => p.candidatoId));
+
+  const porIps: ResultadoIps[] = IPS_GALARDONES.map((ips) => {
+    const deIps = postulaciones.filter((p) => p.ips === ips);
+    const valores: ResultadoValor[] = ORDEN_VALORES.map((valor) => {
+      const deValor = deIps.filter((p) => p.valor === valor);
+      const grupos = new Map<string, CandidatoResultado & { variantesMapa: Map<string, number> }>();
+      for (const p of deValor) {
+        let g = grupos.get(p.candidatoId);
+        if (!g) {
+          g = { id: p.candidatoId, nombre: p.candidato.nombre, registrado: !!p.candidato.userId, votos: 0, porcentaje: 0, variantes: [], motivos: [], variantesMapa: new Map() };
+          grupos.set(p.candidatoId, g);
+        }
+        g.votos++;
+        g.variantesMapa.set(p.nombreEscrito.trim(), (g.variantesMapa.get(p.nombreEscrito.trim()) ?? 0) + 1);
+        if (p.motivo.trim()) g.motivos.push(p.motivo.trim());
+      }
+      const lista = [...grupos.values()]
+        .map(({ variantesMapa, ...g }) => ({
+          ...g,
+          porcentaje: deValor.length ? Math.round((g.votos / deValor.length) * 100) : 0,
+          variantes: [...variantesMapa.entries()].map(([texto, veces]) => ({ texto, veces })).sort((a, b) => b.veces - a.veces),
+        }))
+        .sort((a, b) => b.votos - a.votos || a.nombre.localeCompare(b.nombre, "es"));
+      const empate = lista.length > 1 && lista[0].votos === lista[1].votos;
+      return { valor, total: deValor.length, candidatos: lista, empate };
+    });
+    return { ips, total: deIps.length, votantes: new Set(deIps.map((p) => p.votanteId)).size, valores };
+  });
+
+  return {
+    totalPostulaciones: postulaciones.length,
+    totalVotantes: votantes.size,
+    totalCandidatos: candidatos.size,
+    ipsConParticipacion: porIps.filter((i) => i.total > 0).length,
+    porIps,
+  };
+}
+
+/** Listado plano de postulaciones (para el Excel). */
+export async function listadoPostulaciones() {
+  return prisma.galardonPostulacion.findMany({
+    include: {
+      candidato: { select: { nombre: true, userId: true } },
+      votante: { select: { fullName: true, documentNumber: true, position: true, department: true } },
+    },
+    orderBy: [{ ips: "asc" }, { valor: "asc" }, { createdAt: "asc" }],
+  });
+}

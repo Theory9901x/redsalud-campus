@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, CalendarRange, ClipboardList, Gavel, GraduationCap, Layers, LayoutDashboard, User } from "lucide-react";
+import { Award, CalendarRange, ClipboardList, Gavel, GraduationCap, Layers, LayoutDashboard, Trophy, User } from "lucide-react";
 import { AppSidebar, type GrupoNav } from "@/components/shell/app-sidebar";
 
 const GRUPOS: GrupoNav[] = [
@@ -21,6 +21,10 @@ const GRUPOS: GrupoNav[] = [
       { href: "/evaluaciones", label: "Evaluaciones", icon: ClipboardList },
       { href: "/encuestas", label: "Mis encuestas", icon: ClipboardList },
     ],
+  },
+  {
+    label: "Reconocimiento",
+    items: [{ href: "/galardones", label: "Noche de Galardones", icon: Trophy }],
   },
   {
     label: "Cuenta",

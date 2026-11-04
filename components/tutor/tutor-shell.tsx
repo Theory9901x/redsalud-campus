@@ -11,6 +11,7 @@ import {
   MessageSquareText,
   PieChart,
   Radio,
+  Trophy,
   Users,
 } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/topbar";
@@ -52,7 +53,10 @@ const NAV_GROUPS: GrupoNav[] = [
   },
   {
     label: "Personas",
-    items: [{ href: "/tutor/inscritos", label: "Participantes", icon: Users }],
+    items: [
+      { href: "/tutor/inscritos", label: "Participantes", icon: Users },
+      { href: "/galardones", label: "Noche de Galardones", icon: Trophy },
+    ],
   },
 ];
 

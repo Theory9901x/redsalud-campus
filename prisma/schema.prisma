@@ -181,6 +181,8 @@ model User {
   planesMejoraResponsable   PlanMejora[]            @relation("PlanMejoraResponsable")
   planesMejoraCreados       PlanMejora[]            @relation("PlanMejoraCreadoPor")
   seguimientosMejora        PlanMejoraSeguimiento[] @relation("PlanMejoraSeguimientoAutor")
+  galardonPostulaciones     GalardonPostulacion[]   @relation("GalardonVotante")
+  galardonCandidaturas      GalardonCandidato[]     @relation("GalardonCandidatoUser")
 
   @@index([role, status])
   @@index([department])
@@ -1579,4 +1581,80 @@ model PlanMejoraSeguimiento {
   createdAt    DateTime   @default(now())
 
   @@index([planMejoraId])
+}
+
+// ------------------------------------------------------------------
+// Noche de Galardones · reconocimiento al mérito "Salud y Vida para el Llano"
+// ------------------------------------------------------------------
+// Cada colaborador postula, UNA sola vez, a una persona por cada valor del
+// Código de Integridad (memorando 112.31.07.144 de Gerencia). Las
+// postulaciones se agrupan por centro IPS y por valor; el resultado es la
+// mayoría de postulaciones.
+//
+// El nombre del postulado lo escribe quien vota, y la gente no escribe igual
+// el mismo nombre ("Fabian Bolivar", "Bolívar Boyacá Fabián David", con
+// errores de digitación…). Por eso la postulación NO cuenta por el texto
+// escrito sino por un CANDIDATO: al registrar, se busca en la misma IPS un
+// candidato que sea la misma persona (lib/galardones/nombres.ts) y se le suma;
+// si no existe, se crea. El texto escrito se conserva tal cual, para
+// auditar la agrupación, y Talento Humano puede fusionar o separar
+// candidatos desde los resultados.
+
+enum GalardonValor {
+  INTEGRIDAD
+  HUMANIZACION
+  LIDERAZGO
+}
+
+/// Estado de la convocatoria (fila única). Sin fila = abierta.
+model GalardonConvocatoria {
+  id       String    @id @default("singleton")
+  anio     Int       @default(2026)
+  abierta  Boolean   @default(true)
+  /// Fecha límite informativa; al pasar, la convocatoria se considera cerrada.
+  cierraEl DateTime?
+  updatedAt DateTime @updatedAt
+}
+
+model GalardonCandidato {
+  id          String  @id @default(cuid())
+  /// Centro IPS (nombre tal como está en lib/galardones/ips.ts).
+  ips         String
+  /// Nombre con el que se muestra: el de la cuenta, si está registrado, o el primer nombre escrito, en nombre propio.
+  nombre      String
+  /// Nombre normalizado (sin tildes, minúsculas, sin partículas) para agrupar.
+  nombreClave String
+  /// Persona registrada en el campus, cuando quien postula la eligió del directorio.
+  userId      String?
+  user        User?   @relation("GalardonCandidatoUser", fields: [userId], references: [id], onDelete: SetNull)
+  /// Si Talento Humano lo fusionó con otro candidato, aquí queda el destino; sus postulaciones ya se movieron.
+  fusionadoEnId String?
+  fusionadoEn   GalardonCandidato?  @relation("GalardonFusion", fields: [fusionadoEnId], references: [id], onDelete: SetNull)
+  fusionados    GalardonCandidato[] @relation("GalardonFusion")
+  createdAt   DateTime @default(now())
+
+  postulaciones GalardonPostulacion[]
+
+  @@index([ips, nombreClave])
+  @@index([userId])
+}
+
+model GalardonPostulacion {
+  id            String        @id @default(cuid())
+  valor         GalardonValor
+  ips           String
+  /// Nombre exactamente como lo escribió quien postula.
+  nombreEscrito String
+  /// Comportamiento o aporte observable que sustenta la postulación (lo pide el memorando).
+  motivo        String
+  candidatoId   String
+  candidato     GalardonCandidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+  votanteId     String
+  votante       User              @relation("GalardonVotante", fields: [votanteId], references: [id], onDelete: Cascade)
+  createdAt     DateTime          @default(now())
+
+  /// Una postulación por valor por persona: es lo que hace que cada colaborador vote una sola vez.
+  @@unique([votanteId, valor])
+  @@index([ips, valor])
+  @@index([candidatoId])
 }
