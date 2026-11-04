@@ -8,6 +8,7 @@ import { videoPara, videotecaPara } from "@/lib/videoteca/consultas";
 import { duracionTexto } from "@/lib/videoteca/formato";
 import { CabeceraVideoteca, matizCategoria, Miniatura } from "@/components/videoteca/piezas";
 import { Reproductor } from "@/components/videoteca/reproductor";
+import { AccesoVideo, type DatoAcceso } from "@/components/videoteca/acceso-video";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,19 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const v = await prisma.videoCapacitacion.findUnique({ where: { id }, select: { titulo: true } });
   return { title: v ? `${v.titulo} · Videoteca` : "Videoteca" };
+}
+
+/** Líneas "Plataforma: …", "Usuario: …", "Contraseña: …" de la descripción: se muestran aparte, como datos de acceso. */
+const ACCESO = /^\s*(plataforma|enlace|link|usuario|contraseña|clave)\s*:\s*(.+)$/i;
+function separarAcceso(descripcion: string | null) {
+  const datos: DatoAcceso[] = [];
+  const resto: string[] = [];
+  for (const linea of (descripcion ?? "").split(/\r?\n/)) {
+    const m = linea.match(ACCESO);
+    if (m) datos.push({ etiqueta: m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase(), valor: m[2].trim() });
+    else resto.push(linea);
+  }
+  return { datos, texto: resto.join("\n").replace(/\n*(c[oó]mo entrar|acceso)\s*:?\s*$/i, "").trim() };
 }
 
 const FECHA = new Intl.DateTimeFormat("es-CO", { dateStyle: "long", timeZone: "America/Bogota" });
@@ -30,6 +44,7 @@ export default async function VerVideoPage({ params }: { params: Promise<{ id: s
     prisma.institutionSettings.findUnique({ where: { id: "singleton" }, select: { institutionName: true, logoUrl: true } }),
   ]);
   if (!v) notFound();
+  const { datos: acceso, texto: descripcion } = separarAcceso(v.descripcion);
   const otros = [...todos.filter((x) => x.id !== v.id && x.categoria === v.categoria), ...todos.filter((x) => x.id !== v.id && x.categoria !== v.categoria)].slice(0, 8);
 
   return (
@@ -51,7 +66,8 @@ export default async function VerVideoPage({ params }: { params: Promise<{ id: s
                 </span>
               )}
               {!v.publicado && <span className="vt-mono" style={{ color: "oklch(55% 0.14 60)" }}>Oculto · solo lo ven los administradores</span>}
-              {v.descripcion && <p>{v.descripcion}</p>}
+              {descripcion && <p>{descripcion}</p>}
+              {acceso.length > 0 && <AccesoVideo datos={acceso} titulo={v.titulo} />}
             </div>
           </section>
 
