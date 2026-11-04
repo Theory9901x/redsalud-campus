@@ -247,3 +247,124 @@
   .cer-tabla-envoltura { box-shadow: none; overflow: visible; }
   .cer-tabla th { position: static; }
 }
+
+/* =====================================================================
+   PRESENTAR · HOLOGRÁFICO
+   El mismo lenguaje de la apertura 3D: espacio oscuro con aurora, rejilla
+   de energía que avanza, vidrio con neón por valor. Las tres tarjetas del
+   centro entran en arco con giro 3D y flotan; al revelar, el nombre gira
+   a la vista y salen chispas.
+   ===================================================================== */
+.cer-presentar {
+  --c-panel: transparent;
+  --c-tinta: oklch(96% 0.01 250);
+  --c-tinta-2: oklch(84% 0.02 250);
+  --c-tenue: oklch(68% 0.03 250);
+  --c-linea: oklch(80% 0.08 220 / 0.14);
+  --c-linea-2: oklch(80% 0.08 220 / 0.28);
+  --c-acento: oklch(84% 0.13 205);
+  --c-oro: oklch(86% 0.13 85);
+  --c-oro-osc: oklch(86% 0.13 85);
+  --c-sombra: 0 30px 60px -30px #000;
+  position: relative; isolation: isolate; overflow: hidden; color: var(--c-tinta); background: #03060f;
+}
+.cer-holo-fondo { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.cer-holo-fondo .aurora {
+  position: absolute; inset: -25%;
+  background:
+    radial-gradient(38% 32% at 28% 30%, oklch(55% 0.14 200 / 0.42), transparent 70%),
+    radial-gradient(34% 30% at 76% 24%, oklch(48% 0.17 300 / 0.36), transparent 70%),
+    radial-gradient(44% 34% at 58% 88%, oklch(62% 0.13 80 / 0.2), transparent 70%);
+  filter: blur(34px); animation: cer-aurora 16s ease-in-out infinite alternate;
+}
+.cer-holo-fondo .rejilla {
+  position: absolute; left: -60%; right: -60%; bottom: -8%; height: 62%;
+  transform: perspective(520px) rotateX(70deg); transform-origin: 50% 100%;
+  background-image: linear-gradient(oklch(82% 0.13 210 / 0.38) 1px, transparent 1px), linear-gradient(90deg, oklch(82% 0.13 210 / 0.38) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: linear-gradient(to top, #000 8%, transparent 80%); mask-image: linear-gradient(to top, #000 8%, transparent 80%);
+  animation: cer-rejilla 2.2s linear infinite;
+}
+.cer-holo-fondo .estrellas {
+  position: absolute; inset: 0; opacity: 0.6;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%, #fff, transparent), radial-gradient(1px 1px at 32% 62%, #cfe0ff, transparent),
+    radial-gradient(1.5px 1.5px at 58% 12%, #fff, transparent), radial-gradient(1px 1px at 78% 44%, #cfe0ff, transparent),
+    radial-gradient(1px 1px at 88% 16%, #fff, transparent), radial-gradient(1.5px 1.5px at 44% 34%, #ffe8b0, transparent),
+    radial-gradient(1px 1px at 20% 48%, #fff, transparent), radial-gradient(1px 1px at 68% 70%, #cfe0ff, transparent);
+  animation: cer-titila 5s ease-in-out infinite alternate;
+}
+.cer-holo-fondo::after { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, transparent 55%, oklch(6% 0.02 255 / 0.75)), repeating-linear-gradient(0deg, oklch(100% 0 0 / 0.02) 0 1px, transparent 1px 3px); }
+@keyframes cer-aurora { to { transform: translate3d(5%, -4%, 0) rotate(10deg) scale(1.08); } }
+@keyframes cer-rejilla { to { background-position: 0 64px, 0 0; } }
+@keyframes cer-titila { to { opacity: 0.25; } }
+
+/* Lista de centros */
+.cer-presentar .cer-lista { background: oklch(12% 0.03 255 / 0.55); backdrop-filter: blur(14px); border-right: 1px solid var(--c-linea); }
+.cer-presentar .cer-lista h2 { font-family: var(--font-datos), ui-monospace, monospace; color: var(--c-acento); }
+.cer-presentar .cer-lista button { color: var(--c-tinta-2); }
+.cer-presentar .cer-lista button:hover { background: oklch(100% 0 0 / 0.05); }
+.cer-presentar .cer-lista button[aria-current="true"] { background: oklch(30% 0.07 225 / 0.45); border-color: oklch(84% 0.13 205 / 0.6); color: #fff; box-shadow: 0 0 22px -4px oklch(80% 0.13 210 / 0.45); }
+.cer-presentar .cer-lista .n { font-family: var(--font-datos), ui-monospace, monospace; color: var(--c-tenue); }
+.cer-presentar .cer-puntos i { background: oklch(100% 0 0 / 0.14); }
+.cer-presentar .cer-puntos i[data-on] { background: oklch(80% 0.16 var(--c-h, 210)); box-shadow: 0 0 8px oklch(80% 0.16 var(--c-h, 210)); }
+
+/* Cabeza del centro */
+.cer-presentar .cer-cabeza small { font-family: var(--font-datos), ui-monospace, monospace; color: var(--c-acento); text-shadow: 0 0 12px oklch(80% 0.13 210 / 0.6); }
+.cer-presentar .cer-cabeza h1 { background: linear-gradient(180deg, #fff 30%, oklch(84% 0.06 225)); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 26px oklch(75% 0.12 210 / 0.4)); animation: cer-titulo 0.9s var(--c-ease) both; }
+.cer-presentar .cer-cabeza p { color: var(--c-tinta-2); }
+@keyframes cer-titulo { from { opacity: 0; letter-spacing: 0.08em; filter: blur(8px) drop-shadow(0 0 26px oklch(75% 0.12 210 / 0.4)); } }
+
+/* Las tres tarjetas en arco */
+.cer-presentar .cer-tarjetas { perspective: 1400px; }
+.cer-presentar .cer-tarjeta {
+  --c-n: oklch(82% 0.16 var(--c-h));
+  --c-v: var(--c-n);
+  --c-v-suave: oklch(70% 0.15 var(--c-h) / 0.16);
+  background: linear-gradient(180deg, oklch(22% 0.05 var(--c-h) / 0.72), oklch(11% 0.03 255 / 0.82));
+  border: 1px solid oklch(80% 0.15 var(--c-h) / 0.5);
+  box-shadow: inset 0 0 0 1px oklch(80% 0.15 var(--c-h) / 0.08), 0 0 46px -12px oklch(72% 0.16 var(--c-h) / 0.6), 0 34px 60px -30px #000;
+  backdrop-filter: blur(14px);
+  transform: rotateY(var(--giro, 0deg));
+  animation: cer-entra 1s var(--c-ease) both, cer-flota 6s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 140ms), calc(1s + var(--i, 0) * 0.4s);
+}
+.cer-presentar .cer-tarjeta::before { background: var(--c-n); box-shadow: 0 0 22px var(--c-n); }
+.cer-presentar .cer-tarjeta::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(115deg, transparent 38%, oklch(100% 0 0 / 0.08) 50%, transparent 62%); background-size: 260% 100%; animation: cer-barrido 5.5s ease-in-out infinite; animation-delay: calc(var(--i, 0) * 0.6s); }
+.cer-presentar .cer-tarjeta-icono { color: var(--c-n); background: var(--c-v-suave); box-shadow: 0 0 18px -2px oklch(80% 0.16 var(--c-h) / 0.6); }
+.cer-presentar .cer-tarjeta-cab small { font-family: var(--font-datos), ui-monospace, monospace; color: var(--c-tenue); }
+.cer-presentar .cer-tarjeta-cab b { color: var(--c-n); text-shadow: 0 0 18px oklch(80% 0.16 var(--c-h) / 0.55); }
+@keyframes cer-entra { from { opacity: 0; transform: translate3d(0, 70px, -160px) rotateY(calc(var(--giro, 0deg) * 5)) rotateX(22deg) scale(0.88); } to { opacity: 1; transform: rotateY(var(--giro, 0deg)); } }
+@keyframes cer-flota { 0%, 100% { transform: rotateY(var(--giro, 0deg)) translateY(0); } 50% { transform: rotateY(var(--giro, 0deg)) translateY(-10px); } }
+@keyframes cer-barrido { 0%, 60% { background-position: 120% 0; } 100% { background-position: -120% 0; } }
+
+/* Sellada: holograma que escanea */
+.cer-presentar .cer-sellada { position: relative; overflow: hidden; border: 1.5px dashed oklch(80% 0.15 var(--c-h) / 0.55); color: var(--c-n); background: repeating-linear-gradient(0deg, oklch(80% 0.15 var(--c-h) / 0.05) 0 2px, transparent 2px 6px), radial-gradient(60% 60% at 50% 50%, oklch(70% 0.15 var(--c-h) / 0.16), transparent 70%); animation: cer-latido-borde 2.4s ease-in-out infinite; }
+.cer-presentar .cer-sellada::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--c-n); box-shadow: 0 0 16px 2px var(--c-n); animation: cer-escaneo 2.6s linear infinite; }
+.cer-presentar .cer-sellada:hover { border-color: var(--c-n); background-color: oklch(70% 0.15 var(--c-h) / 0.1); }
+.cer-presentar .cer-sellada svg { filter: drop-shadow(0 0 12px var(--c-n)); }
+.cer-presentar .cer-sellada kbd { background: oklch(14% 0.03 255); color: var(--c-tinta-2); border-color: var(--c-linea-2); }
+@keyframes cer-escaneo { from { top: 0; } to { top: 100%; } }
+@keyframes cer-latido-borde { 50% { box-shadow: inset 0 0 40px -10px oklch(80% 0.15 var(--c-h) / 0.5); } }
+
+/* Revelado */
+.cer-presentar .cer-ganador small { color: var(--c-oro); text-shadow: 0 0 12px oklch(84% 0.13 85 / 0.6); }
+.cer-presentar .cer-ganador h3 { background: linear-gradient(180deg, #fff 40%, oklch(88% 0.08 var(--c-h))); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 22px oklch(78% 0.15 var(--c-h) / 0.55)); }
+.cer-presentar .cer-ganador .cer-conteo { color: var(--c-tinta-2); }
+.cer-presentar .cer-testimonios { border-top-color: var(--c-linea-2); }
+.cer-presentar .cer-testimonios li { color: var(--c-tinta-2); }
+.cer-presentar .cer-testimonios li::before { background: var(--c-n); box-shadow: 0 0 8px var(--c-n); }
+
+/* Pie y botones */
+.cer-presentar .cer-pie { border-top-color: var(--c-linea); }
+.cer-presentar .cer-boton { background: oklch(18% 0.03 255 / 0.62); border-color: var(--c-linea-2); color: var(--c-tinta); backdrop-filter: blur(10px); }
+.cer-presentar .cer-boton:hover { border-color: var(--c-acento); box-shadow: 0 0 18px -4px oklch(80% 0.13 210 / 0.5); }
+.cer-presentar .cer-boton-fuerte { color: #1a1205; border-color: oklch(92% 0.1 88 / 0.6); background: linear-gradient(180deg, oklch(92% 0.11 88), oklch(76% 0.14 72)); box-shadow: 0 0 30px -4px oklch(80% 0.15 80 / 0.55); }
+.cer-presentar .cer-boton-fuerte:hover { background: linear-gradient(180deg, oklch(95% 0.1 88), oklch(80% 0.14 72)); border-color: oklch(95% 0.08 90); }
+.cer-presentar .cer-atajos { color: var(--c-tenue); }
+.cer-presentar .cer-atajos kbd { background: oklch(16% 0.03 255); color: var(--c-tinta-2); border-color: var(--c-linea-2); }
+
+@media (max-width: 1100px) { .cer-presentar .cer-tarjeta { --giro: 0deg !important; } }
+@media (prefers-reduced-motion: reduce) {
+  .cer-presentar .cer-tarjeta, .cer-presentar .cer-tarjeta::after, .cer-presentar .cer-sellada, .cer-presentar .cer-sellada::before, .cer-holo-fondo .aurora, .cer-holo-fondo .rejilla, .cer-holo-fondo .estrellas, .cer-presentar .cer-cabeza h1 { animation: none; }
+}

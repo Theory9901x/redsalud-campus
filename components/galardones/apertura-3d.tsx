@@ -18,9 +18,9 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Hand, RotateCcw } from "lucide-react";
-import { ORDEN_VALORES, VALORES_GALARDON, valorInfo } from "@/lib/galardones/valores";
+import { ORDEN_VALORES, VALORES_GALARDON } from "@/lib/galardones/valores";
 import type { GanadoresIps } from "@/lib/galardones/consultas";
-import { nombreCentro } from "@/lib/galardones/ips";
+import { nombreCentro, tipoCentro } from "@/lib/galardones/ips";
 
 type Props = { centros: GanadoresIps[]; anio: number; institucion: string; onIr: (i: number) => void };
 type Hover = { ips: string; valor: string; matiz: number } | null;
@@ -130,12 +130,12 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
         <AnimatePresence>
           {listo && (
             <motion.footer className="cer-a3d-pie" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 14 }} transition={{ duration: 0.9, ease: EASE }}>
-              <ul className="cer-a3d-leyenda" aria-label="Anillos">
+              <ul className="cer-a3d-leyenda" aria-label="Valores">
                 {VALORES_GALARDON.map((v, i) => (
                   <li key={v.clave} style={{ ["--c-h" as string]: v.matiz }}>
                     <span aria-hidden="true" />
                     <b>{v.nombre}</b>
-                    <small>{["Órbita interior", "Órbita media", "Órbita exterior"][i]}</small>
+                    <small>Valor 0{i + 1}</small>
                   </li>
                 ))}
               </ul>
@@ -213,14 +213,10 @@ type Opciones = {
   control: { current: Control | null };
 };
 
-/** Anillos: radio, altura y giro propio (rad/s) por valor. Bien separados para que nada quede encima. */
-const ANILLOS = [
-  { r: 3.4, y: 1.7, giro: 0.12 },
-  { r: 4.9, y: 0.05, giro: -0.08 },
-  { r: 6.4, y: -1.6, giro: 0.055 },
-];
-const CARTA = { w: 1.0, h: 1.4 };
-const MEDALLA_Y = 3.35;
+/** El anillo: una tarjeta por centro, con sus tres valores. */
+const ANILLO = { r: 5.5, y: 0.15, giro: 0.1 };
+const CARTA = { w: 1.55, h: 2.17 };
+const MEDALLA_Y = 3.5;
 const PISO_Y = -2.75;
 
 function azar(n: number) {
@@ -325,7 +321,7 @@ void main() {
   float rp = length(vW.xz - uOrigen);
   float golpe = dt > 0.0 && dt < 3.0 ? exp(-pow(rp - dt * 7.0, 2.0) * 0.8) * (1.0 - dt / 3.0) : 0.0;
   float anillos = 0.0;
-  anillos += exp(-pow(r - 3.4, 2.0) * 30.0) + exp(-pow(r - 4.9, 2.0) * 30.0) + exp(-pow(r - 6.4, 2.0) * 30.0);
+  anillos += exp(-pow(r - 5.5, 2.0) * 22.0) + exp(-pow(r - 1.6, 2.0) * 30.0) * 0.6;
   float a = linea * 0.22 + onda * (0.25 + linea * 0.6) + golpe * (0.35 + linea) + anillos * 0.18;
   gl_FragColor = vec4(uColor * a * fade, a * fade);
 }
@@ -361,7 +357,7 @@ function montar(m: Modulos, el: HTMLDivElement, o: Opciones) {
   scene.add(raiz);
 
   scene.add(new THREE.AmbientLight(0x8fa8ff, 0.5));
-  const clave = new THREE.PointLight(0xffd18a, 40, 30, 1.6);
+  const clave = new THREE.PointLight(0xffd18a, 14, 30, 1.6);
   clave.position.set(0, MEDALLA_Y + 1.5, 3.5);
   scene.add(clave);
   const contra = new THREE.PointLight(0x47c8ff, 30, 30, 1.6);
@@ -453,7 +449,7 @@ function montar(m: Modulos, el: HTMLDivElement, o: Opciones) {
     ctx.arc(256, 256, 204, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = "rgba(110,70,10,0.88)";
+    ctx.fillStyle = "rgba(70,40,4,0.95)";
     estrella(ctx, 256, 176, 62);
     ctx.fill();
     ctx.textAlign = "center";
@@ -462,7 +458,7 @@ function montar(m: Modulos, el: HTMLDivElement, o: Opciones) {
     ctx.font = `800 28px ${fuente}`;
     ctx.fillText("G A L A R D O N E S", 256, 392);
   });
-  const caraOro = guardar(new THREE.MeshStandardMaterial({ map: caraMedalla, metalness: 0.7, roughness: 0.32, emissive: 0xffffff, emissiveMap: caraMedalla, emissiveIntensity: 0.1 }));
+  const caraOro = guardar(new THREE.MeshStandardMaterial({ map: caraMedalla, metalness: 0.7, roughness: 0.32, emissive: 0x000000, emissiveIntensity: 0 }));
   const medalla = new THREE.Group();
   const pivote = new THREE.Group();
   const disco = new THREE.Mesh(guardar(new THREE.CylinderGeometry(1.05, 1.05, 0.16, 96)), [oro, caraOro, caraOro]);
@@ -525,20 +521,16 @@ function montar(m: Modulos, el: HTMLDivElement, o: Opciones) {
   haz.position.y = (MEDALLA_Y + PISO_Y) / 2;
   raiz.add(haz);
 
-  /* ── Tarjetas holográficas ── */
+  /* ── Tarjetas holográficas: una por centro, con sus tres valores ── */
   const geoCarta = guardar(new THREE.PlaneGeometry(CARTA.w, CARTA.h));
   const geoBorde = guardar(new THREE.EdgesGeometry(geoCarta));
   type Carta = {
     grupo: InstanceType<Three["Group"]>;
     frente: InstanceType<Three["Mesh"]>;
-    borde: InstanceType<Three["LineSegments"]>;
     bordeMat: InstanceType<Three["LineBasicMaterial"]>;
     k: number;
     c: number;
-    v: number;
     ips: string;
-    valor: string;
-    matiz: number;
     dispersa: InstanceType<Three["Vector3"]>;
     giroDisperso: InstanceType<Three["Quaternion"]>;
     retraso: number;
@@ -546,126 +538,153 @@ function montar(m: Modulos, el: HTMLDivElement, o: Opciones) {
   };
   const n = o.centros.length;
   const cartas: Carta[] = [];
-  ORDEN_VALORES.forEach((claveValor, v) => {
-    const info = valorInfo(claveValor);
-    const neon = color(info.matiz, 0.8, 0.16);
-    const fuerte = color(info.matiz, 0.66, 0.17);
-    const dorso = guardar(
+  const CIAN = "oklch(0.86 0.12 205)";
+  const dorso = guardar(
+    new THREE.MeshBasicMaterial({
+      transparent: true,
+      map: lienzo(512, 716, (ctx) => {
+        redondeado(ctx, 6, 6, 500, 704, 30);
+        const g = ctx.createLinearGradient(0, 0, 512, 716);
+        g.addColorStop(0, "rgba(60,40,8,0.82)");
+        g.addColorStop(1, "rgba(14,10,4,0.82)");
+        ctx.fillStyle = g;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,210,120,0.9)";
+        ctx.lineWidth = 4;
+        esquinas(ctx, 28, 28, 456, 660, 40);
+        ctx.fillStyle = "rgba(255,206,110,0.95)";
+        estrella(ctx, 256, 300, 90);
+        ctx.fill();
+        ctx.textAlign = "center";
+        ctx.font = `800 40px ${fuente}`;
+        ctx.fillText(`GALARDONES ${o.anio}`, 256, 470);
+      }),
+    }),
+  );
+  const bordeColor = colorThree(CIAN).multiplyScalar(1.5);
+  o.centros.forEach((centro, c) => {
+    const k = c;
+    const frenteMat = guardar(
       new THREE.MeshBasicMaterial({
         transparent: true,
-        side: THREE.FrontSide,
-        map: lienzo(256, 356, (ctx) => {
-          redondeado(ctx, 4, 4, 248, 348, 18);
-          const g = ctx.createLinearGradient(0, 0, 256, 356);
-          g.addColorStop(0, color(info.matiz, 0.42, 0.15).replace(")", " / 0.8)"));
-          g.addColorStop(1, color(info.matiz, 0.22, 0.1).replace(")", " / 0.8)"));
-          ctx.fillStyle = g;
+        map: lienzo(512, 716, (ctx) => {
+          // Vidrio oscuro
+          redondeado(ctx, 6, 6, 500, 704, 30);
+          ctx.fillStyle = "rgba(5,12,30,0.86)";
           ctx.fill();
-          ctx.strokeStyle = neon;
+          const brillo = ctx.createLinearGradient(0, 0, 0, 716);
+          brillo.addColorStop(0, "rgba(255,255,255,0.12)");
+          brillo.addColorStop(0.3, "rgba(255,255,255,0)");
+          ctx.fillStyle = brillo;
+          ctx.fill();
+          ctx.save();
+          ctx.clip();
+          const barra = ctx.createLinearGradient(0, 0, 512, 0);
+          VALORES_GALARDON.forEach((v, i) => {
+            barra.addColorStop(i / 2, color(v.matiz, 0.7, 0.17));
+          });
+          ctx.fillStyle = barra;
+          ctx.fillRect(0, 0, 512, 14);
+          ctx.fillStyle = "rgba(255,255,255,0.03)";
+          for (let y = 20; y < 716; y += 5) ctx.fillRect(0, y, 512, 1);
+          ctx.restore();
+          ctx.strokeStyle = CIAN;
           ctx.lineWidth = 3;
-          esquinas(ctx, 16, 16, 224, 324, 22);
-          ctx.fillStyle = neon;
-          estrella(ctx, 128, 150, 42);
-          ctx.fill();
+          esquinas(ctx, 26, 36, 460, 650, 30);
+
           ctx.textAlign = "center";
-          ctx.font = `800 22px ${fuente}`;
-          ctx.fillText(info.nombre.toUpperCase(), 128, 246);
+          ctx.fillStyle = CIAN;
+          ctx.font = `700 24px ${fuente}`;
+          ctx.fillText(`CENTRO ${String(c + 1).padStart(2, "0")} / ${String(n).padStart(2, "0")}`, 256, 92);
+
+          // Nombre del centro
+          ctx.fillStyle = "#f5f8ff";
+          let tam = 78;
+          let lineas: string[] = [];
+          for (;;) {
+            ctx.font = `800 ${tam}px ${fuente}`;
+            lineas = envolver(ctx, nombreCentro(centro.ips), 420);
+            const cabe = lineas.length <= 3 && lineas.every((l) => ctx.measureText(l).width <= 440);
+            if (cabe || tam <= 36) break;
+            tam -= 3;
+          }
+          const alto = tam * 1.05;
+          const y0 = 205 - ((lineas.length - 1) * alto) / 2;
+          lineas.forEach((l, i) => ctx.fillText(l, 256, y0 + i * alto));
+          ctx.fillStyle = "rgba(210,222,255,0.6)";
+          ctx.font = `700 22px ${fuente}`;
+          ctx.fillText(tipoCentro(centro.ips).toUpperCase(), 256, y0 + lineas.length * alto + 6);
+
+          // Los tres valores del centro
+          VALORES_GALARDON.forEach((v, i) => {
+            const y = 392 + i * 78;
+            const neon = color(v.matiz, 0.8, 0.16);
+            redondeado(ctx, 52, y, 408, 62, 14);
+            ctx.fillStyle = color(v.matiz, 0.3, 0.08).replace(")", " / 0.55)");
+            ctx.fill();
+            ctx.strokeStyle = color(v.matiz, 0.75, 0.15).replace(")", " / 0.6)");
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = neon;
+            ctx.fillRect(52, y, 8, 62);
+            ctx.textAlign = "left";
+            ctx.font = `700 22px ${fuente}`;
+            ctx.fillText(`0${v.numero}`, 78, y + 40);
+            ctx.fillStyle = "#eef3ff";
+            ctx.font = `800 28px ${fuente}`;
+            ctx.fillText(v.nombre, 124, y + 41);
+            ctx.fillStyle = neon;
+            estrella(ctx, 428, y + 31, 13);
+            ctx.fill();
+          });
+
+          // Pie tipo código
+          ctx.textAlign = "center";
+          ctx.fillStyle = "rgba(255,255,255,0.32)";
+          for (let i = 0; i < 40; i++) {
+            const w = azar(k * 31 + i) > 0.5 ? 5 : 2;
+            ctx.fillRect(116 + i * 7, 640, w, 22);
+          }
+          ctx.fillStyle = "rgba(220,230,255,0.55)";
+          ctx.font = `700 18px ${fuente}`;
+          ctx.fillText(`3 GALARDONES · ${o.anio}`, 256, 690);
         }),
       }),
     );
-    o.centros.forEach((centro, c) => {
-      const k = cartas.length;
-      const frenteMat = guardar(
-        new THREE.MeshBasicMaterial({
-          transparent: true,
-          map: lienzo(256, 356, (ctx) => {
-            // Vidrio oscuro con borde y barra de color.
-            redondeado(ctx, 4, 4, 248, 348, 18);
-            ctx.fillStyle = "rgba(6,14,32,0.82)";
-            ctx.fill();
-            const brillo = ctx.createLinearGradient(0, 0, 0, 356);
-            brillo.addColorStop(0, "rgba(255,255,255,0.10)");
-            brillo.addColorStop(0.35, "rgba(255,255,255,0)");
-            ctx.fillStyle = brillo;
-            ctx.fill();
-            ctx.save();
-            ctx.clip();
-            ctx.fillStyle = fuerte;
-            ctx.fillRect(0, 0, 256, 10);
-            // Líneas de escaneo
-            ctx.fillStyle = "rgba(255,255,255,0.025)";
-            for (let y = 14; y < 356; y += 4) ctx.fillRect(0, y, 256, 1);
-            ctx.restore();
-            ctx.strokeStyle = neon;
-            ctx.lineWidth = 2;
-            esquinas(ctx, 14, 22, 228, 320, 16);
-            ctx.textAlign = "center";
-            ctx.fillStyle = neon;
-            ctx.font = `700 15px ${fuente}`;
-            ctx.fillText(`VALOR 0${info.numero} · ${info.nombre.toUpperCase()}`, 128, 56);
-            ctx.fillStyle = "#f3f7ff";
-            let tam = 42;
-            let lineas: string[] = [];
-            for (;;) {
-              ctx.font = `800 ${tam}px ${fuente}`;
-              lineas = envolver(ctx, nombreCentro(centro.ips), 210);
-              const cabe = lineas.length <= 3 && lineas.every((l) => ctx.measureText(l).width <= 220);
-              if (cabe || tam <= 22) break;
-              tam -= 2;
-            }
-            const alto = tam * 1.1;
-            const y0 = 186 - ((lineas.length - 1) * alto) / 2;
-            lineas.forEach((l, i) => ctx.fillText(l, 128, y0 + i * alto));
-            // Pie tipo código
-            ctx.fillStyle = "rgba(255,255,255,0.35)";
-            for (let i = 0; i < 26; i++) {
-              const w = azar(k * 31 + i) > 0.5 ? 3 : 1;
-              ctx.fillRect(64 + i * 5, 286, w, 18);
-            }
-            ctx.fillStyle = "rgba(220,230,255,0.55)";
-            ctx.font = `700 12px ${fuente}`;
-            ctx.fillText(`GALARDONES ${o.anio} · ${String(c + 1).padStart(2, "0")}/${String(n).padStart(2, "0")}`, 128, 326);
-          }),
-        }),
-      );
-      const grupo = new THREE.Group();
-      const frente = new THREE.Mesh(geoCarta, frenteMat);
-      frente.userData.k = k;
-      const atras = new THREE.Mesh(geoCarta, dorso);
-      atras.rotation.y = Math.PI;
-      const bordeMat = guardar(new THREE.LineBasicMaterial({ color: colorThree(neon).multiplyScalar(1.6), transparent: true, opacity: 0.55, toneMapped: false }));
-      const borde = new THREE.LineSegments(geoBorde, bordeMat);
-      grupo.add(frente, atras, borde);
-      raiz.add(grupo);
+    const grupo = new THREE.Group();
+    const frente = new THREE.Mesh(geoCarta, frenteMat);
+    frente.userData.k = k;
+    const atras = new THREE.Mesh(geoCarta, dorso);
+    atras.rotation.y = Math.PI;
+    const bordeMat = guardar(new THREE.LineBasicMaterial({ color: bordeColor, transparent: true, opacity: 0.55, toneMapped: false }));
+    const borde = new THREE.LineSegments(geoBorde, bordeMat);
+    grupo.add(frente, atras, borde);
+    raiz.add(grupo);
 
-      const u = azar(k + 1) * Math.PI * 2;
-      const w = Math.acos(2 * azar(k + 7) - 1);
-      const rad = 5 + azar(k + 13) * 6;
-      const dispersa = new THREE.Vector3(Math.sin(w) * Math.cos(u) * rad, Math.cos(w) * rad * 0.55 + 1, Math.sin(w) * Math.sin(u) * rad);
-      const giroDisperso = new THREE.Quaternion().setFromEuler(new THREE.Euler((azar(k + 3) - 0.5) * 2.4, azar(k + 5) * Math.PI * 2, (azar(k + 9) - 0.5) * 1.6));
-      cartas.push({ grupo, frente, borde, bordeMat, k, c, v, ips: nombreCentro(centro.ips), valor: info.nombre, matiz: info.matiz, dispersa, giroDisperso, retraso: azar(k + 21) * 0.6 + v * 0.22, hover: 0 });
-    });
+    const u = azar(k + 1) * Math.PI * 2;
+    const w = Math.acos(2 * azar(k + 7) - 1);
+    const rad = 5 + azar(k + 13) * 5;
+    const dispersa = new THREE.Vector3(Math.sin(w) * Math.cos(u) * rad, Math.cos(w) * rad * 0.5 + 1, Math.sin(w) * Math.sin(u) * rad);
+    const giroDisperso = new THREE.Quaternion().setFromEuler(new THREE.Euler((azar(k + 3) - 0.5) * 2.4, azar(k + 5) * Math.PI * 2, (azar(k + 9) - 0.5) * 1.6));
+    cartas.push({ grupo, frente, bordeMat, k, c, ips: nombreCentro(centro.ips), dispersa, giroDisperso, retraso: azar(k + 21) * 0.9, hover: 0 });
   });
   const mallas = cartas.map((x) => x.frente);
 
-  /* ── Flujos de datos en las órbitas ── */
-  const POR_ANILLO = 46;
-  const NF = POR_ANILLO * ANILLOS.length;
+  /* ── Flujos de datos: dos corrientes, sobre y bajo el anillo ── */
+  const NF = 120;
   const posF = new Float32Array(NF * 3);
   const colF = new Float32Array(NF * 3);
   const fase = new Float32Array(NF);
-  VALORES_GALARDON.forEach((val, v) => {
-    const cc = colorThree(color(val.matiz, 0.8, 0.17)).multiplyScalar(1.8);
-    for (let i = 0; i < POR_ANILLO; i++) {
-      const j = v * POR_ANILLO + i;
-      fase[j] = azar(j + 7000) * Math.PI * 2;
-      colF.set([cc.r, cc.g, cc.b], j * 3);
-    }
-  });
+  for (let j = 0; j < NF; j++) {
+    const v = VALORES_GALARDON[j % 3];
+    const cc = colorThree(color(v.matiz, 0.8, 0.17)).multiplyScalar(1.8);
+    fase[j] = azar(j + 7000) * Math.PI * 2;
+    colF.set([cc.r, cc.g, cc.b], j * 3);
+  }
   const geoF = guardar(new THREE.BufferGeometry());
   geoF.setAttribute("position", new THREE.BufferAttribute(posF, 3));
   geoF.setAttribute("color", new THREE.BufferAttribute(colF, 3));
-  const flujos = new THREE.Points(geoF, guardar(new THREE.PointsMaterial({ size: 0.12, map: puntoTex, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })));
+  const flujos = new THREE.Points(geoF, guardar(new THREE.PointsMaterial({ size: 0.13, map: puntoTex, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })));
   raiz.add(flujos);
 
   /* ── Polvo dorado que sube ── */
@@ -687,7 +706,7 @@ function montar(m: Modulos, el: HTMLDivElement, o: Opciones) {
   const composer = new m.EffectComposer(renderer);
   composer.setPixelRatio(dpr);
   composer.addPass(new m.RenderPass(scene, camera));
-  const bloom = new m.UnrealBloomPass(new THREE.Vector2(1, 1), 0.85, 0.55, 0.62);
+  const bloom = new m.UnrealBloomPass(new THREE.Vector2(1, 1), 0.62, 0.5, 0.8);
   composer.addPass(bloom);
   composer.addPass(new m.OutputPass());
 
@@ -705,7 +724,7 @@ function montar(m: Modulos, el: HTMLDivElement, o: Opciones) {
     camera.aspect = w / h;
     const tan = Math.tan(THREE.MathUtils.degToRad(36 / 2));
     // Que quepan los anillos de lado a lado y, en alto, la medalla y el piso.
-    distancia = Math.max(7.8 / (tan * camera.aspect), 7.0 / tan);
+    distancia = Math.max(7.0 / (tan * camera.aspect), 6.3 / tan);
     objetivo.set(0, w < 700 ? 1.0 : 0.05, 0);
     camera.updateProjectionMatrix();
   };
@@ -823,7 +842,7 @@ function montar(m: Modulos, el: HTMLDivElement, o: Opciones) {
     const d = distancia * THREE.MathUtils.lerp(2.6, 1, entrada);
     const px = ndc.x > 5 ? 0 : ndc.x * mov;
     const py = ndc.y > 5 ? 0 : ndc.y * mov;
-    const az = px * 0.14 + (1 - entrada) * 1.2 + Math.sin(reloj * 0.12) * 0.04 * mov;
+    const az = px * 0.14 + (1 - entrada) * 1.2 + Math.sin(reloj * 0.09) * 0.22 * mov;
     const el2 = elev + py * 0.05;
     camera.position.set(Math.sin(az) * Math.cos(el2) * d, objetivo.y + Math.sin(el2) * d, Math.cos(az) * Math.cos(el2) * d);
     camera.lookAt(objetivo);
@@ -839,26 +858,24 @@ function montar(m: Modulos, el: HTMLDivElement, o: Opciones) {
     });
     aroOro.rotation.set(Math.PI / 2 + Math.sin(reloj * 0.4) * 0.25 * mov, 0, reloj * 0.2 * mov);
     (haz.material as InstanceType<Three["MeshBasicMaterial"]>).opacity = aparece * (0.42 + Math.sin(reloj * 2.2) * 0.08 * mov);
-    halo.material.opacity = aparece * (0.6 + Math.sin(reloj * 1.7) * 0.12 * mov);
+    halo.material.opacity = aparece * (0.32 + Math.sin(reloj * 1.7) * 0.08 * mov);
 
     // Hover (solo cuando ya están en sus anillos)
     const k = abajo || t < FIN * 0.85 ? -1 : tocada();
     if (k !== encima) {
       encima = k;
       canvas.style.cursor = k >= 0 ? "pointer" : "grab";
-      o.alHover(k >= 0 ? { ips: cartas[k].ips, valor: cartas[k].valor, matiz: cartas[k].matiz } : null);
+      o.alHover(k >= 0 ? { ips: cartas[k].ips, valor: "Ver sus 3 galardones", matiz: 205 } : null);
     }
 
     for (const x of cartas) {
-      const a = ANILLOS[x.v];
-      const sentido = x.v % 2 ? -1 : 1;
-      const ang = (x.c / n) * Math.PI * 2 + a.giro * reloj * mov + arrastre * sentido * (1 - x.v * 0.15) + x.v * 0.4;
+      const ang = (x.c / n) * Math.PI * 2 + ANILLO.giro * reloj * mov + arrastre;
       x.hover += ((encima === x.k ? 1 : 0) - x.hover) * Math.min(1, dt * 12);
-      const r = a.r + x.hover * 0.6;
-      vFinal.set(Math.sin(ang) * r, a.y + x.hover * 0.18 + Math.sin(reloj * 1.3 + x.c * 0.7 + x.v) * 0.05 * mov, Math.cos(ang) * r);
+      const r = ANILLO.r + x.hover * 0.8;
+      vFinal.set(Math.sin(ang) * r, ANILLO.y + x.hover * 0.25 + Math.sin(reloj * 1.2 + x.c * 0.8) * 0.09 * mov, Math.cos(ang) * r);
       qFinal.setFromAxisAngle(ejeY, ang);
 
-      // 1) estalla desde la medalla  2) flota  3) se acopla a su anillo
+      // 1) estalla desde la medalla  2) flota  3) se acopla al anillo
       const p1 = salida(tramo(t, 1.2 + x.retraso * 0.5, 2.8 + x.retraso * 0.5));
       const p2 = suave(tramo(t, 3.0 + x.retraso, 5.0 + x.retraso));
       vTmp.copy(x.dispersa);
@@ -868,23 +885,18 @@ function montar(m: Modulos, el: HTMLDivElement, o: Opciones) {
       qGiro.setFromAxisAngle(ejeY, reloj * 0.6 * mov);
       qTmp.copy(qGiro).multiply(x.giroDisperso);
       x.grupo.quaternion.slerpQuaternions(qTmp, qFinal, p2);
-      x.grupo.scale.setScalar((0.001 + p1) * (1 + x.hover * 0.22));
-      // Destello del borde al acoplarse, y brillo al pasar el puntero.
-      const acople = p2 > 0.92 && p2 < 1 ? 1 : Math.max(0, 1 - (t - (5.0 + x.retraso)) * 2.5);
-      x.bordeMat.opacity = Math.min(1, 0.45 + x.hover * 0.55 + (p2 >= 1 ? acople * 0.5 : 0) + Math.sin(reloj * 2 + x.k) * 0.08 * mov);
+      x.grupo.scale.setScalar((0.001 + p1) * (1 + x.hover * 0.16));
+      const acople = p2 >= 1 ? Math.max(0, 1 - (t - (5.0 + x.retraso)) * 2.5) : 0;
+      x.bordeMat.opacity = Math.min(1, 0.45 + x.hover * 0.55 + acople * 0.5 + Math.sin(reloj * 2 + x.k) * 0.08 * mov);
     }
 
-    // Flujos de datos: recorren cada órbita, en el sentido de su anillo.
+    // Flujos de datos: recorren la órbita sobre y bajo las tarjetas.
     const visible = o.reducir ? 1 : tramo(t, 4.2, 5.6);
-    for (let v = 0; v < ANILLOS.length; v++) {
-      const a = ANILLOS[v];
-      const sentido = v % 2 ? -1 : 1;
-      for (let i = 0; i < POR_ANILLO; i++) {
-        const j = v * POR_ANILLO + i;
-        const ang = fase[j] + reloj * (0.6 + (j % 5) * 0.08) * sentido * (mov || 0.02) + arrastre * sentido;
-        const rr = a.r + 0.55 + Math.sin(j * 1.7) * 0.08;
-        posF.set([Math.sin(ang) * rr, a.y - CARTA.h * 0.62 + Math.sin(j) * 0.05, Math.cos(ang) * rr], j * 3);
-      }
+    for (let j = 0; j < NF; j++) {
+      const nivel = j % 2 ? 1 : -1;
+      const ang = fase[j] + reloj * (0.45 + (j % 5) * 0.07) * nivel * (mov || 0.02) + arrastre;
+      const rr = ANILLO.r + 0.35 + Math.sin(j * 1.7) * 0.1;
+      posF.set([Math.sin(ang) * rr, ANILLO.y + nivel * CARTA.h * 0.6 + Math.sin(j) * 0.05, Math.cos(ang) * rr], j * 3);
     }
     geoF.attributes.position.needsUpdate = true;
     (flujos.material as InstanceType<Three["PointsMaterial"]>).opacity = visible;

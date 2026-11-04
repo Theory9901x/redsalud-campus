@@ -158,8 +158,13 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
 
       {modo === "presentar" && centro && (
         <div className="cer-presentar">
-          <nav className="cer-lista" aria-label="Centros IPS">
-            <h2>Centros IPS</h2>
+          <div className="cer-holo-fondo" aria-hidden="true">
+            <span className="aurora" />
+            <span className="estrellas" />
+            <span className="rejilla" />
+          </div>
+          <nav className="cer-lista" aria-label="Centros">
+            <h2>Centros</h2>
             <ol>
               {centros.map((c, i) => {
                 const r = reveladosDe(c.ips);
@@ -170,7 +175,7 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
                       <span className="nombre">{nombreCentro(c.ips)}</span>
                       <span className="cer-puntos" aria-label={`${r.length} de 3 revelados`}>
                         {ORDEN_VALORES.map((v) => (
-                          <i key={v} data-on={r.includes(v) || undefined} style={{ ["--c-v" as string]: `oklch(52% 0.14 ${valorInfo(v).matiz})` }} />
+                          <i key={v} data-on={r.includes(v) || undefined} style={{ ["--c-v" as string]: `oklch(52% 0.14 ${valorInfo(v).matiz})`, ["--c-h" as string]: valorInfo(v).matiz }} />
                         ))}
                       </span>
                     </button>
@@ -193,7 +198,7 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
                 <div className="cer-cabeza">
                   <div>
                     <small>
-                      Centro IPS {idx + 1} de {centros.length}
+                      Centro {idx + 1} de {centros.length}
                     </small>
                     <h1 className="cer-display">{nombreCentro(centro.ips)}</h1>
                     <p>
@@ -317,7 +322,7 @@ function TarjetaValor({
   const reducir = useReducedMotion();
   const persona = g.personas[0];
   return (
-    <article className="cer-tarjeta" style={{ ["--c-h" as string]: info.matiz }}>
+    <article className="cer-tarjeta" style={{ ["--c-h" as string]: info.matiz, ["--i" as string]: tecla - 1, ["--giro" as string]: `${(2 - tecla) * 9}deg` }}>
       <div className="cer-tarjeta-cab">
         <span className="cer-tarjeta-icono">
           <Icono className="h-5 w-5" aria-hidden="true" />
@@ -346,9 +351,10 @@ function TarjetaValor({
             <motion.div
               key="ganador"
               className="cer-ganador relative"
-              initial={reducir ? false : { opacity: 0, y: 18, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.6, ease: EASE }}
+              initial={reducir ? false : { opacity: 0, rotateX: -80, y: 24, scale: 0.94, filter: "blur(8px)" }}
+              animate={{ opacity: 1, rotateX: 0, y: 0, scale: 1, filter: "blur(0px)" }}
+              transition={{ duration: 0.8, ease: EASE }}
+              style={{ transformPerspective: 900 }}
             >
               {g.personas.length === 0 ? (
                 <p className="cer-sin">Sin ganador en este valor</p>
