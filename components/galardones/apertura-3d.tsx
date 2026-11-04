@@ -1,11 +1,18 @@
 "use client";
 
 /**
- * APERTURA 3D de la ceremonia (three.js / WebGL).
- * Una medalla dorada al centro y tres anillos de tarjetas en órbita, uno por
- * valor (Integridad adentro, Humanización al medio, Liderazgo afuera). Las 51
- * tarjetas salen disparadas de la medalla, flotan y se ordenan en sus anillos.
- * Se arrastra para girar y cada tarjeta lleva a su centro.
+ * APERTURA 3D de la ceremonia (three.js / WebGL) · versión "holográfica".
+ *
+ * Espacio oscuro con aurora animada, rejilla de energía en el piso con ondas
+ * que se expanden, una medalla dorada con giróscopo de anillos y un haz de
+ * luz, y tres anillos de tarjetas de vidrio holográfico (uno por valor) con
+ * bordes de neón. Todo pasa por bloom, así que lo brillante resplandece.
+ *
+ * Coreografía: la cámara entra en salto (warp), la medalla se enciende, las
+ * 51 tarjetas salen disparadas y se acoplan a su anillo. Después todo sigue
+ * vivo: los anillos giran en sentidos opuestos, flujos de datos recorren las
+ * órbitas y el piso late. Se arrastra para girar y cada tarjeta lleva a su
+ * centro (al tocarla, una onda sale desde ella).
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -20,7 +27,7 @@ type Control = { repetir: () => void };
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 /** Fin de la coreografía de entrada, en segundos. */
-const FIN = 5.6;
+const FIN = 6.2;
 
 export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
   const host = useRef<HTMLDivElement>(null);
@@ -42,11 +49,18 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
     let cancelado = false;
     let limpiar = () => {};
     (async () => {
-      const [THREE, { RoomEnvironment }] = await Promise.all([import("three"), import("three/examples/jsm/environments/RoomEnvironment.js")]);
+      const [THREE, { EffectComposer }, { RenderPass }, { UnrealBloomPass }, { OutputPass }, { RoomEnvironment }] = await Promise.all([
+        import("three"),
+        import("three/examples/jsm/postprocessing/EffectComposer.js"),
+        import("three/examples/jsm/postprocessing/RenderPass.js"),
+        import("three/examples/jsm/postprocessing/UnrealBloomPass.js"),
+        import("three/examples/jsm/postprocessing/OutputPass.js"),
+        import("three/examples/jsm/environments/RoomEnvironment.js"),
+      ]);
       await document.fonts?.ready;
       if (cancelado) return;
       try {
-        limpiar = montar(THREE, RoomEnvironment, el, {
+        limpiar = montar({ THREE, EffectComposer, RenderPass, UnrealBloomPass, OutputPass, RoomEnvironment }, el, {
           centros,
           anio,
           reducir,
@@ -67,9 +81,12 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
     };
   }, [centros, anio, reducir]);
 
+  const total = centros.length * ORDEN_VALORES.length;
+
   return (
     <div className="cer-a3d">
       <div ref={host} className="cer-a3d-lienzo" aria-hidden="true" />
+      <div className="cer-a3d-vineta" aria-hidden="true" />
 
       {sinWebgl && (
         <div className="cer-a3d-respaldo">
@@ -81,44 +98,55 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
         </div>
       )}
 
-      <div className="cer-a3d-capa">
-        <motion.header className="cer-a3d-titulo" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1, ease: EASE, delay: 0.2 }}>
-          <p className="cer-a3d-cejilla">{institucion} · Salud y Vida para el Llano</p>
+      {/* HUD: arriba a la izquierda el título, arriba a la derecha las cifras */}
+      <div className="cer-a3d-hud">
+        <motion.header className="cer-a3d-titulo" initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1.2, ease: EASE, delay: 0.5 }}>
+          <p className="cer-a3d-cejilla">
+            <span className="punto" aria-hidden="true" />
+            {institucion} · Salud y Vida para el Llano
+          </p>
           <h1 className="cer-display">
             Galardones <em>{anio}</em>
           </h1>
+          <p className="cer-a3d-bajada">Reconocimiento al mérito · tres valores, una persona por valor en cada centro</p>
         </motion.header>
+
+        <motion.dl className="cer-a3d-cifras" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1.2, ease: EASE, delay: 0.8 }}>
+          <div>
+            <dt>Centros</dt>
+            <dd>{String(centros.length).padStart(2, "0")}</dd>
+          </div>
+          <div>
+            <dt>Galardones</dt>
+            <dd>{String(total).padStart(2, "0")}</dd>
+          </div>
+          <div>
+            <dt>Valores</dt>
+            <dd>03</dd>
+          </div>
+        </motion.dl>
 
         <AnimatePresence>
           {listo && (
-            <motion.footer
-              className="cer-a3d-pie"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
-              transition={{ duration: 0.8, ease: EASE }}
-            >
+            <motion.footer className="cer-a3d-pie" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 14 }} transition={{ duration: 0.9, ease: EASE }}>
               <ul className="cer-a3d-leyenda" aria-label="Anillos">
                 {VALORES_GALARDON.map((v, i) => (
                   <li key={v.clave} style={{ ["--c-h" as string]: v.matiz }}>
                     <span aria-hidden="true" />
-                    {v.nombre}
-                    <small>{["anillo interior", "anillo medio", "anillo exterior"][i]}</small>
+                    <b>{v.nombre}</b>
+                    <small>{["Órbita interior", "Órbita media", "Órbita exterior"][i]}</small>
                   </li>
                 ))}
               </ul>
-              <p className="cer-a3d-cifra">
-                <b>{centros.length}</b> centros · <b>{centros.length * ORDEN_VALORES.length}</b> galardones
-              </p>
               <div className="cer-a3d-acciones">
-                <button type="button" className="cer-boton cer-boton-grande cer-boton-fuerte" onClick={() => onIr(0)}>
+                <button type="button" className="cer-a3d-cta" onClick={() => onIr(0)}>
                   Empezar la ceremonia
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
                 {!sinWebgl && (
                   <button
                     type="button"
-                    className="cer-boton cer-boton-grande"
+                    className="cer-a3d-sec"
                     onClick={() => {
                       setListo(false);
                       control.current?.repetir();
@@ -132,7 +160,7 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
               {!sinWebgl && (
                 <p className="cer-a3d-pista">
                   <Hand className="h-3.5 w-3.5" aria-hidden="true" />
-                  Arrastra para girar los anillos · toca una tarjeta para ir a su centro
+                  Arrastra para girar · toca una tarjeta para ir a su centro
                 </p>
               )}
             </motion.footer>
@@ -143,6 +171,7 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
       <div ref={chip} className="cer-a3d-chip" data-visible={hover ? "" : undefined} style={hover ? { ["--c-h" as string]: hover.matiz } : undefined}>
         {hover && (
           <>
+            <span className="vt" aria-hidden="true" />
             <b>{hover.ips}</b>
             <span>{hover.valor}</span>
             <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -164,7 +193,14 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
 /* ═════════════════════ Escena ═════════════════════ */
 
 type Three = typeof import("three");
-type ClaseAmbiente = typeof import("three/examples/jsm/environments/RoomEnvironment.js").RoomEnvironment;
+type Modulos = {
+  THREE: Three;
+  EffectComposer: typeof import("three/examples/jsm/postprocessing/EffectComposer.js").EffectComposer;
+  RenderPass: typeof import("three/examples/jsm/postprocessing/RenderPass.js").RenderPass;
+  UnrealBloomPass: typeof import("three/examples/jsm/postprocessing/UnrealBloomPass.js").UnrealBloomPass;
+  OutputPass: typeof import("three/examples/jsm/postprocessing/OutputPass.js").OutputPass;
+  RoomEnvironment: typeof import("three/examples/jsm/environments/RoomEnvironment.js").RoomEnvironment;
+};
 type Opciones = {
   centros: GanadoresIps[];
   anio: number;
@@ -176,14 +212,15 @@ type Opciones = {
   control: { current: Control | null };
 };
 
-/** Anillos: radio, altura y giro propio (rad/s) por valor. */
+/** Anillos: radio, altura y giro propio (rad/s) por valor. Bien separados para que nada quede encima. */
 const ANILLOS = [
-  { r: 3.35, y: 1.15, giro: 0.11 },
-  { r: 4.45, y: 0.0, giro: -0.075 },
-  { r: 5.55, y: -1.15, giro: 0.05 },
+  { r: 3.4, y: 1.7, giro: 0.12 },
+  { r: 4.9, y: 0.05, giro: -0.08 },
+  { r: 6.4, y: -1.6, giro: 0.055 },
 ];
-const CARTA = { w: 0.92, h: 1.28, d: 0.035 };
-const MEDALLA_Y = 2.35;
+const CARTA = { w: 1.0, h: 1.4 };
+const MEDALLA_Y = 3.35;
+const PISO_Y = -2.75;
 
 function azar(n: number) {
   const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
@@ -228,7 +265,73 @@ function estrella(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: numb
   ctx.closePath();
 }
 
-function montar(THREE: Three, RoomEnvironment: ClaseAmbiente, el: HTMLDivElement, o: Opciones) {
+/** Esquinas tipo visor (HUD) en un rectángulo. */
+function esquinas(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, l: number) {
+  ctx.beginPath();
+  ctx.moveTo(x, y + l); ctx.lineTo(x, y); ctx.lineTo(x + l, y);
+  ctx.moveTo(x + w - l, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + l);
+  ctx.moveTo(x + w, y + h - l); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w - l, y + h);
+  ctx.moveTo(x + l, y + h); ctx.lineTo(x, y + h); ctx.lineTo(x, y + h - l);
+  ctx.stroke();
+}
+
+/* ── Shaders ── */
+const CIELO_VERT = `
+varying vec3 vPos;
+void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+`;
+const CIELO_FRAG = `
+uniform float uTime;
+varying vec3 vPos;
+float hash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+float noise(vec3 x) {
+  vec3 i = floor(x); vec3 f = fract(x); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x), mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x), mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+}
+float fbm(vec3 p) { float v = 0.0; float a = 0.5; for (int i = 0; i < 4; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; } return v; }
+void main() {
+  vec3 d = normalize(vPos);
+  float h = d.y * 0.5 + 0.5;
+  vec3 base = mix(vec3(0.004, 0.008, 0.022), vec3(0.012, 0.03, 0.07), smoothstep(0.2, 0.9, h));
+  float n = fbm(d * 2.4 + vec3(uTime * 0.025, uTime * 0.04, 0.0));
+  float banda = smoothstep(0.42, 0.78, n) * smoothstep(0.15, 0.55, h) * (1.0 - smoothstep(0.75, 1.0, h));
+  vec3 aurora = mix(vec3(0.0, 0.28, 0.36), vec3(0.22, 0.1, 0.42), smoothstep(0.3, 0.8, fbm(d * 4.0 - uTime * 0.03)));
+  base += aurora * banda * 0.55;
+  float brillo = pow(max(0.0, 1.0 - abs(d.y - 0.12) * 3.0), 3.0) * 0.06;
+  base += vec3(0.25, 0.18, 0.05) * brillo;
+  gl_FragColor = vec4(base, 1.0);
+}
+`;
+const PISO_VERT = `
+varying vec3 vW;
+void main() { vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }
+`;
+const PISO_FRAG = `
+uniform float uTime;
+uniform float uPulso;
+uniform vec2 uOrigen;
+uniform vec3 uColor;
+varying vec3 vW;
+void main() {
+  vec2 p = vW.xz * 0.9;
+  vec2 g = abs(fract(p - 0.5) - 0.5) / fwidth(p);
+  float linea = 1.0 - min(min(g.x, g.y), 1.0);
+  float r = length(vW.xz);
+  float fade = smoothstep(19.0, 2.5, r);
+  float onda = exp(-pow(r - mod(uTime * 3.2, 22.0), 2.0) * 0.5);
+  float dt = uTime - uPulso;
+  float rp = length(vW.xz - uOrigen);
+  float golpe = dt > 0.0 && dt < 3.0 ? exp(-pow(rp - dt * 7.0, 2.0) * 0.8) * (1.0 - dt / 3.0) : 0.0;
+  float anillos = 0.0;
+  anillos += exp(-pow(r - 3.4, 2.0) * 30.0) + exp(-pow(r - 4.9, 2.0) * 30.0) + exp(-pow(r - 6.4, 2.0) * 30.0);
+  float a = linea * 0.22 + onda * (0.25 + linea * 0.6) + golpe * (0.35 + linea) + anillos * 0.18;
+  gl_FragColor = vec4(uColor * a * fade, a * fade);
+}
+`;
+
+function montar(m: Modulos, el: HTMLDivElement, o: Opciones) {
+  const { THREE } = m;
   const fuente = getComputedStyle(el).fontFamily || "system-ui, sans-serif";
   const desechables: { dispose: () => void }[] = [];
   const guardar = <T extends { dispose: () => void }>(x: T) => {
@@ -236,27 +339,43 @@ function montar(THREE: Three, RoomEnvironment: ClaseAmbiente, el: HTMLDivElement
     return x;
   };
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+  renderer.setPixelRatio(dpr);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.08;
+  renderer.toneMappingExposure = 1.05;
+  renderer.setClearColor(0x02040b, 1);
   el.appendChild(renderer.domElement);
   const anisotropia = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 
   const scene = new THREE.Scene();
+  // Reflejos para el oro (no se ve de fondo: el cielo es la esfera de aurora).
   const pmrem = guardar(new THREE.PMREMGenerator(renderer));
-  const ambiente = guardar(pmrem.fromScene(new RoomEnvironment(), 0.03).texture);
-  scene.environment = ambiente;
-  scene.fog = new THREE.Fog(0xf1f5fb, 15, 34);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xdfe7f2, 0.9));
-  const sol = new THREE.DirectionalLight(0xffffff, 1.4);
-  sol.position.set(4, 9, 7);
-  scene.add(sol);
-
-  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+  scene.environment = guardar(pmrem.fromScene(new m.RoomEnvironment(), 0.04).texture);
+  scene.environmentIntensity = 0.7;
+  scene.fog = new THREE.FogExp2(0x02040b, 0.028);
+  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 400);
   const raiz = new THREE.Group();
   scene.add(raiz);
+
+  scene.add(new THREE.AmbientLight(0x8fa8ff, 0.5));
+  const clave = new THREE.PointLight(0xffd18a, 40, 30, 1.6);
+  clave.position.set(0, MEDALLA_Y + 1.5, 3.5);
+  scene.add(clave);
+  const contra = new THREE.PointLight(0x47c8ff, 30, 30, 1.6);
+  contra.position.set(-4, MEDALLA_Y, -4);
+  scene.add(contra);
+
+  // three.js no entiende oklch: el navegador lo convierte pintando un píxel.
+  const pixel = document.createElement("canvas").getContext("2d", { willReadFrequently: true })!;
+  const colorThree = (css: string) => {
+    pixel.clearRect(0, 0, 1, 1);
+    pixel.fillStyle = css;
+    pixel.fillRect(0, 0, 1, 1);
+    const [r, g, b] = pixel.getImageData(0, 0, 1, 1).data;
+    return new THREE.Color().setRGB(r / 255, g / 255, b / 255, THREE.SRGBColorSpace);
+  };
 
   const lienzo = (w: number, h: number, dibujar: (ctx: CanvasRenderingContext2D) => void) => {
     const c = document.createElement("canvas");
@@ -269,95 +388,150 @@ function montar(THREE: Three, RoomEnvironment: ClaseAmbiente, el: HTMLDivElement
     return t;
   };
 
-  /* ── Medalla ── */
-  const oro = guardar(new THREE.MeshStandardMaterial({ color: 0xd9a63e, metalness: 1, roughness: 0.22 }));
+  /* ── Cielo con aurora ── */
+  const uniCielo = { uTime: { value: 0 } };
+  const cielo = new THREE.Mesh(
+    guardar(new THREE.SphereGeometry(180, 48, 24)),
+    guardar(new THREE.ShaderMaterial({ uniforms: uniCielo, vertexShader: CIELO_VERT, fragmentShader: CIELO_FRAG, side: THREE.BackSide, depthWrite: false, fog: false })),
+  );
+  scene.add(cielo);
+
+  /* ── Estrellas (campo lejano, dan la sensación de salto) ── */
+  const NE = 1400;
+  const posE = new Float32Array(NE * 3);
+  for (let i = 0; i < NE; i++) {
+    const u = azar(i + 3000) * Math.PI * 2;
+    const w = Math.acos(2 * azar(i + 4000) - 1);
+    const r = 30 + azar(i + 5000) * 120;
+    posE.set([Math.sin(w) * Math.cos(u) * r, Math.cos(w) * r * 0.7, Math.sin(w) * Math.sin(u) * r], i * 3);
+  }
+  const geoE = guardar(new THREE.BufferGeometry());
+  geoE.setAttribute("position", new THREE.BufferAttribute(posE, 3));
+  const puntoTex = lienzo(64, 64, (ctx) => {
+    const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, "rgba(255,255,255,1)");
+    g.addColorStop(0.3, "rgba(255,255,255,0.75)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 64, 64);
+  });
+  const estrellas = new THREE.Points(geoE, guardar(new THREE.PointsMaterial({ size: 0.45, map: puntoTex, color: 0xbcd4ff, transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })));
+  scene.add(estrellas);
+
+  /* ── Piso holográfico ── */
+  const uniPiso = { uTime: { value: 0 }, uPulso: { value: -99 }, uOrigen: { value: new THREE.Vector2() }, uColor: { value: new THREE.Color(0x3fd2ff) } };
+  const piso = new THREE.Mesh(
+    guardar(new THREE.PlaneGeometry(60, 60)),
+    guardar(new THREE.ShaderMaterial({ uniforms: uniPiso, vertexShader: PISO_VERT, fragmentShader: PISO_FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })),
+  );
+  piso.rotation.x = -Math.PI / 2;
+  piso.position.y = PISO_Y;
+  raiz.add(piso);
+
+  /* ── Medalla con giróscopo ── */
+  const oro = guardar(new THREE.MeshStandardMaterial({ color: 0xf0bd55, metalness: 1, roughness: 0.2, emissive: 0x6a4000, emissiveIntensity: 0.55 }));
   const caraMedalla = lienzo(512, 512, (ctx) => {
     const g = ctx.createRadialGradient(200, 170, 20, 256, 256, 260);
-    g.addColorStop(0, "#fff4c9");
-    g.addColorStop(0.55, "#e7b955");
-    g.addColorStop(1, "#b07a20");
+    g.addColorStop(0, "#fff2c2");
+    g.addColorStop(0.55, "#e6b552");
+    g.addColorStop(1, "#a46d18");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 512, 512);
+    // La tapa del cilindro, ya girado hacia la cámara, mapea la textura rotada 90°.
+    ctx.translate(256, 256);
+    ctx.rotate(-Math.PI / 2);
+    ctx.translate(-256, -256);
     ctx.strokeStyle = "rgba(110,70,10,0.55)";
     ctx.lineWidth = 10;
     ctx.beginPath();
     ctx.arc(256, 256, 226, 0, Math.PI * 2);
     ctx.stroke();
     ctx.lineWidth = 3;
+    ctx.setLineDash([6, 10]);
     ctx.beginPath();
-    ctx.arc(256, 256, 206, 0, Math.PI * 2);
+    ctx.arc(256, 256, 204, 0, Math.PI * 2);
     ctx.stroke();
-    // La tapa del cilindro, ya girado hacia la cámara, mapea la textura
-    // rotada 90°: se dibuja girada al revés para que el texto quede derecho.
-    ctx.translate(256, 256);
-    ctx.rotate(-Math.PI / 2);
-    ctx.translate(-256, -256);
-    ctx.fillStyle = "rgba(120,78,12,0.85)";
-    estrella(ctx, 256, 178, 62);
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(110,70,10,0.88)";
+    estrella(ctx, 256, 176, 62);
     ctx.fill();
     ctx.textAlign = "center";
     ctx.font = `800 104px ${fuente}`;
     ctx.fillText(String(o.anio), 256, 338);
-    ctx.font = `800 30px ${fuente}`;
-    ctx.fillText("GALARDONES", 256, 392);
+    ctx.font = `800 28px ${fuente}`;
+    ctx.fillText("G A L A R D O N E S", 256, 392);
   });
-  const caraOro = guardar(new THREE.MeshStandardMaterial({ map: caraMedalla, metalness: 0.85, roughness: 0.3 }));
+  const caraOro = guardar(new THREE.MeshStandardMaterial({ map: caraMedalla, metalness: 0.7, roughness: 0.32, emissive: 0xffffff, emissiveMap: caraMedalla, emissiveIntensity: 0.1 }));
   const medalla = new THREE.Group();
+  const pivote = new THREE.Group();
   const disco = new THREE.Mesh(guardar(new THREE.CylinderGeometry(1.05, 1.05, 0.16, 96)), [oro, caraOro, caraOro]);
   disco.rotation.x = Math.PI / 2;
-  const pivote = new THREE.Group();
   pivote.add(disco);
   medalla.add(pivote);
-  const aro1 = new THREE.Mesh(guardar(new THREE.TorusGeometry(1.42, 0.035, 16, 160)), oro);
-  const aro2 = new THREE.Mesh(guardar(new THREE.TorusGeometry(1.62, 0.02, 12, 160)), oro);
-  medalla.add(aro1, aro2);
+  // Giróscopo: un aro por valor, de neón.
+  const aros = VALORES_GALARDON.map((v, i) => {
+    const mat = guardar(new THREE.MeshBasicMaterial({ color: colorThree(color(v.matiz, 0.78, 0.17)).multiplyScalar(2.2), toneMapped: false, transparent: true, opacity: 0.95 }));
+    const aro = new THREE.Mesh(guardar(new THREE.TorusGeometry(1.4 + i * 0.16, 0.012, 8, 200)), mat);
+    medalla.add(aro);
+    return aro;
+  });
+  const aroOro = new THREE.Mesh(guardar(new THREE.TorusGeometry(1.2, 0.03, 12, 160)), oro);
+  medalla.add(aroOro);
   const halo = new THREE.Sprite(
     guardar(
       new THREE.SpriteMaterial({
         map: lienzo(256, 256, (ctx) => {
           const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
-          g.addColorStop(0, "rgba(255,214,120,0.75)");
-          g.addColorStop(0.4, "rgba(255,214,120,0.25)");
-          g.addColorStop(1, "rgba(255,214,120,0)");
+          g.addColorStop(0, "rgba(255,200,110,0.9)");
+          g.addColorStop(0.35, "rgba(255,170,70,0.28)");
+          g.addColorStop(1, "rgba(255,170,70,0)");
           ctx.fillStyle = g;
           ctx.fillRect(0, 0, 256, 256);
         }),
         transparent: true,
         depthWrite: false,
+        blending: THREE.AdditiveBlending,
       }),
     ),
   );
-  halo.scale.set(6, 6, 1);
-  halo.position.z = -0.4;
+  halo.scale.set(7, 7, 1);
+  halo.position.z = -0.5;
   medalla.add(halo);
   medalla.position.y = MEDALLA_Y;
   raiz.add(medalla);
 
-  /* ── Sombra de contacto ── */
-  const sombra = new THREE.Mesh(
-    guardar(new THREE.PlaneGeometry(16, 16)),
+  // Haz de luz de la medalla al piso.
+  const haz = new THREE.Mesh(
+    guardar(new THREE.CylinderGeometry(0.55, 1.6, MEDALLA_Y - PISO_Y, 48, 1, true)),
     guardar(
       new THREE.MeshBasicMaterial({
-        map: lienzo(256, 256, (ctx) => {
-          const g = ctx.createRadialGradient(128, 128, 30, 128, 128, 128);
-          g.addColorStop(0, "rgba(30,45,80,0.2)");
-          g.addColorStop(1, "rgba(30,45,80,0)");
+        map: lienzo(8, 256, (ctx) => {
+          const g = ctx.createLinearGradient(0, 0, 0, 256);
+          g.addColorStop(0, "rgba(255,200,120,0.55)");
+          g.addColorStop(0.5, "rgba(120,200,255,0.12)");
+          g.addColorStop(1, "rgba(120,200,255,0)");
           ctx.fillStyle = g;
-          ctx.fillRect(0, 0, 256, 256);
+          ctx.fillRect(0, 0, 8, 256);
         }),
         transparent: true,
         depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        fog: false,
       }),
     ),
   );
-  sombra.rotation.x = -Math.PI / 2;
-  sombra.position.y = -2.25;
-  raiz.add(sombra);
+  haz.position.y = (MEDALLA_Y + PISO_Y) / 2;
+  raiz.add(haz);
 
-  /* ── Tarjetas ── */
-  const geoCarta = guardar(new THREE.BoxGeometry(CARTA.w, CARTA.h, CARTA.d));
+  /* ── Tarjetas holográficas ── */
+  const geoCarta = guardar(new THREE.PlaneGeometry(CARTA.w, CARTA.h));
+  const geoBorde = guardar(new THREE.EdgesGeometry(geoCarta));
   type Carta = {
-    mesh: InstanceType<Three["Mesh"]>;
+    grupo: InstanceType<Three["Group"]>;
+    frente: InstanceType<Three["Mesh"]>;
+    borde: InstanceType<Three["LineSegments"]>;
+    bordeMat: InstanceType<Three["LineBasicMaterial"]>;
     k: number;
     c: number;
     v: number;
@@ -371,139 +545,167 @@ function montar(THREE: Three, RoomEnvironment: ClaseAmbiente, el: HTMLDivElement
   };
   const n = o.centros.length;
   const cartas: Carta[] = [];
-  ORDEN_VALORES.forEach((clave, v) => {
-    const info = valorInfo(clave);
-    const tono = color(info.matiz);
-    const lateral = guardar(new THREE.MeshStandardMaterial({ color: new THREE.Color().setStyle(color(info.matiz, 0.6, 0.13)), roughness: 0.5 }));
+  ORDEN_VALORES.forEach((claveValor, v) => {
+    const info = valorInfo(claveValor);
+    const neon = color(info.matiz, 0.8, 0.16);
+    const fuerte = color(info.matiz, 0.66, 0.17);
     const dorso = guardar(
-      new THREE.MeshStandardMaterial({
-        roughness: 0.55,
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        side: THREE.FrontSide,
         map: lienzo(256, 356, (ctx) => {
+          redondeado(ctx, 4, 4, 248, 348, 18);
           const g = ctx.createLinearGradient(0, 0, 256, 356);
-          g.addColorStop(0, color(info.matiz, 0.62, 0.13));
-          g.addColorStop(1, color(info.matiz, 0.46, 0.13));
+          g.addColorStop(0, color(info.matiz, 0.42, 0.15).replace(")", " / 0.8)"));
+          g.addColorStop(1, color(info.matiz, 0.22, 0.1).replace(")", " / 0.8)"));
           ctx.fillStyle = g;
-          ctx.fillRect(0, 0, 256, 356);
-          ctx.strokeStyle = "rgba(255,255,255,0.35)";
+          ctx.fill();
+          ctx.strokeStyle = neon;
           ctx.lineWidth = 3;
-          redondeado(ctx, 14, 14, 228, 328, 16);
-          ctx.stroke();
-          ctx.fillStyle = "rgba(255,255,255,0.92)";
-          estrella(ctx, 128, 150, 46);
+          esquinas(ctx, 16, 16, 224, 324, 22);
+          ctx.fillStyle = neon;
+          estrella(ctx, 128, 150, 42);
           ctx.fill();
           ctx.textAlign = "center";
-          ctx.font = `800 26px ${fuente}`;
-          ctx.fillText(info.nombre.toUpperCase(), 128, 248);
+          ctx.font = `800 22px ${fuente}`;
+          ctx.fillText(info.nombre.toUpperCase(), 128, 246);
         }),
       }),
     );
     o.centros.forEach((centro, c) => {
-      const frente = guardar(
-        new THREE.MeshStandardMaterial({
-          roughness: 0.62,
+      const k = cartas.length;
+      const frenteMat = guardar(
+        new THREE.MeshBasicMaterial({
+          transparent: true,
           map: lienzo(256, 356, (ctx) => {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(0, 0, 256, 356);
-            ctx.fillStyle = tono;
-            ctx.fillRect(0, 0, 256, 22);
+            // Vidrio oscuro con borde y barra de color.
+            redondeado(ctx, 4, 4, 248, 348, 18);
+            ctx.fillStyle = "rgba(6,14,32,0.82)";
+            ctx.fill();
+            const brillo = ctx.createLinearGradient(0, 0, 0, 356);
+            brillo.addColorStop(0, "rgba(255,255,255,0.10)");
+            brillo.addColorStop(0.35, "rgba(255,255,255,0)");
+            ctx.fillStyle = brillo;
+            ctx.fill();
+            ctx.save();
+            ctx.clip();
+            ctx.fillStyle = fuerte;
+            ctx.fillRect(0, 0, 256, 10);
+            // Líneas de escaneo
+            ctx.fillStyle = "rgba(255,255,255,0.025)";
+            for (let y = 14; y < 356; y += 4) ctx.fillRect(0, y, 256, 1);
+            ctx.restore();
+            ctx.strokeStyle = neon;
+            ctx.lineWidth = 2;
+            esquinas(ctx, 14, 22, 228, 320, 16);
             ctx.textAlign = "center";
-            ctx.font = `800 19px ${fuente}`;
-            ctx.fillText(`VALOR ${info.numero} · ${info.nombre.toUpperCase()}`, 128, 60);
-            ctx.fillStyle = "#1b2540";
-            let tam = 44;
+            ctx.fillStyle = neon;
+            ctx.font = `700 15px ${fuente}`;
+            ctx.fillText(`VALOR 0${info.numero} · ${info.nombre.toUpperCase()}`, 128, 56);
+            ctx.fillStyle = "#f3f7ff";
+            let tam = 42;
             let lineas: string[] = [];
             for (;;) {
               ctx.font = `800 ${tam}px ${fuente}`;
-              lineas = envolver(ctx, centro.ips, 216);
-              const cabe = lineas.length <= 3 && lineas.every((l) => ctx.measureText(l).width <= 226);
+              lineas = envolver(ctx, centro.ips, 210);
+              const cabe = lineas.length <= 3 && lineas.every((l) => ctx.measureText(l).width <= 220);
               if (cabe || tam <= 22) break;
               tam -= 2;
             }
-            const alto = tam * 1.12;
-            const y0 = 190 - ((lineas.length - 1) * alto) / 2;
+            const alto = tam * 1.1;
+            const y0 = 186 - ((lineas.length - 1) * alto) / 2;
             lineas.forEach((l, i) => ctx.fillText(l, 128, y0 + i * alto));
-            ctx.fillStyle = "#c9952f";
-            estrella(ctx, 128, 296, 15);
-            ctx.fill();
-            ctx.fillStyle = "#7a849a";
-            ctx.font = `700 15px ${fuente}`;
-            ctx.fillText(`GALARDONES ${o.anio}`, 128, 333);
+            // Pie tipo código
+            ctx.fillStyle = "rgba(255,255,255,0.35)";
+            for (let i = 0; i < 26; i++) {
+              const w = azar(k * 31 + i) > 0.5 ? 3 : 1;
+              ctx.fillRect(64 + i * 5, 286, w, 18);
+            }
+            ctx.fillStyle = "rgba(220,230,255,0.55)";
+            ctx.font = `700 12px ${fuente}`;
+            ctx.fillText(`GALARDONES ${o.anio} · ${String(c + 1).padStart(2, "0")}/${String(n).padStart(2, "0")}`, 128, 326);
           }),
         }),
       );
-      const mesh = new THREE.Mesh(geoCarta, [lateral, lateral, lateral, lateral, frente, dorso]);
-      const k = cartas.length;
+      const grupo = new THREE.Group();
+      const frente = new THREE.Mesh(geoCarta, frenteMat);
+      frente.userData.k = k;
+      const atras = new THREE.Mesh(geoCarta, dorso);
+      atras.rotation.y = Math.PI;
+      const bordeMat = guardar(new THREE.LineBasicMaterial({ color: colorThree(neon).multiplyScalar(1.6), transparent: true, opacity: 0.55, toneMapped: false }));
+      const borde = new THREE.LineSegments(geoBorde, bordeMat);
+      grupo.add(frente, atras, borde);
+      raiz.add(grupo);
+
       const u = azar(k + 1) * Math.PI * 2;
       const w = Math.acos(2 * azar(k + 7) - 1);
-      const rad = 4.5 + azar(k + 13) * 4.5;
-      const dispersa = new THREE.Vector3(Math.sin(w) * Math.cos(u) * rad, Math.cos(w) * rad * 0.6 + 0.6, Math.sin(w) * Math.sin(u) * rad);
+      const rad = 5 + azar(k + 13) * 6;
+      const dispersa = new THREE.Vector3(Math.sin(w) * Math.cos(u) * rad, Math.cos(w) * rad * 0.55 + 1, Math.sin(w) * Math.sin(u) * rad);
       const giroDisperso = new THREE.Quaternion().setFromEuler(new THREE.Euler((azar(k + 3) - 0.5) * 2.4, azar(k + 5) * Math.PI * 2, (azar(k + 9) - 0.5) * 1.6));
-      mesh.userData.k = k;
-      raiz.add(mesh);
-      cartas.push({ mesh, k, c, v, ips: centro.ips, valor: info.nombre, matiz: info.matiz, dispersa, giroDisperso, retraso: azar(k + 21) * 0.5 + v * 0.18, hover: 0 });
+      cartas.push({ grupo, frente, borde, bordeMat, k, c, v, ips: centro.ips, valor: info.nombre, matiz: info.matiz, dispersa, giroDisperso, retraso: azar(k + 21) * 0.6 + v * 0.22, hover: 0 });
     });
   });
-  const mallas = cartas.map((x) => x.mesh);
+  const mallas = cartas.map((x) => x.frente);
 
-  /* ── Polvo dorado ── */
-  const P = 650;
+  /* ── Flujos de datos en las órbitas ── */
+  const POR_ANILLO = 46;
+  const NF = POR_ANILLO * ANILLOS.length;
+  const posF = new Float32Array(NF * 3);
+  const colF = new Float32Array(NF * 3);
+  const fase = new Float32Array(NF);
+  VALORES_GALARDON.forEach((val, v) => {
+    const cc = colorThree(color(val.matiz, 0.8, 0.17)).multiplyScalar(1.8);
+    for (let i = 0; i < POR_ANILLO; i++) {
+      const j = v * POR_ANILLO + i;
+      fase[j] = azar(j + 7000) * Math.PI * 2;
+      colF.set([cc.r, cc.g, cc.b], j * 3);
+    }
+  });
+  const geoF = guardar(new THREE.BufferGeometry());
+  geoF.setAttribute("position", new THREE.BufferAttribute(posF, 3));
+  geoF.setAttribute("color", new THREE.BufferAttribute(colF, 3));
+  const flujos = new THREE.Points(geoF, guardar(new THREE.PointsMaterial({ size: 0.12, map: puntoTex, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })));
+  raiz.add(flujos);
+
+  /* ── Polvo dorado que sube ── */
+  const P = 500;
   const pos = new Float32Array(P * 3);
-  const col = new Float32Array(P * 3);
   const vel = new Float32Array(P);
-  const paleta = [new THREE.Color(0xd9a63e), new THREE.Color(0xe8c26a), ...VALORES_GALARDON.map((v) => new THREE.Color().setStyle(color(v.matiz, 0.65, 0.14)))];
   for (let i = 0; i < P; i++) {
     const a = azar(i + 500) * Math.PI * 2;
-    const r = 1.5 + Math.sqrt(azar(i + 900)) * 10;
-    pos.set([Math.cos(a) * r, -3 + azar(i + 1300) * 10, Math.sin(a) * r], i * 3);
-    const cc = i % 4 === 0 ? paleta[2 + (i % 3)] : paleta[i % 2];
-    col.set([cc.r, cc.g, cc.b], i * 3);
-    vel[i] = 0.15 + azar(i + 1700) * 0.45;
+    const r = 1.2 + Math.sqrt(azar(i + 900)) * 11;
+    pos.set([Math.cos(a) * r, PISO_Y + azar(i + 1300) * 10, Math.sin(a) * r], i * 3);
+    vel[i] = 0.12 + azar(i + 1700) * 0.4;
   }
   const geoPolvo = guardar(new THREE.BufferGeometry());
   geoPolvo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  geoPolvo.setAttribute("color", new THREE.BufferAttribute(col, 3));
-  const polvo = new THREE.Points(
-    geoPolvo,
-    guardar(
-      new THREE.PointsMaterial({
-        size: 0.085,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.9,
-        depthWrite: false,
-        map: lienzo(64, 64, (ctx) => {
-          const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-          g.addColorStop(0, "rgba(255,255,255,1)");
-          g.addColorStop(0.35, "rgba(255,255,255,0.8)");
-          g.addColorStop(1, "rgba(255,255,255,0)");
-          ctx.fillStyle = g;
-          ctx.fillRect(0, 0, 64, 64);
-        }),
-      }),
-    ),
-  );
-  scene.add(polvo);
+  const polvo = new THREE.Points(geoPolvo, guardar(new THREE.PointsMaterial({ size: 0.07, map: puntoTex, color: 0xffcf7a, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending })));
+  raiz.add(polvo);
+
+  /* ── Posprocesado: bloom ── */
+  const composer = new m.EffectComposer(renderer);
+  composer.setPixelRatio(dpr);
+  composer.addPass(new m.RenderPass(scene, camera));
+  const bloom = new m.UnrealBloomPass(new THREE.Vector2(1, 1), 0.85, 0.55, 0.62);
+  composer.addPass(bloom);
+  composer.addPass(new m.OutputPass());
 
   /* ── Encuadre ── */
   const objetivo = new THREE.Vector3();
-  let distancia = 16;
+  let distancia = 18;
   const encuadrar = () => {
     const w = el.clientWidth || 1;
     const h = el.clientHeight || 1;
     renderer.setSize(w, h, false);
+    composer.setSize(w, h);
+    bloom.resolution.set(w, h);
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
     camera.aspect = w / h;
-    const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    // Que quepan los anillos de lado a lado y, en alto, la medalla y el pie.
-    distancia = Math.max(6.7 / (tan * camera.aspect), 5.6 / tan);
-    objetivo.set(0, w < 700 ? 0.9 : 0.3, 0);
-    // La niebla da profundidad, pero relativa a la cámara: en vertical la
-    // cámara se aleja y con niebla fija todo se veía lavado.
-    if (scene.fog instanceof THREE.Fog) {
-      scene.fog.near = distancia * 0.95;
-      scene.fog.far = distancia * 2.4;
-    }
+    const tan = Math.tan(THREE.MathUtils.degToRad(36 / 2));
+    // Que quepan los anillos de lado a lado y, en alto, la medalla y el piso.
+    distancia = Math.max(7.8 / (tan * camera.aspect), 7.0 / tan);
+    objetivo.set(0, w < 700 ? 1.0 : 0.05, 0);
     camera.updateProjectionMatrix();
   };
   encuadrar();
@@ -531,6 +733,7 @@ function montar(THREE: Three, RoomEnvironment: ClaseAmbiente, el: HTMLDivElement
     const hit = ray.intersectObjects(mallas, false)[0];
     return hit ? (hit.object.userData.k as number) : -1;
   };
+  let reloj = 0;
   const alMover = (e: PointerEvent) => {
     apuntar(e);
     if (abajo) {
@@ -551,7 +754,13 @@ function montar(THREE: Three, RoomEnvironment: ClaseAmbiente, el: HTMLDivElement
     apuntar(e);
     if (abajo && Math.hypot(e.clientX - abajo.x, e.clientY - abajo.y) < 7) {
       const k = tocada();
-      if (k >= 0) o.alIr(cartas[k].c);
+      if (k >= 0) {
+        const p = cartas[k].grupo.position;
+        uniPiso.uOrigen.value.set(p.x, p.z);
+        uniPiso.uPulso.value = reloj;
+        const centro = cartas[k].c;
+        setTimeout(() => o.alIr(centro), 380);
+      }
     }
     abajo = null;
   };
@@ -595,34 +804,44 @@ function montar(THREE: Three, RoomEnvironment: ClaseAmbiente, el: HTMLDivElement
     const dt = Math.min(0.05, (ahora - antes) / 1000);
     antes = ahora;
     const t = (ahora - inicio) / 1000;
+    reloj = ahora / 1000;
     const mov = o.reducir ? 0 : 1;
+    uniCielo.uTime.value = reloj;
+    uniPiso.uTime.value = reloj;
 
     if (!abajo) {
       arrastre += inercia * dt;
       inercia *= Math.pow(0.04, dt);
     }
 
-    // Cámara: entra desde lejos y alto, luego respira con el puntero.
-    const entrada = o.reducir ? 1 : suave(tramo(t, 0, FIN));
-    const elev = THREE.MathUtils.lerp(0.62, 0.27, entrada);
-    const d = distancia * THREE.MathUtils.lerp(1.35, 1, entrada);
+    // Cámara: salto warp (lejos, gran angular) y llegada; luego respira con el puntero.
+    const entrada = o.reducir ? 1 : suave(tramo(t, 0, 3.6));
+    camera.fov = THREE.MathUtils.lerp(78, 36, entrada);
+    camera.updateProjectionMatrix();
+    const elev = THREE.MathUtils.lerp(0.75, 0.3, entrada);
+    const d = distancia * THREE.MathUtils.lerp(2.6, 1, entrada);
     const px = ndc.x > 5 ? 0 : ndc.x * mov;
     const py = ndc.y > 5 ? 0 : ndc.y * mov;
-    const az = px * 0.12;
+    const az = px * 0.14 + (1 - entrada) * 1.2 + Math.sin(reloj * 0.12) * 0.04 * mov;
     const el2 = elev + py * 0.05;
     camera.position.set(Math.sin(az) * Math.cos(el2) * d, objetivo.y + Math.sin(el2) * d, Math.cos(az) * Math.cos(el2) * d);
     camera.lookAt(objetivo);
+    estrellas.rotation.y = reloj * 0.004 + (1 - entrada) * 0.6;
 
-    // Medalla
-    const aparece = o.reducir ? 1 : salida(tramo(t, 0, 1.2));
+    // Medalla: se enciende, gira el giróscopo.
+    const aparece = o.reducir ? 1 : salida(tramo(t, 0.6, 1.9));
     medalla.scale.setScalar(0.001 + aparece);
-    medalla.position.y = MEDALLA_Y + Math.sin(t * 1.1) * 0.08 * mov;
-    pivote.rotation.y = (1 - aparece) * Math.PI * 4 + Math.sin(t * 0.55) * 0.5 * mov;
-    aro1.rotation.set(Math.sin(t * 0.4) * 0.9 * mov + 0.3, t * 0.5 * mov, 0);
-    aro2.rotation.set(Math.cos(t * 0.3) * 0.8 * mov - 0.4, -t * 0.35 * mov, 0.5);
+    medalla.position.y = MEDALLA_Y + Math.sin(reloj * 1.1) * 0.08 * mov;
+    pivote.rotation.y = (1 - aparece) * Math.PI * 4 + Math.sin(reloj * 0.55) * 0.45 * mov;
+    aros.forEach((aro, i) => {
+      aro.rotation.set(reloj * (0.35 + i * 0.12) * mov + i, reloj * (0.5 - i * 0.18) * mov + i * 1.3, i * 0.7);
+    });
+    aroOro.rotation.set(Math.PI / 2 + Math.sin(reloj * 0.4) * 0.25 * mov, 0, reloj * 0.2 * mov);
+    (haz.material as InstanceType<Three["MeshBasicMaterial"]>).opacity = aparece * (0.42 + Math.sin(reloj * 2.2) * 0.08 * mov);
+    halo.material.opacity = aparece * (0.6 + Math.sin(reloj * 1.7) * 0.12 * mov);
 
     // Hover (solo cuando ya están en sus anillos)
-    const k = abajo || t < FIN * 0.8 ? -1 : tocada();
+    const k = abajo || t < FIN * 0.85 ? -1 : tocada();
     if (k !== encima) {
       encima = k;
       canvas.style.cursor = k >= 0 ? "pointer" : "grab";
@@ -632,30 +851,48 @@ function montar(THREE: Three, RoomEnvironment: ClaseAmbiente, el: HTMLDivElement
     for (const x of cartas) {
       const a = ANILLOS[x.v];
       const sentido = x.v % 2 ? -1 : 1;
-      const ang = (x.c / n) * Math.PI * 2 + a.giro * t * mov + arrastre * sentido * (1 - x.v * 0.15) + x.v * 0.4;
+      const ang = (x.c / n) * Math.PI * 2 + a.giro * reloj * mov + arrastre * sentido * (1 - x.v * 0.15) + x.v * 0.4;
       x.hover += ((encima === x.k ? 1 : 0) - x.hover) * Math.min(1, dt * 12);
-      const r = a.r + x.hover * 0.55;
-      vFinal.set(Math.sin(ang) * r, a.y + x.hover * 0.12 + Math.sin(t * 1.3 + x.c) * 0.035 * mov, Math.cos(ang) * r);
+      const r = a.r + x.hover * 0.6;
+      vFinal.set(Math.sin(ang) * r, a.y + x.hover * 0.18 + Math.sin(reloj * 1.3 + x.c * 0.7 + x.v) * 0.05 * mov, Math.cos(ang) * r);
       qFinal.setFromAxisAngle(ejeY, ang);
 
-      // 1) estalla desde la medalla  2) flota  3) se ordena en su anillo
-      const p1 = salida(tramo(t, 0.35 + x.retraso * 0.5, 1.9 + x.retraso * 0.5));
-      const p2 = suave(tramo(t, 2.5 + x.retraso, 4.6 + x.retraso));
+      // 1) estalla desde la medalla  2) flota  3) se acopla a su anillo
+      const p1 = salida(tramo(t, 1.2 + x.retraso * 0.5, 2.8 + x.retraso * 0.5));
+      const p2 = suave(tramo(t, 3.0 + x.retraso, 5.0 + x.retraso));
       vTmp.copy(x.dispersa);
-      vTmp.y += Math.sin(t * 0.9 + x.retraso * 9) * 0.25 * mov;
+      vTmp.y += Math.sin(reloj * 0.9 + x.retraso * 9) * 0.3 * mov;
       vTmp.lerpVectors(origen, vTmp, p1);
-      x.mesh.position.lerpVectors(vTmp, vFinal, p2);
-      qGiro.setFromAxisAngle(ejeY, t * 0.6 * mov);
+      x.grupo.position.lerpVectors(vTmp, vFinal, p2);
+      qGiro.setFromAxisAngle(ejeY, reloj * 0.6 * mov);
       qTmp.copy(qGiro).multiply(x.giroDisperso);
-      x.mesh.quaternion.slerpQuaternions(qTmp, qFinal, p2);
-      x.mesh.scale.setScalar((0.001 + p1) * (1 + x.hover * 0.2));
+      x.grupo.quaternion.slerpQuaternions(qTmp, qFinal, p2);
+      x.grupo.scale.setScalar((0.001 + p1) * (1 + x.hover * 0.22));
+      // Destello del borde al acoplarse, y brillo al pasar el puntero.
+      const acople = p2 > 0.92 && p2 < 1 ? 1 : Math.max(0, 1 - (t - (5.0 + x.retraso)) * 2.5);
+      x.bordeMat.opacity = Math.min(1, 0.45 + x.hover * 0.55 + (p2 >= 1 ? acople * 0.5 : 0) + Math.sin(reloj * 2 + x.k) * 0.08 * mov);
     }
+
+    // Flujos de datos: recorren cada órbita, en el sentido de su anillo.
+    const visible = o.reducir ? 1 : tramo(t, 4.2, 5.6);
+    for (let v = 0; v < ANILLOS.length; v++) {
+      const a = ANILLOS[v];
+      const sentido = v % 2 ? -1 : 1;
+      for (let i = 0; i < POR_ANILLO; i++) {
+        const j = v * POR_ANILLO + i;
+        const ang = fase[j] + reloj * (0.6 + (j % 5) * 0.08) * sentido * (mov || 0.02) + arrastre * sentido;
+        const rr = a.r + 0.55 + Math.sin(j * 1.7) * 0.08;
+        posF.set([Math.sin(ang) * rr, a.y - CARTA.h * 0.62 + Math.sin(j) * 0.05, Math.cos(ang) * rr], j * 3);
+      }
+    }
+    geoF.attributes.position.needsUpdate = true;
+    (flujos.material as InstanceType<Three["PointsMaterial"]>).opacity = visible;
 
     // Polvo que sube
     if (mov) {
       for (let i = 0; i < P; i++) {
         pos[i * 3 + 1] += vel[i] * dt;
-        if (pos[i * 3 + 1] > 7) pos[i * 3 + 1] = -3;
+        if (pos[i * 3 + 1] > 8) pos[i * 3 + 1] = PISO_Y;
       }
       geoPolvo.attributes.position.needsUpdate = true;
       polvo.rotation.y += dt * 0.03;
@@ -664,7 +901,7 @@ function montar(THREE: Three, RoomEnvironment: ClaseAmbiente, el: HTMLDivElement
     // Etiqueta que sigue a la tarjeta
     const ch = o.chip();
     if (ch && encima >= 0) {
-      vTmp.copy(cartas[encima].mesh.position).add(encimaCarta).project(camera);
+      vTmp.copy(cartas[encima].grupo.position).add(encimaCarta).project(camera);
       ch.style.transform = `translate(${((vTmp.x + 1) / 2) * el.clientWidth}px, ${((1 - vTmp.y) / 2) * el.clientHeight}px) translate(-50%, -100%)`;
     }
 
@@ -672,7 +909,7 @@ function montar(THREE: Three, RoomEnvironment: ClaseAmbiente, el: HTMLDivElement
       avisado = true;
       o.alListo();
     }
-    renderer.render(scene, camera);
+    composer.render();
   };
   raf = requestAnimationFrame(cuadro);
 
@@ -686,6 +923,8 @@ function montar(THREE: Three, RoomEnvironment: ClaseAmbiente, el: HTMLDivElement
     canvas.removeEventListener("wheel", alRueda);
     o.control.current = null;
     desechables.forEach((x) => x.dispose());
+    bloom.dispose();
+    composer.dispose();
     renderer.dispose();
     canvas.remove();
   };
