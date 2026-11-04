@@ -189,10 +189,17 @@ export function SalaVirtual({
     document.addEventListener("fullscreenchange", sincronizar);
     return () => document.removeEventListener("fullscreenchange", sincronizar);
   }, []);
+  // En iPhone no existe la pantalla completa para un bloque de la página: ahí
+  // el video se amplía con CSS hasta cubrir toda la pantalla.
+  const [ampliadoCss, setAmpliadoCss] = useState(false);
   const alternarAmpliado = () => {
-    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
-    else void escenarioRef.current?.requestFullscreen().catch(() => {});
+    if (ampliadoCss) return setAmpliadoCss(false);
+    if (document.fullscreenElement) return void document.exitFullscreen().catch(() => {});
+    const el = escenarioRef.current;
+    if (el?.requestFullscreen) void el.requestFullscreen().catch(() => setAmpliadoCss(true));
+    else setAmpliadoCss(true);
   };
+  const grande = ampliado || ampliadoCss;
   const [error, setError] = useState(false);
   const [dentro, setDentro] = useState(false);
   const [salio, setSalio] = useState(false);
@@ -704,17 +711,27 @@ export function SalaVirtual({
     )}
 
     {/* ---------------- Escenario ---------------- */}
-    <div ref={escenarioRef} className={cn("relative min-h-0 min-w-0", !completa && "flex-1", ampliado && "bg-black")}>
+    <div ref={escenarioRef} className={cn("relative min-h-0 min-w-0", !completa && "flex-1", grande && "bg-black", ampliadoCss && "fixed inset-0 z-[200] h-[100dvh] w-screen")}>
       <section
         id="llamada"
         data-dentro={dentro}
         className={cn(
           "sh-stage sh-rise relative overflow-hidden rounded-[var(--sh-radius)] border border-[var(--sh-line-strong)] bg-black shadow-[0_40px_90px_-40px_rgba(0,0,0,0.8)] scroll-mt-4",
-          ampliado ? "h-full" : completa ? "h-[60vh] min-h-[440px]" : "h-[58vh] min-h-[420px] xl:h-full"
+          grande ? "h-full rounded-none" : completa ? "h-[60vh] min-h-[440px]" : "h-[58vh] min-h-[420px] xl:h-full"
         )}
         style={{ "--i": 2 } as React.CSSProperties}
       >
         <div ref={contenedor} className="h-full w-full" />
+        {grande && (
+          <button
+            type="button"
+            onClick={alternarAmpliado}
+            className="absolute right-3 top-3 z-30 inline-flex items-center gap-1.5 rounded-full bg-black/70 px-3.5 py-2 text-[13px] font-semibold text-white backdrop-blur-sm lg:hidden"
+          >
+            <Minimize2 className="h-4 w-4" aria-hidden="true" />
+            Reducir
+          </button>
+        )}
         <div className="sh-corners pointer-events-none absolute inset-0" aria-hidden="true" />
         <div className="sh-scan" aria-hidden="true" />
 
@@ -793,6 +810,16 @@ export function SalaVirtual({
       </p>
       {/* Salir en el teléfono: solo saca a quien lo toca. Reemplaza el colgar
           nativo de Jitsi, que a un moderador le ofrece terminar para todos. */}
+      {dentro && (
+        <button
+          type="button"
+          onClick={alternarAmpliado}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--sh-line-strong)] bg-[var(--sh-panel)] px-4 py-3 text-[14px] font-semibold lg:hidden"
+        >
+          <Maximize2 className="h-4.5 w-4.5 text-[var(--sh-signal)]" aria-hidden="true" />
+          Ampliar video y pantalla compartida
+        </button>
+      )}
       {dentro && !esPresentador && (
         <button
           type="button"
