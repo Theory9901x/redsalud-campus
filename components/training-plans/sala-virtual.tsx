@@ -301,6 +301,9 @@ export function SalaVirtual({
                 "microphone",
                 "camera",
                 "toggle-camera",
+                // Compartir pantalla: este modo también lo usan portátiles con
+                // ventana angosta o zoom. Jitsi lo oculta donde no se puede.
+                "desktop",
                 // El colgar nativo de Jitsi, para un moderador, ofrece
                 // "Terminar la reunión para todos": solo lo ve el anfitrión.
                 // Los demás salen con el botón propio de la plataforma.
