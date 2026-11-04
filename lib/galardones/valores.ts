@@ -53,4 +53,4 @@ export function valorInfo(clave: GalardonValor) {
 }
 
 export const NOMBRE_RECONOCIMIENTO = "Salud y Vida para el Llano";
-export const NOMBRE_EVENTO = "Noche de Galardones";
+export const NOMBRE_EVENTO = "Galardones";

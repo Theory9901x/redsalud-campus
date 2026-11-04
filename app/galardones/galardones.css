@@ -1,64 +1,65 @@
 /* =====================================================================
-   GALARDONES · Noche de Galardones "Salud y Vida para el Llano"
-   Entorno propio, SIEMPRE oscuro, independiente del tema del campus. Es la
-   antesala de una ceremonia: atmósfera navy profunda, auroras de color por
-   valor, vidrio y telemetría monoespaciada. Nada del mobiliario del sistema.
+   GALARDONES · "Salud y Vida para el Llano"
+   Entorno propio en tema CLARO: fondo luminoso, auroras suaves de color por
+   valor, vidrio blanco y telemetría monoespaciada. Nada del mobiliario del
+   sistema, pero con la misma claridad que el resto del campus.
    ===================================================================== */
 .gala {
-  --g-bg: oklch(14% 0.03 255);
-  --g-bg-2: oklch(19% 0.04 252);
-  --g-text: oklch(97% 0.008 250);
-  --g-muted: oklch(74% 0.02 250);
-  --g-dim: oklch(56% 0.025 250);
-  --g-line: color-mix(in oklch, white 10%, transparent);
-  --g-line-strong: color-mix(in oklch, white 18%, transparent);
-  --g-panel: color-mix(in oklch, white 5%, transparent);
-  --g-panel-2: color-mix(in oklch, white 8%, transparent);
-  --g-cyan: oklch(78% 0.13 225);
-  --g-gold: oklch(84% 0.14 85);
-  --g-violet: oklch(70% 0.17 300);
-  --g-danger: oklch(70% 0.19 25);
+  --g-ink: oklch(26% 0.045 255);
+  --g-bg: oklch(97.6% 0.008 240);
+  --g-bg-2: oklch(95% 0.012 240);
+  --g-text: oklch(24% 0.045 255);
+  --g-muted: oklch(44% 0.03 250);
+  --g-dim: oklch(57% 0.025 250);
+  --g-line: oklch(26% 0.045 255 / 0.11);
+  --g-line-strong: oklch(26% 0.045 255 / 0.2);
+  --g-panel: oklch(100% 0 0 / 0.72);
+  --g-panel-2: oklch(100% 0 0 / 0.92);
+  --g-cyan: oklch(55% 0.13 225);
+  --g-gold: oklch(70% 0.15 75);
+  --g-violet: oklch(52% 0.17 300);
+  --g-danger: oklch(55% 0.2 25);
   --g-radius: 22px;
   --g-ease: cubic-bezier(0.16, 1, 0.3, 1);
   /* Matiz del valor activo: lo fija cada tarjeta con data-matiz. */
   --g-h: 225;
-  --g-a: oklch(76% 0.14 var(--g-h));
+  --g-a: oklch(58% 0.14 var(--g-h));
   --g-a-soft: color-mix(in oklch, var(--g-a) 22%, transparent);
   --g-a-line: color-mix(in oklch, var(--g-a) 45%, transparent);
   position: relative;
   min-height: 100dvh;
   color: var(--g-text);
-  background: radial-gradient(1200px 700px at 80% -10%, oklch(28% 0.07 250 / 0.9), transparent 60%),
-    radial-gradient(900px 600px at -10% 110%, oklch(26% 0.06 300 / 0.7), transparent 60%), var(--g-bg);
-  color-scheme: dark;
+  background: radial-gradient(1200px 700px at 80% -10%, oklch(90% 0.05 225 / 0.8), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, oklch(92% 0.04 85 / 0.7), transparent 60%), var(--g-bg);
+  color-scheme: light;
   isolation: isolate;
 }
 .gala * { box-sizing: border-box; }
-.gala ::selection { background: color-mix(in oklch, var(--g-cyan) 40%, transparent); }
+.gala ::selection { background: color-mix(in oklch, var(--g-cyan) 25%, transparent); }
 
 /* ── Escena de fondo: rejilla, auroras y partículas ── */
 .gala-escena { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
 .gala-rejilla {
   position: absolute; inset: -1px;
-  background-image: linear-gradient(color-mix(in oklch, white 5%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in oklch, white 5%, transparent) 1px, transparent 1px);
+  background-image: linear-gradient(color-mix(in oklch, var(--g-ink) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklch, var(--g-ink) 5%, transparent) 1px, transparent 1px);
   background-size: 64px 64px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 80%);
 }
 .gala-aurora {
   position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%;
-  filter: blur(80px); opacity: 0.55; mix-blend-mode: screen;
+  filter: blur(80px); opacity: 0.4;
   animation: gala-deriva 26s var(--g-ease) infinite alternate;
 }
-.gala-aurora-1 { top: -25vmax; right: -15vmax; background: radial-gradient(circle, oklch(60% 0.16 225 / 0.8), transparent 65%); }
-.gala-aurora-2 { bottom: -30vmax; left: -20vmax; background: radial-gradient(circle, oklch(55% 0.18 300 / 0.7), transparent 65%); animation-delay: -9s; animation-duration: 32s; }
-.gala-aurora-3 { top: 30%; left: 35%; width: 40vmax; height: 40vmax; background: radial-gradient(circle, oklch(70% 0.14 85 / 0.35), transparent 65%); animation-delay: -18s; animation-duration: 38s; }
+.gala-aurora-1 { top: -25vmax; right: -15vmax; background: radial-gradient(circle, oklch(82% 0.09 225 / 0.8), transparent 65%); }
+.gala-aurora-2 { bottom: -30vmax; left: -20vmax; background: radial-gradient(circle, oklch(86% 0.07 300 / 0.6), transparent 65%); animation-delay: -9s; animation-duration: 32s; }
+.gala-aurora-3 { top: 30%; left: 35%; width: 40vmax; height: 40vmax; background: radial-gradient(circle, oklch(88% 0.1 85 / 0.5), transparent 65%); animation-delay: -18s; animation-duration: 38s; }
 @keyframes gala-deriva { from { transform: translate(0, 0) scale(1); } to { transform: translate(-8%, 6%) scale(1.12); } }
 .gala-escena::after {
   /* Línea de horizonte: un trazo fino que cruza la escena como barrido de un escáner. */
   content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px;
   background: linear-gradient(90deg, transparent, color-mix(in oklch, var(--g-cyan) 55%, transparent), transparent);
-  animation: gala-escaner 11s linear infinite; opacity: 0.6;
+  animation: gala-escaner 11s linear infinite; opacity: 0.35;
 }
 @keyframes gala-escaner { from { transform: translateY(-2vh); } to { transform: translateY(102vh); } }
 
@@ -66,7 +67,7 @@
 .gala-lienzo { position: relative; z-index: 1; width: min(1120px, 100% - 2rem); margin-inline: auto; padding: 1.25rem 0 4rem; }
 .gala-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.5rem 0 1.5rem; }
 .gala-marca { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
-.gala-marca img { height: 2.6rem; width: auto; border-radius: 10px; background: #fff; padding: 0.25rem; }
+.gala-marca img { height: 2.6rem; width: auto; border-radius: 10px; background: #fff; padding: 0.25rem; box-shadow: 0 0 0 1px var(--g-line); }
 .gala-marca-texto { display: grid; line-height: 1.15; }
 .gala-marca-texto b { font-size: 0.92rem; font-weight: 700; letter-spacing: -0.01em; }
 .gala-marca-texto small { font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--g-dim); }
@@ -80,7 +81,7 @@
 .gala-eyebrow {
   display: inline-flex; align-items: center; gap: 0.6rem;
   font-size: 0.68rem; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
-  color: color-mix(in oklch, var(--g-cyan) 80%, white);
+  color: var(--g-cyan);
 }
 .gala-eyebrow::before { content: ""; width: 1.6rem; height: 1px; background: linear-gradient(90deg, transparent, var(--g-cyan)); }
 .gala-titulo {
@@ -88,7 +89,7 @@
   font-size: clamp(2rem, 1.4rem + 2.6vw, 3.6rem);
 }
 .gala-titulo .brillo {
-  background: linear-gradient(100deg, #fff 0%, var(--g-gold) 45%, #fff 70%, var(--g-cyan) 100%);
+  background: linear-gradient(100deg, var(--g-text) 0%, var(--g-gold) 45%, var(--g-text) 70%, var(--g-cyan) 100%);
   background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
   animation: gala-brillo 7s var(--g-ease) infinite;
 }
@@ -99,9 +100,9 @@
 .gala-panel {
   position: relative; border-radius: var(--g-radius);
   border: 1px solid var(--g-line);
-  background: linear-gradient(180deg, color-mix(in oklch, white 7%, transparent), color-mix(in oklch, white 3.5%, transparent));
+  background: linear-gradient(180deg, oklch(100% 0 0 / 0.88), oklch(100% 0 0 / 0.7));
   backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%);
-  box-shadow: 0 1px 0 color-mix(in oklch, white 10%, transparent) inset, 0 30px 70px -40px oklch(0% 0 0 / 0.8);
+  box-shadow: 0 1px 0 oklch(100% 0 0 / 0.9) inset, 0 24px 60px -36px oklch(30% 0.06 255 / 0.35);
 }
 .gala-panel-borde::before {
   /* Borde luminoso con el matiz del valor: visible solo en la arista superior. */
@@ -136,12 +137,12 @@
 }
 .gala-ips button::after { content: ""; position: absolute; top: 10px; right: 10px; width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--g-line-strong); transition: all .2s; }
 .gala-ips button:hover { color: var(--g-text); border-color: var(--g-line-strong); transform: translateY(-1px); }
-.gala-ips button[data-activo] { color: #fff; border-color: var(--g-cyan); background: color-mix(in oklch, var(--g-cyan) 16%, transparent); box-shadow: 0 0 0 3px color-mix(in oklch, var(--g-cyan) 18%, transparent), 0 14px 30px -18px var(--g-cyan); }
+.gala-ips button[data-activo] { color: var(--g-text); border-color: var(--g-cyan); background: color-mix(in oklch, var(--g-cyan) 16%, transparent); box-shadow: 0 0 0 3px color-mix(in oklch, var(--g-cyan) 18%, transparent), 0 14px 30px -18px var(--g-cyan); }
 .gala-ips button[data-activo]::after { background: var(--g-cyan); border-color: var(--g-cyan); box-shadow: 0 0 10px var(--g-cyan); }
 .gala-ips small { display: block; margin-top: 0.15rem; font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--g-dim); font-weight: 600; }
 
 /* ── Tarjeta de valor ── */
-.gala-valor { --g-a: oklch(76% 0.14 var(--g-h)); padding: clamp(1.1rem, 2.5vw, 1.8rem); overflow: hidden; }
+.gala-valor { --g-a: oklch(58% 0.14 var(--g-h)); padding: clamp(1.1rem, 2.5vw, 1.8rem); overflow: hidden; }
 .gala-valor-halo {
   position: absolute; top: -40%; right: -20%; width: 55%; aspect-ratio: 1; border-radius: 50%; pointer-events: none;
   background: radial-gradient(circle, color-mix(in oklch, var(--g-a) 35%, transparent), transparent 65%); filter: blur(30px);
@@ -166,7 +167,7 @@
 .gala-campo label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--g-muted); }
 .gala-input {
   width: 100%; padding: 0.85rem 1rem; border-radius: 14px; font: inherit; font-size: 1rem; color: var(--g-text);
-  border: 1px solid var(--g-line-strong); background: color-mix(in oklch, black 22%, transparent);
+  border: 1px solid var(--g-line-strong); background: oklch(100% 0 0 / 0.95);
   transition: border-color .2s, box-shadow .2s; outline: none;
 }
 .gala-input::placeholder { color: var(--g-dim); }
@@ -177,8 +178,8 @@ textarea.gala-input { min-height: 6.2rem; resize: vertical; line-height: 1.5; fo
 
 .gala-sugerencias {
   position: absolute; top: 100%; left: 0; right: 0; z-index: 20; margin-top: 0.35rem; padding: 0.35rem; list-style: none;
-  border-radius: 14px; border: 1px solid var(--g-line-strong); background: oklch(20% 0.035 252 / 0.96); backdrop-filter: blur(16px);
-  box-shadow: 0 30px 60px -30px black; max-height: 18rem; overflow: auto;
+  border-radius: 14px; border: 1px solid var(--g-line-strong); background: oklch(100% 0 0 / 0.98); backdrop-filter: blur(16px);
+  box-shadow: 0 30px 60px -30px oklch(30% 0.06 255 / 0.45); max-height: 18rem; overflow: auto;
 }
 .gala-sugerencias li button {
   display: grid; width: 100%; padding: 0.6rem 0.75rem; border-radius: 10px; text-align: left; background: none; border: 0; color: var(--g-text); cursor: pointer;
@@ -198,7 +199,7 @@ textarea.gala-input { min-height: 6.2rem; resize: vertical; line-height: 1.5; fo
   display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1.3rem; border-radius: 999px; cursor: pointer;
   font: inherit; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.01em; border: 1px solid transparent; transition: all .22s var(--g-ease);
 }
-.gala-btn-principal { color: oklch(16% 0.04 255); background: linear-gradient(135deg, #fff, color-mix(in oklch, var(--g-a) 55%, white)); box-shadow: 0 16px 34px -16px var(--g-a), 0 0 0 1px color-mix(in oklch, white 40%, transparent) inset; }
+.gala-btn-principal { color: #fff; background: linear-gradient(135deg, var(--g-a), color-mix(in oklch, var(--g-a) 65%, oklch(32% 0.1 var(--g-h)))); box-shadow: 0 16px 34px -18px var(--g-a), 0 0 0 1px color-mix(in oklch, white 20%, transparent) inset; }
 .gala-btn-principal:hover { transform: translateY(-1px); box-shadow: 0 20px 40px -16px var(--g-a), 0 0 0 4px var(--g-a-soft); }
 .gala-btn-principal:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
 .gala-btn-sutil { color: var(--g-muted); border-color: var(--g-line); background: var(--g-panel); }
@@ -210,7 +211,7 @@ textarea.gala-input { min-height: 6.2rem; resize: vertical; line-height: 1.5; fo
 /* ── Resumen / confirmación ── */
 .gala-resumen { display: grid; gap: 0.75rem; margin-top: 1.1rem; }
 .gala-resumen-fila {
-  --g-a: oklch(76% 0.14 var(--g-h));
+  --g-a: oklch(58% 0.14 var(--g-h));
   display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; align-items: center; padding: 0.9rem 1rem; border-radius: 16px;
   border: 1px solid var(--g-line); background: var(--g-panel); border-left: 3px solid var(--g-a);
 }
@@ -244,12 +245,12 @@ textarea.gala-input { min-height: 6.2rem; resize: vertical; line-height: 1.5; fo
 }
 .gala-filtro-ips button[data-vacio] { opacity: 0.45; }
 .gala-filtro-ips button:hover { color: var(--g-text); border-color: var(--g-line-strong); }
-.gala-filtro-ips button[data-activo] { color: #fff; border-color: var(--g-cyan); background: color-mix(in oklch, var(--g-cyan) 20%, transparent); }
+.gala-filtro-ips button[data-activo] { color: var(--g-text); border-color: var(--g-cyan); background: color-mix(in oklch, var(--g-cyan) 20%, transparent); }
 .gala-filtro-ips button i { font-style: normal; margin-left: 0.35rem; font-size: 0.68rem; color: var(--g-dim); font-variant-numeric: tabular-nums; }
 
 .gala-columnas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.9rem; margin-top: 1.1rem; }
 @media (max-width: 860px) { .gala-columnas { grid-template-columns: 1fr; } }
-.gala-col { --g-a: oklch(76% 0.14 var(--g-h)); padding: 1rem 1rem 1.1rem; }
+.gala-col { --g-a: oklch(58% 0.14 var(--g-h)); padding: 1rem 1rem 1.1rem; }
 .gala-col-cab { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding-bottom: 0.7rem; border-bottom: 1px solid var(--g-line); }
 .gala-col-cab h3 { margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--g-a); letter-spacing: -0.01em; }
 .gala-col-cab span { font-size: 0.7rem; color: var(--g-dim); font-variant-numeric: tabular-nums; }
@@ -264,11 +265,11 @@ textarea.gala-input { min-height: 6.2rem; resize: vertical; line-height: 1.5; fo
 .gala-fila-nombre small { margin-left: 0.4rem; font-size: 0.64rem; color: var(--g-dim); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
 .gala-votos { font-size: 0.82rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-a); }
 .gala-votos small { color: var(--g-dim); font-weight: 500; margin-left: 0.25rem; }
-.gala-barra { height: 4px; margin-top: 0.45rem; border-radius: 999px; background: color-mix(in oklch, white 8%, transparent); overflow: hidden; }
+.gala-barra { height: 4px; margin-top: 0.45rem; border-radius: 999px; background: color-mix(in oklch, var(--g-ink) 8%, transparent); overflow: hidden; }
 .gala-barra i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--g-a), color-mix(in oklch, var(--g-a) 50%, white)); box-shadow: 0 0 12px var(--g-a-soft); transition: width .6s var(--g-ease); }
 .gala-fila-detalle { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed var(--g-line); display: grid; gap: 0.5rem; font-size: 0.78rem; }
 .gala-variantes { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-.gala-variante { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.55rem; border-radius: 999px; border: 1px solid var(--g-line); background: color-mix(in oklch, black 18%, transparent); color: var(--g-muted); font-size: 0.72rem; }
+.gala-variante { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.55rem; border-radius: 999px; border: 1px solid var(--g-line); background: var(--g-panel-2); color: var(--g-muted); font-size: 0.72rem; }
 .gala-variante b { color: var(--g-text); font-weight: 600; }
 .gala-variante button { border: 0; background: none; color: var(--g-dim); cursor: pointer; font-size: 0.66rem; text-decoration: underline; padding: 0; }
 .gala-variante button:hover { color: var(--g-danger); }
@@ -276,9 +277,9 @@ textarea.gala-input { min-height: 6.2rem; resize: vertical; line-height: 1.5; fo
 .gala-fusion { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; }
 .gala-select {
   padding: 0.4rem 0.6rem; border-radius: 10px; font: inherit; font-size: 0.76rem; color: var(--g-text);
-  border: 1px solid var(--g-line-strong); background: color-mix(in oklch, black 25%, transparent); max-width: 100%;
+  border: 1px solid var(--g-line-strong); background: #fff; max-width: 100%;
 }
-.gala-select option { background: oklch(20% 0.035 252); }
+.gala-select option { background: #fff; color: var(--g-text); }
 .gala-vacio { padding: 1.2rem 0.5rem; text-align: center; font-size: 0.8rem; color: var(--g-dim); }
 
 .gala-podio { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.8rem; margin-top: 1.1rem; }
@@ -294,14 +295,14 @@ textarea.gala-input { min-height: 6.2rem; resize: vertical; line-height: 1.5; fo
 
 .gala-config { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 1.2rem; padding: 0.9rem 1.1rem; margin-top: 1.2rem; }
 .gala-config label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--g-muted); }
-.gala-config input[type="date"] { color-scheme: dark; padding: 0.35rem 0.55rem; border-radius: 10px; border: 1px solid var(--g-line-strong); background: color-mix(in oklch, black 25%, transparent); color: var(--g-text); font: inherit; font-size: 0.8rem; }
-.gala-interruptor { position: relative; width: 2.6rem; height: 1.45rem; border-radius: 999px; border: 1px solid var(--g-line-strong); background: color-mix(in oklch, black 25%, transparent); cursor: pointer; transition: background .2s; flex: none; }
+.gala-config input[type="date"] { color-scheme: light; padding: 0.35rem 0.55rem; border-radius: 10px; border: 1px solid var(--g-line-strong); background: #fff; color: var(--g-text); font: inherit; font-size: 0.8rem; }
+.gala-interruptor { position: relative; width: 2.6rem; height: 1.45rem; border-radius: 999px; border: 1px solid var(--g-line-strong); background: color-mix(in oklch, var(--g-ink) 10%, transparent); cursor: pointer; transition: background .2s; flex: none; }
 .gala-interruptor::after { content: ""; position: absolute; top: 2px; left: 2px; width: 1.1rem; height: 1.1rem; border-radius: 50%; background: var(--g-dim); transition: all .2s var(--g-ease); }
 .gala-interruptor[data-on] { background: color-mix(in oklch, var(--g-cyan) 35%, transparent); border-color: var(--g-cyan); }
 .gala-interruptor[data-on]::after { left: calc(100% - 1.1rem - 2px); background: #fff; box-shadow: 0 0 10px var(--g-cyan); }
 .gala-estado { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.74rem; font-weight: 600; }
 .gala-estado::before { content: ""; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--g-danger); }
-.gala-estado[data-on]::before { background: oklch(78% 0.17 150); box-shadow: 0 0 10px oklch(78% 0.17 150); animation: gala-pulso-punto 1.8s ease-out infinite; }
+.gala-estado[data-on]::before { background: oklch(62% 0.17 150); box-shadow: 0 0 10px oklch(62% 0.17 150); animation: gala-pulso-punto 1.8s ease-out infinite; }
 @keyframes gala-pulso-punto { 50% { box-shadow: 0 0 0 5px oklch(78% 0.17 150 / 0.2); } }
 
 @media (prefers-reduced-motion: reduce) {

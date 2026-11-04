@@ -13,7 +13,7 @@ const FECHA = new Intl.DateTimeFormat("es-CO", { dateStyle: "long", timeZone: "A
 const FECHA_HORA = new Intl.DateTimeFormat("es-CO", { dateStyle: "long", timeStyle: "short", timeZone: "America/Bogota" });
 
 /**
- * POSTULACIÓN a la Noche de Galardones. Una por colaborador: si ya la hizo,
+ * POSTULACIÓN a la Galardones. Una por colaborador: si ya la hizo,
  * ve lo que registró; si la convocatoria cerró, lo sabe. La identidad la da
  * la sesión del campus, que es lo que permite que cada quien postule una
  * sola vez sin pedirle datos.

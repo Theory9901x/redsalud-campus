@@ -156,10 +156,11 @@ export async function enviarPostulacion(entrada: EnvioPostulacion): Promise<{ ok
     userId: sesion.user.id,
     action: "CREATE",
     entity: "Galardon",
-    description: `Postulación Noche de Galardones · ${ips}`,
+    description: `Postulación Galardones · ${ips}`,
   });
   revalidatePath("/galardones");
   revalidatePath("/galardones/resultados");
+  revalidatePath("/admin/galardones");
   return { ok: true };
 }
 
@@ -207,6 +208,7 @@ export async function fusionarCandidatos(origenId: string, destinoId: string): P
     description: `Fusión de candidatos: «${origen.nombre}» → «${destino.nombre}» (${destino.ips})`,
   });
   revalidatePath("/galardones/resultados");
+  revalidatePath("/admin/galardones");
   return { ok: true };
 }
 
@@ -235,27 +237,98 @@ export async function separarVariante(candidatoId: string, nombreEscrito: string
     description: `Separación de candidato: «${nombreEscrito}» deja de contar para «${candidato.nombre}» (${candidato.ips})`,
   });
   revalidatePath("/galardones/resultados");
+  revalidatePath("/admin/galardones");
   return { ok: true };
 }
 
-export async function configurarConvocatoria(entrada: { abierta: boolean; cierraEl: string | null }): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function configurarConvocatoria(entrada: { abierta: boolean; cierraEl: string | null; anio?: number }): Promise<{ ok: true } | { ok: false; error: string }> {
   const sesion = await requireAdminEscritura();
   const cierraEl = entrada.cierraEl ? new Date(`${entrada.cierraEl}T23:59:59-05:00`) : null;
   if (cierraEl && Number.isNaN(cierraEl.getTime())) return { ok: false, error: "Fecha de cierre inválida." };
+  const anio = entrada.anio !== undefined ? Math.round(entrada.anio) : undefined;
+  if (anio !== undefined && (anio < 2020 || anio > 2100)) return { ok: false, error: "Año inválido." };
   await prisma.galardonConvocatoria.upsert({
     where: { id: "singleton" },
-    update: { abierta: entrada.abierta, cierraEl },
-    create: { id: "singleton", abierta: entrada.abierta, cierraEl },
+    update: { abierta: entrada.abierta, cierraEl, ...(anio !== undefined ? { anio } : {}) },
+    create: { id: "singleton", abierta: entrada.abierta, cierraEl, anio: anio ?? 2026 },
   });
   await registrarAuditoria({
     userId: sesion.user.id,
     action: "UPDATE",
     entity: "Galardon",
-    description: `Convocatoria Noche de Galardones ${entrada.abierta ? "abierta" : "cerrada"}${entrada.cierraEl ? ` · cierra ${entrada.cierraEl}` : ""}`,
+    description: `Convocatoria Galardones ${entrada.abierta ? "abierta" : "cerrada"}${entrada.cierraEl ? ` · cierra ${entrada.cierraEl}` : ""}`,
   });
   revalidatePath("/galardones");
   revalidatePath("/galardones/resultados");
+  revalidatePath("/admin/galardones");
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------
+// Gestión de la base de datos desde el panel admin (/admin/galardones)
+// ---------------------------------------------------------------------
+
+const RUTAS_GESTION = ["/galardones", "/galardones/resultados", "/admin/galardones"];
+function revalidarGestion() {
+  for (const r of RUTAS_GESTION) revalidatePath(r);
+}
+
+/** Borra una postulación concreta (p. ej. duplicada o hecha por error). Si el candidato queda sin postulaciones ni fusiones, se borra también. */
+export async function eliminarPostulacion(id: string): Promise<{ error: string | null }> {
+  try {
+    const sesion = await requireAdminEscritura();
+    const p = await prisma.galardonPostulacion.findUnique({ where: { id }, include: { candidato: { select: { nombre: true, ips: true } }, votante: { select: { fullName: true } } } });
+    if (!p) return { error: "La postulación ya no existe." };
+    await prisma.$transaction(async (tx) => {
+      await tx.galardonPostulacion.delete({ where: { id } });
+      const restantes = await tx.galardonPostulacion.count({ where: { candidatoId: p.candidatoId } });
+      const fusiones = await tx.galardonCandidato.count({ where: { fusionadoEnId: p.candidatoId } });
+      if (restantes === 0 && fusiones === 0) await tx.galardonCandidato.delete({ where: { id: p.candidatoId } });
+    });
+    await registrarAuditoria({
+      userId: sesion.user.id,
+      action: "DELETE",
+      entity: "Galardon",
+      entityId: id,
+      description: `Postulación eliminada: ${valorInfo(p.valor).nombre} · «${p.candidato.nombre}» (${p.candidato.ips}) postulado por ${p.votante.fullName}`,
+    });
+    revalidarGestion();
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "No se pudo eliminar." };
+  }
+}
+
+/** Cambia el nombre con el que se muestra un candidato (corrige ortografía o el orden de apellidos). */
+export async function renombrarCandidato(id: string, nombre: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const sesion = await requireAdminEscritura();
+  const limpio = nombrePropio(nombre.trim());
+  if (limpio.length < 3) return { ok: false, error: "Escribe un nombre válido." };
+  const c = await prisma.galardonCandidato.findUnique({ where: { id } });
+  if (!c) return { ok: false, error: "Candidato no encontrado." };
+  await prisma.galardonCandidato.update({ where: { id }, data: { nombre: limpio, nombreClave: claveNombre(limpio) } });
+  await registrarAuditoria({ userId: sesion.user.id, action: "UPDATE", entity: "Galardon", entityId: id, description: `Candidato renombrado: «${c.nombre}» → «${limpio}» (${c.ips})` });
+  revalidarGestion();
+  return { ok: true };
+}
+
+/** Borra un candidato que ya no tiene postulaciones (sobrante de una fusión o separación). */
+export async function eliminarCandidato(id: string): Promise<{ error: string | null }> {
+  try {
+    const sesion = await requireAdminEscritura();
+    const c = await prisma.galardonCandidato.findUnique({ where: { id }, include: { _count: { select: { postulaciones: true, fusionados: true } } } });
+    if (!c) return { error: "El candidato ya no existe." };
+    if (c._count.postulaciones > 0) return { error: `Tiene ${c._count.postulaciones} postulación(es): elimínalas o fusiónalo antes.` };
+    await prisma.$transaction(async (tx) => {
+      await tx.galardonCandidato.updateMany({ where: { fusionadoEnId: id }, data: { fusionadoEnId: null } });
+      await tx.galardonCandidato.delete({ where: { id } });
+    });
+    await registrarAuditoria({ userId: sesion.user.id, action: "DELETE", entity: "Galardon", entityId: id, description: `Candidato eliminado: «${c.nombre}» (${c.ips})` });
+    revalidarGestion();
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "No se pudo eliminar." };
+  }
 }
 
 /** Quién está en sesión, para mostrar su nombre sin otra consulta desde el cliente. */

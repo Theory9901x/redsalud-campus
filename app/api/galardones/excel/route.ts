@@ -6,7 +6,7 @@ import { listadoPostulaciones, resultadosGalardones } from "@/lib/galardones/con
 import { NOMBRE_EVENTO, NOMBRE_RECONOCIMIENTO, valorInfo } from "@/lib/galardones/valores";
 import { nombrePropio } from "@/lib/nombre-propio";
 
-/** Excel de la Noche de Galardones: ganadores por IPS, ranking completo y el detalle de cada postulación. */
+/** Excel de la Galardones: ganadores por IPS, ranking completo y el detalle de cada postulación. */
 export async function GET() {
   const session = await auth();
   if (!session?.user || !veComoAdmin(session.user.role)) {

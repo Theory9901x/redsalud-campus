@@ -124,3 +124,56 @@ export async function listadoPostulaciones() {
     orderBy: [{ ips: "asc" }, { valor: "asc" }, { createdAt: "asc" }],
   });
 }
+
+export type FiltroPostulaciones = { q?: string; ips?: string; valor?: GalardonValor; page: number; pageSize: number };
+
+/** Postulaciones una a una, para la tabla de gestión: con quién postuló, a quién y por qué. */
+export async function postulacionesPaginadas(f: FiltroPostulaciones) {
+  const q = f.q?.trim();
+  const where = {
+    ...(f.ips ? { ips: f.ips } : {}),
+    ...(f.valor ? { valor: f.valor } : {}),
+    ...(q
+      ? {
+          OR: [
+            { nombreEscrito: { contains: q, mode: "insensitive" as const } },
+            { motivo: { contains: q, mode: "insensitive" as const } },
+            { candidato: { nombre: { contains: q, mode: "insensitive" as const } } },
+            { votante: { fullName: { contains: q, mode: "insensitive" as const } } },
+            { votante: { documentNumber: { contains: q, mode: "insensitive" as const } } },
+          ],
+        }
+      : {}),
+  };
+  const [total, filas] = await Promise.all([
+    prisma.galardonPostulacion.count({ where }),
+    prisma.galardonPostulacion.findMany({
+      where,
+      include: {
+        candidato: { select: { id: true, nombre: true, userId: true } },
+        votante: { select: { fullName: true, documentNumber: true, position: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (f.page - 1) * f.pageSize,
+      take: f.pageSize,
+    }),
+  ]);
+  return { total, filas };
+}
+
+/** Candidatos (las personas postuladas), con cuántas postulaciones suman y si fueron fusionados en otro. */
+export async function listadoCandidatos(filtro: { q?: string; ips?: string }) {
+  const q = filtro.q?.trim();
+  return prisma.galardonCandidato.findMany({
+    where: {
+      ...(filtro.ips ? { ips: filtro.ips } : {}),
+      ...(q ? { nombre: { contains: q, mode: "insensitive" as const } } : {}),
+    },
+    include: {
+      _count: { select: { postulaciones: true, fusionados: true } },
+      fusionadoEn: { select: { id: true, nombre: true } },
+      user: { select: { fullName: true, position: true } },
+    },
+    orderBy: [{ ips: "asc" }, { nombre: "asc" }],
+  });
+}

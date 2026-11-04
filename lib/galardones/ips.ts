@@ -1,5 +1,5 @@
 /**
- * Centros IPS de Red Salud Casanare que participan en la Noche de Galardones.
+ * Centros IPS de Red Salud Casanare que participan en la Galardones.
  * Lista entregada por Talento Humano (3-nov-2026). Es una lista propia, no la
  * tabla Municipio: el reconocimiento se organiza por centro, y hay municipios
  * del departamento que no entran en la convocatoria.

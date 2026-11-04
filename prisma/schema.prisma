@@ -1584,7 +1584,7 @@ model PlanMejoraSeguimiento {
 }
 
 // ------------------------------------------------------------------
-// Noche de Galardones · reconocimiento al mérito "Salud y Vida para el Llano"
+// Galardones · reconocimiento al mérito "Salud y Vida para el Llano"
 // ------------------------------------------------------------------
 // Cada colaborador postula, UNA sola vez, a una persona por cada valor del
 // Código de Integridad (memorando 112.31.07.144 de Gerencia). Las

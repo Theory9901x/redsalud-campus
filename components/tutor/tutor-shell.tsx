@@ -55,7 +55,7 @@ const NAV_GROUPS: GrupoNav[] = [
     label: "Personas",
     items: [
       { href: "/tutor/inscritos", label: "Participantes", icon: Users },
-      { href: "/galardones", label: "Noche de Galardones", icon: Trophy },
+      { href: "/galardones", label: "Galardones", icon: Trophy },
     ],
   },
 ];

@@ -24,7 +24,7 @@ const GRUPOS: GrupoNav[] = [
   },
   {
     label: "Reconocimiento",
-    items: [{ href: "/galardones", label: "Noche de Galardones", icon: Trophy }],
+    items: [{ href: "/galardones", label: "Galardones", icon: Trophy }],
   },
   {
     label: "Cuenta",

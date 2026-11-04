@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 /**
  * Entorno AISLADO a propósito, sin la barra lateral ni la cabecera del
  * campus: es la antesala de una ceremonia, no una pantalla más del sistema.
- * Siempre oscuro, con su propia escena (app/galardones/galardones.css).
+ * Tema claro, con su propia escena (app/galardones/galardones.css).
  */
 export default function GalardonesLayout({ children }: { children: React.ReactNode }) {
   return (
