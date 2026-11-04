@@ -85,12 +85,17 @@ a:hover .vt-play, .vt-tarjeta:hover .vt-play { transform: scale(1.08); }
 
 /* Página del video */
 .vt-ver { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: clamp(1rem, 2.5vw, 1.8rem); align-items: start; }
+.vt-ver-solo { grid-template-columns: minmax(0, 1fr); max-width: 1040px; margin: 0 auto; }
+.vt-ver-solo .vt-controles, .vt-ver-solo .vt-detalle { justify-items: center; justify-content: center; text-align: center; }
+.vt-ver-solo .vt-detalle p { margin: 0 auto; }
 .vt-marco { position: relative; overflow: hidden; border-radius: 22px; background: #0b1020; box-shadow: 0 0 0 1px var(--vt-linea), 0 40px 80px -50px oklch(15% 0.04 258 / 0.8); }
 .vt-marco video { display: block; width: 100%; max-height: calc(100dvh - 9rem); aspect-ratio: 16 / 9; background: #0b1020; }
 .vt-controles { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.8rem; }
 .vt-vel { display: inline-flex; padding: 0.2rem; border-radius: 12px; background: var(--vt-vidrio); box-shadow: 0 0 0 1px var(--vt-linea); }
 .vt-vel button { height: 2rem; min-width: 2.9rem; padding: 0 0.5rem; border-radius: 9px; font-size: 0.78rem; font-weight: 800; color: var(--vt-tinta-2); }
 .vt-vel button[aria-pressed="true"] { color: #fff; background: var(--vt-tinta); }
+.vt-grande { display: inline-flex; align-items: center; gap: 0.5rem; height: 2.6rem; padding: 0 1.1rem; border-radius: 12px; font-size: 0.86rem; font-weight: 800; color: #fff; background: var(--vt-tinta); box-shadow: 0 10px 24px -14px oklch(22% 0.04 258 / 0.7); transition: transform 0.2s var(--vt-ease); }
+.vt-grande:hover { transform: translateY(-1px); }
 .vt-chip { display: inline-flex; align-items: center; gap: 0.4rem; height: 2.4rem; padding: 0 0.9rem; border-radius: 12px; font-size: 0.8rem; font-weight: 700; color: var(--vt-tinta); background: var(--vt-vidrio); box-shadow: 0 0 0 1px var(--vt-linea); }
 .vt-retomar { position: absolute; z-index: 2; left: 50%; top: 0.9rem; translate: -50% 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.5rem; width: max-content; max-width: calc(100% - 1.5rem); padding: 0.55rem 0.6rem 0.55rem 0.95rem; border-radius: 16px; color: #fff; background: oklch(15% 0.03 258 / 0.82); backdrop-filter: blur(10px); font-size: 0.86rem; }
 .vt-retomar button { height: 2.1rem; padding: 0 0.85rem; border-radius: 10px; font-weight: 800; font-size: 0.8rem; }
@@ -116,8 +121,9 @@ a:hover .vt-play, .vt-tarjeta:hover .vt-play { transform: scale(1.08); }
   .vt-destacado { grid-template-columns: 1fr; }
   .vt-destacado .texto { padding: 0.2rem 0.4rem 0.4rem; }
   .vt-ver { grid-template-columns: 1fr; }
-  .vt-marco { margin: 0 calc(clamp(1rem, 3vw, 2rem) * -1); border-radius: 0; }
+  .vt-marco { border-radius: 16px; }
   .vt-marco video { max-height: none; }
+  .vt-controles .vt-grande { flex: 1 1 100%; justify-content: center; height: 3rem; font-size: 0.95rem; }
 }
 @media (max-width: 520px) {
   .vt-cabecera .marca span { display: none; }

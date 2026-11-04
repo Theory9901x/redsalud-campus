@@ -36,7 +36,7 @@ export default async function VerVideoPage({ params }: { params: Promise<{ id: s
     <main className="vt" style={{ ["--vt-h" as string]: matizCategoria(v.categoria) }}>
       <CabeceraVideoteca logoUrl={ajustes?.logoUrl ?? null} institucion={ajustes?.institutionName ?? "Red Salud Casanare E.S.E."} volverA="/videos" volverTexto="Todos los videos" />
       <div className="vt-cuerpo">
-        <div className="vt-ver">
+        <div className={otros.length ? "vt-ver" : "vt-ver vt-ver-solo"}>
           <section>
             <Reproductor id={v.id} src={v.src} tipo={v.tipo} portada={v.conPortada ? `/api/videos/${v.id}/portada` : null} posicion={v.posicion} duracion={v.duracionSeg} />
             <div className="vt-detalle">

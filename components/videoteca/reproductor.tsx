@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Link2, Loader2 } from "lucide-react";
+import { Check, Link2, Loader2, Maximize } from "lucide-react";
 import { duracionTexto } from "@/lib/videoteca/formato";
 
 const VELOCIDADES = [1, 1.25, 1.5, 2];
@@ -44,6 +44,15 @@ export function Reproductor({ id, src, tipo, portada, posicion, duracion }: { id
       enviar(true);
     };
   }, [enviar]);
+
+  // Pantalla completa del propio video (en iPhone, la nativa de Safari).
+  const ampliar = () => {
+    const v = ref.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
+    if (!v) return;
+    if (document.fullscreenElement) return void document.exitFullscreen().catch(() => {});
+    if (v.requestFullscreen) void v.requestFullscreen().catch(() => v.webkitEnterFullscreen?.());
+    else v.webkitEnterFullscreen?.();
+  };
 
   const cambiarVelocidad = (x: number) => {
     setVelocidad(x);
@@ -111,6 +120,10 @@ export function Reproductor({ id, src, tipo, portada, posicion, duracion }: { id
       </div>
 
       <div className="vt-controles">
+        <button type="button" className="vt-grande" onClick={ampliar}>
+          <Maximize className="h-4 w-4" aria-hidden="true" />
+          Ver en pantalla completa
+        </button>
         <div className="vt-vel" role="group" aria-label="Velocidad">
           {VELOCIDADES.map((x) => (
             <button key={x} type="button" aria-pressed={velocidad === x} onClick={() => cambiarVelocidad(x)}>
