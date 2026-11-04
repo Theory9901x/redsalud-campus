@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, User, GraduationCap, LogOut, ChevronDown } from "lucide-react";
-import { signOutAction } from "@/lib/auth-actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RoleBadge } from "@/components/admin/role-badge";
 import { NotificationBell, type NotificationItem } from "@/components/student/notification-bell";
@@ -95,7 +94,7 @@ export function StudentHeader({
                   Perfil y configuración
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <form action={signOutAction}>
+                <form action="/api/auth/salir" method="post">
                   <DropdownMenuItem
                     variant="destructive"
                     nativeButton

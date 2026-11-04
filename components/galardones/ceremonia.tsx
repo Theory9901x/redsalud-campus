@@ -7,7 +7,7 @@ import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Eye, EyeOff, HandHeart, Maximize, MessageSquareQuote, Printer, RotateCcw, ShieldCheck, Sparkles, Trophy, Users, X } from "lucide-react";
 import type { GalardonValor } from "@prisma/client";
-import ScrollMorphHero from "@/components/ui/scroll-morph-hero";
+import { Apertura3D } from "@/components/galardones/apertura-3d";
 import { ORDEN_VALORES, valorInfo } from "@/lib/galardones/valores";
 import type { Ganador, GanadoresIps } from "@/lib/galardones/consultas";
 
@@ -24,8 +24,8 @@ const sinSuscripcion = () => () => {};
  * centro, las tres tarjetas del centro elegido -una por valor- que se
  * revelan con un clic o con Espacio. Opcionalmente se leen los testimonios
  * de quienes postularon. TABLERO: todos los ganadores en una tabla centro ×
- * valor, para cerrar el evento o imprimir. APERTURA: el arco de tarjetas
- * (scroll-morph-hero), cada una lleva a su centro.
+ * valor, para cerrar el evento o imprimir. APERTURA: escena 3D (three.js)
+ * con la medalla y los tres anillos de tarjetas; cada una lleva a su centro.
  *
  * El avance (qué ya se reveló) se guarda en este navegador: si la página se
  * recarga en plena ceremonia, se retoma donde iba.
@@ -280,9 +280,10 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
       )}
 
       {modo === "apertura" && (
-        <Apertura
+        <Apertura3D
           centros={centros}
           anio={anio}
+          institucion={institucion}
           onIr={(i) => {
             irA(i);
             setModo("presentar");
@@ -506,66 +507,5 @@ function Tablero({
         </table>
       </div>
     </section>
-  );
-}
-
-/* ───────────── Apertura (opcional) ───────────── */
-
-function Apertura({ centros, anio, onIr }: { centros: GanadoresIps[]; anio: number; onIr: (i: number) => void }) {
-  const tarjetas = useMemo(
-    () =>
-      centros.flatMap((c, i) =>
-        c.ganadores.map((g) => {
-          const info = valorInfo(g.valor);
-          return {
-            key: `${c.ips}-${g.valor}`,
-            front: (
-              <button type="button" className="cer-carta" style={{ ["--c-h" as string]: info.matiz }} onClick={() => onIr(i)} title={`${c.ips} · ${info.nombre}`}>
-                <b>{c.ips}</b>
-                <small>Valor {info.numero}</small>
-              </button>
-            ),
-            back: (
-              <button type="button" className="cer-carta cer-carta-dorso" style={{ ["--c-h" as string]: info.matiz }} onClick={() => onIr(i)} aria-label={`Ir a ${c.ips}`}>
-                <Trophy className="h-4 w-4" aria-hidden="true" />
-              </button>
-            ),
-          };
-        }),
-      ),
-    [centros, onIr],
-  );
-  return (
-    <div className="cer-apertura">
-      <ScrollMorphHero
-        cards={tarjetas}
-        cardWidth={58}
-        cardHeight={82}
-        introHint={<span style={{ color: "var(--c-tenue)" }}>Desplaza para abrir</span>}
-        introTitle={
-          <div>
-            <h1 className="cer-display">
-              Galardones <em>{anio}</em>
-            </h1>
-            <p className="lema">Salud y Vida para el Llano</p>
-          </div>
-        }
-        arcContent={
-          <div className="max-w-2xl">
-            <h2 className="cer-display text-[clamp(1.8rem,1.1rem+2.6vw,3.6rem)] font-extrabold leading-[0.98] tracking-[-0.03em]">
-              {centros.length} centros · {centros.length * 3} galardones
-            </h2>
-            <p className="mx-auto mt-3 max-w-[46ch] text-[clamp(0.9rem,0.8rem+0.3vw,1.05rem)] leading-relaxed" style={{ color: "var(--c-tinta-2)" }}>
-              Integridad, Humanización y Liderazgo. En cada centro ganan las tres personas más postuladas por sus compañeros. Toca una tarjeta para ir a
-              su centro.
-            </p>
-            <button type="button" className="cer-boton cer-boton-grande cer-boton-fuerte mx-auto mt-6" onClick={() => onIr(0)}>
-              Empezar la ceremonia
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
-        }
-      />
-    </div>
   );
 }

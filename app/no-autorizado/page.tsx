@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth, signOut } from "@/auth";
+import { auth } from "@/auth";
 import { Button, buttonVariants } from "@/components/ui/button";
 
 function roleHome(role: string | undefined) {
@@ -21,12 +21,7 @@ export default async function NoAutorizadoPage() {
         <Link href={roleHome(session?.user?.role)} className={buttonVariants()}>
           Volver a mi panel
         </Link>
-        <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/login" });
-          }}
-        >
+        <form action="/api/auth/salir" method="post">
           <Button type="submit" variant="outline">
             Cerrar sesión
           </Button>

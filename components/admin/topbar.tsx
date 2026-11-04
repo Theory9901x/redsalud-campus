@@ -14,7 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { signOutAction } from "@/lib/auth-actions";
 import { initials } from "@/lib/initials";
 
 /** Topbar de los paneles de gestión (admin y tutor: cambian roleLabel y breadcrumb). */
@@ -81,7 +80,7 @@ export function AdminTopbar({
                 <p className="text-xs font-normal text-muted-foreground">{roleLabel}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <form action={signOutAction}>
+              <form action="/api/auth/salir" method="post">
                 <DropdownMenuItem variant="destructive" nativeButton render={<button type="submit" className="w-full" />}>
                   <LogOut className="h-4 w-4" />
                   Cerrar sesión
