@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil, Plus, Users, MapPin } from "lucide-react";
+import { Pencil, Plus, Users, MapPin, FileSpreadsheet } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -154,10 +154,22 @@ export default async function UsuariosPage({
             : "Todo el personal con acceso a la plataforma: planta y contratistas, por municipio, vinculación y rol."
         }
         acciones={
-          <Link href="/admin/usuarios/nuevo" className="boton-hero">
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Nuevo usuario
-          </Link>
+          <>
+            <Link href="/admin/usuarios/nuevo" className="boton-hero">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Nuevo usuario
+            </Link>
+            {/* Enlace normal (no <Link>): es una descarga, no una navegación. */}
+            <a
+              href="/admin/usuarios/exportar"
+              download
+              className="enlace-hero"
+              title="Directorio completo en Excel: datos, accesos y resumen (sin administradores)"
+            >
+              <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
+              Exportar a Excel
+            </a>
+          </>
         }
         cifras={[
           { valor: directorio, etiqueta: "En el directorio" },
