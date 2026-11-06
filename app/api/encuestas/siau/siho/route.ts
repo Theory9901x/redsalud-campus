@@ -22,10 +22,12 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const periodo = leerPeriodo(url.searchParams);
   if (!periodo) return NextResponse.json({ error: "Periodo inválido." }, { status: 400 });
-  const sede = url.searchParams.get("sede") ?? undefined;
-  const r = await generarInformeSiho(periodo, { sede });
+  // Los mismos cuatro filtros que el informe y los datos crudos: antes solo
+  // viajaba la sede y el SIHO salía con todas las EPS aunque se filtrara una.
+  const filtros = { sede: url.searchParams.get("sede") ?? undefined, servicio: url.searchParams.get("servicio") ?? undefined, sexo: url.searchParams.get("sexo") ?? undefined, eps: url.searchParams.get("eps") ?? undefined };
+  const r = await generarInformeSiho(periodo, filtros);
   if (!r) return NextResponse.json({ error: "No existe la encuesta SIAU." }, { status: 404 });
-  await registrarExportacionSiau(sesion.user.id, "siho-xlsx", periodo, { sede });
+  await registrarExportacionSiau(sesion.user.id, "siho-xlsx", periodo, filtros);
   return new NextResponse(new Uint8Array(r.buffer), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

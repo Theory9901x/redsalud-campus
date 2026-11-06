@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { getFilasSiau, rangoDePeriodo, NOMBRE_MES, type FilaSiau, type Periodo, type PreguntaSiau } from "@/lib/encuestas/metrics";
+import { getFilasSiau, rangoDePeriodo, NOMBRE_MES, type FilaSiau, type FiltrosSiau, type Periodo, type PreguntaSiau } from "@/lib/encuestas/metrics";
 
 /**
  * INFORME SIHO (ente de control) en Excel, réplica del formato que el área
@@ -50,9 +50,17 @@ function sinTildes(s: string) {
 const bordes: Partial<ExcelJS.Borders> = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
 const relleno = (color: string): ExcelJS.Fill => ({ type: "pattern", pattern: "solid", fgColor: { argb: color } });
 
-export async function generarInformeSiho(periodo: Periodo, filtros: { sede?: string } = {}): Promise<{ buffer: Buffer; nombre: string; total: number } | null> {
+export async function generarInformeSiho(
+  periodo: Periodo,
+  filtros: Pick<FiltrosSiau, "sede" | "servicio" | "sexo" | "eps"> = {}
+): Promise<{ buffer: Buffer; nombre: string; total: number } | null> {
   const rango = rangoDePeriodo(periodo);
-  const datos = await getFilasSiau({ desde: rango.desde, hasta: rango.hasta, sede: filtros.sede });
+  const datos = await getFilasSiau({ desde: rango.desde, hasta: rango.hasta, sede: filtros.sede, servicio: filtros.servicio, sexo: filtros.sexo, eps: filtros.eps });
+  // Que el archivo diga qué filtro lleva: un SIHO de una sola EPS no debe confundirse con el general.
+  const textoFiltros = (["sede", "servicio", "sexo", "eps"] as const)
+    .filter((k) => filtros[k])
+    .map((k) => `${k === "eps" ? "EPS" : k.toUpperCase()}: ${sinTildes(filtros[k]!)}`)
+    .join(" · ");
   if (!datos) return null;
   const { filas, preguntas } = datos;
   const p5 = preguntas.find((p) => p.clave === "p5");
@@ -65,6 +73,8 @@ export async function generarInformeSiho(periodo: Periodo, filtros: { sede?: str
   const wb = new ExcelJS.Workbook();
   wb.creator = "RedSalud Te Forma";
   wb.created = new Date();
+  // Además de los resultados ya escritos, que Excel recalcule al abrir si se editan datos.
+  wb.calcProperties.fullCalcOnLoad = true;
 
   // ================================================================ hoja 1 · datos crudos
   const hojaDatos = wb.addWorksheet("DATOS", { views: [{ state: "frozen", ySplit: 1 }] });
@@ -121,7 +131,7 @@ export async function generarInformeSiho(periodo: Periodo, filtros: { sede?: str
   hoja.mergeCells(1, 1, 1, colIns);
   hoja.getCell(1, 1).value = "SIHO (ENCUESTAS DE SATISFACCION)";
   hoja.mergeCells(2, 1, 2, colIns);
-  hoja.getCell(2, 1).value = etiquetaPeriodo;
+  hoja.getCell(2, 1).value = textoFiltros ? `${etiquetaPeriodo} · ${textoFiltros}` : etiquetaPeriodo;
   hoja.getCell(1, 1).font = { bold: true, size: 14, color: { argb: BLANCO } };
   hoja.getCell(2, 1).font = { bold: true, size: 11, color: { argb: BLANCO } };
   for (const r of [1, 2]) {
@@ -183,16 +193,35 @@ export async function generarInformeSiho(periodo: Periodo, filtros: { sede?: str
   const desfavorables5 = opcionesP5.map((o, i) => ({ i, o })).filter((x) => !esFav(x.o) && !esNa(x.o)).map((x) => L(colIni5 + x.i));
   const noMedidas5 = opcionesP5.map((o, i) => ({ i, o })).filter((x) => esNa(x.o)).map((x) => L(colIni5 + x.i));
   const validas5 = (r: number) => (noMedidas5.length === 0 ? `${L(colTot5)}${r}` : `(${L(colTot5)}${r}-${noMedidas5.map((l) => `${l}${r}`).join("-")})`);
+  const suma = (letras: string[], r: number) => (letras.length ? letras.map((l) => `${l}${r}`).join("+") : "0");
+  // Cada fórmula lleva también su resultado ya calculado. Sin él, el Excel
+  // descargado (que abre en Vista protegida, sin recalcular) mostraba los
+  // totales y los % de satisfacción e insatisfacción en blanco.
+  const resultados = (p5: number[], p6: number[]) => {
+    const validas = opcionesP5.reduce((a, o, i) => a + (esNa(o) ? 0 : p5[i]), 0);
+    const fav = opcionesP5.reduce((a, o, i) => a + (esFav(o) ? p5[i] : 0), 0);
+    const desf = opcionesP5.reduce((a, o, i) => a + (!esFav(o) && !esNa(o) ? p5[i] : 0), 0);
+    return {
+      tot5: p5.reduce((a, n) => a + n, 0),
+      tot6: p6.reduce((a, n) => a + n, 0),
+      sat: validas > 0 ? fav / validas : 0,
+      ins: validas > 0 ? desf / validas : 0,
+    };
+  };
+  const formulasPorcentaje = (r: number, res: { sat: number; ins: number }) => {
+    hoja.getCell(r, colSat).value = { formula: `IFERROR((${suma(favorables5, r)})/${validas5(r)},0)`, result: res.sat };
+    hoja.getCell(r, colIns).value = { formula: `IFERROR((${suma(desfavorables5, r)})/${validas5(r)},0)`, result: res.ins };
+  };
   ipsOrden.forEach((ips, idx) => {
     const r = filaIni + idx;
     const c = conteo.get(ips)!;
+    const res = resultados(c.p5, c.p6);
     hoja.getCell(r, 1).value = ips;
     c.p5.forEach((n, i) => { hoja.getCell(r, colIni5 + i).value = n; });
-    hoja.getCell(r, colTot5).value = { formula: c.p5.map((_, i) => `${L(colIni5 + i)}${r}`).join("+") };
+    hoja.getCell(r, colTot5).value = { formula: c.p5.map((_, i) => `${L(colIni5 + i)}${r}`).join("+") || "0", result: res.tot5 };
     c.p6.forEach((n, i) => { hoja.getCell(r, colIni6 + i).value = n; });
-    hoja.getCell(r, colTot6).value = { formula: c.p6.map((_, i) => `${L(colIni6 + i)}${r}`).join("+") };
-    hoja.getCell(r, colSat).value = { formula: `IFERROR((${favorables5.map((l) => `${l}${r}`).join("+")})/${validas5(r)},0)` };
-    hoja.getCell(r, colIns).value = { formula: `IFERROR((${desfavorables5.map((l) => `${l}${r}`).join("+")})/${validas5(r)},0)` };
+    hoja.getCell(r, colTot6).value = { formula: c.p6.map((_, i) => `${L(colIni6 + i)}${r}`).join("+") || "0", result: res.tot6 };
+    formulasPorcentaje(r, res);
     for (let col = 1; col <= colIns; col++) {
       const cel = hoja.getCell(r, col);
       cel.border = bordes;
@@ -217,9 +246,13 @@ export async function generarInformeSiho(periodo: Periodo, filtros: { sede?: str
   });
   const filaTot = filaIni + ipsOrden.length;
   hoja.getCell(filaTot, 1).value = "Total general";
-  for (let col = colIni5; col <= colTot6; col++) hoja.getCell(filaTot, col).value = { formula: `SUM(${L(col)}${filaIni}:${L(col)}${filaTot - 1})` };
-  hoja.getCell(filaTot, colSat).value = { formula: `IFERROR((${favorables5.map((l) => `${l}${filaTot}`).join("+")})/${validas5(filaTot)},0)` };
-  hoja.getCell(filaTot, colIns).value = { formula: `IFERROR((${desfavorables5.map((l) => `${l}${filaTot}`).join("+")})/${validas5(filaTot)},0)` };
+  const totP5 = opcionesP5.map((_, i) => ipsOrden.reduce((a, ips) => a + conteo.get(ips)!.p5[i], 0));
+  const totP6 = opcionesP6.map((_, i) => ipsOrden.reduce((a, ips) => a + conteo.get(ips)!.p6[i], 0));
+  const resTot = resultados(totP5, totP6);
+  const valorTotal = (col: number) =>
+    col === colTot5 ? resTot.tot5 : col === colTot6 ? resTot.tot6 : col < colTot5 ? totP5[col - colIni5] : totP6[col - colIni6];
+  for (let col = colIni5; col <= colTot6; col++) hoja.getCell(filaTot, col).value = { formula: `SUM(${L(col)}${filaIni}:${L(col)}${filaTot - 1})`, result: valorTotal(col) };
+  formulasPorcentaje(filaTot, resTot);
   for (let col = 1; col <= colIns; col++) {
     const cel = hoja.getCell(filaTot, col);
     cel.font = { bold: true, size: 10 };
@@ -234,11 +267,11 @@ export async function generarInformeSiho(periodo: Periodo, filtros: { sede?: str
   // bloque global
   const b = filaTot + 3;
   hoja.mergeCells(b, 1, b, 4); hoja.getCell(b, 1).value = "TOTAL DE ENCUESTAS DE SATISFACCION REALIZADAS";
-  hoja.getCell(b, 5).value = { formula: `${L(colTot5)}${filaTot}` };
+  hoja.getCell(b, 5).value = { formula: `${L(colTot5)}${filaTot}`, result: resTot.tot5 };
   hoja.mergeCells(b + 1, 1, b + 1, 4); hoja.getCell(b + 1, 1).value = "PORCENTAJE DE SATISFACCION GLOBAL";
-  hoja.getCell(b + 1, 5).value = { formula: `${L(colSat)}${filaTot}` };
+  hoja.getCell(b + 1, 5).value = { formula: `${L(colSat)}${filaTot}`, result: resTot.sat };
   hoja.mergeCells(b + 2, 1, b + 2, 4); hoja.getCell(b + 2, 1).value = "PORCENTAJE DE INSATISFACCION GLOBAL";
-  hoja.getCell(b + 2, 5).value = { formula: `${L(colIns)}${filaTot}` };
+  hoja.getCell(b + 2, 5).value = { formula: `${L(colIns)}${filaTot}`, result: resTot.ins };
   for (const [r, colorEt, colorVal] of [[b, LILA, AMARILLO], [b + 1, VERDE, "FFBFBFBF"], [b + 2, "FFFFF2CC", "FFFFF2CC"]] as [number, string, string][]) {
     hoja.getCell(r, 1).font = { bold: true, size: 10 }; hoja.getCell(r, 1).fill = relleno(colorEt); hoja.getCell(r, 1).border = bordes;
     const v = hoja.getCell(r, 5); v.font = { bold: true, size: 10 }; v.fill = relleno(colorVal); v.border = bordes; v.alignment = { horizontal: "center" };
