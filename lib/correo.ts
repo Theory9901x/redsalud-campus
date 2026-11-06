@@ -100,7 +100,8 @@ const escaparHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;",
  */
 export function plantillaCredenciales({ nombre, usuario, clave }: { nombre: string; usuario: string; clave: string | null }) {
   const login = `${URL_CAMPUS}/login`;
-  const asunto = clave ? "Tus credenciales de acceso al Campus Virtual RedSalud Te Forma" : "Tu acceso al Campus Virtual RedSalud Te Forma";
+  // Sin «credenciales» en el asunto: Gmail bloqueó como sospechoso uno de los primeros envíos.
+  const asunto = clave ? "Tu acceso personal al Campus Virtual RedSalud Te Forma" : "Tu acceso al Campus Virtual RedSalud Te Forma";
 
   const texto = `Hola ${nombre},
 

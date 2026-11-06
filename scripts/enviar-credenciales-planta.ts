@@ -76,6 +76,8 @@ async function main() {
       if (!l.trim()) continue;
       const r = JSON.parse(l);
       if (r.estado === "ENVIADO") yaEnviados.add(r.documento);
+      // Gmail acepta el envío y después lo devuelve (mailer-daemon): esa línea, agregada a mano, lo vuelve a poner en cola.
+      if (r.estado === "REBOTADO") yaEnviados.delete(r.documento);
     }
   }
 
