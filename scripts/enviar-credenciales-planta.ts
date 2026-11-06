@@ -44,6 +44,9 @@ type Fila = { documento: string; nombre: string; correo: string; tipo: Tipo; mot
 const arg = (n: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split("=").slice(1).join("=");
 const bandera = (n: string) => process.argv.includes(`--${n}`);
 const CORREO_VALIDO = /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i;
+/** 10 caracteres sin los que se confunden al leerlos (0/O, 1/l/I), como las del archivo de credenciales. */
+const ALFABETO = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const claveTemporal = () => Array.from({ length: 10 }, () => ALFABETO[randomInt(ALFABETO.length)]).join("");
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function main() {
@@ -119,8 +122,8 @@ async function main() {
     for (const f of pendientes) {
       if (n >= limite) break;
       if (f.tipo === "CLAVE_NUEVA" && f.userId) {
-        // Misma forma que las temporales de restablecer-claves-lote.ts; sin cambio forzado, como el resto del lote.
-        f.clave = `RedSalud${randomInt(1000, 9999)}*`;
+        // Sin cambio forzado, como el resto del lote (decisión de Talento Humano).
+        f.clave = claveTemporal();
         await prisma.user.update({ where: { id: f.userId }, data: { passwordHash: await bcrypt.hash(f.clave, 10), mustChangePassword: false } });
       }
       const { asunto, texto, html } = plantillaCredenciales({ nombre: f.nombre, usuario: f.correo, clave: f.clave });
