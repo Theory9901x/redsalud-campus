@@ -55,7 +55,7 @@ async function main() {
   const enviar = bandera("enviar");
   const prueba = arg("prueba");
   const limite = Number(arg("limite") ?? Infinity);
-  const pausa = Number(arg("pausa") ?? 6000);
+  const pausa = Number(arg("pausa") ?? 15000);
   const conSoloAcceso = !bandera("sin-solo-acceso");
   const regenerar = bandera("regenerar-desconocidas");
   const registro = join(dirname(archivo), "registro.jsonl");
@@ -132,6 +132,11 @@ async function main() {
       appendFileSync(registro, JSON.stringify({ documento: f.documento, nombre: f.nombre, correo: f.correo, tipo: f.tipo, estado: f.estado, fecha: new Date().toISOString() }) + "\n");
       n++;
       console.log(`[${n}/${Math.min(pendientes.length, limite)}] ${f.estado}  ${f.correo}  (${f.tipo})`);
+      // Gmail corta por cupo diario: seguir solo acumula rechazos. Se para y se retoma otro día (no repite a nadie).
+      if (!ok) {
+        console.log("\nEl servidor de correo rechazó el envío (probable cupo diario). Se detiene; retomar más tarde con el mismo comando.");
+        break;
+      }
       await esperar(pausa);
     }
   }
