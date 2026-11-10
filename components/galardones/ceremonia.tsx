@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, HandHeart, Maximize, MessageSquareQuote, Printer, RotateCcw, ShieldCheck, Sparkles, Trophy, Users, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, HandHeart, Maximize, MessageSquareQuote, Printer, ShieldCheck, Trophy, Users, X } from "lucide-react";
 import type { GalardonValor } from "@prisma/client";
 import { Apertura3D } from "@/components/galardones/apertura-3d";
 import { ORDEN_VALORES, valorInfo } from "@/lib/galardones/valores";
@@ -13,7 +13,6 @@ import type { Ganador, GanadoresIps } from "@/lib/galardones/consultas";
 import { nombreCentro } from "@/lib/galardones/ips";
 
 type Modo = "presentar" | "tablero" | "apertura";
-type Revelados = Record<string, GalardonValor[]>;
 const ICONOS: Record<GalardonValor, typeof ShieldCheck> = { INTEGRIDAD: ShieldCheck, HUMANIZACION: HandHeart, LIDERAZGO: Users };
 const EASE = [0.16, 1, 0.3, 1] as const;
 const sinSuscripcion = () => () => {};
@@ -22,15 +21,13 @@ const sinSuscripcion = () => () => {};
  * CEREMONIA DE GALARDONES: lo que Talento Humano proyecta en el evento.
  *
  * APERTURA (por defecto) abre con la escena 3D y el panel «Van punteando».
- * PRESENTAR: a la izquierda los 17 centros con su avance; al
- * centro, las tres tarjetas del centro elegido -una por valor- que se
- * revelan con un clic o con Espacio. Opcionalmente se leen los testimonios
- * de quienes postularon. TABLERO: todos los ganadores en una tabla centro ×
- * valor, para cerrar el evento o imprimir. APERTURA: escena 3D (three.js)
+ * PRESENTAR: a la izquierda los 17 centros; al centro, las tres tarjetas
+ * del centro elegido -una por valor- con los nombres siempre a la vista
+ * (no se tapan: así lo pidió Talento Humano). Espacio pasa al siguiente
+ * centro. Opcionalmente se leen los testimonios de quienes postularon.
+ * TABLERO: todos los ganadores en una tabla centro × valor, para cerrar el
+ * evento o imprimir. APERTURA: escena 3D (three.js)
  * con la medalla y los tres anillos de tarjetas; cada una lleva a su centro.
- *
- * El avance (qué ya se reveló) se guarda en este navegador: si la página se
- * recarga en plena ceremonia, se retoma donde iba.
  */
 export function CeremoniaGalardones(props: { centros: GanadoresIps[]; anio: number; institucion: string; logoUrl: string | null; salirA: string }) {
   // Solo en el navegador: mide la pantalla, anima y lee el avance guardado.
@@ -40,46 +37,20 @@ export function CeremoniaGalardones(props: { centros: GanadoresIps[]; anio: numb
 }
 
 function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: GanadoresIps[]; anio: number; institucion: string; logoUrl: string | null; salirA: string }) {
-  const clave = `galardones-ceremonia-${anio}`;
   const [modo, setModo] = useState<Modo>("apertura");
   const [idx, setIdx] = useState(0);
-  const [revelados, setRevelados] = useState<Revelados>(() => {
-    try {
-      return (JSON.parse(localStorage.getItem(clave) ?? "{}") as Revelados) ?? {};
-    } catch {
-      return {};
-    }
-  });
   const [conteos, setConteos] = useState(false);
   const [testimonios, setTestimonios] = useState(false);
-  const [mostrarTodos, setMostrarTodos] = useState(false);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(clave, JSON.stringify(revelados));
-    } catch {
-      /* sin almacenamiento */
-    }
-  }, [clave, revelados]);
 
   const centro = centros[idx];
-  const reveladosDe = useCallback((ips: string) => revelados[ips] ?? [], [revelados]);
-  const revelar = useCallback((ips: string, valor: GalardonValor) => setRevelados((r) => (r[ips]?.includes(valor) ? r : { ...r, [ips]: [...(r[ips] ?? []), valor] })), []);
-  const revelarTodo = useCallback((ips: string) => setRevelados((r) => ({ ...r, [ips]: [...ORDEN_VALORES] })), []);
-  const reiniciar = () => {
-    if (confirm("¿Volver a ocultar todos los ganadores? El avance de la ceremonia empieza de cero.")) setRevelados({});
-  };
 
   const irA = useCallback((i: number) => setIdx(Math.max(0, Math.min(centros.length - 1, i))), [centros.length]);
 
-  /** Espacio: revela el siguiente valor del centro; si ya están los tres, pasa al siguiente centro. */
+  /** Espacio: siguiente centro; después del último, el tablero. */
   const avanzar = useCallback(() => {
-    if (!centro) return;
-    const pendiente = ORDEN_VALORES.find((v) => !reveladosDe(centro.ips).includes(v));
-    if (pendiente) revelar(centro.ips, pendiente);
-    else if (idx < centros.length - 1) irA(idx + 1);
+    if (idx < centros.length - 1) irA(idx + 1);
     else setModo("tablero");
-  }, [centro, reveladosDe, revelar, idx, centros.length, irA]);
+  }, [idx, centros.length, irA]);
 
   const pantallaCompleta = () => {
     if (document.fullscreenElement) void document.exitFullscreen();
@@ -106,15 +77,11 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
       } else if (e.key === "ArrowLeft" || e.key === "PageUp" || e.key === "ArrowUp") {
         e.preventDefault();
         irA(idx - 1);
-      } else if (["1", "2", "3"].includes(e.key)) {
-        revelar(centro.ips, ORDEN_VALORES[Number(e.key) - 1]);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [modo, centro, avanzar, irA, idx, revelar]);
-
-  const totalRevelados = centros.reduce((n, c) => n + reveladosDe(c.ips).length, 0);
+  }, [modo, centro, avanzar, irA, idx]);
 
   return (
     <div className="cer" aria-label={`Ceremonia de Galardones ${anio}`}>
@@ -124,7 +91,7 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
           <div className="min-w-0">
             <b className="cer-display">Galardones {anio}</b>
             <small>
-              {institucion} · {totalRevelados} de {centros.length * 3} revelados
+              {institucion} · {centros.length} centros
             </small>
           </div>
         </div>
@@ -167,22 +134,14 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
           <nav className="cer-lista" aria-label="Centros">
             <h2>Centros</h2>
             <ol>
-              {centros.map((c, i) => {
-                const r = reveladosDe(c.ips);
-                return (
-                  <li key={c.ips}>
-                    <button type="button" onClick={() => irA(i)} aria-current={i === idx} data-completo={r.length === 3 || undefined}>
-                      <span className="n">{r.length === 3 ? "✓" : String(i + 1).padStart(2, "0")}</span>
-                      <span className="nombre">{nombreCentro(c.ips)}</span>
-                      <span className="cer-puntos" aria-label={`${r.length} de 3 revelados`}>
-                        {ORDEN_VALORES.map((v) => (
-                          <i key={v} data-on={r.includes(v) || undefined} style={{ ["--c-v" as string]: `oklch(52% 0.14 ${valorInfo(v).matiz})`, ["--c-h" as string]: valorInfo(v).matiz }} />
-                        ))}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
+              {centros.map((c, i) => (
+                <li key={c.ips}>
+                  <button type="button" onClick={() => irA(i)} aria-current={i === idx}>
+                    <span className="n">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="nombre">{nombreCentro(c.ips)}</span>
+                  </button>
+                </li>
+              ))}
             </ol>
           </nav>
 
@@ -208,23 +167,11 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
                         : "Este centro no registró postulaciones"}
                     </p>
                   </div>
-                  <button type="button" className="cer-boton" onClick={() => revelarTodo(centro.ips)} disabled={reveladosDe(centro.ips).length === 3}>
-                    <Sparkles className="h-4 w-4" aria-hidden="true" />
-                    Revelar los tres
-                  </button>
                 </div>
 
                 <div className="cer-tarjetas">
                   {centro.ganadores.map((g, n) => (
-                    <TarjetaValor
-                      key={g.valor}
-                      g={g}
-                      tecla={n + 1}
-                      revelado={reveladosDe(centro.ips).includes(g.valor)}
-                      onRevelar={() => revelar(centro.ips, g.valor)}
-                      conteos={conteos}
-                      testimonios={testimonios}
-                    />
+                    <TarjetaValor key={g.valor} g={g} orden={n} conteos={conteos} testimonios={testimonios} />
                   ))}
                 </div>
               </motion.div>
@@ -237,22 +184,13 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
                   {idx > 0 ? centros[idx - 1].ips : "Anterior"}
                 </button>
                 <button type="button" className="cer-boton cer-boton-grande cer-boton-fuerte" onClick={avanzar}>
-                  {(() => {
-                    const pendiente = ORDEN_VALORES.find((v) => !reveladosDe(centro.ips).includes(v));
-                    if (pendiente) return `Revelar ${valorInfo(pendiente).nombre}`;
-                    return idx < centros.length - 1 ? `Siguiente: ${nombreCentro(centros[idx + 1].ips)}` : "Ver tablero";
-                  })()}
+                  {idx < centros.length - 1 ? `Siguiente: ${nombreCentro(centros[idx + 1].ips)}` : "Ver tablero"}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
               <div className="cer-atajos" aria-hidden="true">
                 <span>
-                  <kbd>Espacio</kbd>revelar / seguir
-                </span>
-                <span>
-                  <kbd>1</kbd>
-                  <kbd>2</kbd>
-                  <kbd>3</kbd>un valor
+                  <kbd>Espacio</kbd>siguiente
                 </span>
                 <span>
                   <kbd>←</kbd>
@@ -262,10 +200,6 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
                   <kbd>T</kbd>tablero
                 </span>
               </div>
-              <button type="button" className="cer-boton" onClick={reiniciar} title="Ocultar todo y empezar de nuevo">
-                <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                Reiniciar
-              </button>
             </div>
           </section>
         </div>
@@ -275,9 +209,6 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
         <Tablero
           centros={centros}
           anio={anio}
-          reveladosDe={reveladosDe}
-          mostrarTodos={mostrarTodos}
-          onMostrarTodos={() => setMostrarTodos((x) => !x)}
           conteos={conteos}
           onIr={(i) => {
             irA(i);
@@ -303,27 +234,12 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
 
 /* ───────────── Tarjeta de un valor ───────────── */
 
-function TarjetaValor({
-  g,
-  tecla,
-  revelado,
-  onRevelar,
-  conteos,
-  testimonios,
-}: {
-  g: Ganador;
-  tecla: number;
-  revelado: boolean;
-  onRevelar: () => void;
-  conteos: boolean;
-  testimonios: boolean;
-}) {
+function TarjetaValor({ g, orden, conteos, testimonios }: { g: Ganador; orden: number; conteos: boolean; testimonios: boolean }) {
   const info = valorInfo(g.valor);
   const Icono = ICONOS[g.valor];
-  const reducir = false; // se proyecta: el revelado siempre gira y suelta chispas
   const persona = g.personas[0];
   return (
-    <article className="cer-tarjeta" style={{ ["--c-h" as string]: info.matiz, ["--i" as string]: tecla - 1, ["--giro" as string]: `${(2 - tecla) * 9}deg` }}>
+    <article className="cer-tarjeta" style={{ ["--c-h" as string]: info.matiz, ["--i" as string]: orden, ["--giro" as string]: `${(1 - orden) * 9}deg` }}>
       <div className="cer-tarjeta-cab">
         <span className="cer-tarjeta-icono">
           <Icono className="h-5 w-5" aria-hidden="true" />
@@ -334,27 +250,12 @@ function TarjetaValor({
         </div>
       </div>
       <div className="cer-tarjeta-cuerpo" aria-live="polite">
-        <AnimatePresence mode="wait" initial={false}>
-          {!revelado ? (
-            <motion.button
-              key="sellada"
-              type="button"
-              className="cer-sellada"
-              onClick={onRevelar}
-              exit={reducir ? { opacity: 0 } : { opacity: 0, scale: 0.96, filter: "blur(6px)" }}
-              transition={{ duration: 0.2 }}
-            >
-              <Trophy className="h-7 w-7" aria-hidden="true" />
-              <span>Revelar ganador</span>
-              <kbd>{tecla}</kbd>
-            </motion.button>
-          ) : (
             <motion.div
               key="ganador"
               className="cer-ganador relative"
-              initial={reducir ? false : { opacity: 0, rotateX: -80, y: 24, scale: 0.94, filter: "blur(8px)" }}
+              initial={{ opacity: 0, rotateX: -80, y: 24, scale: 0.94, filter: "blur(8px)" }}
               animate={{ opacity: 1, rotateX: 0, y: 0, scale: 1, filter: "blur(0px)" }}
-              transition={{ duration: 0.8, ease: EASE }}
+              transition={{ duration: 0.8, ease: EASE, delay: 0.12 * orden }}
               style={{ transformPerspective: 900 }}
             >
               {g.personas.length === 0 ? (
@@ -381,12 +282,10 @@ function TarjetaValor({
                       ))}
                     </ul>
                   )}
-                  {!reducir && <Chispas />}
+                  <Chispas />
                 </>
               )}
             </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </article>
   );
@@ -420,17 +319,11 @@ function Chispas() {
 function Tablero({
   centros,
   anio,
-  reveladosDe,
-  mostrarTodos,
-  onMostrarTodos,
   conteos,
   onIr,
 }: {
   centros: GanadoresIps[];
   anio: number;
-  reveladosDe: (ips: string) => GalardonValor[];
-  mostrarTodos: boolean;
-  onMostrarTodos: () => void;
   conteos: boolean;
   onIr: (i: number) => void;
 }) {
@@ -452,10 +345,6 @@ function Tablero({
         </div>
         <div className="flex flex-wrap items-center gap-2" data-no-imprimir>
           <input className="cer-buscar" placeholder="Buscar centro o persona…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar" />
-          <button type="button" className="cer-boton" aria-pressed={mostrarTodos} onClick={onMostrarTodos}>
-            {mostrarTodos ? <Eye className="h-4 w-4" aria-hidden="true" /> : <EyeOff className="h-4 w-4" aria-hidden="true" />}
-            {mostrarTodos ? "Mostrando todos" : "Solo revelados"}
-          </button>
           <button type="button" className="cer-boton" onClick={() => window.print()}>
             <Printer className="h-4 w-4" aria-hidden="true" />
             Imprimir
@@ -484,13 +373,10 @@ function Tablero({
                   <span className="meta">{c.votantes} postulantes</span>
                 </td>
                 {c.ganadores.map((g) => {
-                  const visible = mostrarTodos || reveladosDe(c.ips).includes(g.valor);
                   const p = g.personas[0];
                   return (
                     <td key={g.valor}>
-                      {!visible ? (
-                        <span className="oculto">Por revelar</span>
-                      ) : g.personas.length === 0 ? (
+                      {g.personas.length === 0 ? (
                         <span className="vacio">—</span>
                       ) : (
                         <>
