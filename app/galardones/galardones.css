@@ -175,6 +175,8 @@
 textarea.gala-input { min-height: 6.2rem; resize: vertical; line-height: 1.5; font-size: 0.93rem; }
 .gala-ayuda { font-size: 0.74rem; color: var(--g-dim); display: flex; justify-content: space-between; gap: 1rem; }
 .gala-ayuda b { color: var(--g-a); font-weight: 600; }
+.gala-yo { flex: none; color: var(--g-a); font-weight: 700; white-space: nowrap; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 0.35rem 0; margin: -0.35rem 0; }
+.gala-yo:active { transform: scale(0.96); }
 
 .gala-sugerencias {
   position: absolute; top: 100%; left: 0; right: 0; z-index: 20; margin-top: 0.35rem; padding: 0.35rem; list-style: none;

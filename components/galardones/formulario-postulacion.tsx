@@ -60,7 +60,7 @@ const sinSuscripcion = () => () => {};
  * abajo al alcance del pulgar, buscador de centros, frases para arrancar a
  * escribir y un borrador en el teléfono por si la persona cambia de app.
  */
-export function FormularioPostulacion({ nombreVotante, ipsSugerida, cierraEl }: { nombreVotante: string; ipsSugerida: IpsGalardon | null; cierraEl: string | null }) {
+export function FormularioPostulacion({ votanteId, nombreVotante, ipsSugerida, cierraEl }: { votanteId: string; nombreVotante: string; ipsSugerida: IpsGalardon | null; cierraEl: string | null }) {
   const router = useRouter();
   const reducir = useReducedMotion();
   const raiz = useRef<HTMLElement>(null);
@@ -143,7 +143,7 @@ export function FormularioPostulacion({ nombreVotante, ipsSugerida, cierraEl }: 
       }
       vibrar();
       setCelebrar(true);
-      toast.success("Postulación registrada. ¡Gracias por reconocer a tus compañeros!");
+      toast.success("Postulación registrada. ¡Gracias por participar!");
       setTimeout(() => router.refresh(), reducir ? 0 : 1400);
     });
   };
@@ -246,6 +246,7 @@ export function FormularioPostulacion({ nombreVotante, ipsSugerida, cierraEl }: 
               indice={indice}
               valor={valorActual}
               entrada={entradas[valorActual.clave]}
+              yo={{ id: votanteId, nombre: nombreVotante }}
               onChange={(e) => {
                 setTocado(true);
                 setEntradas((prev) => ({ ...prev, [valorActual.clave]: e }));
@@ -369,7 +370,7 @@ function PasoIps({ nombreVotante, ipsSugerida, ips, onElegir }: { nombreVotante:
         </div>
       </div>
       <p className="gala-definicion">
-        Hola, {nombreVotante.split(" ")[0]}. Las personas que postules deben ser de tu mismo centro: el reconocimiento se entrega por centro y por valor.
+        Hola, {nombreVotante.split(" ")[0]}. Las personas que postules deben ser de tu mismo centro: el reconocimiento se entrega por centro y por valor. Puedes postular a un compañero o postularte en nombre propio.
       </p>
       <label className="gala-buscar">
         <Search aria-hidden="true" />
@@ -410,7 +411,7 @@ function PasoIps({ nombreVotante, ipsSugerida, ips, onElegir }: { nombreVotante:
 
 /* ───────────── Pasos 2 a 4: un valor ───────────── */
 
-function PasoValor({ indice, valor, entrada, onChange }: { indice: number; valor: (typeof VALORES_GALARDON)[number]; entrada: Entrada; onChange: (e: Entrada) => void }) {
+function PasoValor({ indice, valor, entrada, yo, onChange }: { indice: number; valor: (typeof VALORES_GALARDON)[number]; entrada: Entrada; yo: { id: string; nombre: string }; onChange: (e: Entrada) => void }) {
   const Icono = ICONOS[valor.clave];
   const reducir = useReducedMotion();
   const [sugerencias, setSugerencias] = useState<PersonaDirectorio[]>([]);
@@ -466,6 +467,9 @@ function PasoValor({ indice, valor, entrada, onChange }: { indice: number; valor
     vibrar();
     setTimeout(() => motivoRef.current?.focus(), 60);
   };
+
+  // Postulación en nombre propio: queda amarrada a la cuenta en sesión.
+  const postularme = () => elegir({ id: yo.id, nombre: yo.nombre, cargo: "Postulación en nombre propio", municipio: null });
 
   const quitarElegida = () => {
     onChange({ ...entrada, nombre: "", userId: null, detalle: null });
@@ -612,12 +616,15 @@ function PasoValor({ indice, valor, entrada, onChange }: { indice: number; valor
             ) : (
               <span>Si no aparece en el directorio, escribe el nombre completo.</span>
             )}
+            <button type="button" className="gala-yo" onClick={postularme}>
+              <UserCheck className="inline h-3 w-3" aria-hidden="true" /> Postularme a mí
+            </button>
           </span>
         )}
       </div>
 
       <div className="gala-campo">
-        <label htmlFor={`motivo-${valor.clave}`}>¿Qué comportamiento o aporte observaste?</label>
+        <label htmlFor={`motivo-${valor.clave}`}>{entrada.userId === yo.id ? "¿Qué comportamiento o aporte tuyo lo demuestra?" : "¿Qué comportamiento o aporte observaste?"}</label>
         <div className="gala-frases" aria-label="Frases para empezar">
           {FRASES[valor.clave].map((f) => (
             <button key={f} type="button" onClick={() => usarFrase(f)}>
@@ -629,7 +636,7 @@ function PasoValor({ indice, valor, entrada, onChange }: { indice: number; valor
           ref={motivoRef}
           id={`motivo-${valor.clave}`}
           className="gala-input"
-          placeholder="Describe una situación concreta en la que esta persona demostró este valor."
+          placeholder={entrada.userId === yo.id ? "Describe una situación concreta en la que demostraste este valor." : "Describe una situación concreta en la que esta persona demostró este valor."}
           maxLength={600}
           value={entrada.motivo}
           onChange={(e) => onChange({ ...entrada, motivo: e.target.value })}

@@ -67,7 +67,8 @@ export type EnvioPostulacion = z.input<typeof postulacionSchema>;
  *
  * Por cada nombre se busca en la misma IPS un candidato que sea la misma
  * persona -por cuenta si se eligió del directorio, por nombre si no- y se le
- * suma. Si no hay, se crea el candidato.
+ * suma. Si no hay, se crea el candidato. Se puede postular a un compañero o
+ * a uno mismo (postulación en nombre propio).
  */
 export async function enviarPostulacion(entrada: EnvioPostulacion): Promise<{ ok: true } | { ok: false; error: string }> {
   const sesion = await requireSession("/galardones");
@@ -93,11 +94,8 @@ export async function enviarPostulacion(entrada: EnvioPostulacion): Promise<{ ok
   });
   if (votante.status !== "ACTIVE") return { ok: false, error: "Tu cuenta no está activa." };
   const estado = estadoInicialPostulacion(votante, convocatoria.cuentasNuevasDesde);
-  for (const p of postulaciones) {
-    if (p.userId === sesion.user.id || mismaPersona(p.nombre, votante.fullName)) {
-      return { ok: false, error: `En ${valorInfo(p.valor).nombre} escribiste tu propio nombre: la postulación es a otra persona.` };
-    }
-  }
+  // La postulación en nombre propio está permitida: quien se postula a sí
+  // mismo suma como cualquier otra postulación (una por valor, como todas).
 
   const ids = [...new Set(postulaciones.map((p) => p.userId).filter((x): x is string => !!x))];
   const registrados = ids.length

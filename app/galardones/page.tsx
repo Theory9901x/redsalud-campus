@@ -49,7 +49,8 @@ export default async function GalardonesPage() {
         </h1>
         <p className="gala-lead">
           Destaca a quienes, con su ejemplo, fortalecen la confianza, el buen trato y el trabajo colaborativo. Postula a una
-          persona de tu centro por cada valor: <b>Integridad</b>, <b>Humanización</b> y <b>Liderazgo</b>.
+          persona de tu centro por cada valor: <b>Integridad</b>, <b>Humanización</b> y <b>Liderazgo</b>. También puedes
+          postularte en nombre propio.
         </p>
       </section>
 
@@ -103,6 +104,7 @@ export default async function GalardonesPage() {
         </section>
       ) : (
         <FormularioPostulacion
+          votanteId={sesion.user.id}
           nombreVotante={nombrePropio(usuario.fullName)}
           ipsSugerida={ipsDesdeMunicipio(usuario.municipio?.nombre)}
           cierraEl={convocatoria.cierraEl ? FECHA.format(convocatoria.cierraEl) : null}
