@@ -195,6 +195,31 @@
 .cer-a3d-respaldo { position: absolute; inset: 24% 1rem 30%; z-index: 2; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 0.5rem; }
 .cer-a3d-respaldo button { padding: 0.6rem 1rem; border-radius: 12px; color: var(--h-tinta); background: var(--h-vidrio); box-shadow: inset 0 0 0 1px var(--h-linea); font-weight: 700; }
 
+/* Panel «Van punteando» (apertura) */
+.cer-punteo { grid-column: 2; grid-row: 2; align-self: center; justify-self: end; width: min(22rem, 30vw); margin-top: 1rem; padding: 0.95rem 1rem 0.8rem; border-radius: 16px; background: var(--h-vidrio); backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px var(--h-linea), 0 20px 40px -24px #000; color: var(--h-tinta); pointer-events: auto; }
+.cer-punteo header { display: flex; align-items: center; gap: 0.6rem; }
+.cer-punteo .vivo { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.15rem 0.5rem; border-radius: 999px; font-family: var(--font-datos), ui-monospace, monospace; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: oklch(82% 0.15 25); background: oklch(60% 0.2 25 / 0.16); box-shadow: inset 0 0 0 1px oklch(70% 0.18 25 / 0.45); }
+.cer-punteo .vivo i { width: 0.45rem; height: 0.45rem; border-radius: 999px; background: oklch(68% 0.22 25); box-shadow: 0 0 10px oklch(68% 0.22 25); animation: cer-latido 1.4s ease-in-out infinite; }
+.cer-punteo header b { font-size: 0.84rem; font-weight: 800; }
+.cer-punteo .paso { margin-left: auto; font-family: var(--font-datos), ui-monospace, monospace; font-size: 0.66rem; color: var(--h-tenue); }
+.cer-punteo h3 { margin: 0.75rem 0 0; font-size: clamp(1.1rem, 0.9rem + 0.6vw, 1.45rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+.cer-punteo .meta { display: block; margin-top: 0.15rem; font-size: 0.7rem; color: var(--h-tenue); }
+.cer-punteo ol { display: grid; gap: 0.4rem; margin: 0.7rem 0 0; padding: 0; list-style: none; }
+.cer-punteo li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 0.6rem; padding: 0.5rem 0.65rem 0.5rem 0.8rem; border-radius: 10px; background: oklch(30% 0.06 var(--c-h) / 0.35); box-shadow: inset 3px 0 0 oklch(76% 0.16 var(--c-h)), inset 0 0 0 1px oklch(75% 0.14 var(--c-h) / 0.25); }
+.cer-punteo .valor { grid-column: 1 / -1; font-family: var(--font-datos), ui-monospace, monospace; font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: oklch(84% 0.14 var(--c-h)); }
+.cer-punteo li b { font-size: 0.94rem; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
+.cer-punteo li b.nadie { font-size: 0.8rem; font-weight: 600; color: var(--h-tenue); }
+.cer-punteo .votos { align-self: end; font-family: var(--font-datos), ui-monospace, monospace; font-size: 0.68rem; font-weight: 700; white-space: nowrap; }
+.cer-punteo .vacio { margin: 0.7rem 0 0; font-size: 0.8rem; line-height: 1.4; color: var(--h-tenue); }
+.cer-punteo footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.65rem; }
+.cer-punteo footer small { font-family: var(--font-datos), ui-monospace, monospace; font-size: 0.62rem; letter-spacing: 0.06em; color: var(--h-tenue); }
+.cer-punteo .nav { display: flex; gap: 0.3rem; }
+.cer-punteo .nav button { display: grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 8px; color: var(--h-tinta); box-shadow: inset 0 0 0 1px var(--h-linea); }
+.cer-punteo .nav button:hover { box-shadow: inset 0 0 0 1px var(--h-cian); }
+@media (max-width: 900px) {
+  .cer-punteo { grid-column: 1; grid-row: 2; align-self: end; justify-self: stretch; width: auto; margin: 0.6rem 0; }
+}
+
 @keyframes cer-latido { 50% { opacity: 0.35; transform: scale(0.8); } }
 @keyframes cer-brillo { 0%, 55% { translate: -120% 0; } 85%, 100% { translate: 120% 0; } }
 

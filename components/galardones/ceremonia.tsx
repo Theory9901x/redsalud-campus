@@ -21,7 +21,8 @@ const sinSuscripcion = () => () => {};
 /**
  * CEREMONIA DE GALARDONES: lo que Talento Humano proyecta en el evento.
  *
- * PRESENTAR (por defecto): a la izquierda los 17 centros con su avance; al
+ * APERTURA (por defecto) abre con la escena 3D y el panel «Van punteando».
+ * PRESENTAR: a la izquierda los 17 centros con su avance; al
  * centro, las tres tarjetas del centro elegido -una por valor- que se
  * revelan con un clic o con Espacio. Opcionalmente se leen los testimonios
  * de quienes postularon. TABLERO: todos los ganadores en una tabla centro ×
@@ -40,7 +41,7 @@ export function CeremoniaGalardones(props: { centros: GanadoresIps[]; anio: numb
 
 function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: GanadoresIps[]; anio: number; institucion: string; logoUrl: string | null; salirA: string }) {
   const clave = `galardones-ceremonia-${anio}`;
-  const [modo, setModo] = useState<Modo>("presentar");
+  const [modo, setModo] = useState<Modo>("apertura");
   const [idx, setIdx] = useState(0);
   const [revelados, setRevelados] = useState<Revelados>(() => {
     try {
@@ -203,7 +204,7 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
                     <h1 className="cer-display">{nombreCentro(centro.ips)}</h1>
                     <p>
                       {centro.votantes > 0
-                        ? `${centro.votantes} ${centro.votantes === 1 ? "colaborador postuló" : "colaboradores postularon"} a sus compañeros`
+                        ? `${centro.votantes} ${centro.votantes === 1 ? "colaborador postuló" : "colaboradores postularon"}`
                         : "Este centro no registró postulaciones"}
                     </p>
                   </div>

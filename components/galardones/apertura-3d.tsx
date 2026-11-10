@@ -21,6 +21,7 @@ import { ArrowRight, Hand, RotateCcw } from "lucide-react";
 import { ORDEN_VALORES, VALORES_GALARDON } from "@/lib/galardones/valores";
 import type { GanadoresIps } from "@/lib/galardones/consultas";
 import { nombreCentro, tipoCentro } from "@/lib/galardones/ips";
+import { Punteando } from "@/components/galardones/punteando";
 
 type Props = { centros: GanadoresIps[]; anio: number; institucion: string; onIr: (i: number) => void };
 type Hover = { ips: string; valor: string; matiz: number } | null;
@@ -128,6 +129,8 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
             <dd>03</dd>
           </div>
         </motion.dl>
+
+        <Punteando inicial={centros} />
 
         <AnimatePresence>
           {listo && (

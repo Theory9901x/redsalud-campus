@@ -12,7 +12,7 @@ import { nombrePropio } from "@/lib/nombre-propio";
 import { esIpsValida } from "@/lib/galardones/ips";
 import { ORDEN_VALORES, valorInfo } from "@/lib/galardones/valores";
 import { claveNombre, mismaPersona, tokensNombre } from "@/lib/galardones/nombres";
-import { estadoConvocatoria, estadoInicialPostulacion } from "@/lib/galardones/consultas";
+import { estadoConvocatoria, estadoInicialPostulacion, ganadoresGalardones, type GanadoresIps } from "@/lib/galardones/consultas";
 
 export type PersonaDirectorio = { id: string; nombre: string; cargo: string | null; municipio: string | null };
 
@@ -401,6 +401,13 @@ export async function quitarDecision(ips: string, valor: GalardonValor): Promise
   revalidarGestion();
   revalidatePath("/galardones/ceremonia");
   return { ok: true };
+}
+
+/** Quién va adelante ahora mismo, para el panel «Van punteando» de la ceremonia (se consulta cada 30 s). */
+export async function punteoCeremonia(): Promise<GanadoresIps[]> {
+  const sesion = await requireAdmin();
+  if ((sesion.user.restrictedAdminSections ?? []).includes("USUARIOS")) throw new Error("No autorizado.");
+  return ganadoresGalardones();
 }
 
 /** Quién está en sesión, para mostrar su nombre sin otra consulta desde el cliente. */
