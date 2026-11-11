@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { ArrowLeft, CalendarClock, ExternalLink, Eye, FileCheck2, FileDown, ListOrdered, MapPin, Pencil, Presentation, Target, Users2, Video } from "lucide-react";
 import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getReunion } from "@/lib/reuniones";
+import { accesoReuniones } from "@/lib/reuniones-access";
 import { agregarSesionAction, eliminarReunionAction, reprogramarSesionAction } from "@/app/admin/reuniones/actions";
 import { horarioBogota } from "@/lib/reuniones-gestion";
 import { ModuloHero } from "@/components/training-plans/modulo-hero";
@@ -30,6 +31,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
   // Una sola sesión: se abre directo su vista completa (consulta); editar es un botón aparte.
   if (r.sesiones.length === 1) redirect(`${basePath}/${r.id}/sesiones/${r.sesiones[0].id}`);
   const puedeEscribir = sesion.user.role !== "SEGUIMIENTO";
+  const { puedeEliminar } = await accesoReuniones();
 
   const accesos = await Promise.all(r.sesiones.map(async (s) => {
     const enlaces = accesosDeJornada(APP_URL, s.id, s.tokenPublico ?? '', { conEvaluacion: false, modalidad: 'VIRTUAL', audience: s.audience })
@@ -70,7 +72,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
             <PanelDeslizable centrado etiqueta="Agregar sesión" icono="agendar" titulo="Agregar sesión" descripcion="Cada sesión nueva tiene su propio enlace, QR, sala y acta.">
               <FormularioAgregarSesion action={agregarSesionAction.bind(null, r.id)} />
             </PanelDeslizable>
-            <EliminarReunion action={eliminarReunionAction.bind(null, r.id)} titulo={r.titulo} volverA={basePath} className="min-h-12 rounded-xl border-white/25 bg-white/[0.06] px-5 text-base text-white hover:bg-white/15" />
+            {puedeEliminar && <EliminarReunion action={eliminarReunionAction.bind(null, r.id)} titulo={r.titulo} volverA={basePath} className="min-h-12 rounded-xl border-white/25 bg-white/[0.06] px-5 text-base text-white hover:bg-white/15" />}
           </div>
         ) : undefined}
       />

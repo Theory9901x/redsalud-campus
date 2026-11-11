@@ -9,6 +9,7 @@ import { GestionReunionEnVivo } from "@/components/reuniones/gestion-en-vivo";
 import { eliminarReunionAction, reprogramarSesionAction, subirActaFirmadaAction } from "@/app/admin/reuniones/actions";
 import { EliminarReunion, ReprogramarSesion, SubirActaFirmada } from "@/components/reuniones/formularios";
 import { prisma } from "@/lib/prisma";
+import { accesoReuniones } from "@/lib/reuniones-access";
 import { VistaActividad, SeccionActividad, type PestanaActividad } from "@/components/training-plans/vista-actividad";
 import { ActivityQrPanel } from "@/components/training-plans/activity-qr-panel";
 import { RegistroDocumentos } from "@/components/documentos/registro-documentos";
@@ -45,7 +46,7 @@ export default async function SesionReunionPage({ params, searchParams }: { para
   const volver = totalSesiones > 1 ? { href: `${base}/${id}`, etiqueta: d.reunion.titulo } : { href: base, etiqueta: "Reuniones" };
   const acta = `/api/reuniones/${id}/sesiones/${activityId}/acta`;
   const enlaces = d.jornada ? await Promise.all(accesosDeJornada(APP_URL, activityId, d.jornada.tokenPublico, { conEvaluacion: false, modalidad: d.jornada.modality, audience: d.jornada.audience }).filter(a => a.clave === "sala" || a.clave === "invitados").map(async a => ({ ...a, qrDataUrl: await QRCode.toDataURL(a.url, { width: 640, margin: 2, errorCorrectionLevel: 'M' }) }))) : [];
-  const puedeEliminar = session.user.role === "ADMIN" || d.puedeEditarReunion || d.anfitrionId === session.user.id;
+  const { puedeEliminar } = await accesoReuniones();
 
   if (editar === "1" && d.puedeGestionar) return <div className="space-y-6">
     <Link href={aqui} className="inline-flex items-center gap-2 text-base font-semibold text-muted-foreground"><ArrowLeft className="h-4 w-4" />Volver al módulo de la reunión</Link>

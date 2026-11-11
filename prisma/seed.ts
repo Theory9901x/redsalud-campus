@@ -16,6 +16,7 @@ async function main() {
       passwordHash: adminPasswordHash,
       role: "ADMIN",
       canManageAllMeetings: true,
+      isSuperAdmin: true,
       excludeFromAttendance: true,
       status: "ACTIVE",
       personnelType: "ADMINISTRATIVO",

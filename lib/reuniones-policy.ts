@@ -12,6 +12,15 @@ export function puedeEscribirReuniones(user: UsuarioReuniones) {
   return user.role === "ADMIN" || user.role === "TUTOR";
 }
 
+/**
+ * Eliminar una reunión (o una de sus sesiones) es irreversible: solo lo hace
+ * el superadministrador. Las demás cuentas (Talento Humano, áreas, tutores)
+ * consultan y gestionan, pero no eliminan.
+ */
+export function puedeEliminarReuniones(user: { role: Role; isSuperAdmin: boolean }) {
+  return user.role === "ADMIN" && user.isSuperAdmin;
+}
+
 /** La delegación permite gestionar una sesión concreta; el listado sigue siendo del creador. */
 export function alcanceSesionReunion(user: UsuarioReuniones): Prisma.TrainingActivityWhereInput {
   if (user.role === "SEGUIMIENTO" || (user.role === "ADMIN" && user.canManageAllMeetings)) return { plan: { kind: "REUNION" } };

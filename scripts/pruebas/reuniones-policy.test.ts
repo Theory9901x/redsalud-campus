@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { alcanceReuniones, puedeEscribirReuniones, type UsuarioReuniones } from "../../lib/reuniones-policy";
+import { alcanceReuniones, puedeEliminarReuniones, puedeEscribirReuniones, type UsuarioReuniones } from "../../lib/reuniones-policy";
 
 const area: UsuarioReuniones = { id: "area-a", role: "ADMIN", canManageAllMeetings: false };
 
@@ -27,4 +27,12 @@ test("seguimiento conserva consulta global sin permiso de escritura", () => {
   assert.equal(puedeEscribirReuniones(observador), false);
   assert.equal(puedeEscribirReuniones(area), true);
   assert.equal(puedeEscribirReuniones({ ...area, role: "STUDENT" }), false);
+});
+
+test("solo el superadministrador elimina reuniones", () => {
+  assert.equal(puedeEliminarReuniones({ role: "ADMIN", isSuperAdmin: true }), true);
+  // Talento Humano: ADMIN con vista global, pero sin eliminar.
+  assert.equal(puedeEliminarReuniones({ role: "ADMIN", isSuperAdmin: false }), false);
+  assert.equal(puedeEliminarReuniones({ role: "TUTOR", isSuperAdmin: true }), false);
+  assert.equal(puedeEliminarReuniones({ role: "SEGUIMIENTO", isSuperAdmin: false }), false);
 });

@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { alcanceReuniones, alcanceSesionReunion, puedeEscribirReuniones } from "@/lib/reuniones-policy";
+import { alcanceReuniones, alcanceSesionReunion, puedeEliminarReuniones, puedeEscribirReuniones } from "@/lib/reuniones-policy";
 import { notFound } from "next/navigation";
 
 export async function accesoReuniones(escritura = false) {
@@ -8,12 +8,12 @@ export async function accesoReuniones(escritura = false) {
   if (!session?.user) throw new Error("No autorizado.");
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, role: true, status: true, canManageAllMeetings: true, restrictedAdminSections: true },
+    select: { id: true, role: true, status: true, canManageAllMeetings: true, restrictedAdminSections: true, isSuperAdmin: true },
   });
   if (!user || user.status !== "ACTIVE" || !["ADMIN", "TUTOR", "SEGUIMIENTO"].includes(user.role)) throw new Error("No autorizado.");
   if (user.restrictedAdminSections.includes("REUNIONES")) throw new Error("No autorizado.");
   if (escritura && !puedeEscribirReuniones(user)) throw new Error("Acceso de solo lectura.");
-  return { session, user, where: alcanceReuniones(user) };
+  return { session, user, where: alcanceReuniones(user), puedeEliminar: puedeEliminarReuniones(user) };
 }
 
 export async function requireReunionAccess(planId: string, activityId?: string, escritura = false) {

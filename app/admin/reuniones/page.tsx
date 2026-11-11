@@ -21,7 +21,7 @@ const FECHA = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short",
  */
 export default async function ReunionesPage() {
   const session = await requireTutorOrAdmin();
-  const { user } = await accesoReuniones();
+  const { user, puedeEliminar } = await accesoReuniones();
   const basePath = session.user.role === "TUTOR" ? "/tutor/reuniones" : "/admin/reuniones";
   const [reuniones, anfitriones] = await Promise.all([
     listarReuniones(),
@@ -69,7 +69,7 @@ export default async function ReunionesPage() {
       {reuniones.length === 0 ? (
         <EmptyState icon={Presentation} title="Todavía no hay reuniones abiertas" description="Crea la primera con el botón «Nueva reunión»." className="py-16" />
       ) : (
-        <TablaReuniones basePath={basePath} puedeGestionar={user.role !== "SEGUIMIENTO"} reuniones={reuniones.map((r) => ({
+        <TablaReuniones basePath={basePath} puedeGestionar={user.role !== "SEGUIMIENTO"} puedeEliminar={puedeEliminar} reuniones={reuniones.map((r) => ({
           ...r,
           fecha: r.primeraFecha ? FECHA.format(r.primeraFecha) : "Sin fecha",
           fechaOrden: r.primeraFecha?.toISOString() ?? "",

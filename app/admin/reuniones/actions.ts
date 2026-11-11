@@ -240,13 +240,14 @@ export async function reprogramarSesionAction(planId: string, activityId: string
 
 /**
  * Eliminar la reunión COMPLETA: sesiones, asistencia, compromisos y documentos.
- * Pueden hacerlo la administración, quien la creó o el anfitrión, y solo
- * escribiendo el nombre exacto de la reunión como confirmación.
+ * Solo el superadministrador, y escribiendo el nombre exacto de la reunión
+ * como confirmación. Las demás cuentas solo consultan.
  */
 export async function eliminarReunionAction(planId: string, confirmacion: string): Promise<EstadoReunion> {
-  const { user } = await accesoReuniones(true);
+  const { user, puedeEliminar } = await accesoReuniones(true);
+  if (!puedeEliminar) return { error: "Solo el superadministrador puede eliminar reuniones." };
   const plan = await prisma.trainingPlan.findFirst({
-    where: { id: planId, kind: "REUNION", ...(user.role === "ADMIN" ? {} : { OR: [{ createdById: user.id }, { tutorId: user.id }] }) },
+    where: { id: planId, kind: "REUNION" },
     select: { title: true },
   });
   if (!plan) return { error: "La reunión no existe o no tienes permiso para eliminarla." };
@@ -266,6 +267,7 @@ export async function eliminarReunionAction(planId: string, confirmacion: string
 
 /** Eliminar una sesión SIN registros (los registros son evidencia y no se borran). */
 export async function eliminarSesionAction(planId: string, activityId: string): Promise<EstadoReunion> {
+  if (!(await accesoReuniones(true)).puedeEliminar) return { error: "Solo el superadministrador puede eliminar sesiones." };
   await requireReunionAccess(planId, undefined, true);
   const act = await prisma.trainingActivity.findFirst({
     where: { id: activityId, planId },
