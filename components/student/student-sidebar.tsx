@@ -8,6 +8,9 @@ const GRUPOS: GrupoNav[] = [
     label: null,
     items: [
       { href: "/inicio", label: "Dashboard", icon: LayoutDashboard, exact: true, hash: "" },
+      // Arriba a propósito: al final del menú quedaba tapado por el pie en
+      // pantallas de portátil y los colaboradores no lo encontraban.
+      { href: "/galardones", label: "Galardones", icon: Trophy },
       { href: "/mi-aula", label: "Mis cursos", icon: GraduationCap, exact: true, hash: "" },
       { href: "/cursos", label: "Catálogo", icon: Layers },
     ],
@@ -22,10 +25,6 @@ const GRUPOS: GrupoNav[] = [
       { href: "/evaluaciones", label: "Evaluaciones", icon: ClipboardList },
       { href: "/encuestas", label: "Mis encuestas", icon: ClipboardList },
     ],
-  },
-  {
-    label: "Reconocimiento",
-    items: [{ href: "/galardones", label: "Galardones", icon: Trophy }],
   },
   {
     label: "Cuenta",
@@ -50,10 +49,6 @@ export function StudentSidebar({
       subtitulo="Campus virtual"
       logoUrl={logoUrl}
       claseAcento="accent-student"
-      pie={{
-        titulo: "Tu formación queda registrada",
-        texto: "Cada curso aprobado genera una constancia verificable con código QR.",
-      }}
     />
   );
 }

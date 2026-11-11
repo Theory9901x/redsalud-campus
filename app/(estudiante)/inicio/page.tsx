@@ -12,7 +12,9 @@ import {
   ShieldAlert,
   Sparkles,
   TrendingUp,
+  Trophy,
 } from "lucide-react";
+import { estadoConvocatoria } from "@/lib/galardones/consultas";
 import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { StaggerSections } from "@/components/brand/stagger-sections";
@@ -32,7 +34,7 @@ export default async function InicioPage() {
   const personnelType = session.user.personnelType;
   const firstName = session.user.name?.split(" ")[0];
 
-  const [enrollments, certificateCount, obligatoriosDisponibles, avatarUrl] = await Promise.all([
+  const [enrollments, certificateCount, obligatoriosDisponibles, avatarUrl, convocatoria, yaPostulo] = await Promise.all([
     prisma.enrollment.findMany({
       // Contenido del PLAN de capacitaciones: su seguimiento vive en
       // "Mis capacitaciones", no aquí. Sin esto el estudiante veía el mismo
@@ -55,7 +57,10 @@ export default async function InicioPage() {
       },
     }),
     getUserAvatarUrl(userId),
+    estadoConvocatoria(),
+    prisma.galardonPostulacion.count({ where: { votanteId: userId } }),
   ]);
+  const invitarGalardones = convocatoria.abierta && yaPostulo === 0;
 
   const activos = enrollments.filter((e) => e.status !== "COMPLETED").length;
   const completados = enrollments.filter((e) => e.status === "COMPLETED").length;
@@ -144,6 +149,33 @@ export default async function InicioPage() {
             </div>
           </div>
         </section>
+
+        {/* Galardones: mientras la convocatoria esté abierta y no haya postulado. */}
+        {invitarGalardones && (
+          <Link
+            href="/galardones"
+            className="surface-panel group relative flex flex-col gap-4 overflow-hidden p-5 transition-shadow hover:shadow-[var(--shadow-2)] sm:flex-row sm:items-center sm:p-6"
+          >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full opacity-70 blur-3xl"
+              style={{ background: "radial-gradient(closest-side, oklch(0.86 0.12 85 / 0.55), transparent 70%)" }}
+            />
+            <span className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[oklch(0.86_0.12_85/0.25)] text-[oklch(0.5_0.12_75)] ring-1 ring-[oklch(0.75_0.12_80/0.45)]">
+              <Trophy className="h-6 w-6" aria-hidden="true" />
+            </span>
+            <div className="relative min-w-0 flex-1">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[oklch(0.5_0.12_75)]">Galardones {convocatoria.anio} · Postulación abierta</p>
+              <h2 className="mt-1 font-display text-lg font-extrabold text-foreground">Reconoce a quien hace la diferencia en tu centro</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Postula a una persona por cada valor: Integridad, Humanización y Liderazgo. Toma un par de minutos y se hace una sola vez.
+              </p>
+            </div>
+            <span className="btn-hud relative shrink-0 self-start sm:self-center">
+              Postular <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+            </span>
+          </Link>
+        )}
 
         {/* Recuento: cuatro indicadores principales. */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
