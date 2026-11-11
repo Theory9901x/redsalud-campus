@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Eye, EyeOff, HandHeart, Maximize, MessageSquareQuote, Printer, ShieldCheck, Trophy, Users, X } from "lucide-react";
 import type { GalardonValor } from "@prisma/client";
 import { Apertura3D } from "@/components/galardones/apertura-3d";
+import { useGanadoresEnVivo } from "@/components/galardones/use-ganadores-en-vivo";
 import { ORDEN_VALORES, valorInfo } from "@/lib/galardones/valores";
 import type { Ganador, GanadoresIps } from "@/lib/galardones/consultas";
 import { nombreCentro } from "@/lib/galardones/ips";
@@ -36,7 +37,9 @@ export function CeremoniaGalardones(props: { centros: GanadoresIps[]; anio: numb
   return <Ceremonia {...props} />;
 }
 
-function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: GanadoresIps[]; anio: number; institucion: string; logoUrl: string | null; salirA: string }) {
+function Ceremonia({ centros: inicial, anio, institucion, logoUrl, salirA }: { centros: GanadoresIps[]; anio: number; institucion: string; logoUrl: string | null; salirA: string }) {
+  // En vivo: Presentar, Tablero y «Van punteando» reflejan postulaciones, fusiones y decisiones sin recargar.
+  const { datos: centros, actualizado } = useGanadoresEnVivo(inicial);
   const [modo, setModo] = useState<Modo>("apertura");
   const [idx, setIdx] = useState(0);
   const [conteos, setConteos] = useState(false);
@@ -220,6 +223,7 @@ function Ceremonia({ centros, anio, institucion, logoUrl, salirA }: { centros: G
       {modo === "apertura" && (
         <Apertura3D
           centros={centros}
+          actualizado={actualizado}
           anio={anio}
           institucion={institucion}
           onIr={(i) => {

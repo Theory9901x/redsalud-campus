@@ -23,7 +23,7 @@ import type { GanadoresIps } from "@/lib/galardones/consultas";
 import { nombreCentro, tipoCentro } from "@/lib/galardones/ips";
 import { Punteando } from "@/components/galardones/punteando";
 
-type Props = { centros: GanadoresIps[]; anio: number; institucion: string; onIr: (i: number) => void };
+type Props = { centros: GanadoresIps[]; actualizado: Date; anio: number; institucion: string; onIr: (i: number) => void };
 type Hover = { ips: string; valor: string; matiz: number } | null;
 type Control = { repetir: () => void };
 
@@ -31,7 +31,10 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 /** Fin de la coreografía de entrada, en segundos. */
 const FIN = 6.2;
 
-export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
+export function Apertura3D({ centros, actualizado, anio, institucion, onIr }: Props) {
+  // La escena 3D se arma con los datos al entrar a Apertura (rearmarla en cada
+  // consulta la reiniciaría); lo que cambia en vivo lo muestra «Van punteando».
+  const [escena] = useState(centros);
   const host = useRef<HTMLDivElement>(null);
   const chip = useRef<HTMLDivElement>(null);
   const onIrRef = useRef(onIr);
@@ -65,7 +68,7 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
       if (cancelado) return;
       try {
         limpiar = montar({ THREE, EffectComposer, RenderPass, UnrealBloomPass, OutputPass, RoomEnvironment }, el, {
-          centros,
+          centros: escena,
           anio,
           reducir,
           chip: () => chip.current,
@@ -83,7 +86,7 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
       cancelado = true;
       limpiar();
     };
-  }, [centros, anio, reducir]);
+  }, [escena, anio, reducir]);
 
   const total = centros.length * ORDEN_VALORES.length;
 
@@ -130,7 +133,7 @@ export function Apertura3D({ centros, anio, institucion, onIr }: Props) {
           </div>
         </motion.dl>
 
-        <Punteando inicial={centros} />
+        <Punteando datos={centros} actualizado={actualizado} />
 
         <AnimatePresence>
           {listo && (

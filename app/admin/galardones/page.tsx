@@ -11,6 +11,7 @@ import { eliminarCandidato, eliminarPostulacion } from "@/app/galardones/accione
 import { CabeceraGalardonesAdmin, PestanasGalardones } from "@/components/galardones/admin/cabecera-admin";
 import { ResultadosGalardonesAdmin } from "@/components/galardones/admin/resultados-admin";
 import { GanadoresAdmin } from "@/components/galardones/admin/ganadores-admin";
+import { RefrescoEnVivo } from "@/components/galardones/admin/refresco-en-vivo";
 import { FormularioConvocatoria, NombreCandidatoEditable, RevisionVotante } from "@/components/galardones/admin/tablas-admin";
 import { AutoFilterSelect, AutoSearchInput } from "@/components/admin/auto-search-input";
 import { TablePagination } from "@/components/admin/table-pagination";
@@ -60,7 +61,11 @@ export default async function GalardonesAdminPage({ searchParams }: { searchPara
   return (
     <div className="space-y-6">
       <CabeceraGalardonesAdmin convocatoria={convocatoria} resultados={resultados} porDefinir={porDefinir} />
-      <PestanasGalardones activa={vista} porVerificar={resultados.porVerificar} porDefinir={porDefinir} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PestanasGalardones activa={vista} porVerificar={resultados.porVerificar} porDefinir={porDefinir} />
+        {/* La convocatoria es un formulario: no se refresca bajo los dedos de quien lo edita. */}
+        {vista !== "convocatoria" && <RefrescoEnVivo />}
+      </div>
 
       {vista === "resultados" && <ResultadosGalardonesAdmin resultados={resultados} soloLectura={soloLectura} />}
 

@@ -3,27 +3,24 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { punteoCeremonia } from "@/app/galardones/acciones";
 import type { GanadoresIps } from "@/lib/galardones/consultas";
 import { nombreCentro } from "@/lib/galardones/ips";
 import { valorInfo } from "@/lib/galardones/valores";
 
-/** Cada cuánto pasa al siguiente centro y cada cuánto vuelve a consultar. */
+/** Cada cuánto pasa al siguiente centro. */
 const CADA_CENTRO = 7000;
-const CADA_CONSULTA = 30000;
 const EASE = [0.16, 1, 0.3, 1] as const;
-const HORA = new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit", timeZone: "America/Bogota" });
+const HORA = new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit", second: "2-digit", timeZone: "America/Bogota" });
 
 /**
  * VAN PUNTEANDO: quién va adelante en cada centro y valor, mientras la
  * convocatoria sigue abierta. Rota por los centros que ya tienen
- * postulaciones y se actualiza solo cada 30 s, sin reiniciar la escena 3D.
+ * postulaciones. Los datos llegan en vivo desde la ceremonia
+ * (useGanadoresEnVivo), sin reiniciar la escena 3D.
  * Usa la misma regla que la ceremonia (tres personas distintas por centro;
  * solo suman las postulaciones válidas).
  */
-export function Punteando({ inicial }: { inicial: GanadoresIps[] }) {
-  const [datos, setDatos] = useState(inicial);
-  const [actualizado, setActualizado] = useState(() => new Date());
+export function Punteando({ datos, actualizado }: { datos: GanadoresIps[]; actualizado: Date }) {
   const [i, setI] = useState(0);
   const [pausa, setPausa] = useState(false);
 
@@ -31,27 +28,6 @@ export function Punteando({ inicial }: { inicial: GanadoresIps[] }) {
   const n = activos.length;
   const idx = n ? ((i % n) + n) % n : 0;
   const centro = activos[idx];
-
-  useEffect(() => {
-    let vivo = true;
-    const traer = async () => {
-      if (document.visibilityState !== "visible") return;
-      try {
-        const r = await punteoCeremonia();
-        if (vivo) {
-          setDatos(r);
-          setActualizado(new Date());
-        }
-      } catch {
-        /* se reintenta en la próxima vuelta */
-      }
-    };
-    const t = setInterval(traer, CADA_CONSULTA);
-    return () => {
-      vivo = false;
-      clearInterval(t);
-    };
-  }, []);
 
   useEffect(() => {
     if (pausa || n < 2) return;
