@@ -104,8 +104,7 @@ export async function GET() {
   hojaInformacion(wb, [
     ["Archivo", `${NOMBRE_EVENTO} · ${NOMBRE_RECONOCIMIENTO}`],
     ["Postulaciones válidas", String(resultados.totalPostulaciones)],
-    ["Por verificar (no suman)", String(resultados.porVerificar)],
-    ["Regla", "Una postulación por cuenta. Las cuentas creadas en la plataforma después del corte quedan por verificar hasta que Talento Humano las valide; ganadores y ranking solo cuentan las válidas."],
+    ["Regla", "Una postulación por cuenta; todas suman salvo las que Talento Humano haya anulado."],
     ["Colaboradores que postularon", String(resultados.totalVotantes)],
     ["Personas postuladas (agrupadas)", String(resultados.totalCandidatos)],
     ["Centros con participación", `${resultados.ipsConParticipacion} de ${resultados.porIps.length}`],

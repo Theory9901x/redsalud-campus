@@ -1614,12 +1614,10 @@ enum GalardonValor {
   LIDERAZGO
 }
 
-/// El registro del campus es abierto: cualquiera puede crear una cuenta con
-/// un documento inventado y volver a postular. Por eso las postulaciones de
-/// cuentas creadas en la plataforma DESPUÉS del corte de la convocatoria
-/// quedan POR_VERIFICAR y no suman hasta que Talento Humano las valide. Las
-/// ANULADAS se conservan (para auditoría y para que esa cuenta no pueda
-/// volver a postular), pero no cuentan.
+/// Todas las postulaciones nacen VALIDA y suman. POR_VERIFICAR quedó en
+/// desuso el 11-nov-2026 (se pidió quitar la verificación de cuentas nuevas:
+/// esas postulaciones no estaban sumando). Las ANULADAS que alcanzaron a
+/// marcarse se conservan y no cuentan.
 enum GalardonEstado {
   VALIDA
   POR_VERIFICAR
@@ -1633,8 +1631,7 @@ model GalardonConvocatoria {
   abierta  Boolean   @default(true)
   /// Fecha límite informativa; al pasar, la convocatoria se considera cerrada.
   cierraEl DateTime?
-  /// Corte de confianza: las cuentas creadas en la plataforma desde esta fecha postulan "por verificar".
-  /// Sin valor = el lanzamiento del módulo (CORTE_LANZAMIENTO en lib/galardones/consultas.ts).
+  /// En desuso desde el 11-nov-2026 (era el corte de la verificación de cuentas nuevas).
   cuentasNuevasDesde DateTime?
   updatedAt DateTime @updatedAt
 }

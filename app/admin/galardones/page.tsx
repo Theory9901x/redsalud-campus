@@ -1,18 +1,18 @@
 import { redirect } from "next/navigation";
-import { ShieldCheck, Trophy, UserRound, Vote } from "lucide-react";
+import { Trophy, UserRound, Vote } from "lucide-react";
 import type { GalardonEstado, GalardonValor } from "@prisma/client";
 import { requireSession } from "@/lib/auth-helpers";
 import { esSoloLectura, veComoAdmin } from "@/lib/roles";
 import { parsePageSize } from "@/lib/pagination";
 import { IPS_GALARDONES } from "@/lib/galardones/ips";
 import { ORDEN_VALORES, valorInfo } from "@/lib/galardones/valores";
-import { estadoConvocatoria, ganadoresGalardones, listadoCandidatos, postulacionesPaginadas, resultadosGalardones, votantesPorVerificar } from "@/lib/galardones/consultas";
+import { estadoConvocatoria, ganadoresGalardones, listadoCandidatos, postulacionesPaginadas, resultadosGalardones } from "@/lib/galardones/consultas";
 import { eliminarCandidato, eliminarPostulacion } from "@/app/galardones/acciones";
 import { CabeceraGalardonesAdmin, PestanasGalardones } from "@/components/galardones/admin/cabecera-admin";
 import { ResultadosGalardonesAdmin } from "@/components/galardones/admin/resultados-admin";
 import { GanadoresAdmin } from "@/components/galardones/admin/ganadores-admin";
 import { RefrescoEnVivo } from "@/components/galardones/admin/refresco-en-vivo";
-import { FormularioConvocatoria, NombreCandidatoEditable, RevisionVotante } from "@/components/galardones/admin/tablas-admin";
+import { FormularioConvocatoria, NombreCandidatoEditable } from "@/components/galardones/admin/tablas-admin";
 import { AutoFilterSelect, AutoSearchInput } from "@/components/admin/auto-search-input";
 import { TablePagination } from "@/components/admin/table-pagination";
 import { DeleteEntityButton } from "@/components/admin/delete-entity-button";
@@ -21,11 +21,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { nombrePropio } from "@/lib/nombre-propio";
 
 const FECHA_HORA = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Bogota" });
-const VISTAS = ["resultados", "ganadores", "postulaciones", "verificacion", "candidatos", "convocatoria"] as const;
-const FECHA_CORTA = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeZone: "America/Bogota" });
+const VISTAS = ["resultados", "ganadores", "postulaciones", "candidatos", "convocatoria"] as const;
 const ESTADOS: { value: GalardonEstado; label: string }[] = [
   { value: "VALIDA", label: "Válidas" },
-  { value: "POR_VERIFICAR", label: "Por verificar" },
   { value: "ANULADA", label: "Anuladas" },
 ];
 const ETIQUETA_ESTADO: Record<GalardonEstado, { texto: string; clase: string }> = {
@@ -62,7 +60,7 @@ export default async function GalardonesAdminPage({ searchParams }: { searchPara
     <div className="space-y-6">
       <CabeceraGalardonesAdmin convocatoria={convocatoria} resultados={resultados} porDefinir={porDefinir} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PestanasGalardones activa={vista} porVerificar={resultados.porVerificar} porDefinir={porDefinir} />
+        <PestanasGalardones activa={vista} porDefinir={porDefinir} />
         {/* La convocatoria es un formulario: no se refresca bajo los dedos de quien lo edita. */}
         {vista !== "convocatoria" && <RefrescoEnVivo />}
       </div>
@@ -75,8 +73,6 @@ export default async function GalardonesAdminPage({ searchParams }: { searchPara
         <Postulaciones q={sp.q} ips={ipsFiltro} valor={valorFiltro} estado={estadoFiltro} page={page} pageSize={pageSize} soloLectura={soloLectura} />
       )}
 
-      {vista === "verificacion" && <Verificacion soloLectura={soloLectura} />}
-
       {vista === "candidatos" && <Candidatos q={sp.q} ips={ipsFiltro} soloLectura={soloLectura} />}
 
       {vista === "convocatoria" && (
@@ -85,8 +81,6 @@ export default async function GalardonesAdminPage({ searchParams }: { searchPara
             abierta: convocatoria.abierta,
             cierraEl: convocatoria.cierraEl ? convocatoria.cierraEl.toISOString() : null,
             anio: convocatoria.anio,
-            // Fecha local de Colombia (el corte se guarda a las 00:00 -05:00).
-            cuentasNuevasDesde: new Date(convocatoria.cuentasNuevasDesde.getTime() - 5 * 3600_000).toISOString().slice(0, 10),
           }}
           soloLectura={soloLectura}
         />
@@ -183,64 +177,6 @@ async function Postulaciones({ q, ips, valor, estado, page, pageSize, soloLectur
         </Table>
       )}
       <TablePagination total={total} page={page} pageSize={pageSize} />
-    </section>
-  );
-}
-
-async function Verificacion({ soloLectura }: { soloLectura: boolean }) {
-  const cuentas = await votantesPorVerificar();
-  return (
-    <section className="space-y-4" aria-label="Postulaciones por verificar">
-      <div className="surface-panel flex items-start gap-3 p-4 text-[13px] leading-relaxed text-muted-foreground">
-        <ShieldCheck className="mt-0.5 h-4.5 w-4.5 shrink-0 text-primary" aria-hidden="true" />
-        <p>
-          Cada cuenta del campus postula <b className="text-foreground">una sola vez</b>, y un mismo documento no puede tener dos cuentas. Pero el registro
-          es abierto: alguien podría crear cuentas con documentos inventados para postular de nuevo. Por eso las cuentas creadas en la plataforma
-          después del corte quedan aquí y <b className="text-foreground">no suman hasta que las valides</b>. Si la persona no es colaboradora, anula: el
-          registro se conserva, no cuenta y esa cuenta no puede volver a postular.
-        </p>
-      </div>
-
-      {cuentas.length === 0 ? (
-        <EmptyState icon={ShieldCheck} title="Nada por verificar" description="Todas las postulaciones registradas vienen de cuentas confiables o ya fueron revisadas." className="py-14" />
-      ) : (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          {cuentas.map((c) => (
-            <article key={c.votante.id} className="surface-panel p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="font-display text-[1.05rem] font-extrabold text-foreground">{nombrePropio(c.votante.fullName)}</h3>
-                  <p className="mt-0.5 text-[12px] text-muted-foreground">
-                    {c.votante.documentType} {c.votante.documentNumber}
-                    {c.votante.email ? ` · ${c.votante.email}` : ""}
-                  </p>
-                  <p className="text-[12px] text-muted-foreground">
-                    Cuenta creada el {FECHA_HORA.format(c.votante.createdAt)}
-                    {c.votante.position ? ` · ${c.votante.position}` : ""}
-                    {c.votante.municipio ? ` · ${c.votante.municipio.nombre}` : ""}
-                  </p>
-                </div>
-                {!soloLectura && <RevisionVotante votanteId={c.votante.id} nombre={nombrePropio(c.votante.fullName)} />}
-              </div>
-              <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                Postuló en {c.ips} · {FECHA_CORTA.format(c.enviadaEl)}
-              </p>
-              <ul className="mt-2 space-y-1.5">
-                {c.postulaciones.map((p) => {
-                  const info = valorInfo(p.valor);
-                  return (
-                    <li key={p.valor} className="rounded-xl border border-border/60 bg-background/70 px-3 py-2 text-[12.5px]">
-                      <span className="font-bold" style={{ color: `oklch(0.5 0.13 ${info.matiz})` }}>{info.nombre}:</span>{" "}
-                      <b className="text-foreground">{p.candidato}</b>
-                      <span className="text-muted-foreground"> — {p.motivo}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </article>
-          ))}
-        </div>
-      )}
     </section>
   );
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download, ExternalLink, Presentation, ShieldAlert, Trophy, Users2, Vote, Building2, UserRound } from "lucide-react";
+import { Download, ExternalLink, Presentation, Trophy, Users2, Vote, Building2, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { NOMBRE_EVENTO, NOMBRE_RECONOCIMIENTO } from "@/lib/galardones/valores";
@@ -99,18 +99,6 @@ export function CabeceraGalardonesAdmin({
         </Link>
       )}
 
-      {resultados.porVerificar > 0 && (
-        <Link
-          href="/admin/galardones?vista=verificacion"
-          className="relative mt-5 flex items-center gap-3 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3 text-[13px] text-foreground transition-colors hover:bg-warning/15"
-        >
-          <ShieldAlert className="h-4.5 w-4.5 shrink-0 text-warning-foreground" aria-hidden="true" />
-          <span>
-            <b>{resultados.porVerificar} postulaciones de cuentas nuevas esperan verificación</b> y todavía no suman en los resultados. Revísalas.
-          </span>
-        </Link>
-      )}
-
       <dl className="relative mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {kpis.map((k) => (
           <div key={k.etiqueta} className="rounded-2xl border border-border/60 bg-background/70 p-4">
@@ -128,12 +116,11 @@ export function CabeceraGalardonesAdmin({
 }
 
 /** Pestañas de la gestión: resultados, postulaciones (fila a fila), candidatos y convocatoria. */
-export function PestanasGalardones({ activa, porVerificar, porDefinir = 0 }: { activa: "resultados" | "ganadores" | "postulaciones" | "verificacion" | "candidatos" | "convocatoria"; porVerificar: number; porDefinir?: number }) {
+export function PestanasGalardones({ activa, porDefinir = 0 }: { activa: "resultados" | "ganadores" | "postulaciones" | "candidatos" | "convocatoria"; porDefinir?: number }) {
   const pestanas = [
     { clave: "resultados", etiqueta: "Resultados" },
     { clave: "ganadores", etiqueta: porDefinir ? `Ganadores · ${porDefinir} por definir` : "Ganadores" },
     { clave: "postulaciones", etiqueta: "Postulaciones" },
-    { clave: "verificacion", etiqueta: porVerificar ? `Por verificar · ${porVerificar}` : "Por verificar" },
     { clave: "candidatos", etiqueta: "Personas postuladas" },
     { clave: "convocatoria", etiqueta: "Convocatoria" },
   ] as const;

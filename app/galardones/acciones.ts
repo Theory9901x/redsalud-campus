@@ -12,7 +12,7 @@ import { nombrePropio } from "@/lib/nombre-propio";
 import { esIpsValida } from "@/lib/galardones/ips";
 import { ORDEN_VALORES, valorInfo } from "@/lib/galardones/valores";
 import { claveNombre, mismaPersona, tokensNombre } from "@/lib/galardones/nombres";
-import { estadoConvocatoria, estadoInicialPostulacion, ganadoresGalardones, type GanadoresIps } from "@/lib/galardones/consultas";
+import { estadoConvocatoria, ganadoresGalardones, type GanadoresIps } from "@/lib/galardones/consultas";
 
 export type PersonaDirectorio = { id: string; nombre: string; cargo: string | null; municipio: string | null };
 
@@ -90,10 +90,9 @@ export async function enviarPostulacion(entrada: EnvioPostulacion): Promise<{ ok
 
   const votante = await prisma.user.findUniqueOrThrow({
     where: { id: sesion.user.id },
-    select: { fullName: true, status: true, origenRegistro: true, role: true, createdAt: true },
+    select: { status: true },
   });
   if (votante.status !== "ACTIVE") return { ok: false, error: "Tu cuenta no está activa." };
-  const estado = estadoInicialPostulacion(votante, convocatoria.cuentasNuevasDesde);
   // La postulación en nombre propio está permitida: quien se postula a sí
   // mismo suma como cualquier otra postulación (una por valor, como todas).
 
@@ -143,7 +142,7 @@ export async function enviarPostulacion(entrada: EnvioPostulacion): Promise<{ ok
         }
 
         await tx.galardonPostulacion.create({
-          data: { valor: p.valor, ips, nombreEscrito: p.nombre, motivo: p.motivo, candidatoId: candidato.id, votanteId: sesion.user.id, estado },
+          data: { valor: p.valor, ips, nombreEscrito: p.nombre, motivo: p.motivo, candidatoId: candidato.id, votanteId: sesion.user.id },
         });
         candidato.postulaciones.push({ nombreEscrito: p.nombre });
       }
@@ -159,7 +158,7 @@ export async function enviarPostulacion(entrada: EnvioPostulacion): Promise<{ ok
     userId: sesion.user.id,
     action: "CREATE",
     entity: "Galardon",
-    description: `Postulación Galardones · ${ips}${estado === "POR_VERIFICAR" ? " · por verificar (cuenta nueva)" : ""}`,
+    description: `Postulación Galardones · ${ips}`,
   });
   revalidatePath("/galardones");
   revalidatePath("/galardones/resultados");
@@ -248,18 +247,16 @@ export async function separarVariante(candidatoId: string, nombreEscrito: string
   return { ok: true };
 }
 
-export async function configurarConvocatoria(entrada: { abierta: boolean; cierraEl: string | null; anio?: number; cuentasNuevasDesde?: string | null }): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function configurarConvocatoria(entrada: { abierta: boolean; cierraEl: string | null; anio?: number }): Promise<{ ok: true } | { ok: false; error: string }> {
   const sesion = await requireAdminEscritura();
   const cierraEl = entrada.cierraEl ? new Date(`${entrada.cierraEl}T23:59:59-05:00`) : null;
   if (cierraEl && Number.isNaN(cierraEl.getTime())) return { ok: false, error: "Fecha de cierre inválida." };
-  const corte = entrada.cuentasNuevasDesde ? new Date(`${entrada.cuentasNuevasDesde}T00:00:00-05:00`) : undefined;
-  if (corte && Number.isNaN(corte.getTime())) return { ok: false, error: "Fecha de corte inválida." };
   const anio = entrada.anio !== undefined ? Math.round(entrada.anio) : undefined;
   if (anio !== undefined && (anio < 2020 || anio > 2100)) return { ok: false, error: "Año inválido." };
   await prisma.galardonConvocatoria.upsert({
     where: { id: "singleton" },
-    update: { abierta: entrada.abierta, cierraEl, ...(anio !== undefined ? { anio } : {}), ...(corte ? { cuentasNuevasDesde: corte } : {}) },
-    create: { id: "singleton", abierta: entrada.abierta, cierraEl, anio: anio ?? 2026, ...(corte ? { cuentasNuevasDesde: corte } : {}) },
+    update: { abierta: entrada.abierta, cierraEl, ...(anio !== undefined ? { anio } : {}) },
+    create: { id: "singleton", abierta: entrada.abierta, cierraEl, anio: anio ?? 2026 },
   });
   await registrarAuditoria({
     userId: sesion.user.id,
@@ -338,31 +335,6 @@ export async function eliminarCandidato(id: string): Promise<{ error: string | n
   } catch (e) {
     return { error: e instanceof Error ? e.message : "No se pudo eliminar." };
   }
-}
-
-/**
- * Validar o anular TODAS las postulaciones de una cuenta por verificar. Anular
- * no borra: deja el registro (no suma) para que esa cuenta no pueda volver a
- * postular y para que quede la huella en la auditoría.
- */
-export async function revisarVotante(votanteId: string, decision: "VALIDA" | "ANULADA"): Promise<{ ok: true } | { ok: false; error: string }> {
-  const sesion = await requireAdminEscritura();
-  const votante = await prisma.user.findUnique({ where: { id: votanteId }, select: { fullName: true, documentNumber: true } });
-  if (!votante) return { ok: false, error: "Cuenta no encontrada." };
-  const r = await prisma.galardonPostulacion.updateMany({
-    where: { votanteId, estado: "POR_VERIFICAR" },
-    data: { estado: decision, revisadaPor: sesion.user.id, revisadaEl: new Date() },
-  });
-  if (!r.count) return { ok: false, error: "Esta cuenta ya no tiene postulaciones por verificar." };
-  await registrarAuditoria({
-    userId: sesion.user.id,
-    action: "UPDATE",
-    entity: "Galardon",
-    entityId: votanteId,
-    description: `Postulación ${decision === "VALIDA" ? "validada" : "anulada"}: ${votante.fullName} (${votante.documentNumber})`,
-  });
-  revalidarGestion();
-  return { ok: true };
 }
 
 /**
