@@ -375,7 +375,7 @@ export async function quitarDecision(ips: string, valor: GalardonValor): Promise
   return { ok: true };
 }
 
-/** Quién va adelante ahora mismo, para el panel «Van punteando» de la ceremonia (la ceremonia lo consulta cada pocos segundos). */
+/** Quién va adelante ahora mismo. La ceremonia ya NO usa esta acción (es POST y el proxy la niega a los perfiles de solo lectura): consulta GET /api/galardones/punteo. */
 export async function punteoCeremonia(): Promise<GanadoresIps[]> {
   const sesion = await requireAdmin();
   if ((sesion.user.restrictedAdminSections ?? []).includes("USUARIOS")) throw new Error("No autorizado.");

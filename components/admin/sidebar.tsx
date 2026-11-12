@@ -63,7 +63,8 @@ const GRUPOS: { label: string | null; items: ItemAdmin[] }[] = [
       // es de admin y tutor (el estudiante ve solo sus respuestas).
       { href: "/encuestas", label: "Encuestas", icon: ClipboardList, section: "ENCUESTAS" },
       { href: "/encuestas/siau", label: "Centro de datos SIAU", icon: PieChart, section: "ENCUESTAS" },
-      // Ver la videoteca: para todos (también la cuenta de consulta SIAU).
+      // Ver la videoteca: solo personal SIAU (p. ej. la cuenta de consulta) o quien
+      // la gestiona; lo decide el servidor y llega como `verVideoteca`.
       { href: "/videos", label: "Videoteca", icon: Clapperboard, siempre: true },
       { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell, section: "NOTIFICACIONES" },
     ],
@@ -86,15 +87,18 @@ export function AdminSidebar({
   open,
   onClose,
   restrictedSections,
+  verVideoteca = false,
 }: {
   open: boolean;
   onClose: () => void;
   restrictedSections: AdminSection[];
+  verVideoteca?: boolean;
 }) {
   // Un grupo que se queda sin ítems visibles no debe dejar su título huérfano.
   const grupos: GrupoNav[] = GRUPOS.map((g) => ({
     label: g.label,
     items: g.items.filter((item) =>
+      item.href === "/videos" ? verVideoteca :
       item.siempre || (item.section ? !restrictedSections.includes(item.section) : !soloEncuestas(restrictedSections)),
     ),
   })).filter((g) => g.items.length > 0);

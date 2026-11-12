@@ -1,3 +1,4 @@
+import { puedeVerVideoteca } from "@/lib/videoteca/acceso";
 import { SIN_PRUEBAS, veePruebas } from "@/lib/pruebas";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -217,6 +218,7 @@ export default async function CatalogoCursosPage({
         unreadCount={unreadCount}
         position={user?.position ?? null}
         personnelType={session.user.personnelType}
+        verVideoteca={await puedeVerVideoteca(session.user)}
       >
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{content}</main>
       </StudentShell>
@@ -229,6 +231,7 @@ export default async function CatalogoCursosPage({
         userName={session.user.name ?? "Administrador"}
         restrictedAdminSections={session.user.restrictedAdminSections}
         soloLectura={session.user.role === "SEGUIMIENTO"}
+        verVideoteca={await puedeVerVideoteca(session.user)}
       >
         <div className="mx-auto w-full max-w-6xl">{content}</div>
       </AdminShell>

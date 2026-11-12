@@ -1,12 +1,21 @@
 import { redirect } from "next/navigation";
-import { Trophy, UserRound, Vote } from "lucide-react";
+import { Activity, Trophy, UserRound, Vote } from "lucide-react";
 import type { GalardonEstado, GalardonValor } from "@prisma/client";
 import { requireSession } from "@/lib/auth-helpers";
 import { esSoloLectura, veComoAdmin } from "@/lib/roles";
 import { parsePageSize } from "@/lib/pagination";
 import { IPS_GALARDONES } from "@/lib/galardones/ips";
 import { ORDEN_VALORES, valorInfo } from "@/lib/galardones/valores";
-import { estadoConvocatoria, ganadoresGalardones, listadoCandidatos, postulacionesPaginadas, resultadosGalardones } from "@/lib/galardones/consultas";
+import {
+  actividadGalardones,
+  estadoConvocatoria,
+  ganadoresGalardones,
+  listadoCandidatos,
+  postulacionesPaginadas,
+  resultadosGalardones,
+  resumenActividadGalardones,
+  type TipoActividad,
+} from "@/lib/galardones/consultas";
 import { eliminarCandidato, eliminarPostulacion } from "@/app/galardones/acciones";
 import { CabeceraGalardonesAdmin, PestanasGalardones } from "@/components/galardones/admin/cabecera-admin";
 import { ResultadosGalardonesAdmin } from "@/components/galardones/admin/resultados-admin";
@@ -21,7 +30,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { nombrePropio } from "@/lib/nombre-propio";
 
 const FECHA_HORA = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Bogota" });
-const VISTAS = ["resultados", "ganadores", "postulaciones", "candidatos", "convocatoria"] as const;
+const VISTAS = ["resultados", "ganadores", "postulaciones", "candidatos", "actividad", "convocatoria"] as const;
+const FECHA_HORA_SEG = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeStyle: "medium", timeZone: "America/Bogota" });
+const DIA_LARGO = new Intl.DateTimeFormat("es-CO", { weekday: "short", day: "numeric", month: "short", timeZone: "America/Bogota" });
+const TIPOS_ACTIVIDAD: { value: TipoActividad; label: string }[] = [
+  { value: "votaciones", label: "Votaciones recibidas" },
+  { value: "gestion", label: "Cambios de la gestión" },
+];
+const ETIQUETA_ACCION: Record<string, { texto: string; clase: string }> = {
+  CREATE: { texto: "Votó", clase: "border-success/30 bg-success/10 text-success" },
+  DELETE: { texto: "Eliminación", clase: "border-destructive/30 bg-destructive/10 text-destructive" },
+  UPDATE: { texto: "Cambio", clase: "border-primary/30 bg-primary/10 text-primary" },
+};
 const ESTADOS: { value: GalardonEstado; label: string }[] = [
   { value: "VALIDA", label: "Válidas" },
   { value: "ANULADA", label: "Anuladas" },
@@ -36,7 +56,8 @@ type Vista = (typeof VISTAS)[number];
 /**
  * GESTIÓN DE GALARDONES en el panel admin: resultados por centro y valor,
  * la base de datos de postulaciones fila a fila (buscar, filtrar, borrar),
- * las personas postuladas (renombrar, borrar sobrantes) y la convocatoria.
+ * las personas postuladas (renombrar, borrar sobrantes), el registro de
+ * actividad (cada votación que entra, con su hora) y la convocatoria.
  * La postulación en sí sigue en /galardones, con su propio entorno.
  */
 export default async function GalardonesAdminPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
@@ -74,6 +95,10 @@ export default async function GalardonesAdminPage({ searchParams }: { searchPara
       )}
 
       {vista === "candidatos" && <Candidatos q={sp.q} ips={ipsFiltro} soloLectura={soloLectura} />}
+
+      {vista === "actividad" && (
+        <Actividad q={sp.q} tipo={TIPOS_ACTIVIDAD.some((t) => t.value === sp.tipo) ? (sp.tipo as TipoActividad) : undefined} page={page} pageSize={pageSize} />
+      )}
 
       {vista === "convocatoria" && (
         <FormularioConvocatoria
@@ -263,5 +288,130 @@ async function Candidatos({ q, ips, soloLectura }: { q?: string; ips?: string; s
         </Table>
       )}
     </section>
+  );
+}
+
+/**
+ * REGISTRO DE ACTIVIDAD: cada votación que entra, con la hora exacta y a
+ * quién postuló, y cada cambio hecho desde la gestión. Responde a «¿están
+ * votando?» sin depender de que cambie quién va ganando: una votación puede
+ * entrar y dejar a los mismos punteros.
+ */
+async function Actividad({ q, tipo, page, pageSize }: { q?: string; tipo?: TipoActividad; page: number; pageSize: number }) {
+  const [{ total, filas }, resumen] = await Promise.all([actividadGalardones({ q, tipo, page, pageSize }), resumenActividadGalardones()]);
+  const maximo = Math.max(1, ...resumen.porDia.map((d) => d.votaciones));
+  return (
+    <div className="space-y-4">
+      <section className="surface-panel grid gap-5 p-5 lg:grid-cols-[minmax(0,18rem)_1fr]" aria-label="Resumen de actividad">
+        <div className="space-y-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Personas que votaron hoy</p>
+            <p className="font-display text-[2.4rem] font-extrabold leading-none tabular-nums text-foreground">{resumen.hoy}</p>
+          </div>
+          <div className="rounded-xl border border-border/60 bg-background/70 px-3.5 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Última votación recibida</p>
+            {resumen.ultima ? (
+              <>
+                <p className="mt-1 text-[14px] font-bold text-foreground">{FECHA_HORA_SEG.format(resumen.ultima.cuando)}</p>
+                {resumen.ultima.quien && <p className="text-[12.5px] text-muted-foreground">{nombrePropio(resumen.ultima.quien)}</p>}
+              </>
+            ) : (
+              <p className="mt-1 text-[13px] text-muted-foreground">Todavía no ha votado nadie.</p>
+            )}
+          </div>
+          <p className="text-[12px] leading-relaxed text-muted-foreground">
+            {resumen.totalVotaciones} votaciones registradas en total. Cada votación son tres postulaciones (una por valor), y puede entrar sin que
+            cambie quién va ganando.
+          </p>
+        </div>
+        <div>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Votaciones por día</p>
+          {resumen.porDia.length === 0 ? (
+            <p className="text-[13px] text-muted-foreground">Sin movimiento todavía.</p>
+          ) : (
+            <ol className="space-y-1.5">
+              {resumen.porDia.map((d) => (
+                <li key={d.dia} className="grid grid-cols-[7.5rem_1fr_auto] items-center gap-3 text-[12.5px]">
+                  <span className="font-semibold capitalize text-foreground">{DIA_LARGO.format(new Date(`${d.dia}T12:00:00-05:00`))}</span>
+                  <span className="h-2 overflow-hidden rounded-full bg-foreground/[0.06]">
+                    <i className="block h-full rounded-full bg-primary" style={{ width: `${Math.round((d.votaciones / maximo) * 100)}%` }} />
+                  </span>
+                  <span className="whitespace-nowrap tabular-nums text-muted-foreground">
+                    <b className="text-foreground">{d.votaciones}</b> {d.votaciones === 1 ? "persona" : "personas"}
+                    {d.gestion > 0 && ` · ${d.gestion} ${d.gestion === 1 ? "cambio" : "cambios"}`}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      </section>
+
+      <section className="surface-panel overflow-hidden" aria-label="Registro de actividad">
+        <div className="flex flex-wrap items-end gap-3 border-b border-border/70 p-4">
+          <div className="min-w-[16rem] flex-1">
+            <AutoSearchInput placeholder="Buscar por persona, documento o detalle…" label="Buscar" />
+          </div>
+          <AutoFilterSelect paramName="tipo" label="Tipo" options={TIPOS_ACTIVIDAD} allLabel="Toda la actividad" />
+          <p className="ml-auto text-[12.5px] text-muted-foreground">
+            {total} {total === 1 ? "registro" : "registros"}
+          </p>
+        </div>
+
+        {filas.length === 0 ? (
+          <EmptyState icon={Activity} title="Sin actividad" description={q || tipo ? "Ningún registro coincide con el filtro." : "Aparecerá con la primera votación."} className="py-14" />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Fecha y hora</TableHead>
+                <TableHead>Quién</TableHead>
+                <TableHead>Qué pasó</TableHead>
+                <TableHead className="min-w-[22rem]">Detalle</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filas.map((a) => {
+                const etiqueta = ETIQUETA_ACCION[a.accion] ?? ETIQUETA_ACCION.UPDATE;
+                return (
+                  <TableRow key={a.id}>
+                    <TableCell className="whitespace-nowrap text-[12px] tabular-nums text-muted-foreground">{FECHA_HORA_SEG.format(a.cuando)}</TableCell>
+                    <TableCell>
+                      <p className="font-semibold text-foreground">{a.quien ? nombrePropio(a.quien.fullName) : "Cuenta eliminada"}</p>
+                      {a.quien && (
+                        <p className="text-[11.5px] text-muted-foreground">
+                          {a.quien.documentNumber}
+                          {a.quien.position ? ` · ${a.quien.position}` : ""}
+                        </p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-bold ${etiqueta.clase}`}>{etiqueta.texto}</span>
+                    </TableCell>
+                    <TableCell className="text-[12.5px] leading-relaxed text-muted-foreground">
+                      <p>{a.descripcion}</p>
+                      {a.esVoto &&
+                        (a.vigente ? (
+                          <p className="mt-0.5 text-foreground">
+                            {a.votos.map((v, i) => (
+                              <span key={v.valor}>
+                                {i > 0 && " · "}
+                                <span className="text-muted-foreground">{valorInfo(v.valor).nombre}:</span> {v.nombre}
+                              </span>
+                            ))}
+                          </p>
+                        ) : (
+                          <p className="mt-0.5 text-warning-foreground">Esta votación se eliminó después (ya no suma).</p>
+                        ))}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
+        <TablePagination total={total} page={page} pageSize={pageSize} />
+      </section>
+    </div>
   );
 }

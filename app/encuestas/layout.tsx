@@ -1,3 +1,4 @@
+import { puedeVerVideoteca } from "@/lib/videoteca/acceso";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -24,6 +25,7 @@ export default async function EncuestasLayout({ children }: { children: React.Re
         userName={session.user.name ?? "Administrador"}
         restrictedAdminSections={session.user.restrictedAdminSections}
         soloLectura={session.user.role === "SEGUIMIENTO"}
+        verVideoteca={await puedeVerVideoteca(session.user)}
       >
         {children}
       </AdminShell>
@@ -56,6 +58,7 @@ export default async function EncuestasLayout({ children }: { children: React.Re
       unreadCount={unreadCount}
       position={user?.position ?? null}
       personnelType={session.user.personnelType}
+      verVideoteca={await puedeVerVideoteca(session.user)}
     >
       {children}
     </StudentShell>

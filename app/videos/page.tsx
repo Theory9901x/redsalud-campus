@@ -4,24 +4,28 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { veComoAdmin } from "@/lib/roles";
 import { videotecaPara } from "@/lib/videoteca/consultas";
+import { puedeVerVideoteca } from "@/lib/videoteca/acceso";
 import { duracionTexto } from "@/lib/videoteca/formato";
 import { CabeceraVideoteca, matizCategoria, Miniatura, TarjetaVideo } from "@/components/videoteca/piezas";
 
 export const dynamic = "force-dynamic";
 
 /**
- * VIDEOTECA: los videos de capacitación del campus. Entra cualquier persona
- * con cuenta, desde el celular o el computador, y el video se reproduce aquí
- * mismo, sin Drive ni descargas. Arriba el más reciente; abajo, por área.
+ * VIDEOTECA: los videos de capacitación del personal SIAU (traen datos de
+ * acceso de esa área, así que no son para todo el campus: la regla está en
+ * lib/videoteca/acceso.ts). Se reproducen aquí mismo, en el celular o el
+ * computador, sin Drive ni descargas. Arriba el más reciente; abajo, por área.
  */
 export default async function VideotecaPage({ searchParams }: { searchParams: Promise<{ cat?: string }> }) {
-  // Sin sesión se ven los videos públicos; con sesión, todos los publicados.
+  // Personal SIAU (o quien gestiona la videoteca): todos los publicados. El
+  // resto, con o sin sesión, solo los que se marcaron como públicos.
   const sesion = await auth();
   const usuario = sesion?.user ?? null;
   const esAdmin = veComoAdmin(usuario?.role);
+  const acceso = await puedeVerVideoteca(usuario);
   const [{ cat }, videos, ajustes] = await Promise.all([
     searchParams,
-    videotecaPara(usuario?.id ?? null, esAdmin),
+    videotecaPara(usuario?.id ?? null, esAdmin, acceso),
     prisma.institutionSettings.findUnique({ where: { id: "singleton" }, select: { institutionName: true, logoUrl: true } }),
   ]);
   const volverA = !usuario ? "/login?callbackUrl=%2Fvideos" : esAdmin ? "/admin" : usuario.role === "TUTOR" ? "/tutor" : "/inicio";

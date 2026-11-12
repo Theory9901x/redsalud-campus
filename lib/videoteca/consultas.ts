@@ -49,25 +49,29 @@ function aLista(v: { id: string; titulo: string; descripcion: string | null; cat
 
 /**
  * La videoteca de una persona: publicados (y los ocultos si es admin), con su
- * avance. Sin sesión (userId null), solo los públicos.
+ * avance. `acceso` es la regla de lib/videoteca/acceso.ts (personal SIAU o
+ * quien la gestiona): sin él -o sin sesión- solo se listan los marcados como
+ * públicos.
  */
-export async function videotecaPara(userId: string | null, incluirOcultos: boolean) {
+export async function videotecaPara(userId: string | null, incluirOcultos: boolean, acceso: boolean) {
   const videos = await prisma.videoCapacitacion.findMany({
-    where: !userId ? { publicado: true, publico: true } : incluirOcultos ? {} : { publicado: true },
+    where: !userId || !acceso ? { publicado: true, publico: true } : incluirOcultos ? {} : { publicado: true },
     orderBy: { createdAt: "desc" },
     select: { ...SELECT, vistas: { where: { userId: userId ?? "-" }, select: { segundos: true, completado: true } } },
   });
   return videos.map((v) => aLista(v, v.vistas[0]));
 }
 
-export async function videoPara(id: string, userId: string | null, incluirOcultos: boolean) {
+export async function videoPara(id: string, userId: string | null, incluirOcultos: boolean, acceso: boolean) {
   const v = await prisma.videoCapacitacion.findUnique({
     where: { id },
     select: { ...SELECT, media: { select: { fileUrl: true, fileType: true } }, vistas: { where: { userId: userId ?? "-" }, select: { segundos: true, posicion: true, completado: true } } },
   });
-  if (!v || (!v.publicado && !incluirOcultos)) return null;
+  if (!v || (!v.publicado && !(incluirOcultos && acceso))) return null;
   // Sin sesión solo se ven los públicos; el resto pide iniciar sesión.
   if (!userId && !v.publico) return "LOGIN" as const;
+  // Con sesión pero sin ser del personal SIAU: tampoco.
+  if (!acceso && !v.publico) return "DENEGADO" as const;
   const vista = v.vistas[0] ?? null;
   return { ...aLista(v, vista), src: v.media.fileUrl, tipo: v.media.fileType, posicion: vista?.posicion ?? 0 };
 }

@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { veComoAdmin } from "@/lib/roles";
 import { videoPara, videotecaPara } from "@/lib/videoteca/consultas";
+import { puedeVerVideoteca } from "@/lib/videoteca/acceso";
 import { duracionTexto } from "@/lib/videoteca/formato";
 import { CabeceraVideoteca, matizCategoria, Miniatura } from "@/components/videoteca/piezas";
 import { Reproductor } from "@/components/videoteca/reproductor";
@@ -36,16 +37,18 @@ const FECHA = new Intl.DateTimeFormat("es-CO", { dateStyle: "long", timeZone: "A
 /** Un video de la Videoteca: el reproductor grande y, al lado, los demás. */
 export default async function VerVideoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  // Un video público se ve sin cuenta; los demás piden iniciar sesión.
+  // Un video público se ve sin cuenta; los demás, solo el personal SIAU.
   const sesion = await auth();
   const usuario = sesion?.user ?? null;
   const esAdmin = veComoAdmin(usuario?.role);
+  const permitido = await puedeVerVideoteca(usuario);
   const [v, todos, ajustes] = await Promise.all([
-    videoPara(id, usuario?.id ?? null, esAdmin),
-    videotecaPara(usuario?.id ?? null, esAdmin),
+    videoPara(id, usuario?.id ?? null, esAdmin, permitido),
+    videotecaPara(usuario?.id ?? null, esAdmin, permitido),
     prisma.institutionSettings.findUnique({ where: { id: "singleton" }, select: { institutionName: true, logoUrl: true } }),
   ]);
   if (v === "LOGIN") redirect(`/login?callbackUrl=${encodeURIComponent(`/videos/${id}`)}`);
+  if (v === "DENEGADO") redirect("/no-autorizado");
   if (!v) notFound();
   const { datos: acceso, texto: descripcion } = separarAcceso(v.descripcion);
   const otros = [...todos.filter((x) => x.id !== v.id && x.categoria === v.categoria), ...todos.filter((x) => x.id !== v.id && x.categoria !== v.categoria)].slice(0, 8);

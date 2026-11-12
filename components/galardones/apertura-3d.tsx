@@ -32,8 +32,9 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 const FIN = 6.2;
 
 export function Apertura3D({ centros, actualizado, anio, institucion, onIr }: Props) {
-  // La escena 3D se arma con los datos al entrar a Apertura (rearmarla en cada
-  // consulta la reiniciaría); lo que cambia en vivo lo muestra «Van punteando».
+  // La escena 3D se arma una vez por montaje (rearmarla en cada consulta la
+  // reiniciaría). La ceremonia la vuelve a montar -con `key`- solo cuando cambia
+  // quién va ganando; los conteos en vivo los muestra «Van punteando».
   const [escena] = useState(centros);
   const host = useRef<HTMLDivElement>(null);
   const chip = useRef<HTMLDivElement>(null);

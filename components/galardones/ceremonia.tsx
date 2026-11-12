@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, HandHeart, Maximize, MessageSquareQuote, Printer, ShieldCheck, Trophy, Users, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, HandHeart, Maximize, MessageSquareQuote, Printer, RefreshCw, ShieldCheck, Trophy, Users, X } from "lucide-react";
 import type { GalardonValor } from "@prisma/client";
 import { Apertura3D } from "@/components/galardones/apertura-3d";
 import { useGanadoresEnVivo } from "@/components/galardones/use-ganadores-en-vivo";
@@ -17,6 +17,7 @@ type Modo = "presentar" | "tablero" | "apertura";
 const ICONOS: Record<GalardonValor, typeof ShieldCheck> = { INTEGRIDAD: ShieldCheck, HUMANIZACION: HandHeart, LIDERAZGO: Users };
 const EASE = [0.16, 1, 0.3, 1] as const;
 const sinSuscripcion = () => () => {};
+const HORA = new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit", second: "2-digit", timeZone: "America/Bogota" });
 
 /**
  * CEREMONIA DE GALARDONES: lo que Talento Humano proyecta en el evento.
@@ -39,7 +40,13 @@ export function CeremoniaGalardones(props: { centros: GanadoresIps[]; anio: numb
 
 function Ceremonia({ centros: inicial, anio, institucion, logoUrl, salirA }: { centros: GanadoresIps[]; anio: number; institucion: string; logoUrl: string | null; salirA: string }) {
   // En vivo: Presentar, Tablero y «Van punteando» reflejan postulaciones, fusiones y decisiones sin recargar.
-  const { datos: centros, actualizado } = useGanadoresEnVivo(inicial);
+  const { datos: centros, actualizado, cargando, fallo, refrescar } = useGanadoresEnVivo(inicial);
+  // La escena 3D de la Apertura se vuelve a armar cuando cambia QUIÉN va ganando
+  // (no con cada voto): así nunca muestra nombres de cuando se abrió la pantalla.
+  const firmaGanadores = useMemo(
+    () => centros.map((c) => c.ganadores.map((g) => g.personas.map((p) => p.nombre).join("+")).join("|")).join("/"),
+    [centros],
+  );
   const [modo, setModo] = useState<Modo>("apertura");
   const [idx, setIdx] = useState(0);
   const [conteos, setConteos] = useState(false);
@@ -111,6 +118,17 @@ function Ceremonia({ centros: inicial, anio, institucion, logoUrl, salirA }: { c
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          className="cer-boton"
+          onClick={refrescar}
+          disabled={cargando}
+          title={fallo ? "No se pudo consultar: los datos pueden estar desactualizados. Pulsa para reintentar." : `Datos de las ${HORA.format(actualizado)}. Se actualiza solo cada pocos segundos.`}
+          style={fallo ? { borderColor: "oklch(62% 0.2 25)", color: "oklch(62% 0.2 25)" } : undefined}
+        >
+          <RefreshCw className={cargando ? "h-4 w-4 animate-spin" : "h-4 w-4"} aria-hidden="true" />
+          <span className="cer-texto">{fallo ? "Sin conexión · reintentar" : `Actualizar · ${HORA.format(actualizado)}`}</span>
+        </button>
         <button type="button" className="cer-boton" aria-pressed={testimonios} onClick={() => setTestimonios((x) => !x)} title="Testimonios de quienes postularon (M)">
           <MessageSquareQuote className="h-4 w-4" aria-hidden="true" />
           <span className="cer-texto">Testimonios</span>
@@ -222,6 +240,7 @@ function Ceremonia({ centros: inicial, anio, institucion, logoUrl, salirA }: { c
 
       {modo === "apertura" && (
         <Apertura3D
+          key={firmaGanadores}
           centros={centros}
           actualizado={actualizado}
           anio={anio}

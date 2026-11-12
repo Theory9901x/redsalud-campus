@@ -115,13 +115,14 @@ export function CabeceraGalardonesAdmin({
   );
 }
 
-/** Pestañas de la gestión: resultados, postulaciones (fila a fila), candidatos y convocatoria. */
-export function PestanasGalardones({ activa, porDefinir = 0 }: { activa: "resultados" | "ganadores" | "postulaciones" | "candidatos" | "convocatoria"; porDefinir?: number }) {
+/** Pestañas de la gestión: resultados, postulaciones (fila a fila), candidatos, registro de actividad y convocatoria. */
+export function PestanasGalardones({ activa, porDefinir = 0 }: { activa: "resultados" | "ganadores" | "postulaciones" | "candidatos" | "actividad" | "convocatoria"; porDefinir?: number }) {
   const pestanas = [
     { clave: "resultados", etiqueta: "Resultados" },
     { clave: "ganadores", etiqueta: porDefinir ? `Ganadores · ${porDefinir} por definir` : "Ganadores" },
     { clave: "postulaciones", etiqueta: "Postulaciones" },
     { clave: "candidatos", etiqueta: "Personas postuladas" },
+    { clave: "actividad", etiqueta: "Actividad" },
     { clave: "convocatoria", etiqueta: "Convocatoria" },
   ] as const;
   return (

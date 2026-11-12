@@ -35,7 +35,7 @@ export default async function AdminVideosPage() {
           </p>
           <h1 className="mt-1 text-[clamp(1.4rem,1.1rem+1vw,1.9rem)] font-extrabold tracking-[-0.02em]">Videos de capacitación</h1>
           <p className="mt-1 max-w-[62ch] text-[13.5px] text-muted-foreground">
-            Lo que subas aquí lo ve todo el personal con su cuenta, en el celular o el computador, en <b className="text-foreground">/videos</b>. No se descarga ni pasa por Drive. Cada video registra quién lo abrió y si lo terminó.
+            Lo que subas aquí lo ve <b className="text-foreground">solo el personal SIAU</b> con su cuenta (no el resto del campus), en el celular o el computador, en <b className="text-foreground">/videos</b>. No se descarga ni pasa por Drive. Cada video registra quién lo abrió y si lo terminó.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

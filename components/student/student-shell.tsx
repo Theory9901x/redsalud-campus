@@ -14,6 +14,7 @@ export function StudentShell({
   unreadCount,
   position,
   personnelType,
+  verVideoteca = false,
   children,
 }: {
   userName: string;
@@ -23,13 +24,15 @@ export function StudentShell({
   unreadCount: number;
   position?: string | null;
   personnelType: PersonnelType;
+  /** Personal SIAU: suma la Videoteca al menú. */
+  verVideoteca?: boolean;
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="accent-student flex min-h-screen">
-      <StudentSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} logoUrl={logoUrl} />
+      <StudentSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} logoUrl={logoUrl} verVideoteca={verVideoteca} />
       <div className="page-canvas flex min-w-0 flex-1 flex-col">
         <StudentHeader
           userName={userName}

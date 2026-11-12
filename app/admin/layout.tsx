@@ -1,3 +1,4 @@
+import { puedeVerVideoteca } from "@/lib/videoteca/acceso";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AdminShell } from "@/components/admin/admin-shell";
@@ -15,6 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       userName={session.user.name ?? "Administrador"}
       restrictedAdminSections={session.user.restrictedAdminSections}
       soloLectura={session.user.role === "SEGUIMIENTO"}
+        verVideoteca={await puedeVerVideoteca(session.user)}
     >
       {children}
     </AdminShell>

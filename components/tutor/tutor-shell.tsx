@@ -42,7 +42,6 @@ const NAV_GROUPS: GrupoNav[] = [
       { href: "/tutor/planes-capacitacion", label: "Planes de capacitación", icon: CalendarRange, excluir: ["/tutor/planes-capacitacion/en-vivo"] },
       { href: "/tutor/capacitaciones", label: "Capacitaciones independientes", icon: CalendarRange },
       { href: "/tutor/reuniones", label: "Mis reuniones", icon: CalendarRange },
-      { href: "/videos", label: "Videoteca", icon: Clapperboard },
       { href: "/tutor/planes-capacitacion/en-vivo", label: "En vivo", icon: Radio },
       // Vista de OBSERVACIÓN, no de acción: el tutor abre las ventanas del
       // ciclo, no las presenta, así que aquí ve en vivo quién está
@@ -69,7 +68,11 @@ const NAV_GROUPS: GrupoNav[] = [
  */
 const GRUPO_SIAU: GrupoNav = {
   label: "Atención al Usuario",
-  items: [{ href: "/encuestas/siau", label: "Centro de datos SIAU", icon: PieChart }],
+  // La Videoteca es solo del personal SIAU (trae datos de acceso de esa área).
+  items: [
+    { href: "/encuestas/siau", label: "Centro de datos SIAU", icon: PieChart },
+    { href: "/videos", label: "Videoteca", icon: Clapperboard },
+  ],
 };
 const NAV_GROUPS_SIAU: GrupoNav[] = [...NAV_GROUPS.slice(0, 2), GRUPO_SIAU, ...NAV_GROUPS.slice(2)];
 

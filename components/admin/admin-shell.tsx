@@ -10,12 +10,15 @@ export function AdminShell({
   userName,
   restrictedAdminSections,
   soloLectura = false,
+  verVideoteca = false,
   children,
 }: {
   userName: string;
   restrictedAdminSections: AdminSection[];
   /** Rol SEGUIMIENTO (Control Interno): todo visible, nada editable. */
   soloLectura?: boolean;
+  /** Personal SIAU o gestor de videos: suma la Videoteca al menú. */
+  verVideoteca?: boolean;
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -26,6 +29,7 @@ export function AdminShell({
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         restrictedSections={restrictedAdminSections}
+        verVideoteca={verVideoteca}
       />
       <div className="page-canvas flex min-w-0 flex-1 flex-col">
         <AdminTopbar userName={userName} roleLabel={soloLectura ? "Control Interno · solo lectura" : undefined} onMenuClick={() => setSidebarOpen(true)} />
