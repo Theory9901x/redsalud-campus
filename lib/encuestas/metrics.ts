@@ -348,7 +348,10 @@ export async function getInformeSiau(periodo: Periodo, filtros: Omit<FiltrosSiau
     metricasPrevias,
     variacionGeneral: variacion(metricas.adherenciaGeneral, metricasPrevias?.adherenciaGeneral ?? null),
     variacionPorPregunta: Object.fromEntries(metricas.porPregunta.map((p) => [p.clave, variacion(p.adherencia, metricasPrevias?.porPregunta.find((x) => x.clave === p.clave)?.adherencia ?? null)])),
-    porSede: cruzar(actual.filas, actual.preguntas, "sede"),
+    // "Sin dato" no es una sede: quien no marcó municipio cuenta en el total
+    // institucional pero no entra al ranking ni a los cruces por sede.
+    porSede: cruzar(actual.filas, actual.preguntas, "sede").filter((s) => s.valor !== "Sin dato"),
+    sinSede: actual.filas.filter((f) => !f.sede).length,
     porServicio: cruzar(actual.filas, actual.preguntas, "servicio"),
     porSexo: cruzar(actual.filas, actual.preguntas, "sexo"),
     porEps: cruzar(actual.filas, actual.preguntas, "eps"),

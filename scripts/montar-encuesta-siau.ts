@@ -28,7 +28,7 @@ const HABEAS =
 const MUNICIPIOS = [
   "Yopal", "Aguazul", "Chámeza", "Hato Corozal", "La Salina", "Maní", "Monterrey", "Nunchía", "Orocué",
   "Paz de Ariporo", "Pore", "Recetor", "Sabanalarga", "Sácama", "San Luis de Palenque", "Támara", "Tauramena",
-  "Trinidad", "Villanueva", "Otro",
+  "Trinidad", "Villanueva",
 ];
 
 /** EPS y regímenes que atiende la red en Casanare. Siempre desplegable. */
@@ -126,7 +126,7 @@ const BLOQUES: Bloque[] = [
   },
   {
     title: "Datos generales",
-    description: "Solo el sexo es obligatorio. Los demás datos son opcionales y confidenciales.",
+    description: "El sexo y el municipio son obligatorios. Los demás datos son opcionales y confidenciales.",
     questions: [
       { type: "DATE", prompt: "Fecha", isRequired: false, config: { rol: "fecha" } },
       { type: "SHORT_TEXT", prompt: "Nombre", isRequired: false, config: { rol: "nombre" } },
@@ -146,7 +146,8 @@ const BLOQUES: Bloque[] = [
       {
         type: "SINGLE_CHOICE",
         prompt: "Municipio",
-        isRequired: false,
+        // Obligatorio: sin municipio la encuesta no se puede atribuir a ninguna sede.
+        isRequired: true,
         config: { estilo: "selector", rol: "municipio", opciones: MUNICIPIOS.map((m) => ({ id: idDe(m), texto: m })) },
       },
     ],

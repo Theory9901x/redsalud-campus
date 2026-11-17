@@ -242,7 +242,7 @@ function Doc({ inf, generadoPor, logo, temas, caritas }: { inf: InformeSiau; gen
             <Text style={[s.cifra, { fontSize: 6.5, color: C.suave, textTransform: "uppercase" }]}>Adherencia · encuestas · frente al promedio</Text>
           </View>
           {inf.porSede.map((x) => <Barra key={x.valor} etiqueta={x.valor} valor={x.adherencia} cifra={`${pct(x.adherencia)} · ${x.total} ${x.total === 1 ? "encuesta" : "encuestas"}${x.adherencia !== null && m.adherenciaGeneral !== null ? ` · ${x.adherencia - m.adherenciaGeneral >= 0 ? "+" : ""}${Math.round((x.adherencia - m.adherenciaGeneral) * 10) / 10} pp` : ""}`} />)}
-          <Text style={s.nota}>Cada sede muestra su adherencia, el número de encuestas que la respaldan y la diferencia en puntos porcentuales (pp) frente al promedio institucional de {pct(m.adherenciaGeneral)}. Una sede con pocas encuestas puede variar mucho de un periodo a otro.</Text>
+          <Text style={s.nota}>Cada sede muestra su adherencia, el número de encuestas que la respaldan y la diferencia en puntos porcentuales (pp) frente al promedio institucional de {pct(m.adherenciaGeneral)}. Una sede con pocas encuestas puede variar mucho de un periodo a otro.{inf.sinSede > 0 ? ` ${inf.sinSede} ${inf.sinSede === 1 ? "encuesta no indicó" : "encuestas no indicaron"} municipio: ${inf.sinSede === 1 ? "cuenta" : "cuentan"} en el total institucional, no en este listado.` : ""}</Text>
         </View>
 
         <View style={s.seccion} break>

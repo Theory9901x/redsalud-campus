@@ -145,7 +145,9 @@ export function VistaSiau({
           <h2 className="siau-h2">
             <i>02</i>Ranking de sedes
           </h2>
-          <p className="siau-bajada">Adherencia general por sede, de mayor a menor. La marca vertical es el promedio institucional ({m.adherenciaGeneral ?? "—"}%).</p>
+          <p className="siau-bajada">Adherencia general por sede, de mayor a menor. La marca vertical es el promedio institucional ({m.adherenciaGeneral ?? "—"}%).
+            {informe.sinSede > 0 ? ` ${informe.sinSede} ${informe.sinSede === 1 ? "encuesta no indicó" : "encuestas no indicaron"} municipio: ${informe.sinSede === 1 ? "cuenta" : "cuentan"} en el total institucional, no en este ranking.` : ""}
+          </p>
           <div className="mt-4">
             <RankingSiau
               filas={informe.porSede.map((s) => ({ nombre: s.valor, valor: s.adherencia, n: s.total, puntaje: s.puntaje }))}
