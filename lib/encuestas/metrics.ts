@@ -290,7 +290,9 @@ export type Cruce = { valor: string; total: number; adherencia: number | null; p
 export function cruzar(filas: FilaSiau[], preguntas: PreguntaSiau[], variable: "sede" | "servicio" | "sexo" | "eps"): Cruce[] {
   const grupos = new Map<string, FilaSiau[]>();
   for (const f of filas) {
-    const valores = variable === "servicio" ? (f.servicios.length ? f.servicios : ["Sin dato"]) : [f[variable] ?? "Sin dato"];
+    // Quien no respondió la variable no forma un grupo "Sin dato": cuenta en
+    // el total institucional, pero no aparece como fila en ningún cruce.
+    const valores = variable === "servicio" ? f.servicios : f[variable] ? [f[variable] as string] : [];
     for (const v of valores) grupos.set(v, [...(grupos.get(v) ?? []), f]);
   }
   return [...grupos.entries()]
