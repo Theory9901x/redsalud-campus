@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import "./ceremonia.css";
 import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
-import { veComoAdmin } from "@/lib/roles";
+import { gestionaGalardones, rutaGestionGalardones } from "@/lib/galardones/acceso";
 import {
   estadoConvocatoria,
   ganadoresGalardones,
@@ -20,9 +20,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function CeremoniaPage() {
   const sesion = await requireSession("/galardones/ceremonia");
-  if (!veComoAdmin(sesion.user.role)) redirect("/no-autorizado");
-  if ((sesion.user.restrictedAdminSections ?? []).includes("USUARIOS"))
-    redirect("/no-autorizado");
+  if (!(await gestionaGalardones(sesion.user))) redirect("/no-autorizado");
 
   const [centros, convocatoria, ajustes] = await Promise.all([
     ganadoresGalardones(),
@@ -39,7 +37,7 @@ export default async function CeremoniaPage() {
       anio={convocatoria.anio}
       institucion={ajustes?.institutionName ?? "Red Salud Casanare E.S.E."}
       logoUrl={ajustes?.logoUrl ?? null}
-      salirA="/admin/galardones"
+      salirA={rutaGestionGalardones(sesion.user.role)}
     />
   );
 }

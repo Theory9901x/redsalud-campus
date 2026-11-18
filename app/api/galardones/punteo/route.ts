@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { veComoAdmin } from "@/lib/roles";
+import { gestionaGalardones } from "@/lib/galardones/acceso";
 import { ganadoresGalardones } from "@/lib/galardones/consultas";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const sesion = await auth();
   const u = sesion?.user;
-  if (!u || !veComoAdmin(u.role) || (u.restrictedAdminSections ?? []).includes("USUARIOS")) {
+  if (!(await gestionaGalardones(u))) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
   return NextResponse.json(await ganadoresGalardones(), { headers: { "Cache-Control": "no-store" } });

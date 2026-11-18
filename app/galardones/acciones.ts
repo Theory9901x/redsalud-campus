@@ -5,7 +5,8 @@ import { z } from "zod";
 import type { GalardonValor } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { requireAdmin, requireSession } from "@/lib/auth-helpers";
+import { requireSession } from "@/lib/auth-helpers";
+import { gestionaGalardones } from "@/lib/galardones/acceso";
 import { esSoloLectura } from "@/lib/roles";
 import { registrarAuditoria } from "@/lib/audit";
 import { nombrePropio } from "@/lib/nombre-propio";
@@ -163,6 +164,7 @@ export async function enviarPostulacion(entrada: EnvioPostulacion): Promise<{ ok
   revalidatePath("/galardones");
   revalidatePath("/galardones/resultados");
   revalidatePath("/admin/galardones");
+  revalidatePath("/tutor/galardones");
   return { ok: true };
 }
 
@@ -170,8 +172,15 @@ export async function enviarPostulacion(entrada: EnvioPostulacion): Promise<{ ok
 // Administración de resultados
 // ---------------------------------------------------------------------
 
+/** Administración con Usuarios, o cuenta con el permiso propio de Galardones. */
+async function requireGestor() {
+  const sesion = await auth();
+  if (!sesion?.user || !(await gestionaGalardones(sesion.user))) throw new Error("No autorizado.");
+  return sesion;
+}
+
 async function requireAdminEscritura() {
-  const sesion = await requireAdmin();
+  const sesion = await requireGestor();
   if (esSoloLectura(sesion.user.role)) throw new Error("Perfil de solo lectura.");
   return sesion;
 }
@@ -215,6 +224,7 @@ export async function fusionarCandidatos(origenId: string, destinoId: string): P
   });
   revalidatePath("/galardones/resultados");
   revalidatePath("/admin/galardones");
+  revalidatePath("/tutor/galardones");
   return { ok: true };
 }
 
@@ -244,6 +254,7 @@ export async function separarVariante(candidatoId: string, nombreEscrito: string
   });
   revalidatePath("/galardones/resultados");
   revalidatePath("/admin/galardones");
+  revalidatePath("/tutor/galardones");
   return { ok: true };
 }
 
@@ -267,6 +278,7 @@ export async function configurarConvocatoria(entrada: { abierta: boolean; cierra
   revalidatePath("/galardones");
   revalidatePath("/galardones/resultados");
   revalidatePath("/admin/galardones");
+  revalidatePath("/tutor/galardones");
   return { ok: true };
 }
 
@@ -274,7 +286,7 @@ export async function configurarConvocatoria(entrada: { abierta: boolean; cierra
 // Gestión de la base de datos desde el panel admin (/admin/galardones)
 // ---------------------------------------------------------------------
 
-const RUTAS_GESTION = ["/galardones", "/galardones/resultados", "/admin/galardones"];
+const RUTAS_GESTION = ["/galardones", "/galardones/resultados", "/admin/galardones", "/tutor/galardones"];
 function revalidarGestion() {
   for (const r of RUTAS_GESTION) revalidatePath(r);
 }
@@ -377,8 +389,7 @@ export async function quitarDecision(ips: string, valor: GalardonValor): Promise
 
 /** Quién va adelante ahora mismo. La ceremonia ya NO usa esta acción (es POST y el proxy la niega a los perfiles de solo lectura): consulta GET /api/galardones/punteo. */
 export async function punteoCeremonia(): Promise<GanadoresIps[]> {
-  const sesion = await requireAdmin();
-  if ((sesion.user.restrictedAdminSections ?? []).includes("USUARIOS")) throw new Error("No autorizado.");
+  await requireGestor();
   return ganadoresGalardones();
 }
 

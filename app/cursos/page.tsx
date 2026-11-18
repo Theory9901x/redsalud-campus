@@ -1,3 +1,4 @@
+import { gestionaGalardones } from "@/lib/galardones/acceso";
 import { puedeVerVideoteca } from "@/lib/videoteca/acceso";
 import { SIN_PRUEBAS, veePruebas } from "@/lib/pruebas";
 import { auth } from "@/auth";
@@ -241,7 +242,7 @@ export default async function CatalogoCursosPage({
   // Tutor: conserva su chrome de trabajo con un banner de contexto discreto.
   if (session?.user.role === "TUTOR") {
     return (
-      <TutorShell userName={session.user.name ?? "Tutor"} cuentaSiau={await esCuentaSiau(session)} banner={<TutorContextBanner />}>
+      <TutorShell userName={session.user.name ?? "Tutor"} cuentaSiau={await esCuentaSiau(session)} gestionaGalardones={await gestionaGalardones(session.user)} banner={<TutorContextBanner />}>
         <div className="mx-auto w-full max-w-6xl">{content}</div>
       </TutorShell>
     );

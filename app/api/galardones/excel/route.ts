@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { veComoAdmin } from "@/lib/roles";
+import { gestionaGalardones } from "@/lib/galardones/acceso";
 import { hojaInformacion, hojaTabla, nuevoLibro, respuestaExcel, horaColombia } from "@/lib/excel-tabla";
 import { ganadoresGalardones, listadoPostulaciones, resultadosGalardones } from "@/lib/galardones/consultas";
 import { NOMBRE_EVENTO, NOMBRE_RECONOCIMIENTO, valorInfo } from "@/lib/galardones/valores";
@@ -9,10 +9,7 @@ import { nombrePropio } from "@/lib/nombre-propio";
 /** Excel de la Galardones: ganadores por IPS, ranking completo y el detalle de cada postulación. */
 export async function GET() {
   const session = await auth();
-  if (!session?.user || !veComoAdmin(session.user.role)) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
-  }
-  if ((session.user.restrictedAdminSections ?? []).includes("USUARIOS")) {
+  if (!(await gestionaGalardones(session?.user))) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 

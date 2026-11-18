@@ -16,7 +16,10 @@ export function CabeceraGalardonesAdmin({
   convocatoria,
   resultados,
   porDefinir = 0,
+  base = "/admin/galardones",
 }: {
+  /** Ruta de la gestión según el perfil. */
+  base?: string;
   convocatoria: { abierta: boolean; cierraEl: Date | null; anio: number };
   resultados: ResultadosGalardones;
   /** Galardones con empate o sin ganador disponible, que Talento Humano debe definir. */
@@ -89,7 +92,7 @@ export function CabeceraGalardonesAdmin({
 
       {porDefinir > 0 && (
         <Link
-          href="/admin/galardones?vista=ganadores"
+          href={`${base}?vista=ganadores`}
           className="relative mt-5 flex items-center gap-3 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3 text-[13px] text-foreground transition-colors hover:bg-warning/15"
         >
           <Trophy className="h-4.5 w-4.5 shrink-0 text-warning-foreground" aria-hidden="true" />
@@ -116,7 +119,7 @@ export function CabeceraGalardonesAdmin({
 }
 
 /** Pestañas de la gestión: resultados, postulaciones (fila a fila), candidatos, registro de actividad y convocatoria. */
-export function PestanasGalardones({ activa, porDefinir = 0 }: { activa: "resultados" | "ganadores" | "postulaciones" | "candidatos" | "actividad" | "convocatoria"; porDefinir?: number }) {
+export function PestanasGalardones({ activa, porDefinir = 0, base = "/admin/galardones" }: { base?: string; activa: "resultados" | "ganadores" | "postulaciones" | "candidatos" | "actividad" | "convocatoria"; porDefinir?: number }) {
   const pestanas = [
     { clave: "resultados", etiqueta: "Resultados" },
     { clave: "ganadores", etiqueta: porDefinir ? `Ganadores · ${porDefinir} por definir` : "Ganadores" },
@@ -132,7 +135,7 @@ export function PestanasGalardones({ activa, porDefinir = 0 }: { activa: "result
         return (
           <Link
             key={p.clave}
-            href={p.clave === "resultados" ? "/admin/galardones" : `/admin/galardones?vista=${p.clave}`}
+            href={p.clave === "resultados" ? base : `${base}?vista=${p.clave}`}
             aria-current={activo ? "page" : undefined}
             className={cn(
               "inline-flex items-center gap-2 rounded-[10px] px-4 py-2 text-[13px] font-semibold transition-all duration-200",

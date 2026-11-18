@@ -76,7 +76,13 @@ const GRUPO_SIAU: GrupoNav = {
 };
 const NAV_GROUPS_SIAU: GrupoNav[] = [...NAV_GROUPS.slice(0, 2), GRUPO_SIAU, ...NAV_GROUPS.slice(2)];
 
+/** Solo para quien tiene el permiso propio de Galardones (lo decide el servidor). */
+const ITEM_GESTION_GALARDONES = { href: "/tutor/galardones", label: "Gestión de Galardones", icon: Trophy };
+const conGestionGalardones = (grupos: GrupoNav[]): GrupoNav[] =>
+  grupos.map((g) => (g.label === "Personas" ? { ...g, items: [...g.items, ITEM_GESTION_GALARDONES] } : g));
+
 const BREADCRUMBS: [string, string][] = [
+  ["/tutor/galardones", "Personas · Gestión de Galardones"],
   ["/tutor/capacitaciones/nueva", "Crear capacitación de mi área"],
   ["/tutor/planes-capacitacion/en-vivo", "Plan · En vivo"],
   ["/tutor/planes-capacitacion", "Plan · Planes de capacitación"],
@@ -90,17 +96,21 @@ const BREADCRUMBS: [string, string][] = [
 export function TutorShell({
   userName,
   cuentaSiau = false,
+  gestionaGalardones = false,
   banner,
   children,
 }: {
   userName: string;
   /** Es la cuenta del área SIAU: suma al menú el Centro de datos SIAU. */
   cuentaSiau?: boolean;
+  /** Tiene el permiso de Galardones: suma al menú la gestión del módulo. */
+  gestionaGalardones?: boolean;
   /** Banner discreto sobre el contenido (p. ej. "Estás viendo el catálogo como tutor"). */
   banner?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const gruposBase = cuentaSiau ? NAV_GROUPS_SIAU : NAV_GROUPS;
   const pathname = usePathname();
   const breadcrumb = BREADCRUMBS.find(([prefix]) => pathname.startsWith(prefix))?.[1] ?? "Centro de mando";
 
@@ -109,7 +119,7 @@ export function TutorShell({
       <AppSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        grupos={cuentaSiau ? NAV_GROUPS_SIAU : NAV_GROUPS}
+        grupos={gestionaGalardones ? conGestionGalardones(gruposBase) : gruposBase}
         subtitulo="Espacio de tutor"
         claseAcento="accent-tutor"
         // Sin tarjeta de pie: con ocho entradas se montaba sobre el menú en

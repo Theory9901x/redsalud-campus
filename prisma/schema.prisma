@@ -161,6 +161,8 @@ model User {
   mediaUploads   Media[]
   auditLogs      AuditLog[]
   canManageAllMeetings Boolean @default(false)
+  /// Permiso propio de Galardones: ver, gestionar y administrar el módulo sin ser administrador.
+  canManageGalardones Boolean @default(false)
   /// Superadministrador (la cuenta administradora original): única que puede eliminar reuniones.
   isSuperAdmin Boolean @default(false)
   /// Cuenta que entra a las salas a revisar: nunca figura en asistencias, conexiones ni actas.

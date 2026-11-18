@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { TutorShell } from "@/components/tutor/tutor-shell";
+import { gestionaGalardones } from "@/lib/galardones/acceso";
 import { esCuentaSiau } from "@/lib/encuestas/acceso-siau";
 
 export default async function TutorLayout({ children }: { children: React.ReactNode }) {
@@ -11,7 +12,7 @@ export default async function TutorLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <TutorShell userName={session.user.name ?? "Tutor"} cuentaSiau={await esCuentaSiau(session)}>
+    <TutorShell userName={session.user.name ?? "Tutor"} cuentaSiau={await esCuentaSiau(session)} gestionaGalardones={session.user.role === "TUTOR" && (await gestionaGalardones(session.user))}>
       {children}
     </TutorShell>
   );

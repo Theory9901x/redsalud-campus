@@ -1,3 +1,4 @@
+import { gestionaGalardones } from "@/lib/galardones/acceso";
 import { puedeVerVideoteca } from "@/lib/videoteca/acceso";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -34,7 +35,7 @@ export default async function EncuestasLayout({ children }: { children: React.Re
 
   if (session.user.role === "TUTOR") {
     return (
-      <TutorShell userName={session.user.name ?? "Tutor"} cuentaSiau={await esCuentaSiau(session)}>
+      <TutorShell userName={session.user.name ?? "Tutor"} cuentaSiau={await esCuentaSiau(session)} gestionaGalardones={await gestionaGalardones(session.user)}>
         {children}
       </TutorShell>
     );
