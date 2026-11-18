@@ -20,7 +20,7 @@ export function CabeceraGalardonesAdmin({
 }: {
   /** Ruta de la gestión según el perfil. */
   base?: string;
-  convocatoria: { abierta: boolean; cierraEl: Date | null; anio: number };
+  convocatoria: { abierta: boolean; cierraEl: Date | null; anio: number; prorrogasVigentes: { ips: string; hasta: Date }[] };
   resultados: ResultadosGalardones;
   /** Galardones con empate o sin ganador disponible, que Talento Humano debe definir. */
   porDefinir?: number;
@@ -69,6 +69,11 @@ export function CabeceraGalardonesAdmin({
             {convocatoria.cierraEl && (
               <span className="text-[12px] text-muted-foreground">
                 {convocatoria.abierta ? "Cierra el" : "Cerró el"} {FECHA.format(convocatoria.cierraEl)}
+              </span>
+            )}
+            {convocatoria.prorrogasVigentes.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2.5 py-1 text-[11px] font-bold text-success">
+                Prórroga: {convocatoria.prorrogasVigentes.map((p) => p.ips).join(" y ")} hasta el {FECHA.format(convocatoria.prorrogasVigentes[0].hasta)}
               </span>
             )}
           </div>

@@ -97,6 +97,7 @@ export async function GestionGalardones({ sp, base, soloLectura }: { sp: Record<
             abierta: convocatoria.abierta,
             cierraEl: convocatoria.cierraEl ? convocatoria.cierraEl.toISOString() : null,
             anio: convocatoria.anio,
+            prorrogas: convocatoria.prorrogas.map((p) => ({ ips: p.ips, hasta: p.hasta.toISOString() })),
           }}
           soloLectura={soloLectura}
         />

@@ -10,7 +10,7 @@ import { gestionaGalardones } from "@/lib/galardones/acceso";
 import { esSoloLectura } from "@/lib/roles";
 import { registrarAuditoria } from "@/lib/audit";
 import { nombrePropio } from "@/lib/nombre-propio";
-import { esIpsValida } from "@/lib/galardones/ips";
+import { esIpsValida, nombreCentro } from "@/lib/galardones/ips";
 import { ORDEN_VALORES, valorInfo } from "@/lib/galardones/valores";
 import { claveNombre, mismaPersona, tokensNombre } from "@/lib/galardones/nombres";
 import { estadoConvocatoria, ganadoresGalardones, type GanadoresIps } from "@/lib/galardones/consultas";
@@ -84,7 +84,9 @@ export async function enviarPostulacion(entrada: EnvioPostulacion): Promise<{ ok
   }
 
   const convocatoria = await estadoConvocatoria();
-  if (!convocatoria.abierta) return { ok: false, error: "La convocatoria ya cerró." };
+  if (!convocatoria.recibe(ips)) {
+    return { ok: false, error: convocatoria.abierta ? "La convocatoria ya cerró." : `La convocatoria ya cerró para ${nombreCentro(ips)}.` };
+  }
 
   const yaPostulo = await prisma.galardonPostulacion.count({ where: { votanteId: sesion.user.id } });
   if (yaPostulo) return { ok: false, error: "Ya registraste tu postulación: solo se puede diligenciar una vez." };
@@ -277,6 +279,39 @@ export async function configurarConvocatoria(entrada: { abierta: boolean; cierra
   });
   revalidatePath("/galardones");
   revalidatePath("/galardones/resultados");
+  revalidatePath("/admin/galardones");
+  revalidatePath("/tutor/galardones");
+  return { ok: true };
+}
+
+/**
+ * Prórrogas por centro: con la convocatoria general cerrada, esos centros
+ * siguen recibiendo postulaciones hasta su fecha (ese día, 11:59 p. m. Bogotá).
+ */
+export async function configurarProrrogas(lista: { ips: string; hasta: string }[]): Promise<{ ok: true } | { ok: false; error: string }> {
+  const sesion = await requireAdminEscritura();
+  const mapa: Record<string, string> = {};
+  for (const p of lista) {
+    if (!esIpsValida(p.ips)) return { ok: false, error: "Centro IPS inválido." };
+    const hasta = new Date(`${p.hasta}T23:59:59-05:00`);
+    if (Number.isNaN(hasta.getTime())) return { ok: false, error: `Fecha inválida para ${p.ips}.` };
+    mapa[p.ips] = hasta.toISOString();
+  }
+  await prisma.galardonConvocatoria.upsert({
+    where: { id: "singleton" },
+    update: { prorrogas: mapa },
+    create: { id: "singleton", prorrogas: mapa },
+  });
+  await registrarAuditoria({
+    userId: sesion.user.id,
+    action: "UPDATE",
+    entity: "Galardon",
+    description: lista.length
+      ? `Prórroga Galardones: ${lista.map((p) => `${p.ips} hasta ${p.hasta}`).join(", ")}`
+      : "Prórrogas de Galardones retiradas",
+  });
+  revalidatePath("/galardones");
+  revalidatePath("/inicio");
   revalidatePath("/admin/galardones");
   revalidatePath("/tutor/galardones");
   return { ok: true };

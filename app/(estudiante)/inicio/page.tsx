@@ -15,6 +15,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { estadoConvocatoria } from "@/lib/galardones/consultas";
+import { ipsDesdeMunicipio } from "@/lib/galardones/ips";
 import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { StaggerSections } from "@/components/brand/stagger-sections";
@@ -60,7 +61,15 @@ export default async function InicioPage() {
     estadoConvocatoria(),
     prisma.galardonPostulacion.count({ where: { votanteId: userId } }),
   ]);
-  const invitarGalardones = convocatoria.abierta && yaPostulo === 0;
+  // Con la convocatoria general cerrada, la invitación sigue solo para quien
+  // es de un centro con prórroga vigente.
+  const ipsPropia =
+    !convocatoria.abierta && convocatoria.prorrogasVigentes.length > 0 && yaPostulo === 0
+      ? ipsDesdeMunicipio(
+          (await prisma.user.findUnique({ where: { id: userId }, select: { municipio: { select: { nombre: true } } } }))?.municipio?.nombre,
+        )
+      : null;
+  const invitarGalardones = (convocatoria.abierta || (!!ipsPropia && convocatoria.recibe(ipsPropia))) && yaPostulo === 0;
 
   const activos = enrollments.filter((e) => e.status !== "COMPLETED").length;
   const completados = enrollments.filter((e) => e.status === "COMPLETED").length;

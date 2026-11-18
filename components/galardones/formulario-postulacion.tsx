@@ -60,7 +60,20 @@ const sinSuscripcion = () => () => {};
  * abajo al alcance del pulgar, buscador de centros, frases para arrancar a
  * escribir y un borrador en el teléfono por si la persona cambia de app.
  */
-export function FormularioPostulacion({ votanteId, nombreVotante, ipsSugerida, cierraEl }: { votanteId: string; nombreVotante: string; ipsSugerida: IpsGalardon | null; cierraEl: string | null }) {
+export function FormularioPostulacion({
+  votanteId,
+  nombreVotante,
+  ipsSugerida,
+  ipsPermitidas,
+  cierraEl,
+}: {
+  votanteId: string;
+  nombreVotante: string;
+  ipsSugerida: IpsGalardon | null;
+  /** Con la convocatoria general cerrada, los únicos centros con prórroga vigente; null = todos. */
+  ipsPermitidas: IpsGalardon[] | null;
+  cierraEl: string | null;
+}) {
   const router = useRouter();
   const reducir = useReducedMotion();
   const raiz = useRef<HTMLElement>(null);
@@ -106,7 +119,7 @@ export function FormularioPostulacion({ votanteId, nombreVotante, ipsSugerida, c
 
   const recuperar = (b: Borrador) => {
     setTocado(true);
-    setIps(b.ips);
+    setIps(b.ips && (!ipsPermitidas || ipsPermitidas.includes(b.ips)) ? b.ips : null);
     setEntradas({ ...{ INTEGRIDAD: VACIA, HUMANIZACION: VACIA, LIDERAZGO: VACIA }, ...b.entradas });
     setIndice(Math.min(Math.max(b.indice ?? 0, 0), 4));
   };
@@ -221,6 +234,7 @@ export function FormularioPostulacion({ votanteId, nombreVotante, ipsSugerida, c
             <PasoIps
               nombreVotante={nombreVotante}
               ipsSugerida={ipsSugerida}
+              ipsPermitidas={ipsPermitidas}
               ips={ips}
               onElegir={(x) => {
                 setTocado(true);
@@ -344,14 +358,27 @@ export function FormularioPostulacion({ votanteId, nombreVotante, ipsSugerida, c
 
 /* ───────────── Paso 1: centro IPS ───────────── */
 
-function PasoIps({ nombreVotante, ipsSugerida, ips, onElegir }: { nombreVotante: string; ipsSugerida: IpsGalardon | null; ips: IpsGalardon | null; onElegir: (x: IpsGalardon) => void }) {
+function PasoIps({
+  nombreVotante,
+  ipsSugerida,
+  ipsPermitidas,
+  ips,
+  onElegir,
+}: {
+  nombreVotante: string;
+  ipsSugerida: IpsGalardon | null;
+  ipsPermitidas: IpsGalardon[] | null;
+  ips: IpsGalardon | null;
+  onElegir: (x: IpsGalardon) => void;
+}) {
   const [filtro, setFiltro] = useState("");
   const reducir = useReducedMotion();
   const lista = useMemo(() => {
-    const orden = ipsSugerida ? [ipsSugerida, ...IPS_GALARDONES.filter((x) => x !== ipsSugerida)] : [...IPS_GALARDONES];
+    const base = IPS_GALARDONES.filter((x) => !ipsPermitidas || ipsPermitidas.includes(x));
+    const orden = ipsSugerida ? [ipsSugerida, ...base.filter((x) => x !== ipsSugerida)] : base;
     const f = sinTildes(filtro.trim());
     return f ? orden.filter((x) => sinTildes(nombreCentro(x)).includes(f)) : orden;
-  }, [filtro, ipsSugerida]);
+  }, [filtro, ipsSugerida, ipsPermitidas]);
 
   return (
     <>
@@ -372,6 +399,12 @@ function PasoIps({ nombreVotante, ipsSugerida, ips, onElegir }: { nombreVotante:
       <p className="gala-definicion">
         Hola, {nombreVotante.split(" ")[0]}. Las personas que postules deben ser de tu mismo centro: el reconocimiento se entrega por centro y por valor. Puedes postular a un compañero o postularte en nombre propio.
       </p>
+      {ipsPermitidas && (
+        <p className="gala-definicion">
+          La convocatoria general ya cerró. Siguen recibiendo postulaciones, por prórroga, solo estos centros:{" "}
+          <b>{ipsPermitidas.map(nombreCentro).join(" y ")}</b>.
+        </p>
+      )}
       <label className="gala-buscar">
         <Search aria-hidden="true" />
         <input className="gala-input" placeholder="Buscar tu centro…" value={filtro} onChange={(e) => setFiltro(e.target.value)} aria-label="Buscar centro IPS" />

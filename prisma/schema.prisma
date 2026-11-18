@@ -1635,6 +1635,10 @@ model GalardonConvocatoria {
   cierraEl DateTime?
   /// En desuso desde el 11-nov-2026 (era el corte de la verificación de cuentas nuevas).
   cuentasNuevasDesde DateTime?
+  /// Prórrogas por centro: { "<IPS>": "<ISO de cierre>" }. Con la convocatoria
+  /// general cerrada, esos centros siguen recibiendo postulaciones hasta su
+  /// fecha (19-nov-2026: San Luis de Palenque y Villanueva, que no alcanzaron).
+  prorrogas Json @default("{}")
   updatedAt DateTime @updatedAt
 }
 

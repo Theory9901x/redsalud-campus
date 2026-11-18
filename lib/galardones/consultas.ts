@@ -1,17 +1,41 @@
 import type { GalardonEstado, GalardonValor, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { IPS_GALARDONES } from "@/lib/galardones/ips";
+import { IPS_GALARDONES, esIpsValida, type IpsGalardon } from "@/lib/galardones/ips";
 import { ORDEN_VALORES } from "@/lib/galardones/valores";
 import { calcularGanadores, type Ganador } from "@/lib/galardones/ganadores";
 
-/** La convocatoria está abierta si no hay fila, o si está marcada abierta y no pasó la fecha de cierre. */
+export type Prorroga = { ips: IpsGalardon; hasta: Date };
+
+/** Lee el JSON de prórrogas ({ "<IPS>": "<ISO>" }) descartando centros o fechas inválidos. */
+function leerProrrogas(json: unknown): Prorroga[] {
+  if (!json || typeof json !== "object" || Array.isArray(json)) return [];
+  return Object.entries(json as Record<string, unknown>)
+    .map(([ips, iso]) => ({ ips, hasta: typeof iso === "string" ? new Date(iso) : null }))
+    .filter((p): p is Prorroga => esIpsValida(p.ips) && !!p.hasta && !Number.isNaN(p.hasta.getTime()))
+    .sort((a, b) => a.ips.localeCompare(b.ips, "es"));
+}
+
+/**
+ * La convocatoria está abierta si no hay fila, o si está marcada abierta y no
+ * pasó la fecha de cierre. Aparte, un centro con prórroga vigente sigue
+ * recibiendo postulaciones aunque la convocatoria general esté cerrada.
+ */
 export async function estadoConvocatoria() {
   const c = await prisma.galardonConvocatoria.findUnique({ where: { id: "singleton" } });
-  const vencida = !!c?.cierraEl && c.cierraEl.getTime() < Date.now();
+  const ahora = Date.now();
+  const vencida = !!c?.cierraEl && c.cierraEl.getTime() < ahora;
+  const abierta = (c?.abierta ?? true) && !vencida;
+  const prorrogas = leerProrrogas(c?.prorrogas);
+  /** Prórrogas que todavía corren (solo importan con la general cerrada). */
+  const prorrogasVigentes = abierta ? [] : prorrogas.filter((p) => p.hasta.getTime() >= ahora);
   return {
-    abierta: (c?.abierta ?? true) && !vencida,
+    abierta,
     cierraEl: c?.cierraEl ?? null,
     anio: c?.anio ?? 2026,
+    prorrogas,
+    prorrogasVigentes,
+    /** Si un centro puede recibir postulaciones ahora mismo. */
+    recibe: (ips: string) => abierta || prorrogasVigentes.some((p) => p.ips === ips),
   };
 }
 

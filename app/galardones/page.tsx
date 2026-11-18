@@ -30,6 +30,13 @@ export default async function GalardonesPage() {
     postulacionDe(sesion.user.id),
   ]);
 
+  // Con la convocatoria general cerrada, solo los centros con prórroga vigente
+  // siguen recibiendo postulaciones: el formulario se abre con esos centros.
+  const ipsProrroga = convocatoria.prorrogasVigentes.map((p) => p.ips);
+  const enProrroga = !convocatoria.abierta && ipsProrroga.length > 0;
+  const ipsMunicipio = ipsDesdeMunicipio(usuario.municipio?.nombre);
+  const cierreProrroga = enProrroga ? new Date(Math.max(...convocatoria.prorrogasVigentes.map((p) => p.hasta.getTime()))) : null;
+
   const volverA = veComoAdmin(sesion.user.role) ? "/admin" : sesion.user.role === "TUTOR" ? "/tutor" : "/inicio";
 
   return (
@@ -85,7 +92,7 @@ export default async function GalardonesPage() {
             })}
           </div>
         </section>
-      ) : !convocatoria.abierta ? (
+      ) : !convocatoria.abierta && !enProrroga ? (
         <section className="gala-panel gala-hecho mt-8">
           <div className="gala-hecho-icono" style={{ background: "var(--g-panel-2)", color: "var(--g-muted)", boxShadow: "none", animation: "none" }}>
             <Lock className="h-7 w-7" aria-hidden="true" />
@@ -101,8 +108,15 @@ export default async function GalardonesPage() {
         <FormularioPostulacion
           votanteId={sesion.user.id}
           nombreVotante={nombrePropio(usuario.fullName)}
-          ipsSugerida={ipsDesdeMunicipio(usuario.municipio?.nombre)}
-          cierraEl={convocatoria.cierraEl ? FECHA.format(convocatoria.cierraEl) : null}
+          ipsSugerida={enProrroga ? (ipsMunicipio && ipsProrroga.includes(ipsMunicipio) ? ipsMunicipio : null) : ipsMunicipio}
+          ipsPermitidas={enProrroga ? ipsProrroga : null}
+          cierraEl={
+            cierreProrroga
+              ? FECHA_HORA.format(cierreProrroga)
+              : convocatoria.cierraEl
+                ? FECHA.format(convocatoria.cierraEl)
+                : null
+          }
         />
       )}
     </main>
