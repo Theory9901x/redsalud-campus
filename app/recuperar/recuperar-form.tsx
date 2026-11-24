@@ -31,7 +31,7 @@ export function RecuperarForm() {
 
   if (paso === 3) {
     return (
-      <div className="space-y-5 text-center">
+      <div className="w-full space-y-5 text-center">
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-success/15 text-success">
           <CheckCircle2 className="h-7 w-7" />
         </span>
@@ -49,12 +49,12 @@ export function RecuperarForm() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="w-full space-y-5">
       <div>
-        <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
           {paso === 1 ? <Mail className="h-5 w-5" /> : <KeyRound className="h-5 w-5" />}
         </span>
-        <h1 className="font-display text-xl font-extrabold text-foreground">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground">
           {paso === 1 ? "Recuperar contraseña" : "Revisa tu correo"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -84,9 +84,9 @@ export function RecuperarForm() {
               {estadoSolicitud.error}
             </p>
           )}
-          <Button type="submit" disabled={enviandoSolicitud} className="w-full">
+          <button type="submit" disabled={enviandoSolicitud} className="btn-acceso">
             {enviandoSolicitud ? "Enviando..." : "Enviarme el código"}
-          </Button>
+          </button>
         </form>
       ) : (
         <form action={cambiar} className="space-y-4">
@@ -115,9 +115,9 @@ export function RecuperarForm() {
           {estadoCambio.error && (
             <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{estadoCambio.error}</p>
           )}
-          <Button type="submit" disabled={cambiando} className="w-full">
+          <button type="submit" disabled={cambiando} className="btn-acceso">
             {cambiando ? "Guardando..." : "Cambiar mi contraseña"}
-          </Button>
+          </button>
           <button
             type="button"
             onClick={() => setPaso(1)}

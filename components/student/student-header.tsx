@@ -67,10 +67,10 @@ export function StudentHeader({
           <NotificationBell notifications={notifications} unreadCount={unreadCount} />
 
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2.5 outline-none transition-colors hover:bg-muted">
-              <Avatar>
-                {avatarUrl && <AvatarImage src={avatarUrl} alt={userName} />}
-                <AvatarFallback className="bg-gradient-to-br from-[var(--accent)] to-[color-mix(in_oklch,var(--accent)_60%,var(--navy))] text-white">{initials(userName)}</AvatarFallback>
+            <DropdownMenuTrigger className="pildora-usuario ml-1">
+              <Avatar className="shrink-0 rounded-lg after:rounded-lg">
+                {avatarUrl && <AvatarImage src={avatarUrl} alt={userName} className="rounded-lg" />}
+                <AvatarFallback className="rounded-lg bg-gradient-to-br from-[var(--accent)] to-[color-mix(in_oklch,var(--accent)_60%,var(--navy))] text-white">{initials(userName)}</AvatarFallback>
               </Avatar>
               <div className="hidden text-left sm:block">
                 <p className="text-sm font-medium leading-tight text-foreground">{userName}</p>

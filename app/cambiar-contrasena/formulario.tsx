@@ -3,7 +3,6 @@
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound, Loader2, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cambiarContrasenaObligatoriaAction, type EstadoCambio } from "./actions";
@@ -25,8 +24,8 @@ export function FormularioCambioObligatorio({ destino }: { destino: string }) {
   return (
     <div className="w-full max-w-md space-y-6">
       <div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-          <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+        <span className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1 text-[13px] font-semibold text-[color-mix(in_oklch,var(--primary)_62%,var(--foreground))]">
+          <ShieldCheck className="h-4 w-4" aria-hidden="true" />
           Primer ingreso
         </span>
         <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-foreground">
@@ -48,7 +47,7 @@ export function FormularioCambioObligatorio({ destino }: { destino: string }) {
               name="currentPassword"
               type="password"
               autoComplete="current-password"
-              className="pl-9"
+              className="pl-10"
               required
               autoFocus
             />
@@ -79,10 +78,10 @@ export function FormularioCambioObligatorio({ destino }: { destino: string }) {
           </p>
         )}
 
-        <Button type="submit" disabled={pendiente} className="w-full gap-2">
+        <button type="submit" disabled={pendiente} className="btn-acceso">
           {pendiente && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {pendiente ? "Guardando…" : "Guardar y continuar"}
-        </Button>
+        </button>
       </form>
     </div>
   );

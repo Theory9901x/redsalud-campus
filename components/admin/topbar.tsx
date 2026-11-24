@@ -54,16 +54,19 @@ export function AdminTopbar({
       <BuscadorGlobal />
 
       {breadcrumb && (
-        <p className="hidden min-w-0 flex-1 truncate text-sm font-medium text-muted-foreground xl:block">{breadcrumb}</p>
+        <p className="hidden min-w-0 flex-1 items-center gap-2 truncate text-sm font-semibold text-foreground/80 xl:flex">
+          <span className="h-4 w-[3px] shrink-0 rounded-full bg-[var(--accent)]" aria-hidden="true" />
+          <span className="truncate">{breadcrumb}</span>
+        </p>
       )}
 
       <div className="flex flex-1 items-center justify-end gap-2.5">
         <ThemeToggle />
         {/* Bloque de usuario como píldora clay clickeable con menú. */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="surface-clay flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 outline-none transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-primary">
-            <Avatar className="shrink-0">
-              <AvatarFallback className="bg-gradient-to-br from-[var(--accent)] to-[color-mix(in_oklch,var(--accent)_60%,var(--navy))] text-white">
+          <DropdownMenuTrigger className="pildora-usuario">
+            <Avatar className="shrink-0 rounded-lg after:rounded-lg">
+              <AvatarFallback className="rounded-lg bg-gradient-to-br from-[var(--accent)] to-[color-mix(in_oklch,var(--accent)_60%,var(--navy))] text-white">
                 {initials(userName)}
               </AvatarFallback>
             </Avatar>

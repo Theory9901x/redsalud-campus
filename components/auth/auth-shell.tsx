@@ -1,5 +1,4 @@
-import { Activity, Award, Layers, LineChart, QrCode, Sparkles } from "lucide-react";
-import { ConstellationPattern } from "@/components/brand/dot-pattern";
+import { Activity, Award, Layers, LineChart, Lock, QrCode } from "lucide-react";
 import { ThemeToggle } from "@/components/brand/theme-toggle";
 
 const FEATURES = [
@@ -9,30 +8,11 @@ const FEATURES = [
   { icon: QrCode, label: "Validación con QR", description: "Verifica la autenticidad de cada constancia." },
 ];
 
-/**
- * Degradado del panel institucional: navy solo en la esquina superior (para
- * que el logo/encabezado tengan contraste) hacia el azul claro real de la
- * entidad (--primary) en el resto — no un navy casi negro, es "el azul de la
- * entidad" el que debe dominar.
- */
-const PANEL_GRADIENT = {
-  backgroundImage:
-    "linear-gradient(150deg in oklch, var(--navy) 0%, color-mix(in oklch, var(--primary) 55%, var(--navy)) 38%, color-mix(in oklch, var(--primary) 92%, white) 100%)",
-};
-
-function BrandMark({
-  logoUrl,
-  size,
-  tone = "light",
-}: {
-  logoUrl?: string | null;
-  size: "sm" | "lg";
-  tone?: "light" | "dark";
-}) {
+function BrandMark({ logoUrl, size }: { logoUrl?: string | null; size: "sm" | "lg" }) {
   return (
     <div className="flex items-center gap-3">
       {logoUrl ? (
-        <span className="flex shrink-0 items-center justify-center rounded-xl bg-white/95 p-1.5 shadow-md">
+        <span className="flex shrink-0 items-center justify-center rounded-xl bg-white p-1.5 shadow-[0_0_0_1px_color-mix(in_oklch,white_35%,transparent),0_10px_24px_-8px_black]">
           {/* eslint-disable-next-line @next/next/no-img-element -- logo institucional dinámico, no un asset estático conocido en build. */}
           <img
             src={logoUrl}
@@ -41,19 +21,55 @@ function BrandMark({
           />
         </span>
       ) : (
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/20">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/25">
           <Activity className={size === "lg" ? "h-6 w-6" : "h-5 w-5"} strokeWidth={2.5} />
         </span>
       )}
-      <span
-        className={`font-display font-extrabold ${size === "lg" ? "text-2xl" : "text-lg"} ${tone === "dark" ? "text-foreground" : "text-white"}`}
-      >
-        RedSalud <span className={tone === "dark" ? "text-primary" : "text-white/85"}>Te Forma</span>
-      </span>
+      <div className="leading-tight">
+        <p className={`font-display font-extrabold text-white ${size === "lg" ? "text-2xl" : "text-lg"}`}>
+          RedSalud <span className="text-white/80">Te Forma</span>
+        </p>
+        {size === "lg" && <p className="mt-0.5 text-sm text-white/70">Campus virtual · Red Salud Casanare E.S.E.</p>}
+      </div>
     </div>
   );
 }
 
+/**
+ * Trazo ECG que cruza el panel de lado a lado: una línea base tenue y un
+ * pulso verde que la recorre en bucle (ver .auth-ecg en globals.css). Es la
+ * firma de salud de la pantalla; no es un ícono de esquina.
+ */
+function TrazoEcg({ className = "" }: { className?: string }) {
+  const d =
+    "M0,60 H210 L232,60 L246,22 L262,98 L278,8 L294,60 L330,60 Q352,36 374,60 H640 L662,60 L676,22 L692,98 L708,8 L724,60 L760,60 Q782,36 804,60 H1200";
+  return (
+    <svg
+      className={`auth-ecg pointer-events-none ${className}`}
+      viewBox="0 0 1200 110"
+      preserveAspectRatio="none"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path className="auth-ecg-base" d={d} strokeWidth="1.5" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+      <path
+        className="auth-ecg-pulso"
+        d={d}
+        pathLength={1000}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Marco de las pantallas de acceso (login, registro, recuperar, cambio de
+ * clave). A sangre: el panel institucional ocupa media pantalla de alto
+ * completo, sin tarjeta flotante ni esquinas acolchadas.
+ */
 export function AuthShell({
   children,
   logoUrl,
@@ -62,91 +78,98 @@ export function AuthShell({
   logoUrl?: string | null;
 }) {
   return (
-    <div className="page-canvas relative flex min-h-screen items-center justify-center overflow-hidden p-4 sm:p-8">
-      {/* El selector de tema vive aquí arriba y no en la tarjeta: quien entra
-          de noche debe poder cambiarlo ANTES de iniciar sesión, no después. */}
-      <div className="absolute right-4 top-4 z-20 sm:right-8 sm:top-8">
-        <ThemeToggle />
-      </div>
-      {/* Resplandor muy sutil detrás de la tarjeta, para que no flote sobre un gris plano. */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,color-mix(in_oklch,var(--primary)_10%,transparent),transparent_55%)]" />
+    <div className="relative grid min-h-screen grid-cols-1 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)]">
+      {/* Panel institucional (escritorio). Fijo al alto de la ventana: en el
+          registro, que es largo, el formulario se desplaza y el panel no. */}
+      <aside className="auth-panel relative hidden overflow-hidden text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-between lg:p-12 xl:p-16">
+        <div className="auth-anillos" aria-hidden="true" />
 
-      <div className="relative grid w-full max-w-[88rem] grid-cols-1 overflow-hidden rounded-[2.5rem] border shadow-[var(--shadow-3)] [border-color:var(--clay-border)] lg:grid-cols-2">
-        {/* Panel institucional (oculto en móvil, ver encabezado compacto más abajo) */}
-        <div
-          className="relative hidden flex-col justify-between overflow-hidden p-12 text-white lg:flex xl:p-16"
-          style={PANEL_GRADIENT}
-        >
-          <ConstellationPattern className="text-white/20" />
-          {/* Capas de resplandor: varias tonalidades de azul claro para que el
-              panel se sienta "jugado" y no un degradado plano de dos puntos. */}
-          <div className="pointer-events-none absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-white/25 blur-3xl" />
-          <div className="pointer-events-none absolute -left-20 top-1/4 h-72 w-72 rounded-full bg-success/20 blur-3xl" />
-          <div className="pointer-events-none absolute right-1/4 top-0 h-56 w-56 rounded-full bg-white/15 blur-3xl" />
+        <div className="relative z-10 flex items-start justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
+          <BrandMark logoUrl={logoUrl} size="lg" />
+          <span className="hidden items-center gap-2 rounded-lg border border-white/20 bg-[color-mix(in_oklch,var(--navy)_45%,transparent)] px-3 py-1.5 text-sm font-medium text-white/90 xl:inline-flex">
+            <span className="auth-latido" aria-hidden="true" />
+            Plataforma en línea
+          </span>
+        </div>
 
-          <div className="relative z-10 animate-in fade-in slide-in-from-top-4 duration-700">
-            <BrandMark logoUrl={logoUrl} size="lg" />
-          </div>
+        <div className="relative z-10 animate-in fade-in slide-in-from-left-8 duration-700">
+          <p className="flex items-center gap-3 text-sm font-semibold text-white/85">
+            <span className="h-px w-10 bg-success" aria-hidden="true" />
+            Plataforma institucional de formación
+          </p>
+          <h1 className="mt-5 font-display text-5xl font-extrabold leading-[1.02] tracking-tight xl:text-[4.25rem]">
+            Toda tu formación.
+            <br />
+            <span className="text-success">En un solo lugar.</span>
+          </h1>
+          <p className="mt-5 max-w-md text-base leading-relaxed text-white/85">
+            Cursos de inducción, reinducción y capacitación para el fortalecimiento del talento humano
+            de Red Salud Casanare E.S.E.
+          </p>
+          {/* El trazo se sale del padding a propósito: va de borde a borde. */}
+          <TrazoEcg className="-mx-12 mt-8 h-20 w-[calc(100%+6rem)] xl:-mx-16 xl:w-[calc(100%+8rem)]" />
+        </div>
 
-          <div className="relative z-10 mt-12 max-w-lg animate-in fade-in slide-in-from-left-8 duration-700">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90 backdrop-blur-sm">
-              <Sparkles className="h-3.5 w-3.5 text-white" />
-              Plataforma institucional
-            </span>
-            <h1 className="mt-6 font-display text-5xl font-extrabold leading-[1.05] tracking-tight xl:text-6xl">
-              Toda tu formación.
-              <br />
-              <span className="text-success">En un solo lugar.</span>
-            </h1>
-            <p className="mt-5 max-w-md text-base leading-relaxed text-white/85">
-              Cursos de inducción, reinducción y capacitación para el fortalecimiento del talento humano
-              de Red Salud Casanare E.S.E.
-            </p>
-          </div>
-
-          {/* Grilla de características, con animación de entrada escalonada y hover interactivo. */}
-          <div className="relative z-10 mt-12 grid grid-cols-2 gap-4">
+        <div className="relative z-10">
+          {/* Retícula de características: un solo bloque con divisiones finas,
+              no cuatro tarjetas sueltas. */}
+          <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-white/20 backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-700">
             {FEATURES.map(({ icon: Icon, label, description }, index) => (
               <div
                 key={label}
-                className="animate-in fade-in slide-in-from-bottom-4 duration-700"
-                style={{ animationDelay: `${250 + index * 120}ms` }}
+                className={`auth-celda flex items-start gap-3.5 p-5 ${index % 2 === 0 ? "border-r border-white/15" : ""} ${index < 2 ? "border-b border-white/15" : ""}`}
               >
-                <div className="group h-full rounded-2xl border border-white/15 bg-white/[0.08] p-5 shadow-lg backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.14]">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white transition-transform duration-300 group-hover:scale-110">
-                    <Icon className="h-[18px] w-[18px]" strokeWidth={2.25} />
-                  </span>
-                  <p className="mt-3 text-sm font-semibold text-white">{label}</p>
-                  <p className="mt-0.5 text-xs leading-snug text-white/70">{description}</p>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white">
+                  <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-white">{label}</p>
+                  <p className="mt-0.5 text-[13px] leading-snug text-white/80">{description}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          <p className="relative z-10 mt-10 text-xs text-white/60">
-            Plataforma oficial de capacitación · Red Salud Casanare E.S.E.
+          <p className="mt-6 flex flex-wrap items-center justify-between gap-2 text-[13px] text-white/85">
+            <span>Plataforma oficial de capacitación · Red Salud Casanare E.S.E.</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+              Conexión cifrada
+            </span>
           </p>
         </div>
+      </aside>
 
-        {/* Encabezado compacto institucional, solo en móvil/tablet */}
-        <div className="relative overflow-hidden px-6 py-8 text-white lg:hidden" style={PANEL_GRADIENT}>
-          <ConstellationPattern className="text-white/20" />
-          <div className="pointer-events-none absolute -bottom-16 -right-16 h-56 w-56 rounded-full bg-white/25 blur-3xl" />
-          <div className="relative z-10">
-            <BrandMark logoUrl={logoUrl} size="sm" />
-          </div>
-          <h1 className="relative z-10 mt-4 font-display text-2xl font-extrabold leading-snug">
-            Toda tu formación, en un solo lugar.
-          </h1>
-          <p className="relative z-10 mt-1 text-xs text-white/80">
-            Inducción, reinducción y capacitación del talento humano.
-          </p>
+      {/* Encabezado compacto institucional, solo en móvil/tablet */}
+      <div className="auth-panel relative overflow-hidden px-6 pb-0 pt-7 text-white lg:hidden">
+        <div className="relative z-10">
+          <BrandMark logoUrl={logoUrl} size="sm" />
         </div>
-
-        <div className="relative flex items-center justify-center bg-card px-6 py-14 sm:px-14 xl:px-16">
-          <div className="relative flex w-full justify-center">{children}</div>
-        </div>
+        <h1 className="relative z-10 mt-5 font-display text-[1.7rem] font-extrabold leading-tight">
+          Toda tu formación. <span className="text-success">En un solo lugar.</span>
+        </h1>
+        <p className="relative z-10 mt-1.5 text-sm text-white/85">
+          Inducción, reinducción y capacitación del talento humano.
+        </p>
+        <TrazoEcg className="-mx-6 mt-3 h-12 w-[calc(100%+3rem)]" />
       </div>
+
+      <main className="auth-lado relative flex flex-col px-6 py-10 sm:px-12 lg:min-h-screen lg:py-8">
+        {/* El selector de tema vive aquí arriba y no en el formulario: quien
+            entra de noche debe poder cambiarlo ANTES de iniciar sesión. */}
+        <div className="flex justify-end">
+          <ThemeToggle />
+        </div>
+        <div className="flex flex-1 items-center justify-center py-8">
+          <div className="relative w-full max-w-[33rem] px-6 py-8 sm:px-9 sm:py-10">
+            <span className="auth-esquina" data-pos="tl" aria-hidden="true" />
+            <span className="auth-esquina" data-pos="tr" aria-hidden="true" />
+            <span className="auth-esquina" data-pos="bl" aria-hidden="true" />
+            <span className="auth-esquina" data-pos="br" aria-hidden="true" />
+            <div className="relative flex w-full justify-center">{children}</div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

@@ -3,8 +3,6 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Activity } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { registerAction, type RegisterState } from "./actions";
@@ -26,18 +24,13 @@ export function RegisterForm({ municipios }: { municipios: { id: string; nombre:
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="surface relative w-full max-w-md overflow-hidden rounded-3xl p-8"
+      className="relative w-full"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(43,166,222,0.10),transparent_55%)]" />
-
+      {/* Sin tarjeta ni marca propias: el marco de acceso ya trae el encuadre
+          y el encabezado institucional en todos los tamaños. */}
       <div className="relative space-y-6">
-      <div className="flex items-center gap-2 lg:hidden">
-        <Activity className="h-6 w-6 text-primary" strokeWidth={2.5} />
-        <span className="font-display text-lg font-extrabold text-foreground">RedSalud Te Forma</span>
-      </div>
-
       <div>
-        <h1 className="font-display text-2xl font-extrabold tracking-tight text-foreground">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground">
           Crea tu cuenta
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -150,13 +143,9 @@ export function RegisterForm({ municipios }: { municipios: { id: string; nombre:
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>
         )}
 
-        <Button
-          type="submit"
-          className="w-full bg-gradient-to-r from-primary to-teal-400 text-white transition-transform hover:opacity-90 active:scale-[0.98]"
-          disabled={pending}
-        >
+        <button type="submit" className="btn-acceso" disabled={pending}>
           {pending ? "Creando cuenta..." : "Crear cuenta"}
-        </Button>
+        </button>
       </form>
 
       <p className="text-center text-sm text-muted-foreground">

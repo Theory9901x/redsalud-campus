@@ -98,7 +98,7 @@
   --chart-3: var(--data-3);
   --chart-4: var(--data-4);
   --chart-5: var(--data-5);
-  --radius: 0.75rem;
+  --radius: 0.625rem;
   /* Le dice al navegador de qué tema es la página, para que la barra de
      scroll, los desplegables nativos y los campos de fecha no salgan claros
      en una interfaz oscura. */
@@ -228,15 +228,20 @@
  * una losa luminosa en modo oscuro.
  */
 :root {
-  --radius-surface: 24px;
-  --radius-card: 20px;
-  --radius-chip: 12px;
+  /* Radios contenidos: la interfaz se lee precisa (instrumento clinico), no
+     acolchada. Bajar estos tres valores afila toda la plataforma a la vez. */
+  --radius-surface: 18px;
+  --radius-card: 14px;
+  --radius-chip: 9px;
 
   /* Color con el que se tine TODA sombra proyectada. En claro es el navy de
      marca (una sombra fria, no gris sucio); en oscuro, negro puro. */
   --shade: var(--navy);
   /* Color que "ilumina": brillos internos, bordes superiores, vidrio. */
   --tint: oklch(100% 0 0);
+
+  /* Linea de la malla tecnica del lienzo (ver .page-canvas). */
+  --canvas-grid-line: color-mix(in oklch, var(--shade) 4.5%, transparent);
 
   --shadow-0: 0 1px 2px 0 color-mix(in oklch, var(--shade) 5%, transparent);
   --shadow-1:
@@ -298,6 +303,7 @@
 .dark {
   --shade: oklch(0% 0 0);
   --tint: oklch(86% 0.025 248);
+  --canvas-grid-line: color-mix(in oklch, var(--tint) 4%, transparent);
 
   --clay-border: color-mix(in oklch, var(--tint) 8%, transparent);
   --shadow-clay:
@@ -410,6 +416,20 @@
    */
   .header-glass {
     @apply bg-card border-b border-border transition-[background-color,box-shadow] duration-300;
+  }
+  /* Filo luminoso bajo la barra: el acento del rol, apagándose a los lados. */
+  .header-glass::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 -1px 0;
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(
+      to right in oklch,
+      color-mix(in oklch, var(--primary) 70%, transparent),
+      color-mix(in oklch, var(--success) 45%, transparent) 38%,
+      transparent 78%
+    );
   }
   .header-glass[data-scrolled="true"] {
     background-color: color-mix(in oklch, var(--card) 72%, transparent);
@@ -605,15 +625,52 @@
    * nivel 0 = lienzo de página (frío, nunca blanco puro), nivel 1 = panel de
    * sección elevado, nivel 2 = tarjetas dentro de la sección (.surface).
    */
+  /* Encima del degradado va una malla técnica muy tenue (36 px): es lo que le
+     quita lo "nube" al lienzo y lo vuelve mesa de trabajo. Los tamaños van uno
+     por capa -dos de malla, cuatro del degradado- porque la lista de
+     background-size se repite en ciclo si queda corta. */
   .page-canvas {
     background-color: var(--canvas-base);
-    background-image: var(--canvas-page);
+    background-image:
+      linear-gradient(to right, var(--canvas-grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--canvas-grid-line) 1px, transparent 1px),
+      var(--canvas-page);
+    background-size: 36px 36px, 36px 36px, auto, auto, auto, auto;
   }
 
   .surface-panel {
-    @apply relative overflow-hidden rounded-[22px] border border-border bg-card;
+    @apply relative overflow-hidden border border-border bg-card;
+    border-radius: var(--radius-surface);
     background-image: var(--panel-gradient);
     box-shadow: var(--shadow-3);
+  }
+
+  /*
+   * Encabezado de página de gestión: barra de acento a la izquierda del
+   * título y una malla que se apaga desde la esquina derecha. Lleva el acento
+   * del rol, así que cada área lo firma con su color sin tocar el componente.
+   */
+  .encabezado-tech::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: min(46%, 420px);
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, color-mix(in oklch, var(--primary) 16%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--primary) 16%, transparent) 1px, transparent 1px);
+    background-size: 22px 22px;
+    mask-image: linear-gradient(to left, black, transparent);
+    -webkit-mask-image: linear-gradient(to left, black, transparent);
+  }
+  .encabezado-tech > * { position: relative; z-index: 1; }
+  .encabezado-barra {
+    width: 4px;
+    align-self: stretch;
+    min-height: 2.5rem;
+    border-radius: 2px;
+    background: linear-gradient(to bottom in oklch, var(--primary), var(--success));
+    box-shadow: 0 0 14px color-mix(in oklch, var(--primary) 55%, transparent);
   }
 
   /* Tarjetas-métrica: elevación base + glow de acento en hover cuando son clicables. */
@@ -1106,22 +1163,293 @@
  * en un azul medio (no llega al azul claro del login) porque aquí el texto
  * de navegación es blanco y debe seguir legible de arriba a abajo.
  */
+/*
+ * Rediseño "consola clínica": más profunda arriba (navy casi tinta) y con una
+ * malla técnica encima; el azul institucional sigue abriéndose hacia abajo,
+ * pero ya no es un degradado liso. El canto derecho es una línea de luz del
+ * acento del rol, que separa la barra del lienzo sin una sombra blanda.
+ */
 .sidebar-brand {
-  background-image: linear-gradient(
-    170deg in oklch,
-    var(--navy) 0%,
-    color-mix(in oklch, var(--primary) 26%, var(--navy)) 45%,
-    color-mix(in oklch, var(--primary) 44%, var(--navy)) 100%
-  );
+  background-color: var(--navy);
+  background-image:
+    linear-gradient(to right, color-mix(in oklch, white 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, white 3.5%, transparent) 1px, transparent 1px),
+    radial-gradient(circle 320px at 100% 100%, color-mix(in oklch, var(--primary) 34%, transparent), transparent 70%),
+    linear-gradient(
+      175deg in oklch,
+      color-mix(in oklch, var(--navy) 72%, black) 0%,
+      var(--navy) 42%,
+      color-mix(in oklch, var(--primary) 30%, var(--navy)) 100%
+    );
+  background-size: 32px 32px, 32px 32px, auto, auto;
 }
 .sidebar-brand::after {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: 0 0 0 auto;
+  width: 1px;
   pointer-events: none;
+  background: linear-gradient(
+    to bottom in oklch,
+    transparent,
+    color-mix(in oklch, var(--accent) 75%, transparent) 22%,
+    color-mix(in oklch, var(--primary) 55%, transparent) 70%,
+    transparent
+  );
+}
+/* Ítem de navegación. Activo: bloque con riel de luz a la izquierda, no una
+   píldora con halo; inactivo: solo ícono y texto, sin azulejo de fondo. */
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 9px;
+  padding: 0.3rem 0.65rem 0.3rem 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: color-mix(in oklch, var(--sidebar-foreground) 78%, transparent);
+  transition: background-color 160ms var(--ease-signature), color 160ms var(--ease-signature);
+}
+.nav-item:hover {
+  color: white;
+  background-color: color-mix(in oklch, white 7%, transparent);
+}
+.nav-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.nav-item[aria-current="page"] {
+  color: white;
+  font-weight: 600;
+  background-image: linear-gradient(
+    90deg in oklch,
+    color-mix(in oklch, var(--accent) 34%, transparent),
+    color-mix(in oklch, var(--accent) 7%, transparent)
+  );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--accent) 38%, transparent),
+    0 6px 18px -8px color-mix(in oklch, var(--accent) 70%, transparent);
+}
+.nav-item[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: -0.75rem;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background-color: var(--accent);
+  box-shadow: 0 0 12px color-mix(in oklch, var(--accent) 90%, transparent);
+}
+.nav-item-icono {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  border-radius: 7px;
+  color: color-mix(in oklch, var(--sidebar-foreground) 62%, transparent);
+  transition: color 160ms var(--ease-signature), background-color 160ms var(--ease-signature);
+}
+.nav-item:hover .nav-item-icono { color: white; }
+.nav-item[aria-current="page"] .nav-item-icono {
+  color: white;
+  background-image: linear-gradient(
+    135deg in oklch,
+    var(--accent),
+    color-mix(in oklch, var(--accent) 55%, var(--navy))
+  );
+  box-shadow: inset 0 1px 0 0 color-mix(in oklch, white 30%, transparent);
+}
+
+/* Bloque de usuario de la barra superior: placa con borde fino, no píldora. */
+.pildora-usuario {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background-color: color-mix(in oklch, var(--card) 70%, transparent);
+  padding: 0.25rem 0.625rem 0.25rem 0.25rem;
+  outline: none;
+  transition: border-color 160ms var(--ease-signature), box-shadow 160ms var(--ease-signature);
+}
+.pildora-usuario:hover {
+  border-color: color-mix(in oklch, var(--accent) 55%, transparent);
+  box-shadow: 0 6px 18px -10px color-mix(in oklch, var(--accent) 80%, transparent);
+}
+.pildora-usuario:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/*
+ * ---- Pantallas de acceso (login, registro, recuperar) ---------------------
+ *
+ * Panel institucional a sangre: navy profundo arriba, abriéndose al azul de
+ * la entidad -que sigue dominando- pero saturado, sin lavarlo con blanco.
+ * Encima, malla de 64 px con una cruz en cada cruce (la cruz es el guiño de
+ * salud; la malla, el de tecnología). Lleva blanco literal porque el fondo es
+ * el mismo en los dos temas (ver DESIGN-SYSTEM.md).
+ */
+.auth-panel {
+  background-color: var(--navy);
   background-image:
-    radial-gradient(circle 240px at 15% 8%, color-mix(in oklch, white 12%, transparent), transparent 70%),
-    radial-gradient(circle 300px at 90% 100%, color-mix(in oklch, var(--primary) 30%, transparent), transparent 70%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cpath d='M0 5V0h5M0 59v5h5M64 5V0h-5M64 59v5h-5' fill='none' stroke='white' stroke-opacity='.26' stroke-width='1.4'/%3E%3C/svg%3E"),
+    linear-gradient(to right, color-mix(in oklch, white 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, white 5%, transparent) 1px, transparent 1px),
+    radial-gradient(circle 640px at 96% 104%, color-mix(in oklch, var(--primary) 92%, transparent), transparent 68%),
+    radial-gradient(circle 420px at 6% 46%, color-mix(in oklch, var(--success) 16%, transparent), transparent 70%),
+    linear-gradient(
+      158deg in oklch,
+      color-mix(in oklch, var(--navy) 70%, black) 0%,
+      color-mix(in oklch, var(--primary) 22%, var(--navy)) 34%,
+      color-mix(in oklch, var(--primary) 52%, var(--navy)) 72%,
+      color-mix(in oklch, var(--primary) 70%, var(--navy)) 100%
+    );
+  background-size: 64px 64px, 64px 64px, 64px 64px, auto, auto, auto;
+}
+/* Anillos concéntricos anclados a la esquina inferior derecha. */
+.auth-anillos {
+  position: absolute;
+  right: -260px;
+  bottom: -260px;
+  width: 760px;
+  height: 760px;
+  border-radius: 50%;
+  pointer-events: none;
+  background-image: repeating-radial-gradient(
+    circle at center,
+    transparent 0 54px,
+    color-mix(in oklch, white 13%, transparent) 54px 55px
+  );
+  mask-image: radial-gradient(circle at center, black 18%, transparent 70%);
+  -webkit-mask-image: radial-gradient(circle at center, black 18%, transparent 70%);
+}
+/* Trazo ECG: una línea base tenue y un pulso que la recorre sin parar. El
+   path lleva pathLength=1000, así que los guiones no dependen del ancho. */
+.auth-ecg .auth-ecg-base {
+  stroke: color-mix(in oklch, white 26%, transparent);
+}
+.auth-ecg .auth-ecg-pulso {
+  stroke: var(--success);
+  stroke-dasharray: 90 910;
+  stroke-dashoffset: 90;
+  filter: drop-shadow(0 0 6px color-mix(in oklch, var(--success) 90%, transparent));
+  animation: auth-ecg-recorrer 5.5s linear infinite;
+}
+@keyframes auth-ecg-recorrer {
+  to { stroke-dashoffset: -910; }
+}
+/* Punto de estado "en línea". */
+.auth-latido {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--success);
+  box-shadow: 0 0 0 0 color-mix(in oklch, var(--success) 70%, transparent);
+  animation: auth-latido 2s ease-out infinite;
+}
+@keyframes auth-latido {
+  70% { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+/* Celda de la retícula de características: tinte navy para que el texto
+   blanco pequeño llegue a AA también sobre la zona azul clara del panel. */
+.auth-celda {
+  background-color: color-mix(in oklch, var(--navy) 46%, transparent);
+  transition: background-color 200ms var(--ease-signature);
+}
+.auth-celda:hover {
+  background-color: color-mix(in oklch, var(--navy) 62%, transparent);
+}
+/* Lado del formulario: superficie del tema con un resplandor frío arriba. */
+.auth-lado {
+  background-color: var(--card);
+  background-image:
+    radial-gradient(circle 520px at 100% 0%, color-mix(in oklch, var(--primary) 9%, transparent), transparent 70%),
+    radial-gradient(circle 420px at 0% 100%, color-mix(in oklch, var(--success) 6%, transparent), transparent 70%);
+}
+/* Esquinas de encuadre del formulario (cuatro <span>, una por esquina). */
+.auth-esquina {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  border-color: color-mix(in oklch, var(--primary) 70%, transparent);
+  border-style: solid;
+  border-width: 0;
+}
+.auth-esquina[data-pos="tl"] { top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; border-top-left-radius: 6px; }
+.auth-esquina[data-pos="tr"] { top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; border-top-right-radius: 6px; }
+.auth-esquina[data-pos="bl"] { bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; border-bottom-left-radius: 6px; }
+.auth-esquina[data-pos="br"] { bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; border-bottom-right-radius: 6px; }
+
+/* Campo de acceso: más cuerpo que el input estándar y foco de marca nítido. */
+.auth-campo,
+.auth-lado form :is(input[data-slot="input"], select) {
+  height: 3rem;
+  border-radius: 10px;
+  border-color: color-mix(in oklch, var(--foreground) 16%, transparent);
+  background-color: color-mix(in oklch, var(--muted) 55%, transparent);
+  font-size: 0.9375rem;
+  transition: border-color 160ms var(--ease-signature), box-shadow 160ms var(--ease-signature), background-color 160ms var(--ease-signature);
+}
+.auth-campo:focus-visible,
+.auth-lado form :is(input[data-slot="input"], select):focus-visible {
+  border-color: var(--primary);
+  background-color: var(--card);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 22%, transparent);
+}
+/* Botón principal de acceso: azul profundo -> azul institucional, con filo
+   verde abajo. El texto blanco queda sobre la zona media (AA), no sobre el
+   azul claro puro, que no llega a contraste. */
+.btn-acceso {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: white;
+  background-image: linear-gradient(
+    100deg in oklch,
+    color-mix(in oklch, var(--primary) 30%, var(--navy)),
+    color-mix(in oklch, var(--primary) 62%, var(--navy))
+  );
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklch, white 22%, transparent),
+    0 12px 28px -10px color-mix(in oklch, var(--primary) 70%, transparent);
+  transition: transform 160ms var(--ease-signature), box-shadow 160ms var(--ease-signature), filter 160ms var(--ease-signature);
+}
+.btn-acceso::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  background: linear-gradient(to right in oklch, var(--primary), var(--success));
+}
+.btn-acceso:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklch, white 22%, transparent),
+    0 16px 34px -10px color-mix(in oklch, var(--primary) 85%, transparent);
+}
+.btn-acceso:active { transform: translateY(0) scale(0.99); }
+.btn-acceso:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.btn-acceso:disabled { pointer-events: none; opacity: 0.6; }
+@media (prefers-reduced-motion: reduce) {
+  .auth-ecg .auth-ecg-pulso { animation: none; stroke-dasharray: none; stroke-dashoffset: 0; opacity: 0.55; }
+  .auth-latido { animation: none; }
+  .btn-acceso:hover { transform: none; }
 }
 .accent-tutor { --accent: var(--success); }
 .accent-admin { --accent: oklch(62% 0.19 295); } /* violeta institucional */

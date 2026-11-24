@@ -45,9 +45,9 @@ de tema, no de que sobre un caso especial.
 
 | Token | Valor | Uso |
 |---|---|---|
-| `--radius-surface` | 24px | Superficies grandes (paneles, heros, glass) |
-| `--radius-card` | 20px | Tarjetas e ítems clay |
-| `--radius-chip` | 12px | Chips de metadato |
+| `--radius-surface` | 18px | Superficies grandes (paneles, heros, glass) |
+| `--radius-card` | 14px | Tarjetas e ítems clay |
+| `--radius-chip` | 9px | Chips de metadato |
 | (Tailwind `rounded-full`) | — | Badges y píldoras |
 | `--shadow-0` … `--shadow-3` | — | Elevación 0 (plano) → 3 (panel destacado) |
 | `--shadow-clay` / `--shadow-clay-pressed` | — | Doble sombra clay normal / presionada |
@@ -71,6 +71,24 @@ misma receta de sombra. Cambiar la escala cambia toda la aplicación de una vez.
 | `.metric-card` (+ `-primary/-success/-warning/-destructive`) | 2 | KPIs con glow de acento en hover |
 | `.chip-glass` | 3 | Píldora de metadato sobre fondos oscuros (ícono lucide + texto) |
 | `.header-glass` | — | Topbar: sólido arriba, vidrio al hacer scroll (`data-scrolled`) |
+
+## Carácter: preciso, no acolchado
+
+La interfaz se lee como instrumento clínico: radios contenidos, líneas finas y malla técnica,
+con los mismos colores de marca. Las piezas que lo sostienen:
+
+| Clase | Dónde | Qué hace |
+|---|---|---|
+| `.page-canvas` | Lienzo | Lleva encima una malla de 36 px (`--canvas-grid-line`, resuelto por tema) |
+| `.sidebar-brand` + `.nav-item` | Barra lateral | Navy profundo con malla y canto de luz del acento; el ítem activo sale de `aria-current="page"` (riel de luz + ícono relleno), no de clases condicionales |
+| `.header-glass::after` | Barra superior | Filo luminoso azul → verde bajo la barra |
+| `.pildora-usuario` | Barra superior | Bloque de usuario como placa de borde fino |
+| `.encabezado-tech` + `.encabezado-barra` | `AdminPageHeader` | Barra de acento junto al título y malla que se apaga a la derecha |
+| `.auth-panel`, `.auth-ecg`, `.auth-anillos`, `.auth-celda` | Acceso | Panel institucional a sangre: malla con cruces, trazo ECG en bucle, anillos |
+| `.auth-lado`, `.auth-esquina`, `.auth-campo`, `.btn-acceso` | Acceso | Lado del formulario: encuadre de esquinas, campo de 3 rem y botón principal (blanco sobre azul medio, AA) |
+
+No volver a píldoras `rounded-full` ni a tarjetas flotantes con sombras blandas en el chrome
+(acceso, barras): la jerarquía la dan la línea y el contraste, no el relleno.
 
 ## Acentos y detalle
 

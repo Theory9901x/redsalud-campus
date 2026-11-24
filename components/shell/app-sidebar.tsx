@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Activity, ShieldCheck, X, type LucideIcon } from "lucide-react";
@@ -83,36 +82,40 @@ export function AppSidebar({
       <aside
         className={cn(
           claseAcento,
-          "sidebar-brand fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col overflow-hidden border-r border-white/10 text-sidebar-foreground transition-transform duration-200 lg:sticky lg:top-0 lg:translate-x-0",
+          "sidebar-brand fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col overflow-hidden text-sidebar-foreground transition-transform duration-200 lg:sticky lg:top-0 lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Resplandor del acento del rol detrás del logo: es lo que le da
-            volumen al panel y lo que distingue un área de otra de un vistazo. */}
-        <div className="pointer-events-none absolute -left-12 -top-20 z-[1] h-64 w-64 rounded-full bg-[var(--accent)] opacity-25 blur-[80px]" />
-        <div className="pointer-events-none absolute -bottom-16 -right-12 z-[1] h-52 w-52 rounded-full bg-[var(--accent)] opacity-10 blur-[80px]" />
+        {/* Resplandor del acento del rol detrás del logo: es lo que distingue
+            un área de otra de un vistazo. */}
+        <div className="pointer-events-none absolute -left-16 -top-24 z-[1] h-64 w-64 rounded-full bg-[var(--accent)] opacity-30 blur-[80px]" />
 
-        <div className="relative flex items-center gap-2.5 px-5 py-6">
+        <div className="relative z-[2] flex items-center gap-3 px-4 pb-4 pt-5">
           {logoUrl ? (
-            <span className="flex shrink-0 items-center justify-center rounded-xl bg-white/95 p-1 shadow-sm">
+            <span className="flex shrink-0 items-center justify-center rounded-lg bg-white p-1 shadow-[0_0_0_1px_color-mix(in_oklch,white_30%,transparent),0_6px_16px_-6px_black]">
               {/* eslint-disable-next-line @next/next/no-img-element -- logo institucional dinámico, no un asset estático conocido en build. */}
-              <img src={logoUrl} alt="Red Salud Casanare E.S.E." className="h-7 w-auto object-contain" />
+              <img src={logoUrl} alt="Red Salud Casanare E.S.E." className="h-8 w-auto object-contain" />
             </span>
           ) : (
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5">
-              <Activity className="h-5 w-5 text-[var(--accent)]" strokeWidth={2.5} />
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--accent)] to-[color-mix(in_oklch,var(--accent)_50%,var(--navy))] shadow-[inset_0_1px_0_0_color-mix(in_oklch,white_30%,transparent),0_6px_18px_-6px_var(--accent)]">
+              <Activity className="h-5 w-5 text-white" strokeWidth={2.5} />
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-sm font-extrabold leading-tight text-white">
+            <p className="truncate font-display text-[15px] font-extrabold leading-tight text-white">
               RedSalud <span className="text-[var(--accent)]">Te Forma</span>
             </p>
-            {subtitulo && <p className="truncate text-[11px] text-sidebar-foreground/55">{subtitulo}</p>}
+            {subtitulo && (
+              <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-sidebar-foreground/65">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" aria-hidden="true" />
+                {subtitulo}
+              </p>
+            )}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-sidebar-foreground/60 hover:text-white lg:hidden"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground/70 hover:bg-white/10 hover:text-white lg:hidden"
             aria-label="Cerrar menú"
           >
             <X className="h-5 w-5" />
@@ -122,16 +125,20 @@ export function AppSidebar({
         {/* min-h-0: sin esto, un hijo flex con overflow no encoge por debajo
             del alto de su contenido y el menú se mete por debajo del pie en
             vez de scrollear dentro de sí mismo. */}
-        <nav className="relative min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pb-2">
+        <div className="divider-glow relative z-[2] mx-4 shrink-0" aria-hidden="true" />
+
+        <nav className="relative z-[2] min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-3">
           {grupos.map((grupo, i) => (
-            <div key={grupo.label ?? `grupo-${i}`} className={cn(i > 0 && "mt-4 border-t border-white/10 pt-4")}>
+            <div key={grupo.label ?? `grupo-${i}`} className={cn(i > 0 && "mt-4")}>
               {grupo.label && (
-                <p className="flex items-center gap-1.5 px-3 pb-2 text-[10.5px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40">
-                  <span className="h-1 w-1 rounded-full bg-[var(--accent)]/60" aria-hidden="true" />
+                // Rótulo de grupo con regla: separa sin la raya completa de
+                // antes y sin letra diminuta.
+                <p className="flex items-center gap-2 px-2.5 pb-1.5 text-xs font-semibold text-sidebar-foreground/55">
                   {grupo.label}
+                  <span className="h-px flex-1 bg-gradient-to-r from-white/15 to-transparent" aria-hidden="true" />
                 </p>
               )}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {grupo.items.map((item) => {
                   const activo = estaActivo(item);
                   const Icono = item.icon;
@@ -143,30 +150,10 @@ export function AppSidebar({
                       // navegador, que es quien lo cambia al navegar.
                       onClick={onClose}
                       aria-current={activo ? "page" : undefined}
-                      className={cn(
-                        "group relative flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-300",
-                        activo
-                          ? // Activo: no un rectángulo sólido, sino un bloque
-                            // con halo del acento que se lee elevado.
-                            "border-[color-mix(in_oklch,var(--accent)_35%,transparent)] bg-gradient-to-r from-[color-mix(in_oklch,var(--accent)_22%,transparent)] to-transparent text-white shadow-[0_0_20px_-4px_color-mix(in_oklch,var(--accent)_45%,transparent)]"
-                          : "border-transparent text-sidebar-foreground/85 hover:translate-x-1 hover:bg-white/5 hover:text-white"
-                      )}
+                      // El estado activo sale de aria-current (ver .nav-item).
+                      className="nav-item"
                     >
-                      {/* Indicador lateral del activo: la marca clásica de "estás aquí". */}
-                      {activo && (
-                        <span
-                          className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[var(--accent)] shadow-[0_0_10px_color-mix(in_oklch,var(--accent)_70%,transparent)]"
-                          aria-hidden="true"
-                        />
-                      )}
-                      <span
-                        className={cn(
-                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-300",
-                          activo
-                            ? "bg-[color-mix(in_oklch,var(--accent)_30%,transparent)] text-white ring-1 ring-[color-mix(in_oklch,var(--accent)_45%,transparent)]"
-                            : "bg-white/5 group-hover:scale-105 group-hover:bg-white/10"
-                        )}
-                      >
+                      <span className="nav-item-icono">
                         <Icono className="h-4 w-4" strokeWidth={2} />
                       </span>
                       <span className="truncate">{item.label}</span>
@@ -178,17 +165,31 @@ export function AppSidebar({
           ))}
         </nav>
 
-        <div className="relative px-3 pb-3">
+        <div className="relative z-[2] px-3 pb-3">
           {pie && (
-          <div className="surface-glass-dark p-3.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[color-mix(in_oklch,var(--accent)_25%,transparent)]">
-              <ShieldCheck className="h-4 w-4 text-white" />
-            </span>
-            <p className="mt-2.5 text-xs font-semibold leading-snug text-white">{pie.titulo}</p>
-            <p className="mt-1 text-[11px] leading-snug text-sidebar-foreground/60">{pie.texto}</p>
-          </div>
+            <div className="mb-2 rounded-xl border border-white/12 bg-white/[0.06] p-3.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[color-mix(in_oklch,var(--accent)_25%,transparent)]">
+                <ShieldCheck className="h-4 w-4 text-white" />
+              </span>
+              <p className="mt-2.5 text-xs font-semibold leading-snug text-white">{pie.titulo}</p>
+              <p className="mt-1 text-xs leading-snug text-sidebar-foreground/60">{pie.texto}</p>
+            </div>
           )}
-          <p className="px-2 pt-3 text-[11px] text-sidebar-foreground/40">Red Salud Casanare E.S.E.</p>
+          {/* Firma del pie: el trazo ECG de la marca, en el acento del rol. */}
+          <div className="border-t border-white/10 px-1.5 pt-2.5">
+            <svg viewBox="0 0 220 24" className="h-5 w-full text-[var(--accent)]" fill="none" aria-hidden="true" preserveAspectRatio="none">
+              <path
+                d="M0 14H62l7 0 5-10 6 18 6-20 5 12h13l5-5 5 5H220"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+                opacity="0.85"
+              />
+            </svg>
+            <p className="pt-1 text-xs text-sidebar-foreground/55">Red Salud Casanare E.S.E.</p>
+          </div>
         </div>
       </aside>
     </>
