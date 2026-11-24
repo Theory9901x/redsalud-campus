@@ -1,4 +1,4 @@
-import { Activity, Award, Layers, LineChart, Lock, QrCode } from "lucide-react";
+import { Activity, Award, CalendarCheck, Layers, LineChart, MapPin, QrCode, ShieldCheck, Users } from "lucide-react";
 import { ThemeToggle } from "@/components/brand/theme-toggle";
 import { prisma } from "@/lib/prisma";
 import { SIN_PRUEBAS } from "@/lib/pruebas";
@@ -67,6 +67,31 @@ function TrazoEcg({ className = "" }: { className?: string }) {
   );
 }
 
+/**
+ * Emblema de fondo: la cruz de salud en trazo fino, dentro de anillos
+ * concéntricos, recortada contra el borde derecho del panel. Es una marca de
+ * agua estática (sin animación ni relleno): da identidad de entidad de salud
+ * sin competir con el titular.
+ */
+function EmblemaSalud() {
+  const cruz = "M38 6h24v32h32v24H62v32H38V62H6V38h32z";
+  return (
+    <div className="auth-emblema" aria-hidden="true">
+      <div className="auth-anillos" />
+      <svg viewBox="0 0 100 100" fill="none">
+        <path className="auth-cruz-fondo" d={cruz} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        <path
+          className="auth-cruz-filo"
+          d={cruz}
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+          transform="translate(50 50) scale(0.8) translate(-50 -50)"
+        />
+      </svg>
+    </div>
+  );
+}
+
 const NUMERO = new Intl.NumberFormat("es-CO");
 
 /**
@@ -75,7 +100,7 @@ const NUMERO = new Intl.NumberFormat("es-CO");
  * puede depender de un contador.
  */
 async function CifrasAcceso() {
-  let cifras: { valor: number; etiqueta: string }[];
+  let cifras: { valor: number; etiqueta: string; icono: typeof Users }[];
   try {
     const [colaboradores, municipios, capacitaciones] = await Promise.all([
       prisma.user.count({ where: { status: "ACTIVE" } }),
@@ -86,9 +111,9 @@ async function CifrasAcceso() {
       }),
     ]);
     cifras = [
-      { valor: colaboradores, etiqueta: "colaboradores en el campus" },
-      { valor: municipios.length, etiqueta: "municipios de Casanare" },
-      { valor: capacitaciones, etiqueta: "capacitaciones en el plan" },
+      { valor: colaboradores, etiqueta: "colaboradores en el campus", icono: Users },
+      { valor: municipios.length, etiqueta: "municipios de Casanare", icono: MapPin },
+      { valor: capacitaciones, etiqueta: "capacitaciones en el plan", icono: CalendarCheck },
       // Una cifra de un dígito no dice nada en la portada: mejor no mostrarla.
     ].filter((c) => c.valor >= 10);
   } catch {
@@ -96,11 +121,12 @@ async function CifrasAcceso() {
   }
   if (cifras.length === 0) return null;
   return (
-    <div className="auth-cifras mt-6 2xl:mt-8">
-      {cifras.map((c) => (
-        <div key={c.etiqueta}>
-          <b>{NUMERO.format(c.valor)}</b>
-          <span>{c.etiqueta}</span>
+    <div className="auth-cifras mt-7 2xl:mt-9" data-celdas={cifras.length}>
+      {cifras.map(({ valor, etiqueta, icono: Icono }) => (
+        <div key={etiqueta}>
+          <Icono className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden="true" />
+          <b>{NUMERO.format(valor)}</b>
+          <span>{etiqueta}</span>
         </div>
       ))}
     </div>
@@ -123,8 +149,9 @@ export function AuthShell({
     <div className="relative grid min-h-screen grid-cols-1 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)]">
       {/* Panel institucional (escritorio). Fijo al alto de la ventana: en el
           registro, que es largo, el formulario se desplaza y el panel no. */}
-      <aside className="auth-panel relative hidden overflow-hidden text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-between lg:p-12 xl:p-16">
-        <div className="auth-anillos" aria-hidden="true" />
+      <aside className="auth-panel relative hidden overflow-hidden text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-between lg:px-12 lg:py-12 xl:px-16 xl:py-14">
+        <span className="auth-franja" aria-hidden="true" />
+        <EmblemaSalud />
 
         <div className="relative z-10 flex items-start justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
           <BrandMark logoUrl={logoUrl} size="lg" />
@@ -139,7 +166,7 @@ export function AuthShell({
             <span className="h-px w-10 bg-success" aria-hidden="true" />
             Plataforma institucional de formación
           </p>
-          <h1 className="mt-5 font-display text-5xl font-extrabold leading-[1.02] tracking-tight xl:text-[4.25rem] 2xl:text-[5rem]">
+          <h1 className="auth-titular mt-5 font-display font-extrabold leading-[1.02] tracking-tight">
             Toda tu formación.
             <br />
             <span className="text-success">En un solo lugar.</span>
@@ -150,7 +177,7 @@ export function AuthShell({
           </p>
           <CifrasAcceso />
           {/* El trazo se sale del padding a propósito: va de borde a borde. */}
-          <TrazoEcg className="-mx-12 mt-6 h-14 w-[calc(100%+6rem)] xl:-mx-16 xl:w-[calc(100%+8rem)] 2xl:mt-8 2xl:h-20" />
+          <TrazoEcg className="-mx-12 mt-6 h-14 w-[calc(100%+6rem)] xl:-mx-16 xl:w-[calc(100%+8rem)] 2xl:mt-8" />
         </div>
 
         <div className="relative z-10">
@@ -160,14 +187,14 @@ export function AuthShell({
             {FEATURES.map(({ icon: Icon, label, description }, index) => (
               <div
                 key={label}
-                className={`auth-celda flex items-center gap-3.5 p-4 2xl:items-start 2xl:p-5 ${index % 2 === 0 ? "border-r border-white/15" : ""} ${index < 2 ? "border-b border-white/15" : ""}`}
+                className={`auth-celda flex items-center gap-3.5 p-4 2xl:p-5 ${index % 2 === 0 ? "border-r border-white/15" : ""} ${index < 2 ? "border-b border-white/15" : ""}`}
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white">
                   <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-white">{label}</p>
-                  <p className="mt-0.5 hidden text-[13px] leading-snug text-white/80 2xl:block">{description}</p>
+                  <p className="auth-celda-desc mt-0.5 text-[13px] leading-snug text-white/80">{description}</p>
                 </div>
               </div>
             ))}
@@ -176,8 +203,8 @@ export function AuthShell({
           <p className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[13px] text-white/85 2xl:mt-6">
             <span>Plataforma oficial de capacitación · Red Salud Casanare E.S.E.</span>
             <span className="inline-flex items-center gap-1.5">
-              <Lock className="h-3.5 w-3.5" aria-hidden="true" />
-              Conexión cifrada
+              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+              Acceso seguro · conexión cifrada
             </span>
           </p>
         </div>

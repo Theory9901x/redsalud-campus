@@ -1312,33 +1312,80 @@
     );
   background-size: 64px 64px, 64px 64px, 64px 64px, auto, auto, auto;
 }
-/* Anillos concéntricos anclados a la esquina inferior derecha: fondo sobrio,
-   sin íconos ni animación. */
+/* Franja institucional en el borde superior: verde -> azul de la entidad. */
+.auth-franja {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 2;
+  height: 4px;
+  background: linear-gradient(to right in oklch, var(--success), var(--primary) 55%, color-mix(in oklch, white 70%, var(--primary)));
+}
+/* Emblema de fondo: cruz de salud en trazo fino dentro de anillos, recortado
+   contra el borde derecho. Marca de agua estática, sin íconos ni animación. */
+.auth-emblema {
+  position: absolute;
+  top: 45%;
+  right: 0;
+  width: clamp(420px, 62%, 640px);
+  aspect-ratio: 1;
+  transform: translate(42%, -50%);
+  pointer-events: none;
+}
+/* Titular: su tamaño sale del ancho Y del alto de la ventana (el panel ocupa
+   media pantalla), así nunca parte en tres líneas ni empuja la retícula fuera
+   de la vista. Va aquí y no en utilidades de Tailwind, que ganarían la cascada. */
+.auth-titular { font-size: clamp(2.5rem, min(4.1vw, 7.4vh), 5rem); }
+/* Descripciones de la retícula: solo con ancho y alto de sobra. */
+.auth-celda-desc { display: none; }
+@media (min-width: 1536px) and (min-height: 960px) { .auth-celda-desc { display: block; } }
+.auth-emblema svg { position: absolute; inset: 24%; width: 52%; height: 52%; overflow: visible; }
+.auth-cruz-fondo {
+  fill: color-mix(in oklch, white 5%, transparent);
+  stroke: color-mix(in oklch, white 30%, transparent);
+  stroke-width: 1.5;
+}
+.auth-cruz-filo { stroke: color-mix(in oklch, var(--success) 55%, transparent); stroke-width: 1; stroke-dasharray: 3 7; }
 .auth-anillos {
   position: absolute;
-  right: -260px;
-  bottom: -260px;
-  width: 760px;
-  height: 760px;
+  inset: 0;
   border-radius: 50%;
-  pointer-events: none;
   background-image: repeating-radial-gradient(
     circle at center,
-    transparent 0 54px,
-    color-mix(in oklch, white 13%, transparent) 54px 55px
+    transparent 0 43px,
+    color-mix(in oklch, white 14%, transparent) 43px 44px
   );
-  mask-image: radial-gradient(circle at center, black 18%, transparent 70%);
-  -webkit-mask-image: radial-gradient(circle at center, black 18%, transparent 70%);
+  mask-image: radial-gradient(circle at center, transparent 34%, black 40%, transparent 71%);
+  -webkit-mask-image: radial-gradient(circle at center, transparent 34%, black 40%, transparent 71%);
 }
-/* Cifras reales de la plataforma, bajo el texto de presentación. */
-/* Solo donde caben sin apretar: panel ancho y pantalla con altura suficiente.
-   En el resto mandan el titular y el acceso. */
-.auth-cifras { display: none; flex-wrap: wrap; gap: 1.25rem 0; }
-@media (min-width: 1280px) and (min-height: 820px) { .auth-cifras { display: flex; } }
-.auth-cifras > div { padding-right: 1.75rem; margin-right: 1.75rem; border-right: 1px solid color-mix(in oklch, white 22%, transparent); }
-.auth-cifras > div:last-child { border-right: 0; margin-right: 0; padding-right: 0; }
+/* Cifras reales de la plataforma: una sola banda con divisiones (no tarjetas
+   sueltas), con tinte navy para que el texto llegue a AA. Solo donde cabe sin
+   apretar; en el resto mandan el titular y el acceso. */
+.auth-cifras {
+  display: none;
+  max-width: 38rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid color-mix(in oklch, white 22%, transparent);
+  border-radius: 14px;
+  background-color: color-mix(in oklch, var(--navy) 50%, transparent);
+  backdrop-filter: blur(10px);
+}
+.auth-cifras[data-celdas="2"] { max-width: 26rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.auth-cifras[data-celdas="1"] { max-width: 13rem; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1280px) and (min-height: 880px) { .auth-cifras { display: grid; } }
+.auth-cifras > div { position: relative; padding: 1rem 1.15rem 1.05rem; border-right: 1px solid color-mix(in oklch, white 16%, transparent); }
+.auth-cifras > div:last-child { border-right: 0; }
+.auth-cifras > div::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 1.15rem;
+  width: 1.75rem;
+  height: 2px;
+  background-color: var(--success);
+}
+.auth-cifras svg { position: absolute; top: 1rem; right: 1rem; color: color-mix(in oklch, white 60%, transparent); }
 .auth-cifras b { display: block; font-size: 2.1rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: white; }
-.auth-cifras span { display: block; margin-top: 0.4rem; font-size: 0.875rem; color: color-mix(in oklch, white 82%, transparent); }
+.auth-cifras span { display: block; margin-top: 0.45rem; font-size: 0.8125rem; line-height: 1.3; color: color-mix(in oklch, white 85%, transparent); }
 /* Trazo ECG: una línea base tenue y un pulso que la recorre sin parar. El
    path lleva pathLength=1000, así que los guiones no dependen del ancho. */
 .auth-ecg .auth-ecg-base {
@@ -4774,3 +4821,4 @@ body, button, input, textarea, select { font-family: var(--font-cuerpo), sans-se
 .vivo-desc { font-size: .9375rem; line-height: 1.6; }
 .vivo-pulso { font-family: var(--font-cuerpo), sans-serif; letter-spacing: normal; text-transform: none; font-size: .8125rem; }
 .vivo-publico > span:last-child { gap: .2rem; line-height: 1.5; }
+
