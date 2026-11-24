@@ -1312,22 +1312,70 @@
     );
   background-size: 64px 64px, 64px 64px, 64px 64px, auto, auto, auto;
 }
-/* Anillos concéntricos anclados a la esquina inferior derecha. */
-.auth-anillos {
+/*
+ * Orbe de pulso: la pieza que llena la mitad derecha del panel en pantallas
+ * anchas. Anillos finos, uno punteado que gira muy despacio, tres nodos en
+ * órbita y un núcleo de vidrio con el pulso. En paneles angostos queda
+ * cortado por el borde derecho a propósito (nunca tapa el titular).
+ */
+.auth-orbe {
   position: absolute;
-  right: -260px;
-  bottom: -260px;
-  width: 760px;
-  height: 760px;
-  border-radius: 50%;
+  top: 44%;
+  left: max(57%, 37rem);
+  width: clamp(20rem, 24vw, 34rem);
+  aspect-ratio: 1;
+  transform: translateY(-50%);
   pointer-events: none;
-  background-image: repeating-radial-gradient(
-    circle at center,
-    transparent 0 54px,
-    color-mix(in oklch, white 13%, transparent) 54px 55px
-  );
-  mask-image: radial-gradient(circle at center, black 18%, transparent 70%);
-  -webkit-mask-image: radial-gradient(circle at center, black 18%, transparent 70%);
+}
+.auth-orbe::before {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in oklch, var(--primary) 46%, transparent), transparent 62%);
+}
+.auth-orbe svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.auth-orbe-giro { transform-origin: 50% 50%; animation: auth-orbe-giro 70s linear infinite; }
+.auth-orbe-giro[data-sentido="inverso"] { animation-duration: 110s; animation-direction: reverse; }
+@keyframes auth-orbe-giro { to { transform: rotate(360deg); } }
+.auth-orbe-nucleo {
+  position: absolute;
+  inset: 34%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklch, white 34%, transparent);
+  background:
+    radial-gradient(circle at 32% 26%, color-mix(in oklch, white 30%, transparent), transparent 55%),
+    color-mix(in oklch, var(--navy) 55%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklch, white 30%, transparent),
+    0 0 60px -8px color-mix(in oklch, var(--success) 70%, transparent),
+    0 24px 60px -24px black;
+  color: white;
+  animation: auth-nucleo 2.4s ease-in-out infinite;
+}
+.auth-orbe-nucleo svg { position: static; width: 46%; height: 46%; color: var(--success); filter: drop-shadow(0 0 10px color-mix(in oklch, var(--success) 80%, transparent)); }
+@keyframes auth-nucleo {
+  0%, 100% { transform: scale(1); }
+  12% { transform: scale(1.06); }
+  24% { transform: scale(1); }
+  36% { transform: scale(1.035); }
+  48% { transform: scale(1); }
+}
+/* Cifras reales de la plataforma, bajo el texto de presentación. */
+/* Solo donde caben sin apretar: panel ancho y pantalla con altura suficiente.
+   En el resto mandan el titular y el acceso. */
+.auth-cifras { display: none; flex-wrap: wrap; gap: 1.25rem 0; }
+@media (min-width: 1280px) and (min-height: 820px) { .auth-cifras { display: flex; } }
+.auth-cifras > div { padding-right: 1.75rem; margin-right: 1.75rem; border-right: 1px solid color-mix(in oklch, white 22%, transparent); }
+.auth-cifras > div:last-child { border-right: 0; margin-right: 0; padding-right: 0; }
+.auth-cifras b { display: block; font-size: 2.1rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: white; }
+.auth-cifras span { display: block; margin-top: 0.4rem; font-size: 0.875rem; color: color-mix(in oklch, white 82%, transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .auth-orbe-giro, .auth-orbe-nucleo { animation: none; }
 }
 /* Trazo ECG: una línea base tenue y un pulso que la recorre sin parar. El
    path lleva pathLength=1000, así que los guiones no dependen del ancho. */

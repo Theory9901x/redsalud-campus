@@ -1,5 +1,7 @@
-import { Activity, Award, Layers, LineChart, Lock, QrCode } from "lucide-react";
+import { Activity, Award, HeartPulse, Layers, LineChart, Lock, QrCode } from "lucide-react";
 import { ThemeToggle } from "@/components/brand/theme-toggle";
+import { prisma } from "@/lib/prisma";
+import { SIN_PRUEBAS } from "@/lib/pruebas";
 
 const FEATURES = [
   { icon: Award, label: "Constancias digitales", description: "Constancias en PDF verificables al instante." },
@@ -66,6 +68,71 @@ function TrazoEcg({ className = "" }: { className?: string }) {
 }
 
 /**
+ * Orbe de pulso (ver .auth-orbe): anillos, un aro punteado que gira, nodos en
+ * órbita y el núcleo con el pulso. Puramente decorativo.
+ */
+function OrbePulso() {
+  return (
+    <div className="auth-orbe" aria-hidden="true">
+      <svg viewBox="0 0 400 400" fill="none">
+        <circle cx="200" cy="200" r="198" stroke="white" strokeOpacity="0.1" />
+        <circle cx="200" cy="200" r="160" stroke="white" strokeOpacity="0.16" />
+        <circle cx="200" cy="200" r="118" stroke="white" strokeOpacity="0.22" />
+        <g className="auth-orbe-giro">
+          <circle cx="200" cy="200" r="180" stroke="white" strokeOpacity="0.4" strokeWidth="1.5" strokeDasharray="2 12" strokeLinecap="round" />
+          <circle cx="200" cy="20" r="5" fill="var(--success)" />
+          <circle cx="356" cy="290" r="3.5" fill="white" fillOpacity="0.9" />
+        </g>
+        <g className="auth-orbe-giro" data-sentido="inverso">
+          <path d="M200 61a139 139 0 0 1 120 69" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" />
+          <path d="M200 339a139 139 0 0 1-120-69" stroke="white" strokeOpacity="0.55" strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx="61" cy="200" r="4" fill="white" />
+        </g>
+      </svg>
+      <div className="auth-orbe-nucleo">
+        <HeartPulse strokeWidth={1.75} />
+      </div>
+    </div>
+  );
+}
+
+const NUMERO = new Intl.NumberFormat("es-CO");
+
+/**
+ * Cifras REALES de la plataforma (no decorativas): se consultan al pintar la
+ * pantalla. Si la base no responde, simplemente no se muestran: el acceso no
+ * puede depender de un contador.
+ */
+async function CifrasAcceso() {
+  let cifras: { valor: number; etiqueta: string }[];
+  try {
+    const [colaboradores, cursos, constancias] = await Promise.all([
+      prisma.user.count({ where: { status: "ACTIVE" } }),
+      prisma.course.count({ where: { status: "PUBLISHED", trainingActivities: { none: {} }, ...SIN_PRUEBAS } }),
+      prisma.certificate.count({ where: { status: "VALID" } }),
+    ]);
+    cifras = [
+      { valor: colaboradores, etiqueta: "colaboradores en el campus" },
+      { valor: cursos, etiqueta: cursos === 1 ? "curso publicado" : "cursos publicados" },
+      { valor: constancias, etiqueta: constancias === 1 ? "constancia emitida" : "constancias emitidas" },
+    ].filter((c) => c.valor > 0);
+  } catch {
+    return null;
+  }
+  if (cifras.length === 0) return null;
+  return (
+    <div className="auth-cifras mt-6 2xl:mt-8">
+      {cifras.map((c) => (
+        <div key={c.etiqueta}>
+          <b>{NUMERO.format(c.valor)}</b>
+          <span>{c.etiqueta}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
  * Marco de las pantallas de acceso (login, registro, recuperar, cambio de
  * clave). A sangre: el panel institucional ocupa media pantalla de alto
  * completo, sin tarjeta flotante ni esquinas acolchadas.
@@ -82,7 +149,7 @@ export function AuthShell({
       {/* Panel institucional (escritorio). Fijo al alto de la ventana: en el
           registro, que es largo, el formulario se desplaza y el panel no. */}
       <aside className="auth-panel relative hidden overflow-hidden text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-between lg:p-12 xl:p-16">
-        <div className="auth-anillos" aria-hidden="true" />
+        <OrbePulso />
 
         <div className="relative z-10 flex items-start justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
           <BrandMark logoUrl={logoUrl} size="lg" />
@@ -97,17 +164,18 @@ export function AuthShell({
             <span className="h-px w-10 bg-success" aria-hidden="true" />
             Plataforma institucional de formación
           </p>
-          <h1 className="mt-5 font-display text-5xl font-extrabold leading-[1.02] tracking-tight xl:text-[4.25rem]">
+          <h1 className="mt-5 font-display text-5xl font-extrabold leading-[1.02] tracking-tight xl:text-[4.25rem] 2xl:text-[5rem]">
             Toda tu formación.
             <br />
             <span className="text-success">En un solo lugar.</span>
           </h1>
-          <p className="mt-5 max-w-md text-base leading-relaxed text-white/85">
+          <p className="mt-5 max-w-md text-base leading-relaxed text-white/85 2xl:max-w-lg 2xl:text-lg">
             Cursos de inducción, reinducción y capacitación para el fortalecimiento del talento humano
             de Red Salud Casanare E.S.E.
           </p>
+          <CifrasAcceso />
           {/* El trazo se sale del padding a propósito: va de borde a borde. */}
-          <TrazoEcg className="-mx-12 mt-8 h-20 w-[calc(100%+6rem)] xl:-mx-16 xl:w-[calc(100%+8rem)]" />
+          <TrazoEcg className="-mx-12 mt-6 h-14 w-[calc(100%+6rem)] xl:-mx-16 xl:w-[calc(100%+8rem)] 2xl:mt-8 2xl:h-20" />
         </div>
 
         <div className="relative z-10">
@@ -117,20 +185,20 @@ export function AuthShell({
             {FEATURES.map(({ icon: Icon, label, description }, index) => (
               <div
                 key={label}
-                className={`auth-celda flex items-start gap-3.5 p-5 ${index % 2 === 0 ? "border-r border-white/15" : ""} ${index < 2 ? "border-b border-white/15" : ""}`}
+                className={`auth-celda flex items-center gap-3.5 p-4 2xl:items-start 2xl:p-5 ${index % 2 === 0 ? "border-r border-white/15" : ""} ${index < 2 ? "border-b border-white/15" : ""}`}
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white">
                   <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-white">{label}</p>
-                  <p className="mt-0.5 text-[13px] leading-snug text-white/80">{description}</p>
+                  <p className="mt-0.5 hidden text-[13px] leading-snug text-white/80 2xl:block">{description}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          <p className="mt-6 flex flex-wrap items-center justify-between gap-2 text-[13px] text-white/85">
+          <p className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[13px] text-white/85 2xl:mt-6">
             <span>Plataforma oficial de capacitación · Red Salud Casanare E.S.E.</span>
             <span className="inline-flex items-center gap-1.5">
               <Lock className="h-3.5 w-3.5" aria-hidden="true" />
