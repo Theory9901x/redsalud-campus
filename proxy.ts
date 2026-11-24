@@ -78,6 +78,11 @@ export default auth((request) => {
     !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
     !pathname.startsWith("/api/auth") &&
     !/^\/api\/videos\/[^/]+\/progreso$/.test(pathname) &&
+    // Encuestas públicas (/e/…): se responden SIN cuenta, así que tener abierta
+    // una sesión de solo lectura en el mismo navegador no puede impedirlo. El
+    // personal de SIAU diligencia las encuestas de los usuarios desde el equipo
+    // donde tiene su cuenta de consulta, y el envío le salía rechazado (403).
+    !pathname.startsWith("/e/") &&
     pathname !== CAMBIO_CLAVE
   ) {
     return NextResponse.json({ error: "Perfil de seguimiento: solo lectura. No se permiten cambios." }, { status: 403 });
