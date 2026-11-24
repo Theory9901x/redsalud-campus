@@ -1,5 +1,7 @@
 import { CheckCircle2, Lock, Trophy } from "lucide-react";
+import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth-helpers";
+import { galardonesDisponiblePara } from "@/lib/galardones/acceso";
 import { prisma } from "@/lib/prisma";
 import { veComoAdmin } from "@/lib/roles";
 import { CabeceraGalardones } from "@/components/galardones/escena";
@@ -20,6 +22,7 @@ const FECHA_HORA = new Intl.DateTimeFormat("es-CO", { dateStyle: "long", timeSty
  */
 export default async function GalardonesPage() {
   const sesion = await requireSession("/galardones");
+  if (!galardonesDisponiblePara(sesion.user.role)) redirect("/inicio");
   const [usuario, ajustes, convocatoria, hecha] = await Promise.all([
     prisma.user.findUniqueOrThrow({
       where: { id: sesion.user.id },

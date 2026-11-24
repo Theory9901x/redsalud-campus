@@ -18,6 +18,17 @@ export async function gestionaGalardones(u: Usuario | null | undefined): Promise
   return !!fila?.canManageGalardones && fila.status === "ACTIVE";
 }
 
+/**
+ * La convocatoria cerró y el módulo quedó DESACTIVADO para estudiantes: no lo
+ * ven en el menú ni en el inicio, /galardones los devuelve a su panel y la
+ * acción de postular los rechaza. Administración y tutores lo conservan
+ * (gestión, resultados y ceremonia). Para reabrirlo en otra convocatoria,
+ * basta con que esto devuelva true y reponer el enlace del menú.
+ */
+export function galardonesDisponiblePara(role: Role | null | undefined): boolean {
+  return role !== "STUDENT";
+}
+
 /** Dónde vive la gestión para cada perfil: el panel admin, o el espacio de tutor. */
 export function rutaGestionGalardones(role: Role | null | undefined): string {
   return veComoAdmin(role) ? "/admin/galardones" : "/tutor/galardones";

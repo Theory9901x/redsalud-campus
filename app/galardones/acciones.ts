@@ -6,7 +6,7 @@ import type { GalardonValor } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireSession } from "@/lib/auth-helpers";
-import { gestionaGalardones } from "@/lib/galardones/acceso";
+import { galardonesDisponiblePara, gestionaGalardones } from "@/lib/galardones/acceso";
 import { esSoloLectura } from "@/lib/roles";
 import { registrarAuditoria } from "@/lib/audit";
 import { nombrePropio } from "@/lib/nombre-propio";
@@ -74,6 +74,7 @@ export type EnvioPostulacion = z.input<typeof postulacionSchema>;
 export async function enviarPostulacion(entrada: EnvioPostulacion): Promise<{ ok: true } | { ok: false; error: string }> {
   const sesion = await requireSession("/galardones");
   if (esSoloLectura(sesion.user.role)) return { ok: false, error: "El perfil de seguimiento es de solo lectura." };
+  if (!galardonesDisponiblePara(sesion.user.role)) return { ok: false, error: "La convocatoria de Galardones ya cerró." };
   const parsed = postulacionSchema.safeParse(entrada);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Revisa los datos." };
   const { ips, postulaciones } = parsed.data;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, CalendarRange, Clapperboard, ClipboardList, Gavel, GraduationCap, Layers, LayoutDashboard, Trophy, User } from "lucide-react";
+import { Award, CalendarRange, Clapperboard, ClipboardList, Gavel, GraduationCap, Layers, LayoutDashboard, User } from "lucide-react";
 import { AppSidebar, type GrupoNav } from "@/components/shell/app-sidebar";
 
 /** La Videoteca es solo del personal SIAU: lo decide el servidor (lib/videoteca/acceso.ts) y llega como `verVideoteca`. */
@@ -9,9 +9,8 @@ const gruposPara = (verVideoteca: boolean): GrupoNav[] => [
     label: null,
     items: [
       { href: "/inicio", label: "Dashboard", icon: LayoutDashboard, exact: true, hash: "" },
-      // Arriba a propósito: al final del menú quedaba tapado por el pie en
-      // pantallas de portátil y los colaboradores no lo encontraban.
-      { href: "/galardones", label: "Galardones", icon: Trophy },
+      // Galardones ya no va aquí: la convocatoria cerró y el módulo quedó
+      // desactivado para estudiantes (ver galardonesDisponiblePara).
       { href: "/mi-aula", label: "Mis cursos", icon: GraduationCap, exact: true, hash: "" },
       { href: "/cursos", label: "Catálogo", icon: Layers },
     ],
