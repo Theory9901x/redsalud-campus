@@ -7,6 +7,8 @@
 @import "shadcn/tailwind.css";
 /* Consola de la sala de reunión (entorno oscuro propio). */
 @import "./sala.css";
+/* Agenda del estudiante (Mis capacitaciones y Evaluaciones). */
+@import "./agenda.css";
 
 @custom-variant dark (&:is(.dark *));
 

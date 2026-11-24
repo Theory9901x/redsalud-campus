@@ -1,112 +1,167 @@
 import Link from "next/link";
+import { ArrowRight, ChevronDown, FolderOpen } from "lucide-react";
 import { requireSession } from "@/lib/auth-helpers";
-import { CalendarDays } from "lucide-react";
-import { getStudentPlansOverview } from "@/lib/training-plans";
+import { getAgendaEstudiante, type FilaAgenda } from "@/lib/agenda-estudiante";
+import { getTrainingPlansForStudent } from "@/lib/training-plans";
 import { getCapacitacionesEnVivo } from "@/lib/en-vivo";
 import { veePruebas } from "@/lib/pruebas";
 import { PestanasCapacitaciones } from "@/components/en-vivo/pestanas-capacitaciones";
-import { StaggerSections } from "@/components/brand/stagger-sections";
-import {
-  MisCapacitacionesView,
-  type PlanTarjeta,
-  type ResumenCapacitaciones,
-} from "@/components/training-plans/mis-capacitaciones-view";
-import { TRAINING_PLAN_STATUS_LABELS, etiquetaJornada } from "@/components/training-plans/labels";
+import { FilaDeAgenda, SeccionAgenda } from "@/components/agenda/fila-agenda";
+
+export const dynamic = "force-dynamic";
 
 /**
- * "Mis capacitaciones": el centro personal de formación del estudiante.
+ * «Mis capacitaciones»: la AGENDA de la persona. Responde una sola pregunta
+ * -¿a qué tengo que asistir?- en orden de tiempo: lo que está pasando ahora,
+ * lo que viene con fecha, y lo que el área aún no agenda.
  *
- * Toda cifra sale de datos reales y con los mismos criterios que la ficha del
- * plan (getStudentPlansOverview). Lo que no existe no se estima: el progreso
- * llega null mientras la persona no esté inscrita en nada, y la vista muestra
- * en su lugar cuántas capacitaciones tiene programadas.
+ * Antes era una rejilla de tarjetas de plan con cuatro indicadores y tres
+ * pestañas; la persona tenía que entrar al plan y buscar entre 55 líneas para
+ * saber qué le tocaba. Lo ya pasado no se muestra (regla de las 24 horas, ver
+ * lib/agenda-estudiante.ts).
  */
 export default async function MisCapacitacionesPage() {
   const session = await requireSession("/mis-capacitaciones");
-  const userId = session.user.id;
   const primerNombre = session.user.name?.split(" ")[0];
 
-  const [planes, enVivo] = await Promise.all([
-    getStudentPlansOverview(userId),
+  const [agenda, planes, salasEnVivo] = await Promise.all([
+    getAgendaEstudiante(session.user.id),
+    getTrainingPlansForStudent(session.user.id),
     getCapacitacionesEnVivo({ viewer: session.user, verPruebas: veePruebas(session.user.role) }).then(
-      (f) => f.filter((x) => x.estado === "EN_VIVO").length
+      (f) => f.filter((x) => x.estado === "EN_VIVO").length,
     ),
   ]);
 
-  const tarjetas: PlanTarjeta[] = planes.map((p) => ({
-    id: p.id,
-    title: p.title,
-    year: p.year,
-    estadoLabel: TRAINING_PLAN_STATUS_LABELS[p.status],
-    estadoTono: p.status === "ACTIVE" ? "activo" : p.status === "CLOSED" ? "cerrado" : "borrador",
-    targetDepartment: p.targetDepartment,
-    tutorName: p.tutorName,
-    totalActividades: p.totalActividades,
-    completadas: p.completadas,
-    evaluacionesDisponibles: p.evaluacionesDisponibles,
-    progreso: p.progreso,
-    // La fecha se formatea AQUÍ, en el servidor: hacerlo en el cliente hidrata
-    // distinto (el ICU del navegador y el de Node difieren en "a. m.").
-    proximaJornada: p.proximaJornada
-      ? { titulo: p.proximaJornada.titulo, etiqueta: etiquetaJornada(p.proximaJornada) }
-      : null,
-  }));
+  const ahora = agenda.filter((f) => f.momento === "EN_VIVO" || f.momento === "FINALIZADA");
+  const proximas = agenda.filter((f) => f.momento === "PROXIMA");
+  const sinFecha = agenda.filter((f) => f.momento === "SIN_FECHA");
+  const pendientes = agenda.reduce((s, f) => s + f.pendientes, 0);
+  const enVivo = agenda.filter((f) => f.momento === "EN_VIVO").length;
 
-  // Agregados del encabezado: suma de lo que de verdad le aplica a la persona.
-  const conProgreso = planes.filter((p) => p.progreso !== null);
-  const resumen: ResumenCapacitaciones = {
-    actividades: planes.reduce((s, p) => s + p.totalActividades, 0),
-    completadas: planes.reduce((s, p) => s + p.completadas, 0),
-    evaluacionesDisponibles: planes.reduce((s, p) => s + p.evaluacionesDisponibles, 0),
-    proximasJornadas: planes.reduce((s, p) => s + p.proximasJornadas, 0),
-    progreso:
-      conProgreso.length > 0
-        ? Math.round(conProgreso.reduce((s, p) => s + (p.progreso ?? 0), 0) / conProgreso.length)
-        : null,
-  };
+  // «Próximas» agrupadas por día, en el orden en que ya vienen (por fecha).
+  const grupos: { titulo: string; filas: FilaAgenda[] }[] = [];
+  for (const f of proximas) {
+    const titulo = f.grupo ?? "Más adelante";
+    const ultimo = grupos.at(-1);
+    if (ultimo?.titulo === titulo) ultimo.filas.push(f);
+    else grupos.push({ titulo, filas: [f] });
+  }
 
-  const anios = [...new Set(planes.map((p) => p.year))].sort((a, b) => b - a);
-  const planVigente = planes.find((p) => p.status === "ACTIVE");
+  const planesActivos = planes.filter((p) => p.status === "ACTIVE");
 
   return (
     <main className="canvas-formacion min-h-full flex-1">
-      <div className="mx-auto w-full max-w-[1480px] px-4 py-8 sm:px-6 lg:px-8">
-        <StaggerSections className="space-y-8">
-        <PestanasCapacitaciones activa="planes" enVivo={enVivo} />
-        {/* Encabezado del módulo */}
-        <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <div className="mx-auto w-full max-w-[1280px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Formación institucional</p>
-            <h1 className="mt-2 font-display text-[clamp(1.9rem,4vw,2.35rem)] font-extrabold leading-[1.1] tracking-tight text-foreground">
-              Mis capacitaciones
-            </h1>
-            <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
-              {primerNombre ? `${primerNombre}, gestiona` : "Gestiona"} tu ruta de aprendizaje, consulta próximas
-              actividades y haz seguimiento a tu formación institucional.
+            <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground">Mis capacitaciones</h1>
+            <p className="mt-1.5 text-[15px] leading-relaxed text-muted-foreground">
+              {primerNombre ? `${primerNombre}, esta` : "Esta"} es tu agenda: lo que está pasando ahora y lo que viene. Lo
+              que ya pasó deja de aparecer 24 horas después.
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {planVigente && (
-              <span className="inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-4 py-2 text-sm font-semibold text-success">
-                <span className="h-2 w-2 rounded-full bg-success" aria-hidden="true" />
-                Plan activo · {planVigente.year}
-              </span>
-            )}
-            {planVigente && (
-              <Link
-                href={`/mis-capacitaciones/${planVigente.id}`}
-                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/80 px-4 py-2 text-sm font-semibold text-foreground backdrop-blur-sm transition-transform duration-150 hover:-translate-y-0.5 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              >
-                <CalendarDays className="h-4 w-4 text-primary" strokeWidth={1.7} aria-hidden="true" />
-                Ver calendario
-              </Link>
-            )}
-          </div>
+          <PestanasCapacitaciones activa="planes" enVivo={salasEnVivo} />
         </header>
 
-        <MisCapacitacionesView planes={tarjetas} resumen={resumen} anios={anios} />
-        </StaggerSections>
+        <div className="agenda-resumen">
+          <div>
+            <b>{enVivo}</b>
+            <span>En vivo ahora</span>
+          </div>
+          <div>
+            <b>{proximas.length}</b>
+            <span>Próximas con fecha</span>
+          </div>
+          <Link href="/evaluaciones" data-alerta={pendientes > 0} className="transition-colors hover:bg-muted">
+            <b>{pendientes}</b>
+            <span>{pendientes === 1 ? "Evaluación por presentar" : "Evaluaciones por presentar"} →</span>
+          </Link>
+        </div>
+
+        {agenda.length === 0 && (
+          <div className="agenda-panel">
+            <p className="agenda-vacio">
+              <b>No tienes capacitaciones en agenda</b>
+              Cuando un área programe una capacitación para tu grupo de personal, aparecerá aquí con su fecha.
+            </p>
+          </div>
+        )}
+
+        {ahora.length > 0 && (
+          <SeccionAgenda
+            titulo="Ahora"
+            conteo={ahora.length}
+            tono={enVivo > 0 ? "vivo" : undefined}
+            ayuda="En vivo y lo de las últimas 24 horas: aún puedes presentar lo pendiente."
+          >
+            <ul>
+              {ahora.map((f) => (
+                <FilaDeAgenda key={f.id} fila={f} />
+              ))}
+            </ul>
+          </SeccionAgenda>
+        )}
+
+        {proximas.length > 0 && (
+          <SeccionAgenda titulo="Próximas" conteo={proximas.length} ayuda="Con fecha y hora confirmadas, de la más cercana a la más lejana.">
+            {grupos.map((g) => (
+              <div key={g.titulo}>
+                <p className="agenda-grupo">{g.titulo}</p>
+                <ul>
+                  {g.filas.map((f) => (
+                    <FilaDeAgenda key={f.id} fila={f} />
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </SeccionAgenda>
+        )}
+
+        {sinFecha.length > 0 && (
+          // Plegada cuando es larga: son las líneas del plan que aún no tienen
+          // día; informan, pero no hay nada que hacer con ellas hoy.
+          <details className="agenda-panel group" open={sinFecha.length <= 6 && ahora.length + proximas.length === 0}>
+            <summary className="agenda-cabecera">
+              <h2>
+                Programadas, aún sin fecha
+                <span className="agenda-conteo">{sinFecha.length}</span>
+              </h2>
+              <p className="inline-flex items-center gap-1.5">
+                Previstas para este trimestre o los siguientes
+                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+              </p>
+            </summary>
+            <ul>
+              {sinFecha.map((f) => (
+                <FilaDeAgenda key={f.id} fila={f} />
+              ))}
+            </ul>
+          </details>
+        )}
+
+        {planesActivos.length > 0 && (
+          <SeccionAgenda titulo="Planes y documentos" ayuda="El cronograma completo del año y los documentos de cada plan.">
+            <ul>
+              {planesActivos.map((p) => (
+                <li key={p.id}>
+                  <Link
+                    href={`/mis-capacitaciones/${p.id}`}
+                    className="flex items-center gap-3 border-b border-border px-5 py-3.5 transition-colors last:border-b-0 hover:bg-muted"
+                  >
+                    <FolderOpen className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[15px] font-semibold text-foreground">{p.title}</span>
+                      <span className="block text-[13px] text-muted-foreground">
+                        Vigencia {p.year} · {p.targetDepartment ?? "Todo el personal"} · {p.tutor.fullName}
+                      </span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </SeccionAgenda>
+        )}
       </div>
     </main>
   );

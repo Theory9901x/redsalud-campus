@@ -21,6 +21,7 @@ import {
   getSessionsForPlan,
 } from "@/lib/training-plans";
 import { getSurveysForUser } from "@/lib/surveys";
+import { getAgendaEstudiante, jornadaVisible } from "@/lib/agenda-estudiante";
 import { estadoPresaber, estadoPostsaber, cicloEsAutomatico } from "@/lib/presaber-postsaber";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrainingDocumentList } from "@/components/training-plans/training-document-list";
@@ -83,17 +84,23 @@ export default async function MiCapacitacionDetallePage({
   // Solo lo que le aplica a ESTA persona: su cronograma, no el del área de
   // gestión. Lo dirigido exclusivamente al otro grupo poblacional no es una
   // capacitación suya y mostrarla solo confundiría ("¿debo hacer esto?").
+  //
+  // Y solo lo VIGENTE (regla de las 24 horas): la misma agenda que alimenta
+  // «Mis capacitaciones» decide qué se ve, para que el plan y la agenda nunca
+  // muestren cosas distintas. Lo que ya pasó no aparece en el cronograma.
+  const vigentes = new Set((await getAgendaEstudiante(userId)).filter((f) => f.planId === id).map((f) => f.id));
   const aplicables = plan.activities.filter(
-    (a) => a.targetAudience === "AMBOS" || a.targetAudience === personnelType
+    (a) => (a.targetAudience === "AMBOS" || a.targetAudience === personnelType) && vigentes.has(a.id)
   );
 
   const courseIds = aplicables.map((a) => a.courseId).filter((x): x is string => !!x);
-  const [{ pending, answered }, progresoPorCurso, ciclo, sesiones] = await Promise.all([
+  const [{ pending, answered }, progresoPorCurso, ciclo, todasLasSesiones] = await Promise.all([
     getSurveysForUser(userId, id),
     getStudentCourseProgress(courseIds, userId),
     getStudentCycleInfo(courseIds, userId),
     getSessionsForPlan(id),
   ]);
+  const sesiones = todasLasSesiones.filter((s) => jornadaVisible(s.startsAt));
 
   // ---- Cada fila del cronograma, resuelta con datos reales ----------------
   const filas: FilaCronograma[] = aplicables.map((a) => {

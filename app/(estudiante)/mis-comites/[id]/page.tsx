@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { ArrowLeft, ArrowUpRight, CalendarClock, ClipboardList, FileText, Gavel, Info, MapPin, QrCode, ScrollText, Timer, Users2, Video } from "lucide-react";
 import { requireSession } from "@/lib/auth-helpers";
 import { esIntegranteDe, getComiteDetalle, ROL_COMITE } from "@/lib/comites";
+import { jornadaVisible } from "@/lib/agenda-estudiante";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { etiquetaFecha, etiquetaHora, TRAINING_ACTIVITY_STATUS_LABELS } from "@/components/training-plans/labels";
 import { BotonCopiar } from "@/components/comites/formularios";
@@ -31,14 +32,23 @@ export default async function MiComitePage({ params }: { params: Promise<{ id: s
   if (!comite) notFound();
   const yo = comite.members.find((m) => m.userId === session.user.id);
 
+  // Regla de las 24 horas: el integrante no ve reuniones que ya pasaron. Quien
+  // gestiona el comité sí conserva el histórico completo.
+  const ahoraFecha = new Date();
+  const actividades = esGestor
+    ? comite.activities
+    : comite.activities.filter((a) =>
+        a.sessions.length > 0 ? a.sessions.some((s) => jornadaVisible(s.startsAt, ahoraFecha)) : a.status !== "CLOSED"
+      );
+
   const reuniones = await Promise.all(
-    comite.activities.map(async (a) => ({
+    actividades.map(async (a) => ({
       ...a,
       urlSala: `${APP_URL}/c/${a.id}/meet`,
       qr: await QRCode.toDataURL(`${APP_URL}/c/${a.id}/meet`, { width: 220, margin: 1 }),
     }))
   );
-  const ahora = Date.now();
+  const ahora = ahoraFecha.getTime();
   const proximas = reuniones.filter((r) => r.status !== "CLOSED" && (r.sessions[0]?.startsAt.getTime() ?? 0) + 4 * 3600e3 >= ahora);
   const pasadas = reuniones.filter((r) => !proximas.includes(r));
 
