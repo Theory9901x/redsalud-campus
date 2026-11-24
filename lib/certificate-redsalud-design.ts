@@ -1,11 +1,27 @@
 import type { CertificateLayout } from "@/lib/certificate-template";
 
-export const REDSALUD_CERTIFICATE_BACKGROUND_URL = "/uploads/plantillas/fondo/constancia-redsalud-v6-20261103.png";
+export const REDSALUD_CERTIFICATE_BACKGROUND_URL = "/uploads/plantillas/fondo/constancia-redsalud-v7-20261124.png";
 
-/** El sello se dibuja centrado en x=624 y se corre a la izquierda (centro en x=300, 25 % del ancho). */
-const SEAL_SHIFT_X = -324;
+/**
+ * Firmas de los dos subgerentes. Son imágenes fijas de la plantilla (kind
+ * "custom"), no la firma institucional de Configuración: esa sigue siendo la
+ * de Talento Humano. Los archivos los coloca en uploads el script
+ * scripts/redisenar-constancias-redsalud.ts (--firma-financiero=RUTA y
+ * --firma-servicios=RUTA).
+ */
+export const REDSALUD_FINANCIERO_SIGNATURE_URL = "/uploads/plantillas/firmas/subgerente-administrativo-financiero-20261124.png";
+export const REDSALUD_SERVICIOS_SIGNATURE_URL = "/uploads/plantillas/firmas/subgerente-administrativa-servicios-20261124.png";
 
-/** Diseño original de RedSalud. Los datos, firma y QR siguen siendo elementos editables. */
+/** El sello se dibuja centrado en x=624 y se corre a la izquierda (centro en x=224) para dejar sitio a las tres firmas. */
+const SEAL_SHIFT_X = -400;
+
+/**
+ * Diseño original de RedSalud. Los datos, firmas y QR siguen siendo elementos editables.
+ * Tres firmas entre el sello y el QR, en columnas iguales: Subgerente
+ * Administrativo y Financiero, Subgerente Administrativa y de Servicios y
+ * Talento Humano (la firma institucional). Los cargos van en dos renglones:
+ * la caja de texto es angosta a propósito para que partan bien.
+ */
 export const REDSALUD_CERTIFICATE_LAYOUT: CertificateLayout = {
   elements: [
     { id: "nombre", type: "text", fieldKey: "nombreCompleto", x: 8, y: 31.1, widthPct: 84, fontSize: 25, fontFamily: "Helvetica-Bold", color: "#102E45", align: "center", fitToWidth: true },
@@ -17,9 +33,15 @@ export const REDSALUD_CERTIFICATE_LAYOUT: CertificateLayout = {
     { id: "intensidad", type: "text", fieldKey: "intensidadHoraria", x: 13.5, y: 64, widthPct: 21, fontSize: 12, fontFamily: "Helvetica-Bold", color: "#102E45", align: "left" },
     { id: "fecha", type: "text", fieldKey: "fecha", x: 39.5, y: 64, widthPct: 23, fontSize: 11, fontFamily: "Helvetica-Bold", color: "#102E45", align: "left" },
     { id: "ciudad", type: "text", fieldKey: "ciudad", x: 65.5, y: 64, widthPct: 21, fontSize: 12, fontFamily: "Helvetica-Bold", color: "#102E45", align: "left" },
-    { id: "firma", type: "image", kind: "firma", src: null, x: 37.5, y: 73.2, widthPct: 25, heightPct: 10.3 },
-    { id: "cargo-firmante", type: "text", fieldKey: "cargoFirmante", x: 32.8, y: 85.5, widthPct: 34.4, fontSize: 7.6, fontFamily: "Helvetica-Bold", color: "#102E45", align: "center" },
-    { id: "firma-entidad", type: "static", text: "Red Salud Casanare E.S.E.", x: 34, y: 88.2, widthPct: 32, fontSize: 8, fontFamily: "Helvetica", color: "#536C7C", align: "center" },
+    { id: "firma-financiero", type: "image", kind: "custom", src: REDSALUD_FINANCIERO_SIGNATURE_URL, x: 29.9, y: 70.4, widthPct: 11, heightPct: 13.2 },
+    { id: "cargo-financiero", type: "static", text: "SUBGERENTE ADMINISTRATIVO\nY FINANCIERO", x: 27.5, y: 85.3, widthPct: 15.8, fontSize: 6.2, fontFamily: "Helvetica-Bold", color: "#102E45", align: "center" },
+    { id: "entidad-financiero", type: "static", text: "Red Salud Casanare E.S.E.", x: 27.5, y: 88.6, widthPct: 15.8, fontSize: 6.6, fontFamily: "Helvetica", color: "#536C7C", align: "center" },
+    { id: "firma-servicios", type: "image", kind: "custom", src: REDSALUD_SERVICIOS_SIGNATURE_URL, x: 44.3, y: 73.6, widthPct: 13.8, heightPct: 10 },
+    { id: "cargo-servicios", type: "static", text: "SUBGERENTE ADMINISTRATIVA\nY DE SERVICIOS", x: 43.3, y: 85.3, widthPct: 15.8, fontSize: 6.2, fontFamily: "Helvetica-Bold", color: "#102E45", align: "center" },
+    { id: "entidad-servicios", type: "static", text: "Red Salud Casanare E.S.E.", x: 43.3, y: 88.6, widthPct: 15.8, fontSize: 6.6, fontFamily: "Helvetica", color: "#536C7C", align: "center" },
+    { id: "firma", type: "image", kind: "firma", src: null, x: 60.2, y: 73.6, widthPct: 13.8, heightPct: 10 },
+    { id: "cargo-firmante", type: "text", fieldKey: "cargoFirmante", x: 61.15, y: 85.3, widthPct: 11.9, fontSize: 6.2, fontFamily: "Helvetica-Bold", color: "#102E45", align: "center" },
+    { id: "firma-entidad", type: "static", text: "Red Salud Casanare E.S.E.", x: 59.2, y: 88.6, widthPct: 15.8, fontSize: 6.6, fontFamily: "Helvetica", color: "#536C7C", align: "center" },
     { id: "qr", type: "qr", x: 78.3, y: 73.9, sizePct: 9 },
     { id: "codigo", type: "text", fieldKey: "codigo", x: 70.5, y: 88, widthPct: 24.6, fontSize: 9, fontFamily: "Helvetica-Bold", color: "#0079AD", align: "center" },
     { id: "qr-ayuda", type: "static", text: "Consulta su validez con este QR", x: 70.5, y: 90.6, widthPct: 24.6, fontSize: 7.2, fontFamily: "Helvetica", color: "#536C7C", align: "center" },
@@ -106,8 +128,9 @@ export function redSaludCertificateSvg(logoDataUri: string): string {
       <text x="474" y="534">FECHA DE EXPEDICIÓN</text>
       <text x="786" y="534">LUGAR DE EXPEDICIÓN</text>
     </g>
-    <path d="M434 713H766" stroke="#123A56" stroke-width="1"/>
-    <!-- Sello a la izquierda; la firma queda al centro, entre el sello y el QR. -->
+    <!-- Tres líneas de firma, entre el sello y el QR. -->
+    <path d="M342 713H508M532 713H698M722 713H888" stroke="#123A56" stroke-width="1"/>
+    <!-- Sello a la izquierda. -->
     <g transform="translate(${SEAL_SHIFT_X} 0)">
     <path d="M590 742L578 786L604 777L620 789L631 747Z" fill="#00669F"/>
     <path d="M631 747L646 789L660 776L681 782L660 739Z" fill="url(#gold)"/>

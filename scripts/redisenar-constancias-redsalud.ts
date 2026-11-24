@@ -3,7 +3,7 @@ import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import { prisma } from "../lib/prisma";
-import { REDSALUD_CERTIFICATE_BACKGROUND_URL, REDSALUD_CERTIFICATE_LAYOUT, redSaludCertificateSvg } from "../lib/certificate-redsalud-design";
+import { REDSALUD_CERTIFICATE_BACKGROUND_URL, REDSALUD_CERTIFICATE_LAYOUT, REDSALUD_FINANCIERO_SIGNATURE_URL, REDSALUD_SERVICIOS_SIGNATURE_URL, redSaludCertificateSvg } from "../lib/certificate-redsalud-design";
 import { SAMPLE_FIELD_VALUES } from "../lib/certificate-template";
 import { renderCertificatePdf } from "../lib/certificate-pdf";
 import { regenerateCertificatePdf } from "../lib/certificates";
@@ -15,6 +15,9 @@ import { certificateLayoutSchema } from "../lib/validations/certificate-template
  * npx tsx scripts/redisenar-constancias-redsalud.ts CARPETA LOGO.png FIRMA.png --local
  * En servidor: npx tsx scripts/redisenar-constancias-redsalud.ts CARPETA [--aplicar]
  * --aplicar respalda configuración y PDFs antes de activar el diseño original.
+ * --firma-financiero=RUTA.png y --firma-servicios=RUTA.png copian a uploads
+ * las firmas de los subgerentes (hacen falta la primera vez, o para
+ * reemplazarlas); sin la opción, el archivo debe existir ya.
  */
 async function main() {
   const args = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
@@ -28,6 +31,15 @@ async function main() {
   const signaturePath = local ? localSignature : publicUploadDiskPath(settings!.signatureUrl!);
   const logo = await readFile(logoPath);
   await readFile(signaturePath); // Impide publicar una plantilla con firma ausente.
+  for (const [opcion, url] of [["--firma-financiero=", REDSALUD_FINANCIERO_SIGNATURE_URL], ["--firma-servicios=", REDSALUD_SERVICIOS_SIGNATURE_URL]]) {
+    const destino = publicUploadDiskPath(url);
+    const origen = process.argv.find((arg) => arg.startsWith(opcion))?.slice(opcion.length);
+    if (origen) {
+      await mkdir(path.dirname(destino), { recursive: true });
+      await copyFile(origen, destino);
+    }
+    await readFile(destino).catch(() => { throw new Error(`Falta una firma: indícala con ${opcion}RUTA.png`); });
+  }
   const svg = redSaludCertificateSvg(`data:image/png;base64,${logo.toString("base64")}`);
   certificateLayoutSchema.parse(REDSALUD_CERTIFICATE_LAYOUT);
   await mkdir(outputDir, { recursive: true });
