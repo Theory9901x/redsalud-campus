@@ -1291,16 +1291,12 @@
  *
  * Panel institucional a sangre: navy profundo arriba, abriéndose al azul de
  * la entidad -que sigue dominando- pero saturado, sin lavarlo con blanco.
- * Encima, malla de 64 px con una cruz en cada cruce (la cruz es el guiño de
- * salud; la malla, el de tecnología). Lleva blanco literal porque el fondo es
+ * Encima va la constelación animada (.auth-constelacion). Lleva blanco literal porque el fondo es
  * el mismo en los dos temas (ver DESIGN-SYSTEM.md).
  */
 .auth-panel {
   background-color: var(--navy);
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cpath d='M0 5V0h5M0 59v5h5M64 5V0h-5M64 59v5h-5' fill='none' stroke='white' stroke-opacity='.26' stroke-width='1.4'/%3E%3C/svg%3E"),
-    linear-gradient(to right, color-mix(in oklch, white 5%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklch, white 5%, transparent) 1px, transparent 1px),
     radial-gradient(circle 640px at 96% 104%, color-mix(in oklch, var(--primary) 92%, transparent), transparent 68%),
     radial-gradient(circle 420px at 6% 46%, color-mix(in oklch, var(--success) 16%, transparent), transparent 70%),
     linear-gradient(
@@ -1310,7 +1306,6 @@
       color-mix(in oklch, var(--primary) 52%, var(--navy)) 72%,
       color-mix(in oklch, var(--primary) 70%, var(--navy)) 100%
     );
-  background-size: 64px 64px, 64px 64px, 64px 64px, auto, auto, auto;
 }
 /* Franja institucional en el borde superior: verde -> azul de la entidad. */
 .auth-franja {
@@ -1320,15 +1315,14 @@
   height: 4px;
   background: linear-gradient(to right in oklch, var(--success), var(--primary) 55%, color-mix(in oklch, white 70%, var(--primary)));
 }
-/* Emblema de fondo: cruz de salud en trazo fino dentro de anillos, recortado
-   contra el borde derecho. Marca de agua estática, sin íconos ni animación. */
-.auth-emblema {
+/* Constelación animada de fondo (components/auth/constelacion.tsx): el
+   lienzo ocupa todo el panel, por debajo del contenido. */
+.auth-constelacion {
+  --constelacion-verde: var(--success);
   position: absolute;
-  top: 45%;
-  right: 0;
-  width: clamp(420px, 62%, 640px);
-  aspect-ratio: 1;
-  transform: translate(42%, -50%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 /* Titular: su tamaño sale del ancho Y del alto de la ventana (el panel ocupa
@@ -1338,25 +1332,6 @@
 /* Descripciones de la retícula: solo con ancho y alto de sobra. */
 .auth-celda-desc { display: none; }
 @media (min-width: 1536px) and (min-height: 960px) { .auth-celda-desc { display: block; } }
-.auth-emblema svg { position: absolute; inset: 24%; width: 52%; height: 52%; overflow: visible; }
-.auth-cruz-fondo {
-  fill: color-mix(in oklch, white 5%, transparent);
-  stroke: color-mix(in oklch, white 30%, transparent);
-  stroke-width: 1.5;
-}
-.auth-cruz-filo { stroke: color-mix(in oklch, var(--success) 55%, transparent); stroke-width: 1; stroke-dasharray: 3 7; }
-.auth-anillos {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background-image: repeating-radial-gradient(
-    circle at center,
-    transparent 0 43px,
-    color-mix(in oklch, white 14%, transparent) 43px 44px
-  );
-  mask-image: radial-gradient(circle at center, transparent 34%, black 40%, transparent 71%);
-  -webkit-mask-image: radial-gradient(circle at center, transparent 34%, black 40%, transparent 71%);
-}
 /* Cifras reales de la plataforma: una sola banda con divisiones (no tarjetas
    sueltas), con tinte navy para que el texto llegue a AA. Solo donde cabe sin
    apretar; en el resto mandan el titular y el acceso. */

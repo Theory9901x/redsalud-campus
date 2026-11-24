@@ -1,4 +1,5 @@
 import { Activity, Award, CalendarCheck, Layers, LineChart, MapPin, QrCode, ShieldCheck, Users } from "lucide-react";
+import { Constelacion } from "@/components/auth/constelacion";
 import { ThemeToggle } from "@/components/brand/theme-toggle";
 import { prisma } from "@/lib/prisma";
 import { SIN_PRUEBAS } from "@/lib/pruebas";
@@ -67,31 +68,6 @@ function TrazoEcg({ className = "" }: { className?: string }) {
   );
 }
 
-/**
- * Emblema de fondo: la cruz de salud en trazo fino, dentro de anillos
- * concéntricos, recortada contra el borde derecho del panel. Es una marca de
- * agua estática (sin animación ni relleno): da identidad de entidad de salud
- * sin competir con el titular.
- */
-function EmblemaSalud() {
-  const cruz = "M38 6h24v32h32v24H62v32H38V62H6V38h32z";
-  return (
-    <div className="auth-emblema" aria-hidden="true">
-      <div className="auth-anillos" />
-      <svg viewBox="0 0 100 100" fill="none">
-        <path className="auth-cruz-fondo" d={cruz} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-        <path
-          className="auth-cruz-filo"
-          d={cruz}
-          strokeLinejoin="round"
-          vectorEffect="non-scaling-stroke"
-          transform="translate(50 50) scale(0.8) translate(-50 -50)"
-        />
-      </svg>
-    </div>
-  );
-}
-
 const NUMERO = new Intl.NumberFormat("es-CO");
 
 /**
@@ -151,7 +127,7 @@ export function AuthShell({
           registro, que es largo, el formulario se desplaza y el panel no. */}
       <aside className="auth-panel relative hidden overflow-hidden text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-between lg:px-12 lg:py-12 xl:px-16 xl:py-14">
         <span className="auth-franja" aria-hidden="true" />
-        <EmblemaSalud />
+        <Constelacion />
 
         <div className="relative z-10 flex items-start justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
           <BrandMark logoUrl={logoUrl} size="lg" />
@@ -212,6 +188,7 @@ export function AuthShell({
 
       {/* Encabezado compacto institucional, solo en móvil/tablet */}
       <div className="auth-panel relative overflow-hidden px-6 pb-0 pt-7 text-white lg:hidden">
+        <Constelacion />
         <div className="relative z-10">
           <BrandMark logoUrl={logoUrl} size="sm" />
         </div>
