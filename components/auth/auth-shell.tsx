@@ -106,16 +106,20 @@ const NUMERO = new Intl.NumberFormat("es-CO");
 async function CifrasAcceso() {
   let cifras: { valor: number; etiqueta: string }[];
   try {
-    const [colaboradores, cursos, constancias] = await Promise.all([
+    const [colaboradores, municipios, capacitaciones] = await Promise.all([
       prisma.user.count({ where: { status: "ACTIVE" } }),
-      prisma.course.count({ where: { status: "PUBLISHED", trainingActivities: { none: {} }, ...SIN_PRUEBAS } }),
-      prisma.certificate.count({ where: { status: "VALID" } }),
+      prisma.user.findMany({ where: { status: "ACTIVE", municipioId: { not: null } }, distinct: ["municipioId"], select: { municipioId: true } }),
+      // Las mismas que ve el personal: plan vigente, publicadas y sin pruebas.
+      prisma.trainingActivity.count({
+        where: { status: { not: "DRAFT" }, manuallyHidden: false, ...SIN_PRUEBAS, plan: { status: "ACTIVE", kind: "CAPACITACION", ...SIN_PRUEBAS } },
+      }),
     ]);
     cifras = [
       { valor: colaboradores, etiqueta: "colaboradores en el campus" },
-      { valor: cursos, etiqueta: cursos === 1 ? "curso publicado" : "cursos publicados" },
-      { valor: constancias, etiqueta: constancias === 1 ? "constancia emitida" : "constancias emitidas" },
-    ].filter((c) => c.valor > 0);
+      { valor: municipios.length, etiqueta: "municipios de Casanare" },
+      { valor: capacitaciones, etiqueta: "capacitaciones en el plan" },
+      // Una cifra de un dígito no dice nada en la portada: mejor no mostrarla.
+    ].filter((c) => c.valor >= 10);
   } catch {
     return null;
   }
