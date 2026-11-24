@@ -6,9 +6,10 @@ import { requireTutorOrAdmin } from "@/lib/auth-helpers";
 import { getSesionReunion } from "@/lib/reuniones";
 import { getAreasAnfitrionas, getGestionReunion } from "@/lib/reuniones-gestion";
 import { GestionReunionEnVivo } from "@/components/reuniones/gestion-en-vivo";
-import { eliminarReunionAction, reprogramarSesionAction, subirActaFirmadaAction } from "@/app/admin/reuniones/actions";
-import { EliminarReunion, ReprogramarSesion, SubirActaFirmada } from "@/components/reuniones/formularios";
+import { agregarSesionAction, eliminarReunionAction, reprogramarSesionAction, subirActaFirmadaAction } from "@/app/admin/reuniones/actions";
+import { EliminarReunion, FormularioAgregarSesion, ReprogramarSesion, SubirActaFirmada } from "@/components/reuniones/formularios";
 import { prisma } from "@/lib/prisma";
+import { PanelDeslizable } from "@/components/training-plans/panel-deslizable";
 import { accesoReuniones } from "@/lib/reuniones-access";
 import { VistaActividad, SeccionActividad, type PestanaActividad } from "@/components/training-plans/vista-actividad";
 import { ActivityQrPanel } from "@/components/training-plans/activity-qr-panel";
@@ -46,7 +47,10 @@ export default async function SesionReunionPage({ params, searchParams }: { para
   const volver = totalSesiones > 1 ? { href: `${base}/${id}`, etiqueta: d.reunion.titulo } : { href: base, etiqueta: "Reuniones" };
   const acta = `/api/reuniones/${id}/sesiones/${activityId}/acta`;
   const enlaces = d.jornada ? await Promise.all(accesosDeJornada(APP_URL, activityId, d.jornada.tokenPublico, { conEvaluacion: false, modalidad: d.jornada.modality, audience: d.jornada.audience }).filter(a => a.clave === "sala" || a.clave === "invitados").map(async a => ({ ...a, qrDataUrl: await QRCode.toDataURL(a.url, { width: 640, margin: 2, errorCorrectionLevel: 'M' }) }))) : [];
-  const { puedeEliminar } = await accesoReuniones();
+  const { puedeEliminar, where: alcance } = await accesoReuniones();
+  // Agregar sesiones es de quien administra la reunión completa (no del
+  // delegado de una sola sesión): el mismo alcance que exige la acción.
+  const puedeAgregar = d.puedeGestionar && (await prisma.trainingPlan.count({ where: { ...alcance, id } })) > 0;
 
   if (editar === "1" && d.puedeGestionar) return <div className="space-y-6">
     <Link href={aqui} className="inline-flex items-center gap-2 text-base font-semibold text-muted-foreground"><ArrowLeft className="h-4 w-4" />Volver al módulo de la reunión</Link>
@@ -198,6 +202,13 @@ export default async function SesionReunionPage({ params, searchParams }: { para
             <Link href={`${aqui}?editar=1`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}><Pencil className="h-3.5 w-3.5" aria-hidden="true" /> Editar</Link>
             <ReprogramarSesion action={reprogramarSesionAction.bind(null, id, activityId)} fecha={gestion.fecha} inicio={gestion.inicio} fin={gestion.fin} />
           </>}
+          {/* Con una sola sesión la reunión abre directo aquí, así que el
+              botón para sumar otra fecha tiene que estar también en esta vista. */}
+          {puedeAgregar && (
+            <PanelDeslizable centrado etiqueta="Agregar sesión" icono="agendar" titulo="Agregar sesión" descripcion="Para otro día u otro grupo. Cada sesión nueva tiene su propio enlace, QR, sala y acta." className="min-h-9 gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground hover:bg-muted [&_svg]:h-3.5 [&_svg]:w-3.5">
+              <FormularioAgregarSesion action={agregarSesionAction.bind(null, id)} alTerminar={`${base}/${id}`} />
+            </PanelDeslizable>
+          )}
           {puedeEliminar && <EliminarReunion action={eliminarReunionAction.bind(null, id)} titulo={d.reunion.titulo} volverA={base} className="min-h-9" />}
         </div>
       }

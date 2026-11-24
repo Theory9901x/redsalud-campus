@@ -135,9 +135,22 @@ export function FormularioReunion({
   );
 }
 
-export function FormularioAgregarSesion({ action }: { action: (s: EstadoReunion, fd: FormData) => Promise<EstadoReunion> }) {
-  const [state, formAction, pendiente] = useActionState(action, INICIAL);
+/**
+ * `alTerminar`: a dónde ir cuando la sesión queda creada. Lo usa la vista de
+ * una sesión, que no lista las demás: lleva a la reunión, donde ya se ven todas.
+ */
+export function FormularioAgregarSesion({ action, alTerminar }: { action: (s: EstadoReunion, fd: FormData) => Promise<EstadoReunion>; alTerminar?: string }) {
   const [sesiones, setSesiones] = useState<Sesion[]>([{ ...VACIA }]);
+  const router = useRouter();
+  const [state, formAction, pendiente] = useActionState(async (s: EstadoReunion, fd: FormData) => {
+    const r = await action(s, fd);
+    if (r.ok) {
+      setSesiones([{ ...VACIA }]);
+      if (alTerminar) router.push(alTerminar);
+      else router.refresh();
+    }
+    return r;
+  }, INICIAL);
   return (
     <form action={formAction} className="space-y-4">
       <EditorSesiones sesiones={sesiones} setSesiones={setSesiones} />
