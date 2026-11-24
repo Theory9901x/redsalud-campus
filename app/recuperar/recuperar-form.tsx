@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, KeyRound, Mail, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, KeyRound, Mail, MailWarning, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,14 @@ export function RecuperarForm() {
             ? "Escribe tu correo o usuario y te enviaremos un código de 6 dígitos."
             : "Escribe el código que te llegó y elige tu contraseña nueva. Vence en 15 minutos."}
         </p>
+        {paso === 2 && (
+          <p className="mt-3 flex items-start gap-2 rounded-lg border border-warning/50 bg-warning/15 px-3 py-2.5 text-sm text-foreground">
+            <MailWarning className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>
+              ¿No lo ves en la bandeja de entrada? Revisa también la carpeta de <b>spam o correo no deseado</b>.
+            </span>
+          </p>
+        )}
       </div>
 
       {paso === 1 ? (
