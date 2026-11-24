@@ -45,6 +45,24 @@ fi
 echo "▸ cliente de Prisma"
 npx prisma generate >/dev/null
 
+# Pestañas abiertas de ANTES del despliegue. Sin lo de abajo, quien tenía el
+# login o un formulario abierto recibía "This page couldn't load": cada build
+# generaba una clave nueva, y con ella identificadores nuevos para todas las
+# acciones de servidor, así que el servidor recién subido no reconocía las que
+# enviaba la pestaña vieja (el log de errores era casi todo "Failed to find
+# Server Action").
+#
+#  1. Clave de acciones FIJA, guardada fuera del repositorio: los
+#     identificadores dejan de cambiar en cada build.
+#  2. Identificador de despliegue: cuando una pestaña vieja navega, Next nota
+#     el desfase y recarga la página completa en vez de mezclar versiones.
+CLAVE=/opt/redsalud/.clave-acciones
+if [ ! -s "$CLAVE" ]; then
+  (umask 077 && openssl rand -base64 32 > "$CLAVE")
+fi
+export NEXT_SERVER_ACTIONS_ENCRYPTION_KEY="$(cat "$CLAVE")"
+export NEXT_DEPLOYMENT_ID="$(git rev-parse --short HEAD)"
+
 echo "▸ compilando (la aplicación sigue en línea)"
 rm -rf "$nuevo"
 # Los tipos generados de la build ANTERIOR referencian las rutas de aquel
@@ -53,6 +71,15 @@ rm -rf "$nuevo"
 # de ejecución: borrarlos no toca al servidor que sigue sirviendo.
 rm -rf "$activo/types" .next/types
 NEXT_DIST_DIR="$nuevo" nice -n 19 npm run build
+
+#  3. Los archivos estáticos de la versión anterior se conservan dentro de la
+#     nueva. Llevan el hash en el nombre, así que no chocan; sin ellos, una
+#     pestaña vieja que pide un trozo de código que aún no había cargado
+#     recibe 404 y la página se cae. Se purgan a los 14 días.
+if [ -d "$activo/static" ]; then
+  cp -rnp "$activo/static/." "$nuevo/static/" 2>/dev/null || true
+  find "$nuevo/static" -type f -mtime +14 -delete 2>/dev/null || true
+fi
 
 # A partir de aquí el build nuevo está completo: el reinicio es lo único que
 # corta, y dura lo que tarde el proceso en levantar.
