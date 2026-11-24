@@ -1,4 +1,4 @@
-import { Activity, Award, HeartPulse, Layers, LineChart, Lock, QrCode } from "lucide-react";
+import { Activity, Award, Layers, LineChart, Lock, QrCode } from "lucide-react";
 import { ThemeToggle } from "@/components/brand/theme-toggle";
 import { prisma } from "@/lib/prisma";
 import { SIN_PRUEBAS } from "@/lib/pruebas";
@@ -67,35 +67,6 @@ function TrazoEcg({ className = "" }: { className?: string }) {
   );
 }
 
-/**
- * Orbe de pulso (ver .auth-orbe): anillos, un aro punteado que gira, nodos en
- * órbita y el núcleo con el pulso. Puramente decorativo.
- */
-function OrbePulso() {
-  return (
-    <div className="auth-orbe" aria-hidden="true">
-      <svg viewBox="0 0 400 400" fill="none">
-        <circle cx="200" cy="200" r="198" stroke="white" strokeOpacity="0.1" />
-        <circle cx="200" cy="200" r="160" stroke="white" strokeOpacity="0.16" />
-        <circle cx="200" cy="200" r="118" stroke="white" strokeOpacity="0.22" />
-        <g className="auth-orbe-giro">
-          <circle cx="200" cy="200" r="180" stroke="white" strokeOpacity="0.4" strokeWidth="1.5" strokeDasharray="2 12" strokeLinecap="round" />
-          <circle cx="200" cy="20" r="5" fill="var(--success)" />
-          <circle cx="356" cy="290" r="3.5" fill="white" fillOpacity="0.9" />
-        </g>
-        <g className="auth-orbe-giro" data-sentido="inverso">
-          <path d="M200 61a139 139 0 0 1 120 69" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" />
-          <path d="M200 339a139 139 0 0 1-120-69" stroke="white" strokeOpacity="0.55" strokeWidth="2.5" strokeLinecap="round" />
-          <circle cx="61" cy="200" r="4" fill="white" />
-        </g>
-      </svg>
-      <div className="auth-orbe-nucleo">
-        <HeartPulse strokeWidth={1.75} />
-      </div>
-    </div>
-  );
-}
-
 const NUMERO = new Intl.NumberFormat("es-CO");
 
 /**
@@ -153,7 +124,7 @@ export function AuthShell({
       {/* Panel institucional (escritorio). Fijo al alto de la ventana: en el
           registro, que es largo, el formulario se desplaza y el panel no. */}
       <aside className="auth-panel relative hidden overflow-hidden text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-between lg:p-12 xl:p-16">
-        <OrbePulso />
+        <div className="auth-anillos" aria-hidden="true" />
 
         <div className="relative z-10 flex items-start justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
           <BrandMark logoUrl={logoUrl} size="lg" />
