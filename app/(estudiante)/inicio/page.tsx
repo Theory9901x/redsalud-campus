@@ -3,23 +3,17 @@ import { ComitesEnPanel } from "@/components/comites/comites-en-panel";
 import {
   Activity,
   ArrowRight,
-  Award,
-  BookOpen,
-  CheckCircle2,
-  Clock,
-  GraduationCap,
-  PlayCircle,
   ShieldAlert,
   Sparkles,
-  TrendingUp,
 } from "lucide-react";
 import { requireSession } from "@/lib/auth-helpers";
+import { getAgendaEstudiante } from "@/lib/agenda-estudiante";
+import { FilaDeAgenda, SeccionAgenda } from "@/components/agenda/fila-agenda";
 import { prisma } from "@/lib/prisma";
 import { StaggerSections } from "@/components/brand/stagger-sections";
 import { AvatarProgressRing } from "@/components/student/avatar-progress-ring";
 import { EcgPulse } from "@/components/brand/ecg-pulse";
 import { getUserAvatarUrl } from "@/lib/avatar";
-import { cn } from "@/lib/utils";
 
 /**
  * Dashboard del estudiante: intro + recuento de datos de TODA su gestión. No
@@ -32,7 +26,7 @@ export default async function InicioPage() {
   const personnelType = session.user.personnelType;
   const firstName = session.user.name?.split(" ")[0];
 
-  const [enrollments, certificateCount, obligatoriosDisponibles, avatarUrl] = await Promise.all([
+  const [enrollments, certificateCount, obligatoriosDisponibles, avatarUrl, agenda] = await Promise.all([
     prisma.enrollment.findMany({
       // Contenido del PLAN de capacitaciones: su seguimiento vive en
       // "Mis capacitaciones", no aquí. Sin esto el estudiante veía el mismo
@@ -55,6 +49,7 @@ export default async function InicioPage() {
       },
     }),
     getUserAvatarUrl(userId),
+    getAgendaEstudiante(userId),
   ]);
   const activos = enrollments.filter((e) => e.status !== "COMPLETED").length;
   const completados = enrollments.filter((e) => e.status === "COMPLETED").length;
@@ -76,24 +71,25 @@ export default async function InicioPage() {
     .filter((e) => e.course.courseType === "OBLIGATORIO" && e.status !== "COMPLETED")
     .at(-1)?.course.title;
 
-  const KPIS = [
-    { icon: BookOpen, value: activos, label: "Cursos activos", box: "bg-primary/15 text-primary" },
-    { icon: CheckCircle2, value: completados, label: "Completados", box: "bg-success/15 text-success" },
-    { icon: Award, value: certificateCount, label: "Constancias", box: "bg-warning/15 text-warning-foreground" },
+  const RESUMEN = [
+    { valor: activos, etiqueta: "Cursos activos", detalle: `${enCurso} en curso · ${sinIniciar} sin iniciar`, href: "/mi-aula", alerta: false },
+    { valor: completados, etiqueta: "Cursos completados", detalle: `${horasInscritas} h de formación inscritas`, href: "/mi-aula", alerta: false },
+    { valor: certificateCount, etiqueta: "Constancias", detalle: "Descárgalas cuando quieras", href: "/mis-certificados", alerta: false },
     {
-      icon: ShieldAlert,
-      value: obligatoriosPendientes,
-      label: "Obligatorios pendientes",
-      box: "bg-destructive/15 text-destructive",
+      valor: obligatoriosPendientes,
+      etiqueta: "Obligatorios pendientes",
+      detalle: obligatoriosPendientes > 0 ? "Requieren tu atención" : "Estás al día",
+      href: "/mi-aula?tab=obligatorios",
+      alerta: obligatoriosPendientes > 0,
     },
   ];
 
-  const DESGLOSE = [
-    { label: "En curso", value: enCurso, icon: PlayCircle },
-    { label: "Sin iniciar", value: sinIniciar, icon: Clock },
-    { label: "Completados", value: completados, icon: CheckCircle2 },
-    { label: "Horas de formación", value: `${horasInscritas} h`, icon: TrendingUp },
+  // Lo inmediato de la agenda: en vivo, últimas 24 h y las tres más próximas.
+  const inmediatas = [
+    ...agenda.filter((f) => f.momento === "EN_VIVO" || f.momento === "FINALIZADA"),
+    ...agenda.filter((f) => f.momento === "PROXIMA").slice(0, 3),
   ];
+  const pendientes = agenda.reduce((t, f) => t + f.pendientes, 0);
 
   return (
     <main className="accent-student mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
@@ -144,75 +140,65 @@ export default async function InicioPage() {
           </div>
         </section>
 
-        {/* Recuento: cuatro indicadores principales. */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {KPIS.map((k) => (
-            <div key={k.label} className="surface flex items-center gap-3 p-4">
-              <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl", k.box)}>
-                <k.icon className="h-5 w-5" />
-              </span>
-              <div className="min-w-0 leading-tight">
-                <p className="font-display text-2xl font-extrabold text-foreground">{k.value}</p>
-                <p className="truncate text-[12px] text-muted-foreground">{k.label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <ComitesEnPanel userId={session.user.id} />
-        {/* Recuento: panel de resumen con el desglose y el avance. */}
-        <section className="surface-panel p-6 sm:p-8">
-          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[var(--accent)]/[0.08] blur-3xl" />
-          <div className="relative">
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)]/15 text-[var(--accent)]">
-                <TrendingUp className="h-[18px] w-[18px]" />
-              </span>
-              <div>
-                <h2 className="font-display text-lg font-extrabold text-foreground">Resumen de tu formación</h2>
-                <p className="text-sm text-muted-foreground">Todo tu avance, en números.</p>
-              </div>
-            </div>
-
-            {/* Barra de avance global. */}
-            <div className="mt-6">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-foreground">Avance global</span>
-                <span className="text-muted-foreground">{avanceGlobal}%</span>
-              </div>
-              <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-foreground/10">
-                <div className="progress-fill-animated h-full rounded-full" style={{ width: `${avanceGlobal}%` }} />
-              </div>
-            </div>
-
-            {/* Desglose. */}
-            <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {DESGLOSE.map((d) => (
-                <div key={d.label} className="surface-clay p-4">
-                  <d.icon className="h-4 w-4 text-[var(--accent)]" />
-                  <p className="mt-2 font-display text-xl font-extrabold text-foreground">{d.value}</p>
-                  <p className="text-[12px] text-muted-foreground">{d.label}</p>
-                </div>
+        {/* Lo primero: qué tiene que hacer hoy. La misma agenda de «Mis
+            capacitaciones», recortada a lo inmediato. */}
+        <SeccionAgenda
+          titulo="Tu agenda"
+          conteo={inmediatas.length}
+          tono={inmediatas.some((f) => f.momento === "EN_VIVO") ? "vivo" : undefined}
+          ayuda={pendientes > 0 ? `Tienes ${pendientes} ${pendientes === 1 ? "evaluación" : "evaluaciones"} por presentar.` : "En vivo, últimas 24 horas y lo más próximo."}
+        >
+          {inmediatas.length === 0 ? (
+            <p className="agenda-vacio">
+              <b>Nada en agenda por ahora</b>
+              Cuando un área programe una capacitación para ti, aparecerá aquí con su fecha.
+            </p>
+          ) : (
+            <ul>
+              {inmediatas.map((f) => (
+                <FilaDeAgenda key={f.id} fila={f} />
               ))}
-            </div>
+            </ul>
+          )}
+          <Link
+            href="/mis-capacitaciones"
+            className="flex items-center justify-center gap-1.5 border-t border-border px-5 py-3 text-sm font-semibold text-primary transition-colors hover:bg-muted"
+          >
+            Ver toda mi agenda de capacitaciones
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </SeccionAgenda>
 
-            {proximoObligatorio && (
-              <Link
-                href="/mi-aula?tab=obligatorios"
-                className="mt-6 flex items-center gap-3 rounded-xl border border-destructive/25 bg-destructive/5 p-4 transition-colors hover:bg-destructive/10"
-              >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/15 text-destructive">
-                  <ShieldAlert className="h-4 w-4" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[12px] font-semibold uppercase tracking-wide text-destructive">Obligatorio pendiente</p>
-                  <p className="truncate text-sm font-medium text-foreground">{proximoObligatorio}</p>
-                </div>
-                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        {proximoObligatorio && (
+          <Link
+            href="/mi-aula?tab=obligatorios"
+            className="flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 transition-colors hover:bg-destructive/10"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/15 text-destructive">
+              <ShieldAlert className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold text-destructive">Curso obligatorio pendiente</p>
+              <p className="truncate text-[15px] font-semibold text-foreground">{proximoObligatorio}</p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          </Link>
+        )}
+
+        {/* Cursos en números: una sola banda, sin repetir cifras en dos sitios. */}
+        <section aria-label="Tus cursos en números">
+          <div className="agenda-resumen" data-columnas="4">
+            {RESUMEN.map((r) => (
+              <Link key={r.etiqueta} href={r.href} data-alerta={r.alerta} className="transition-colors hover:bg-muted">
+                <b>{r.valor}</b>
+                <span>{r.etiqueta}</span>
+                <span className="!mt-0.5 !text-[12px]">{r.detalle}</span>
               </Link>
-            )}
+            ))}
           </div>
         </section>
+
+        <ComitesEnPanel userId={session.user.id} />
       </StaggerSections>
     </main>
   );

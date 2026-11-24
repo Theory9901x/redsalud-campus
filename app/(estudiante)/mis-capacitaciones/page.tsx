@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { ArrowRight, ChevronDown, FolderOpen } from "lucide-react";
+import { ArrowRight, FolderOpen } from "lucide-react";
 import { requireSession } from "@/lib/auth-helpers";
-import { getAgendaEstudiante, type FilaAgenda } from "@/lib/agenda-estudiante";
+import { getAgendaEstudiante } from "@/lib/agenda-estudiante";
 import { getTrainingPlansForStudent } from "@/lib/training-plans";
 import { getCapacitacionesEnVivo } from "@/lib/en-vivo";
 import { veePruebas } from "@/lib/pruebas";
 import { PestanasCapacitaciones } from "@/components/en-vivo/pestanas-capacitaciones";
-import { FilaDeAgenda, SeccionAgenda } from "@/components/agenda/fila-agenda";
+import { SeccionAgenda } from "@/components/agenda/fila-agenda";
+import { ListasAgenda } from "@/components/agenda/listas-agenda";
 
 export const dynamic = "force-dynamic";
 
@@ -32,20 +33,9 @@ export default async function MisCapacitacionesPage() {
     ),
   ]);
 
-  const ahora = agenda.filter((f) => f.momento === "EN_VIVO" || f.momento === "FINALIZADA");
   const proximas = agenda.filter((f) => f.momento === "PROXIMA");
-  const sinFecha = agenda.filter((f) => f.momento === "SIN_FECHA");
   const pendientes = agenda.reduce((s, f) => s + f.pendientes, 0);
   const enVivo = agenda.filter((f) => f.momento === "EN_VIVO").length;
-
-  // «Próximas» agrupadas por día, en el orden en que ya vienen (por fecha).
-  const grupos: { titulo: string; filas: FilaAgenda[] }[] = [];
-  for (const f of proximas) {
-    const titulo = f.grupo ?? "Más adelante";
-    const ultimo = grupos.at(-1);
-    if (ultimo?.titulo === titulo) ultimo.filas.push(f);
-    else grupos.push({ titulo, filas: [f] });
-  }
 
   const planesActivos = planes.filter((p) => p.status === "ACTIVE");
 
@@ -78,66 +68,13 @@ export default async function MisCapacitacionesPage() {
           </Link>
         </div>
 
-        {agenda.length === 0 && (
-          <div className="agenda-panel">
-            <p className="agenda-vacio">
-              <b>No tienes capacitaciones en agenda</b>
-              Cuando un área programe una capacitación para tu grupo de personal, aparecerá aquí con su fecha.
-            </p>
-          </div>
-        )}
-
-        {ahora.length > 0 && (
-          <SeccionAgenda
-            titulo="Ahora"
-            conteo={ahora.length}
-            tono={enVivo > 0 ? "vivo" : undefined}
-            ayuda="En vivo y lo de las últimas 24 horas: aún puedes presentar lo pendiente."
-          >
-            <ul>
-              {ahora.map((f) => (
-                <FilaDeAgenda key={f.id} fila={f} />
-              ))}
-            </ul>
-          </SeccionAgenda>
-        )}
-
-        {proximas.length > 0 && (
-          <SeccionAgenda titulo="Próximas" conteo={proximas.length} ayuda="Con fecha y hora confirmadas, de la más cercana a la más lejana.">
-            {grupos.map((g) => (
-              <div key={g.titulo}>
-                <p className="agenda-grupo">{g.titulo}</p>
-                <ul>
-                  {g.filas.map((f) => (
-                    <FilaDeAgenda key={f.id} fila={f} />
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </SeccionAgenda>
-        )}
-
-        {sinFecha.length > 0 && (
-          // Plegada cuando es larga: son las líneas del plan que aún no tienen
-          // día; informan, pero no hay nada que hacer con ellas hoy.
-          <details className="agenda-panel group" open={sinFecha.length <= 6 && ahora.length + proximas.length === 0}>
-            <summary className="agenda-cabecera">
-              <h2>
-                Programadas, aún sin fecha
-                <span className="agenda-conteo">{sinFecha.length}</span>
-              </h2>
-              <p className="inline-flex items-center gap-1.5">
-                Previstas para este trimestre o los siguientes
-                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" />
-              </p>
-            </summary>
-            <ul>
-              {sinFecha.map((f) => (
-                <FilaDeAgenda key={f.id} fila={f} />
-              ))}
-            </ul>
-          </details>
-        )}
+        <ListasAgenda
+          filas={agenda}
+          vacio={{
+            titulo: "No tienes capacitaciones en agenda",
+            texto: "Cuando un área programe una capacitación para tu grupo de personal, aparecerá aquí con su fecha.",
+          }}
+        />
 
         {planesActivos.length > 0 && (
           <SeccionAgenda titulo="Planes y documentos" ayuda="El cronograma completo del año y los documentos de cada plan.">

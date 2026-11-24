@@ -226,7 +226,19 @@
   color: var(--foreground);
 }
 .agenda-resumen span { display: block; margin-top: 0.3rem; font-size: 0.8125rem; color: var(--muted-foreground); }
-.agenda-resumen [data-alerta="true"] b { color: color-mix(in oklch, var(--primary) 60%, var(--foreground)); }
+
+/* Variante de cuatro celdas (inicio): dos por fila en pantallas angostas. */
+.agenda-resumen[data-columnas="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.agenda-resumen[data-columnas="4"] > *:nth-child(2n) { border-right: 0; }
+.agenda-resumen[data-columnas="4"] > *:nth-child(-n + 2) { border-bottom: 1px solid var(--border); }
+@media (min-width: 900px) {
+  .agenda-resumen[data-columnas="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .agenda-resumen[data-columnas="4"] > *:nth-child(2n) { border-right: 1px solid var(--border); }
+  .agenda-resumen[data-columnas="4"] > *:nth-child(-n + 2) { border-bottom: 0; }
+  .agenda-resumen[data-columnas="4"] > *:last-child { border-right: 0; }
+}
+.agenda-resumen [data-alerta="true"] b { color: var(--destructive); }
+.agenda-resumen a[href="/evaluaciones"][data-alerta="true"] b { color: color-mix(in oklch, var(--primary) 60%, var(--foreground)); }
 
 .agenda-vacio { padding: 2.25rem 1.25rem; text-align: center; font-size: 0.9375rem; color: var(--muted-foreground); }
 .agenda-vacio b { display: block; margin-bottom: 0.25rem; font-size: 1rem; color: var(--foreground); }

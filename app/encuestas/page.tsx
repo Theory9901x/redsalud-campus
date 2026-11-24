@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Activity, ClipboardList, LayoutTemplate, Plus } from "lucide-react";
+import { Activity, ArrowRight, ClipboardList, LayoutTemplate, Plus } from "lucide-react";
+import { SeccionAgenda } from "@/components/agenda/fila-agenda";
 import { requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { listarEncuestas, type AlcanceEncuestas } from "@/lib/encuestas/consultas";
@@ -116,6 +117,58 @@ export default async function EncuestasPage({
         },
       ]
     : [{ valor: encuestas.length, etiqueta: "Encuestas respondidas" }];
+
+  // Estudiante: su constancia de encuestas respondidas, como lista (el mismo
+  // formato de «Mis capacitaciones» y «Evaluaciones»). El espacio de trabajo
+  // de abajo -hero, cifras, tarjetas de gestión- es de quien las administra.
+  if (!esGestor) {
+    return (
+      <main className="canvas-formacion min-h-full flex-1">
+        <div className="mx-auto w-full max-w-[1280px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+          <header className="max-w-2xl">
+            <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground">Mis encuestas</h1>
+            <p className="mt-1.5 text-[15px] leading-relaxed text-muted-foreground">
+              Las encuestas que ya respondiste, con lo que contestaste en cada una. Las que tengas por responder están en{" "}
+              <Link href="/evaluaciones" className="font-semibold text-primary hover:underline">
+                Evaluaciones
+              </Link>
+              .
+            </p>
+          </header>
+
+          <SeccionAgenda titulo="Respondidas" conteo={encuestas.length}>
+            {encuestas.length === 0 ? (
+              <p className="agenda-vacio">
+                <b>Aún no has respondido ninguna encuesta</b>
+                Cuando respondas una, quedará aquí con tus respuestas.
+              </p>
+            ) : (
+              <ul>
+                {encuestas.map((e) => (
+                  <li key={e.id}>
+                    <Link
+                      href={`/encuestas/${e.id}/mi-resultado`}
+                      className="flex items-center gap-3 border-b border-border px-5 py-3.5 transition-colors last:border-b-0 hover:bg-muted"
+                    >
+                      <ClipboardList className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[15px] font-semibold text-foreground">{e.title}</span>
+                        <span className="block truncate text-[13px] text-muted-foreground">
+                          {e.capacitacion ?? e.plan ?? "Encuesta institucional"}
+                        </span>
+                      </span>
+                      <span className="hidden shrink-0 text-sm font-semibold text-primary sm:inline">Ver mis respuestas</span>
+                      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SeccionAgenda>
+        </div>
+      </main>
+    );
+  }
 
   return (
     // El shell del estudiante no trae margen propio; el de admin y tutor sí.

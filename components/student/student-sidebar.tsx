@@ -1,29 +1,59 @@
 "use client";
 
-import { Award, CalendarRange, Clapperboard, ClipboardList, Gavel, GraduationCap, Layers, LayoutDashboard, User } from "lucide-react";
+import {
+  Award,
+  CalendarRange,
+  Clapperboard,
+  ClipboardCheck,
+  Gavel,
+  GraduationCap,
+  Layers,
+  LayoutDashboard,
+  MessageSquareText,
+  User,
+} from "lucide-react";
 import { AppSidebar, type GrupoNav } from "@/components/shell/app-sidebar";
 
-/** La Videoteca es solo del personal SIAU: lo decide el servidor (lib/videoteca/acceso.ts) y llega como `verVideoteca`. */
+/**
+ * Menú del estudiante, agrupado por lo que la persona viene a hacer:
+ *
+ *  - Capacitaciones: a qué asistir, qué presentar y sus comités.
+ *  - Cursos: lo que estudia a su ritmo y las constancias que eso le deja.
+ *  - Participación: lo que respondió (y la videoteca, solo personal SIAU).
+ *
+ * Antes era un grupo «Mi expediente» con todo mezclado, y «Evaluaciones» y
+ * «Mis encuestas» compartían el mismo ícono. Galardones ya no va aquí: la
+ * convocatoria cerró (ver galardonesDisponiblePara).
+ *
+ * La Videoteca es solo del personal SIAU: lo decide el servidor
+ * (lib/videoteca/acceso.ts) y llega como `verVideoteca`.
+ */
 const gruposPara = (verVideoteca: boolean): GrupoNav[] => [
   {
     label: null,
+    items: [{ href: "/inicio", label: "Inicio", icon: LayoutDashboard, exact: true, hash: "" }],
+  },
+  {
+    label: "Capacitaciones",
     items: [
-      { href: "/inicio", label: "Dashboard", icon: LayoutDashboard, exact: true, hash: "" },
-      // Galardones ya no va aquí: la convocatoria cerró y el módulo quedó
-      // desactivado para estudiantes (ver galardonesDisponiblePara).
-      { href: "/mi-aula", label: "Mis cursos", icon: GraduationCap, exact: true, hash: "" },
-      { href: "/cursos", label: "Catálogo", icon: Layers },
+      { href: "/mis-capacitaciones", label: "Mis capacitaciones", icon: CalendarRange },
+      { href: "/evaluaciones", label: "Evaluaciones", icon: ClipboardCheck },
+      { href: "/mis-comites", label: "Mis comités", icon: Gavel },
     ],
   },
   {
-    label: "Mi expediente",
+    label: "Cursos",
     items: [
+      { href: "/mi-aula", label: "Mis cursos", icon: GraduationCap, exact: true, hash: "" },
+      { href: "/cursos", label: "Catálogo", icon: Layers },
       { href: "/mis-certificados", label: "Mis constancias", icon: Award },
-      { href: "/mis-capacitaciones", label: "Mis capacitaciones", icon: CalendarRange },
+    ],
+  },
+  {
+    label: "Participación",
+    items: [
+      { href: "/encuestas", label: "Mis encuestas", icon: MessageSquareText },
       ...(verVideoteca ? [{ href: "/videos", label: "Videoteca", icon: Clapperboard }] : []),
-      { href: "/mis-comites", label: "Mis comités", icon: Gavel },
-      { href: "/evaluaciones", label: "Evaluaciones", icon: ClipboardList },
-      { href: "/encuestas", label: "Mis encuestas", icon: ClipboardList },
     ],
   },
   {
