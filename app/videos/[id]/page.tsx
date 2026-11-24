@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { veComoAdmin } from "@/lib/roles";
 import { videoPara, videotecaPara } from "@/lib/videoteca/consultas";
-import { puedeVerVideoteca } from "@/lib/videoteca/acceso";
+import { veVideosSiau } from "@/lib/videoteca/acceso";
 import { duracionTexto } from "@/lib/videoteca/formato";
 import { CabeceraVideoteca, matizCategoria, Miniatura } from "@/components/videoteca/piezas";
 import { Reproductor } from "@/components/videoteca/reproductor";
@@ -37,11 +37,11 @@ const FECHA = new Intl.DateTimeFormat("es-CO", { dateStyle: "long", timeZone: "A
 /** Un video de la Videoteca: el reproductor grande y, al lado, los demás. */
 export default async function VerVideoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  // Un video público se ve sin cuenta; los demás, solo el personal SIAU.
+  // Un video público se ve sin cuenta; los demás piden sesión, y los de SIAU, ser de SIAU.
   const sesion = await auth();
   const usuario = sesion?.user ?? null;
   const esAdmin = veComoAdmin(usuario?.role);
-  const permitido = await puedeVerVideoteca(usuario);
+  const permitido = await veVideosSiau(usuario);
   const [v, todos, ajustes] = await Promise.all([
     videoPara(id, usuario?.id ?? null, esAdmin, permitido),
     videotecaPara(usuario?.id ?? null, esAdmin, permitido),

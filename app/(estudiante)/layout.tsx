@@ -30,7 +30,7 @@ export default async function EstudianteLayout({ children }: { children: React.R
         userName={session.user.name ?? "Administrador"}
         restrictedAdminSections={session.user.restrictedAdminSections}
         soloLectura={session.user.role === "SEGUIMIENTO"}
-        verVideoteca={await puedeVerVideoteca(session.user)}
+        verVideoteca={puedeVerVideoteca(session.user)}
       >
         {children}
       </AdminShell>
@@ -61,7 +61,7 @@ export default async function EstudianteLayout({ children }: { children: React.R
       unreadCount={unreadCount}
       position={user?.position ?? null}
       personnelType={session.user.personnelType}
-      verVideoteca={await puedeVerVideoteca(session.user)}
+      verVideoteca={puedeVerVideoteca(session.user)}
     >
       {children}
     </StudentShell>

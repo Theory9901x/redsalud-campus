@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { privateMediaDiskPath } from "@/lib/storage";
 import { veComoAdmin } from "@/lib/roles";
-import { puedeVerVideoteca } from "@/lib/videoteca/acceso";
+import { veVideosSiau } from "@/lib/videoteca/acceso";
 import { requireReunionAccess } from "@/lib/reuniones-access";
 import { puedeLeerContenidoReunion } from "@/lib/reunion-contenido";
 
@@ -106,8 +106,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Archivo no encontrado." }, { status: 404 });
   }
 
-  // Videoteca: solo el personal SIAU o quien la gestiona (lib/videoteca/acceso.ts);
-  // un video marcado como público lo ve cualquiera.
+  // Videoteca: cualquier cuenta activa, salvo los videos de SIAU (su personal o
+  // quien la gestiona: lib/videoteca/acceso.ts); uno público lo ve cualquiera.
   let accesoVideo = false;
   if (media.folder === "videoteca" && !session?.user) {
     const video = await prisma.videoCapacitacion.findUnique({ where: { mediaId: media.id }, select: { publicado: true, publico: true } });
@@ -117,13 +117,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const clave = `${session.user.id}:${media.id}`;
     if (!autorizado(clave)) {
       const [video, usuario] = await Promise.all([
-        prisma.videoCapacitacion.findUnique({ where: { mediaId: media.id }, select: { publicado: true, publico: true } }),
+        prisma.videoCapacitacion.findUnique({ where: { mediaId: media.id }, select: { publicado: true, publico: true, soloSiau: true } }),
         prisma.user.findUnique({ where: { id: session.user.id }, select: { status: true } }),
       ]);
       if (!video || usuario?.status !== "ACTIVE" || (!video.publicado && !veComoAdmin(session.user.role))) {
         return NextResponse.json({ error: "No autorizado." }, { status: 403 });
       }
-      if (!video.publico && !(await puedeVerVideoteca(session.user))) {
+      if (!video.publico && video.soloSiau && !(await veVideosSiau(session.user))) {
         return NextResponse.json({ error: "No autorizado." }, { status: 403 });
       }
       memorizar(clave);

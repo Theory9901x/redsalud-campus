@@ -21,6 +21,7 @@ export type FilaVideo = {
   estado: string;
   publicado: boolean;
   publico: boolean;
+  soloSiau: boolean;
   creado: Date;
   tamano: number;
   personas: number;
@@ -50,7 +51,7 @@ function FilaAdmin({ v, soloLectura }: { v: FilaVideo; soloLectura: boolean }) {
   const [editando, setEditando] = useState(false);
   const [verVistas, setVerVistas] = useState(false);
   const [copiado, setCopiado] = useState(false);
-  const [f, setF] = useState({ titulo: v.titulo, descripcion: v.descripcion ?? "", categoria: v.categoria ?? "", publicado: v.publicado, publico: v.publico });
+  const [f, setF] = useState({ titulo: v.titulo, descripcion: v.descripcion ?? "", categoria: v.categoria ?? "", publicado: v.publicado, publico: v.publico, soloSiau: v.soloSiau });
 
   const ejecutar = (fn: () => Promise<{ ok: true } | { ok: false; error: string }>, exito: string, despues?: () => void) =>
     startTransition(async () => {
@@ -80,10 +81,14 @@ function FilaAdmin({ v, soloLectura }: { v: FilaVideo; soloLectura: boolean }) {
               <textarea value={f.descripcion} onChange={(e) => setF({ ...f, descripcion: e.target.value })} rows={3} maxLength={2000} placeholder="Descripción" className="rounded-lg border border-border bg-background px-3 py-2 text-[13px]" aria-label="Descripción" />
               <label className="inline-flex items-center gap-2 text-[13px]">
                 <input type="checkbox" checked={f.publicado} onChange={(e) => setF({ ...f, publicado: e.target.checked })} />
-                Publicado (visible para todo el personal)
+                Publicado
               </label>
               <label className="inline-flex items-center gap-2 text-[13px]">
-                <input type="checkbox" checked={f.publico} onChange={(e) => setF({ ...f, publico: e.target.checked })} />
+                <input type="checkbox" checked={f.soloSiau} onChange={(e) => setF({ ...f, soloSiau: e.target.checked, publico: e.target.checked ? false : f.publico })} />
+                Solo para el personal SIAU y administradores (sin marcar, lo ven estudiantes y docentes)
+              </label>
+              <label className="inline-flex items-center gap-2 text-[13px]">
+                <input type="checkbox" checked={f.publico} disabled={f.soloSiau} onChange={(e) => setF({ ...f, publico: e.target.checked })} />
                 Público: se ve con el enlace, sin usuario ni contraseña
               </label>
               <div className="flex gap-2">
@@ -101,6 +106,7 @@ function FilaAdmin({ v, soloLectura }: { v: FilaVideo; soloLectura: boolean }) {
               <div className="flex flex-wrap items-center gap-2">
                 {v.categoria && <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">{v.categoria}</span>}
                 <span className={cn("rounded-full border px-2 py-0.5 text-[11px] font-bold", v.publicado ? "border-success/30 bg-success/10 text-success" : "border-border bg-muted text-muted-foreground")}>{v.publicado ? "Publicado" : "Oculto"}</span>
+                <span className={cn("rounded-full border px-2 py-0.5 text-[11px] font-bold", v.soloSiau ? "border-warning/40 bg-warning/15 text-warning-foreground" : "border-border bg-muted text-muted-foreground")}>{v.soloSiau ? "Solo SIAU y administradores" : "Estudiantes y docentes"}</span>
                 {v.publico && <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">Público · sin iniciar sesión</span>}
                 {v.estado === "PROCESANDO" && (
                   <span className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-warning/15 px-2 py-0.5 text-[11px] font-bold text-warning-foreground">

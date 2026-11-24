@@ -33,6 +33,8 @@ export type CargaPendiente = {
   titulo: string;
   descripcion: string | null;
   categoria: string | null;
+  /** Solo personal SIAU y administradores. */
+  soloSiau: boolean;
   duracionSeg: number | null;
   usuarioId: string;
   creada: number;
@@ -94,6 +96,8 @@ export async function terminarCarga(carga: CargaPendiente) {
       titulo: carga.titulo,
       descripcion: carga.descripcion,
       categoria: carga.categoria,
+      // Cargas iniciadas antes de existir este campo: restringidas.
+      soloSiau: carga.soloSiau ?? true,
       duracionSeg: carga.duracionSeg,
       creadoPor: carga.usuarioId,
       estado: "PROCESANDO",

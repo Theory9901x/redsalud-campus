@@ -47,6 +47,10 @@ export function SubirVideo({ categorias }: { categorias: string[] }) {
   const [duracion, setDuracion] = useState<number | null>(null);
   const [titulo, setTitulo] = useState("");
   const [categoria, setCategoria] = useState("");
+  const [soloSiauMarcado, setSoloSiauMarcado] = useState(false);
+  // Lo del área SIAU siempre queda restringido (el servidor lo impone igual).
+  const esSiau = /siau|atenci[oó]n al usuario/i.test(categoria);
+  const soloSiau = soloSiauMarcado || esSiau;
   const [descripcion, setDescripcion] = useState("");
   const [estado, setEstado] = useState<Estado>({ fase: "eligiendo" });
   const [arrastrando, setArrastrando] = useState(false);
@@ -70,7 +74,7 @@ export function SubirVideo({ categorias }: { categorias: string[] }) {
       const r = await fetch("/api/videos/subir?op=iniciar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: archivo.name, tipo: archivo.type, tamano: archivo.size, titulo, categoria, descripcion, duracionSeg: duracion }),
+        body: JSON.stringify({ nombre: archivo.name, tipo: archivo.type, tamano: archivo.size, titulo, categoria, descripcion, soloSiau, duracionSeg: duracion }),
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error ?? "No se pudo iniciar la carga.");
@@ -167,16 +171,23 @@ export function SubirVideo({ categorias }: { categorias: string[] }) {
         <div className="grid content-start gap-3">
           <label className="grid gap-1.5 text-[13px] font-semibold">
             Título
-            <input value={titulo} onChange={(e) => setTitulo(e.target.value)} disabled={ocupado} maxLength={160} placeholder="Ej.: Capacitación exporte info SIAU" className="h-10 rounded-lg border border-border bg-background px-3 text-[14px] font-normal" />
+            <input value={titulo} onChange={(e) => setTitulo(e.target.value)} disabled={ocupado} maxLength={160} placeholder="Ej.: Lavado de manos" className="h-10 rounded-lg border border-border bg-background px-3 text-[14px] font-normal" />
           </label>
           <label className="grid gap-1.5 text-[13px] font-semibold">
             Área o tema
-            <input value={categoria} onChange={(e) => setCategoria(e.target.value)} disabled={ocupado} maxLength={60} list="categorias-video" placeholder="Ej.: SIAU" className="h-10 rounded-lg border border-border bg-background px-3 text-[14px] font-normal" />
+            <input value={categoria} onChange={(e) => setCategoria(e.target.value)} disabled={ocupado} maxLength={60} list="categorias-video" placeholder="Ej.: Seguridad del paciente" className="h-10 rounded-lg border border-border bg-background px-3 text-[14px] font-normal" />
             <datalist id="categorias-video">
               {[...new Set(["SIAU", ...categorias])].map((c) => (
                 <option key={c} value={c} />
               ))}
             </datalist>
+          </label>
+          <label className="inline-flex items-start gap-2 text-[13px]">
+            <input type="checkbox" className="mt-0.5" checked={soloSiau} disabled={ocupado || esSiau} onChange={(e) => setSoloSiauMarcado(e.target.checked)} />
+            <span>
+              <b className="font-semibold">Solo para el personal SIAU y administradores</b>
+              <span className="block text-[12.5px] text-muted-foreground">Sin marcar, lo ven todos los estudiantes y docentes del campus.</span>
+            </span>
           </label>
           <label className="grid gap-1.5 text-[13px] font-semibold">
             Descripción <span className="font-normal text-muted-foreground">(opcional)</span>

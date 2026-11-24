@@ -50,6 +50,9 @@ const NAV_GROUPS: GrupoNav[] = [
       // Solo las encuestas de satisfacción de sus capacitaciones (nunca la SIAU,
       // salvo para la cuenta del área SIAU).
       { href: "/encuestas", label: "Encuestas", icon: MessageSquareText, excluir: ["/encuestas/siau"] },
+      // Videos de capacitación para todos; los de SIAU solo le salen a su
+      // personal (lib/videoteca/acceso.ts).
+      { href: "/videos", label: "Videos de capacitación", icon: Clapperboard },
     ],
   },
   {
@@ -68,11 +71,7 @@ const NAV_GROUPS: GrupoNav[] = [
  */
 const GRUPO_SIAU: GrupoNav = {
   label: "Atención al Usuario",
-  // La Videoteca es solo del personal SIAU (trae datos de acceso de esa área).
-  items: [
-    { href: "/encuestas/siau", label: "Centro de datos SIAU", icon: PieChart },
-    { href: "/videos", label: "Videoteca", icon: Clapperboard },
-  ],
+  items: [{ href: "/encuestas/siau", label: "Centro de datos SIAU", icon: PieChart }],
 };
 const NAV_GROUPS_SIAU: GrupoNav[] = [...NAV_GROUPS.slice(0, 2), GRUPO_SIAU, ...NAV_GROUPS.slice(2)];
 

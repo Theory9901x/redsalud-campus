@@ -14,7 +14,7 @@ export function StudentShell({
   unreadCount,
   position,
   personnelType,
-  verVideoteca = false,
+  verVideoteca = true,
   children,
 }: {
   userName: string;
@@ -24,7 +24,7 @@ export function StudentShell({
   unreadCount: number;
   position?: string | null;
   personnelType: PersonnelType;
-  /** Personal SIAU: suma la Videoteca al menú. */
+  /** La Videoteca en el menú (todos la tienen; los videos de SIAU los filtra el servidor). */
   verVideoteca?: boolean;
   children: React.ReactNode;
 }) {

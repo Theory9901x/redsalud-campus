@@ -10,7 +10,7 @@ export function AdminShell({
   userName,
   restrictedAdminSections,
   soloLectura = false,
-  verVideoteca = false,
+  verVideoteca = true,
   children,
 }: {
   userName: string;

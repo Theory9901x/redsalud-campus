@@ -16,7 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       userName={session.user.name ?? "Administrador"}
       restrictedAdminSections={session.user.restrictedAdminSections}
       soloLectura={session.user.role === "SEGUIMIENTO"}
-        verVideoteca={await puedeVerVideoteca(session.user)}
+        verVideoteca={puedeVerVideoteca(session.user)}
     >
       {children}
     </AdminShell>

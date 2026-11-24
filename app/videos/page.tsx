@@ -4,25 +4,26 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { veComoAdmin } from "@/lib/roles";
 import { videotecaPara } from "@/lib/videoteca/consultas";
-import { puedeVerVideoteca } from "@/lib/videoteca/acceso";
+import { veVideosSiau } from "@/lib/videoteca/acceso";
 import { duracionTexto } from "@/lib/videoteca/formato";
 import { CabeceraVideoteca, matizCategoria, Miniatura, TarjetaVideo } from "@/components/videoteca/piezas";
 
 export const dynamic = "force-dynamic";
 
 /**
- * VIDEOTECA: los videos de capacitación del personal SIAU (traen datos de
- * acceso de esa área, así que no son para todo el campus: la regla está en
- * lib/videoteca/acceso.ts). Se reproducen aquí mismo, en el celular o el
- * computador, sin Drive ni descargas. Arriba el más reciente; abajo, por área.
+ * VIDEOTECA: los videos de capacitación para estudiantes y docentes. Los del
+ * área SIAU traen datos de acceso de esa área y solo los ve su personal y los
+ * administradores (la regla está en lib/videoteca/acceso.ts). Se reproducen
+ * aquí mismo, en el celular o el computador, sin Drive ni descargas. Arriba
+ * el más reciente; abajo, por área.
  */
 export default async function VideotecaPage({ searchParams }: { searchParams: Promise<{ cat?: string }> }) {
-  // Personal SIAU (o quien gestiona la videoteca): todos los publicados. El
-  // resto, con o sin sesión, solo los que se marcaron como públicos.
+  // Con sesión: los publicados, menos los de SIAU (esos, solo su personal y
+  // quien gestiona la videoteca). Sin sesión: solo los marcados como públicos.
   const sesion = await auth();
   const usuario = sesion?.user ?? null;
   const esAdmin = veComoAdmin(usuario?.role);
-  const acceso = await puedeVerVideoteca(usuario);
+  const acceso = await veVideosSiau(usuario);
   const [{ cat }, videos, ajustes] = await Promise.all([
     searchParams,
     videotecaPara(usuario?.id ?? null, esAdmin, acceso),

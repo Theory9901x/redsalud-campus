@@ -19,14 +19,14 @@ import { AppSidebar, type GrupoNav } from "@/components/shell/app-sidebar";
  *
  *  - Capacitaciones: a qué asistir, qué presentar y sus comités.
  *  - Cursos: lo que estudia a su ritmo y las constancias que eso le deja.
- *  - Participación: lo que respondió (y la videoteca, solo personal SIAU).
+ *  - Participación: lo que respondió y los videos de capacitación.
  *
  * Antes era un grupo «Mi expediente» con todo mezclado, y «Evaluaciones» y
  * «Mis encuestas» compartían el mismo ícono. Galardones ya no va aquí: la
  * convocatoria cerró (ver galardonesDisponiblePara).
  *
- * La Videoteca es solo del personal SIAU: lo decide el servidor
- * (lib/videoteca/acceso.ts) y llega como `verVideoteca`.
+ * La Videoteca es de todos; qué videos ve cada quien (los de SIAU, solo su
+ * personal) lo decide el servidor (lib/videoteca/acceso.ts).
  */
 const gruposPara = (verVideoteca: boolean): GrupoNav[] => [
   {
@@ -53,7 +53,7 @@ const gruposPara = (verVideoteca: boolean): GrupoNav[] => [
     label: "Participación",
     items: [
       { href: "/encuestas", label: "Mis encuestas", icon: MessageSquareText },
-      ...(verVideoteca ? [{ href: "/videos", label: "Videoteca", icon: Clapperboard }] : []),
+      ...(verVideoteca ? [{ href: "/videos", label: "Videos de capacitación", icon: Clapperboard }] : []),
     ],
   },
   {
@@ -66,7 +66,7 @@ export function StudentSidebar({
   open,
   onClose,
   logoUrl,
-  verVideoteca = false,
+  verVideoteca = true,
 }: {
   open: boolean;
   onClose: () => void;

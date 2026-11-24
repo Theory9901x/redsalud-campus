@@ -1711,7 +1711,8 @@ model GalardonDecision {
 
 /// VIDEOTECA (/videos): videos de capacitación que sube un administrador y que
 /// cualquier persona con cuenta activa ve desde el celular o el computador,
-/// sin Drive ni descargas. El archivo vive en Media (carpeta "videoteca").
+/// sin Drive ni descargas, SALVO los marcados `soloSiau` (personal SIAU y
+/// administradores). El archivo vive en Media (carpeta "videoteca").
 model VideoCapacitacion {
   id           String       @id @default(cuid())
   titulo       String
@@ -1728,6 +1729,9 @@ model VideoCapacitacion {
   publicado    Boolean      @default(true)
   /// Público: se ve con el enlace, sin iniciar sesión (no se registra quién lo vio).
   publico      Boolean      @default(false)
+  /// Solo personal SIAU y administradores (trae datos de acceso de esa área).
+  /// Por defecto restringido: abrir un video a todo el personal es explícito.
+  soloSiau     Boolean      @default(true)
   creadoPor    String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt

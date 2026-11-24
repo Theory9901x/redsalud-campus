@@ -49,14 +49,28 @@ const esPersonalSiau = cache(async (userId: string) => {
 type UsuarioSesion = { id: string; role: Role; restrictedAdminSections?: AdminSection[] | null };
 
 /**
- * QUIÉN VE LA VIDEOTECA (/videos): SOLO el personal SIAU. Los videos traen
- * credenciales de la cuenta de consulta SIAU en la descripción, así que no
- * son para todo el personal (así lo pidió Talento Humano el 12-nov-2026).
- * Además la ve quien la gestiona desde el panel (/admin/videos). Una sola
- * regla para el menú, las páginas, la portada y el archivo del video.
+ * QUIÉN VE LOS VIDEOS DE SIAU (los marcados `soloSiau`): SOLO el personal
+ * SIAU y quien gestiona la videoteca desde el panel (/admin/videos). Esos
+ * videos traen credenciales de la cuenta de consulta SIAU en la descripción
+ * (así lo pidió Talento Humano el 12-nov-2026). Una sola regla para las
+ * páginas, la portada y el archivo del video.
  */
-export async function puedeVerVideoteca(usuario: UsuarioSesion | null | undefined): Promise<boolean> {
+export async function veVideosSiau(usuario: UsuarioSesion | null | undefined): Promise<boolean> {
   if (!usuario) return false;
   if (veComoAdmin(usuario.role) && !(usuario.restrictedAdminSections ?? []).includes("CURSOS")) return true;
   return esPersonalSiau(usuario.id);
+}
+
+/**
+ * QUIÉN ENTRA A LA VIDEOTECA (/videos) y la tiene en el menú: cualquier
+ * persona con sesión -estudiantes, docentes y administradores- (24-nov-2026).
+ * Qué videos ve cada quien lo decide `veVideosSiau`.
+ */
+export function puedeVerVideoteca(usuario: { id: string } | null | undefined): boolean {
+  return !!usuario;
+}
+
+/** ¿Un video queda restringido a SIAU? Lo marcado, y siempre lo del área SIAU. */
+export function restringidoASiau(soloSiau: boolean, categoria: string | null) {
+  return soloSiau || (!!categoria && esAreaSiau(categoria));
 }

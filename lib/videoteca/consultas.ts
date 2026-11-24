@@ -10,6 +10,8 @@ export type VideoLista = {
   estado: string;
   publicado: boolean;
   publico: boolean;
+  /** Solo personal SIAU y administradores. */
+  soloSiau: boolean;
   creado: Date;
   /** Avance de quien mira: 0–1, y si lo completó. */
   avance: number;
@@ -26,10 +28,11 @@ const SELECT = {
   estado: true,
   publicado: true,
   publico: true,
+  soloSiau: true,
   createdAt: true,
 } as const;
 
-function aLista(v: { id: string; titulo: string; descripcion: string | null; categoria: string | null; duracionSeg: number | null; portada: string | null; estado: string; publicado: boolean; publico: boolean; createdAt: Date }, vista?: { segundos: number; completado: boolean } | null): VideoLista {
+function aLista(v: { id: string; titulo: string; descripcion: string | null; categoria: string | null; duracionSeg: number | null; portada: string | null; estado: string; publicado: boolean; publico: boolean; soloSiau: boolean; createdAt: Date }, vista?: { segundos: number; completado: boolean } | null): VideoLista {
   const dur = v.duracionSeg ?? 0;
   return {
     id: v.id,
@@ -41,6 +44,7 @@ function aLista(v: { id: string; titulo: string; descripcion: string | null; cat
     estado: v.estado,
     publicado: v.publicado,
     publico: v.publico,
+    soloSiau: v.soloSiau,
     creado: v.createdAt,
     avance: vista?.completado ? 1 : dur > 0 && vista ? Math.min(1, vista.segundos / dur) : 0,
     completado: !!vista?.completado,
@@ -48,30 +52,37 @@ function aLista(v: { id: string; titulo: string; descripcion: string | null; cat
 }
 
 /**
- * La videoteca de una persona: publicados (y los ocultos si es admin), con su
- * avance. `acceso` es la regla de lib/videoteca/acceso.ts (personal SIAU o
- * quien la gestiona): sin él -o sin sesión- solo se listan los marcados como
- * públicos.
+ * La videoteca de una persona, con su avance. `siau` es la regla
+ * `veVideosSiau` de lib/videoteca/acceso.ts:
+ *  - sin sesión: solo los marcados como públicos;
+ *  - con sesión (estudiantes y docentes): los publicados que no son de SIAU;
+ *  - personal SIAU o quien la gestiona: todos (y los ocultos si es admin).
  */
-export async function videotecaPara(userId: string | null, incluirOcultos: boolean, acceso: boolean) {
+export async function videotecaPara(userId: string | null, incluirOcultos: boolean, siau: boolean) {
   const videos = await prisma.videoCapacitacion.findMany({
-    where: !userId || !acceso ? { publicado: true, publico: true } : incluirOcultos ? {} : { publicado: true },
+    where: !userId
+      ? { publicado: true, publico: true }
+      : !siau
+        ? { publicado: true, OR: [{ soloSiau: false }, { publico: true }] }
+        : incluirOcultos
+          ? {}
+          : { publicado: true },
     orderBy: { createdAt: "desc" },
     select: { ...SELECT, vistas: { where: { userId: userId ?? "-" }, select: { segundos: true, completado: true } } },
   });
   return videos.map((v) => aLista(v, v.vistas[0]));
 }
 
-export async function videoPara(id: string, userId: string | null, incluirOcultos: boolean, acceso: boolean) {
+export async function videoPara(id: string, userId: string | null, incluirOcultos: boolean, siau: boolean) {
   const v = await prisma.videoCapacitacion.findUnique({
     where: { id },
     select: { ...SELECT, media: { select: { fileUrl: true, fileType: true } }, vistas: { where: { userId: userId ?? "-" }, select: { segundos: true, posicion: true, completado: true } } },
   });
-  if (!v || (!v.publicado && !(incluirOcultos && acceso))) return null;
+  if (!v || (!v.publicado && !(incluirOcultos && siau))) return null;
   // Sin sesión solo se ven los públicos; el resto pide iniciar sesión.
   if (!userId && !v.publico) return "LOGIN" as const;
-  // Con sesión pero sin ser del personal SIAU: tampoco.
-  if (!acceso && !v.publico) return "DENEGADO" as const;
+  // Video de SIAU y la persona no es de SIAU ni lo gestiona: tampoco.
+  if (v.soloSiau && !siau && !v.publico) return "DENEGADO" as const;
   const vista = v.vistas[0] ?? null;
   return { ...aLista(v, vista), src: v.media.fileUrl, tipo: v.media.fileType, posicion: vista?.posicion ?? 0 };
 }

@@ -63,8 +63,8 @@ const GRUPOS: { label: string | null; items: ItemAdmin[] }[] = [
       // es de admin y tutor (el estudiante ve solo sus respuestas).
       { href: "/encuestas", label: "Encuestas", icon: ClipboardList, section: "ENCUESTAS" },
       { href: "/encuestas/siau", label: "Centro de datos SIAU", icon: PieChart, section: "ENCUESTAS" },
-      // Ver la videoteca: solo personal SIAU (p. ej. la cuenta de consulta) o quien
-      // la gestiona; lo decide el servidor y llega como `verVideoteca`.
+      // Ver la videoteca: cualquier cuenta; los videos de SIAU solo le salen a su
+      // personal o a quien la gestiona (lib/videoteca/acceso.ts).
       { href: "/videos", label: "Videoteca", icon: Clapperboard, siempre: true },
       { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell, section: "NOTIFICACIONES" },
     ],
@@ -87,7 +87,7 @@ export function AdminSidebar({
   open,
   onClose,
   restrictedSections,
-  verVideoteca = false,
+  verVideoteca = true,
 }: {
   open: boolean;
   onClose: () => void;

@@ -26,7 +26,7 @@ export default async function EncuestasLayout({ children }: { children: React.Re
         userName={session.user.name ?? "Administrador"}
         restrictedAdminSections={session.user.restrictedAdminSections}
         soloLectura={session.user.role === "SEGUIMIENTO"}
-        verVideoteca={await puedeVerVideoteca(session.user)}
+        verVideoteca={puedeVerVideoteca(session.user)}
       >
         {children}
       </AdminShell>
@@ -59,7 +59,7 @@ export default async function EncuestasLayout({ children }: { children: React.Re
       unreadCount={unreadCount}
       position={user?.position ?? null}
       personnelType={session.user.personnelType}
-      verVideoteca={await puedeVerVideoteca(session.user)}
+      verVideoteca={puedeVerVideoteca(session.user)}
     >
       {children}
     </StudentShell>

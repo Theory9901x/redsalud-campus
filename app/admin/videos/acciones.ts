@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { registrarAuditoria } from "@/lib/audit";
-import { gestorVideoteca } from "@/lib/videoteca/acceso";
+import { gestorVideoteca, restringidoASiau } from "@/lib/videoteca/acceso";
 import { borrarArchivos, optimizar } from "@/lib/videoteca/almacen";
 
 type Resultado = { ok: true } | { ok: false; error: string };
@@ -14,22 +14,27 @@ function revalidar(id?: string) {
   if (id) revalidatePath(`/videos/${id}`);
 }
 
-export async function actualizarVideo(id: string, datos: { titulo: string; descripcion: string; categoria: string; publicado: boolean; publico: boolean }): Promise<Resultado> {
+export async function actualizarVideo(id: string, datos: { titulo: string; descripcion: string; categoria: string; publicado: boolean; publico: boolean; soloSiau: boolean }): Promise<Resultado> {
   const sesion = await gestorVideoteca();
   if (!sesion) return { ok: false, error: "No autorizado." };
   const titulo = datos.titulo.trim().slice(0, 160);
   if (!titulo) return { ok: false, error: "El título no puede quedar vacío." };
+  const categoria = datos.categoria.trim().slice(0, 60) || null;
+  const soloSiau = restringidoASiau(datos.soloSiau, categoria);
+  // Un video de SIAU trae datos de acceso: no puede quedar abierto sin sesión.
+  if (soloSiau && datos.publico) return { ok: false, error: "Un video solo para SIAU no puede ser público." };
   await prisma.videoCapacitacion.update({
     where: { id },
     data: {
       titulo,
       descripcion: datos.descripcion.trim().slice(0, 2000) || null,
-      categoria: datos.categoria.trim().slice(0, 60) || null,
+      categoria,
       publicado: datos.publicado,
       publico: datos.publico,
+      soloSiau,
     },
   });
-  await registrarAuditoria({ userId: sesion.user.id, action: "UPDATE", entity: "Video", entityId: id, description: `Video actualizado: «${titulo}»${datos.publicado ? "" : " (oculto)"}` });
+  await registrarAuditoria({ userId: sesion.user.id, action: "UPDATE", entity: "Video", entityId: id, description: `Video actualizado: «${titulo}»${datos.publicado ? "" : " (oculto)"} · ${soloSiau ? "solo SIAU" : "todo el personal"}` });
   revalidar(id);
   return { ok: true };
 }

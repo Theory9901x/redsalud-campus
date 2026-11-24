@@ -4,16 +4,16 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { leerPortada, rutaPortada } from "@/lib/videoteca/almacen";
-import { puedeVerVideoteca } from "@/lib/videoteca/acceso";
+import { veVideosSiau } from "@/lib/videoteca/acceso";
 
-/** Portada (miniatura) de un video de la Videoteca. Solo personal SIAU, salvo los videos públicos. */
+/** Portada (miniatura) de un video de la Videoteca. Pide sesión; la de un video de SIAU, ser de SIAU. La de un video público la ve cualquiera. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const sesion = await auth();
   const { id } = await params;
-  const v = await prisma.videoCapacitacion.findUnique({ where: { id }, select: { portada: true, publico: true, publicado: true } });
+  const v = await prisma.videoCapacitacion.findUnique({ where: { id }, select: { portada: true, publico: true, publicado: true, soloSiau: true } });
   if (!(v?.publico && v.publicado)) {
     if (!sesion?.user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
-    if (!(await puedeVerVideoteca(sesion.user))) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+    if ((!v || v.soloSiau) && !(await veVideosSiau(sesion.user))) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
   if (!v?.portada) return NextResponse.json({ error: "Sin portada." }, { status: 404 });
   try {
