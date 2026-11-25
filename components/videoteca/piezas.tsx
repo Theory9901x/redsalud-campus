@@ -1,18 +1,26 @@
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Clapperboard, Play } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clapperboard, Lock, Play } from "lucide-react";
 import type { VideoLista } from "@/lib/videoteca/consultas";
-import { duracionTexto } from "@/lib/videoteca/formato";
+import { duracionTexto, fechaCorta } from "@/lib/videoteca/formato";
 
-/** Color estable por categoría (matiz oklch), para que cada área se reconozca. */
+/**
+ * Color estable por área, SIEMPRE dentro de los azules y verdes de RedSalud
+ * (azul, verde, cian y dos intermedios): un área se reconoce sin sacar
+ * la página de los colores de la entidad. Devuelve el matiz oklch.
+ */
+const MATICES_MARCA = [234, 145, 205, 175, 250];
 export function matizCategoria(categoria: string | null) {
-  if (!categoria) return 235;
-  const fijos: Record<string, number> = { siau: 200, "talento humano": 300, calidad: 155, sistemas: 255, facturación: 75, financiero: 75 };
+  if (!categoria) return MATICES_MARCA[0];
+  const fijos: Record<string, number> = { siau: 205, "talento humano": 234, calidad: 145, sistemas: 234, facturación: 175, financiero: 175 };
   const k = categoria.trim().toLowerCase();
   if (fijos[k] !== undefined) return fijos[k];
   let h = 0;
-  for (const c of k) h = (h * 31 + c.charCodeAt(0)) % 360;
-  return h;
+  for (const c of k) h = (h * 31 + c.charCodeAt(0)) % 9973;
+  return MATICES_MARCA[h % MATICES_MARCA.length];
 }
+
+/** Publicado hace menos de dos semanas. */
+const esReciente = (creado: Date) => Date.now() - creado.getTime() < 14 * 24 * 3600 * 1000;
 
 export function CabeceraVideoteca({ logoUrl, institucion, volverA, volverTexto = "Volver al campus" }: { logoUrl: string | null; institucion: string; volverA: string; volverTexto?: string }) {
   return (
@@ -24,7 +32,7 @@ export function CabeceraVideoteca({ logoUrl, institucion, volverA, volverTexto =
         <Clapperboard className="h-7 w-7 text-[var(--vt-acento)]" aria-hidden="true" />
       )}
       <div className="marca">
-        <b>Videoteca de capacitación</b>
+        <b>Videos de capacitación</b>
         <span>{institucion}</span>
       </div>
       <Link href={volverA} className="vt-volver" aria-label={volverTexto}>
@@ -47,12 +55,12 @@ export function Miniatura({ v, grande = false }: { v: Pick<VideoLista, "id" | "c
         <Play className={grande ? "h-7 w-7" : "h-5 w-5"} fill="currentColor" aria-hidden="true" />
       </span>
       {v.completado && (
-        <span className="vt-visto vt-mono">
+        <span className="vt-visto">
           <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
           Visto
         </span>
       )}
-      {dur && <span className="vt-duracion vt-mono">{dur}</span>}
+      {dur && <span className="vt-duracion">{dur}</span>}
       {v.avance > 0 && !v.completado && (
         <span className="vt-barra" aria-hidden="true">
           <i style={{ width: `${Math.round(v.avance * 100)}%` }} />
@@ -62,15 +70,30 @@ export function Miniatura({ v, grande = false }: { v: Pick<VideoLista, "id" | "c
   );
 }
 
-export function TarjetaVideo({ v, i = 0 }: { v: VideoLista; i?: number }) {
+/**
+ * Un video en la rejilla: portada, área (si la lista no está ya agrupada por
+ * área), título, resumen y una línea de datos: fecha y estado.
+ */
+export function TarjetaVideo({ v, i = 0, mostrarArea = true }: { v: VideoLista; i?: number; mostrarArea?: boolean }) {
+  const enCurso = v.avance > 0 && !v.completado;
   return (
     <Link href={`/videos/${v.id}`} className="vt-tarjeta vt-entrada" style={{ ["--i" as string]: i, ["--vt-h" as string]: matizCategoria(v.categoria) }}>
       <Miniatura v={v} />
       <span className="info">
-        {v.categoria && <span className="vt-mono vt-cat">{v.categoria}</span>}
+        {mostrarArea && <span className="vt-cat">{v.categoria ?? "General"}</span>}
         <b>{v.titulo}</b>
         {v.descripcion && <p>{v.descripcion}</p>}
-        {!v.publicado && <span className="vt-mono" style={{ color: "oklch(55% 0.14 60)" }}>Oculto · solo administradores</span>}
+        <span className="vt-meta">
+          <time dateTime={v.creado.toISOString()}>{fechaCorta(v.creado)}</time>
+          {enCurso ? <span className="vt-estado" data-estado="curso">Vas en {Math.round(v.avance * 100)} %</span> : !v.completado && esReciente(v.creado) ? <span className="vt-estado" data-estado="nuevo">Nuevo</span> : null}
+          {v.soloSiau && (
+            <span className="vt-estado" data-estado="siau">
+              <Lock className="h-3 w-3" aria-hidden="true" />
+              Solo SIAU
+            </span>
+          )}
+          {!v.publicado && <span className="vt-estado" data-estado="oculto">Oculto</span>}
+        </span>
       </span>
     </Link>
   );

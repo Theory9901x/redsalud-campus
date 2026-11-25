@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { veComoAdmin } from "@/lib/roles";
 import { videoPara, videotecaPara } from "@/lib/videoteca/consultas";
 import { veVideosSiau } from "@/lib/videoteca/acceso";
-import { duracionTexto } from "@/lib/videoteca/formato";
+import { duracionLarga, fechaCorta } from "@/lib/videoteca/formato";
 import { CabeceraVideoteca, matizCategoria, Miniatura } from "@/components/videoteca/piezas";
 import { Reproductor } from "@/components/videoteca/reproductor";
 import { AccesoVideo, type DatoAcceso } from "@/components/videoteca/acceso-video";
@@ -61,8 +61,10 @@ export default async function VerVideoPage({ params }: { params: Promise<{ id: s
           <section>
             <Reproductor id={v.id} src={v.src} tipo={v.tipo} portada={v.conPortada ? `/api/videos/${v.id}/portada` : null} posicion={v.posicion} duracion={v.duracionSeg} />
             <div className="vt-detalle">
-              <span className="vt-mono vt-cat">
-                {[v.categoria, duracionTexto(v.duracionSeg), FECHA.format(v.creado)].filter(Boolean).join(" · ")}
+              <span className="vt-meta">
+                <span className="vt-cat">{v.categoria ?? "General"}</span>
+                <span>{FECHA.format(v.creado)}</span>
+                {duracionLarga(v.duracionSeg) && <span>{duracionLarga(v.duracionSeg)}</span>}
               </span>
               <h1>{v.titulo}</h1>
               {v.completado && (
@@ -84,8 +86,11 @@ export default async function VerVideoPage({ params }: { params: Promise<{ id: s
                 <Link key={o.id} href={`/videos/${o.id}`} className="vt-item" style={{ ["--vt-h" as string]: matizCategoria(o.categoria) }}>
                   <Miniatura v={o} />
                   <span className="grid gap-1">
-                    {o.categoria && <span className="vt-mono vt-cat">{o.categoria}</span>}
                     <b>{o.titulo}</b>
+                    <span className="vt-meta">
+                      <span className="vt-cat">{o.categoria ?? "General"}</span>
+                      <span>{fechaCorta(o.creado)}</span>
+                    </span>
                   </span>
                 </Link>
               ))}
