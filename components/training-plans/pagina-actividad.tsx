@@ -206,6 +206,11 @@ export async function PaginaActividad({
   // jornada vigente.
   const enlacesGenerales = await Promise.all(
     [
+      // Capacitación con video o material propio: el enlace que se comparte es
+      // el de su página (información, video, presaber y postsaber en un solo sitio).
+      ...(activity.plan.kind === "CAPACITACION" && evaluacion && evaluacion.material.length > 0
+        ? [{ clave: "capacitacion", titulo: "Capacitación completa", descripcion: "La página con el video, el material, el presaber y el postsaber. Es el enlace para compartir con el personal.", url: `${baseUrl}/mis-capacitaciones/${id}/${activityId}` }]
+        : []),
       { clave: "sala", titulo: "Sala / ingreso", descripcion: "Lleva a la sala de la jornada vigente.", url: `${baseUrl}/c/${activityId}/meet` },
       ...(conEvaluacion
         ? [
