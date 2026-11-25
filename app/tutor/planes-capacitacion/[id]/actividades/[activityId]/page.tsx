@@ -10,10 +10,10 @@ export default async function TutorActividadDetallePage({
   searchParams,
 }: {
   params: Promise<{ id: string; activityId: string }>;
-  searchParams: Promise<{ asistencia?: string; pagina?: string; t?: string }>;
+  searchParams: Promise<{ asistencia?: string; pagina?: string; t?: string; pestana?: string }>;
 }) {
   const { id, activityId } = await params;
-  const { asistencia = "", pagina, t } = await searchParams;
+  const { asistencia = "", pagina, t, pestana } = await searchParams;
   return (
     <PaginaActividad
       basePath="/tutor/planes-capacitacion"
@@ -22,6 +22,7 @@ export default async function TutorActividadDetallePage({
       buscarAsistencia={asistencia}
       paginaParam={pagina}
       trimestreParam={t}
+      pestanaParam={pestana}
       panelEnVivo
     />
   );

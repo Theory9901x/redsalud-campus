@@ -50,7 +50,6 @@ import {
   closePresaberAction,
   openPostsaberAction,
   closePostsaberAction,
-  crearEvaluacionCapacitacionAction,
 } from "@/app/admin/planes-capacitacion/actions";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -101,6 +100,7 @@ export async function PaginaActividad({
   buscarAsistencia,
   paginaParam,
   trimestreParam,
+  pestanaParam,
   panelEnVivo = false,
 }: {
   basePath: "/admin/planes-capacitacion" | "/tutor/planes-capacitacion" | "/tutor/capacitaciones";
@@ -109,6 +109,8 @@ export async function PaginaActividad({
   buscarAsistencia: string;
   paginaParam?: string;
   trimestreParam?: string;
+  /** Pestaña con la que se abre (?pestana=evaluacion desde el módulo de Evaluaciones). */
+  pestanaParam?: string;
   /** Tutor: acceso al panel en vivo de la capacitación. */
   panelEnVivo?: boolean;
 }) {
@@ -164,7 +166,6 @@ export async function PaginaActividad({
   const showAction = showActivityAction.bind(null, basePath, id, activityId);
   const closeAction = closeActivityAction.bind(null, basePath, id, activityId);
   const reopenAction = reopenActivityAction.bind(null, basePath, id, activityId);
-  const crearEvaluacion = crearEvaluacionCapacitacionAction.bind(null, basePath, id, activityId);
   const openPresaber = openPresaberAction.bind(null, basePath, id, activityId);
   const closePresaber = closePresaberAction.bind(null, basePath, id, activityId);
   const openPostsaber = openPostsaberAction.bind(null, basePath, id, activityId);
@@ -340,9 +341,9 @@ export async function PaginaActividad({
         <div className="space-y-6">
           <SeccionActividad
             titulo="Evaluación presaber / postsaber"
-            bajada="La misma evaluación se presenta antes de la capacitación (presaber) y después (postsaber). La arma el área aquí mismo."
+            bajada="La arma el área aquí mismo: escribiendo las preguntas o cargándolas desde Excel."
           >
-            <EvaluacionCapacitacionEditor evaluacion={evaluacion} onCrear={crearEvaluacion} bloqueada={planCerrado} />
+            <EvaluacionCapacitacionEditor evaluacion={evaluacion} activityId={activityId} basePath={basePath} bloqueada={planCerrado} />
           </SeccionActividad>
           {quiz && resumenCiclo && (
             <PresaberPostsaberPanel
@@ -457,7 +458,7 @@ export async function PaginaActividad({
       }
       kpis={kpis}
       pestanas={pestanas}
-      pestanaInicial={buscarAsistencia || paginaParam ? "asistencia" : "jornadas"}
+      pestanaInicial={buscarAsistencia || paginaParam ? "asistencia" : pestanaParam && pestanas.some((p) => p.valor === pestanaParam) ? pestanaParam : "jornadas"}
     />
   );
 }

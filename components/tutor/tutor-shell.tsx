@@ -8,6 +8,7 @@ import {
   CalendarRange,
   Clapperboard,
   ClipboardCheck,
+  ListChecks,
   LayoutDashboard,
   MessageSquareText,
   PieChart,
@@ -46,6 +47,8 @@ const NAV_GROUPS: GrupoNav[] = [
       // Vista de OBSERVACIÓN, no de acción: el tutor abre las ventanas del
       // ciclo, no las presenta, así que aquí ve en vivo quién está
       // presentando y quién terminó -no la pantalla del estudiante-.
+      // Armar la evaluación presaber/postsaber de cada capacitación (constructor o Excel).
+      { href: "/tutor/evaluaciones", label: "Evaluaciones", icon: ListChecks },
       { href: "/tutor/mis-encuestas", label: "Evaluaciones en vivo", icon: ClipboardCheck },
       // Solo las encuestas de satisfacción de sus capacitaciones (nunca la SIAU,
       // salvo para la cuenta del área SIAU).
@@ -85,6 +88,7 @@ const BREADCRUMBS: [string, string][] = [
   ["/tutor/capacitaciones/nueva", "Crear capacitación de mi área"],
   ["/tutor/planes-capacitacion/en-vivo", "Plan · En vivo"],
   ["/tutor/planes-capacitacion", "Plan · Planes de capacitación"],
+  ["/tutor/evaluaciones", "Plan · Evaluaciones"],
   ["/tutor/mis-encuestas", "Plan · Evaluaciones en vivo"],
   ["/encuestas/siau", "Atención al Usuario · Centro de datos SIAU"],
   ["/encuestas", "Plan · Encuestas"],
