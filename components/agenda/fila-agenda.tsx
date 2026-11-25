@@ -63,7 +63,9 @@ export function FilaDeAgenda({ fila, foco = "asistir" }: { fila: FilaAgenda; foc
     foco === "asistir"
       ? fila.enlaceSala
         ? [{ href: fila.enlaceSala, texto: fila.independiente && fila.momento !== "EN_VIVO" ? "Ingresar" : "Entrar a la sala", principal: true }]
-        : disponibles.slice(0, 1).map((p) => ({ href: p.href!, texto: p.accion!, principal: true }))
+        : fila.enlaceContenido
+          ? [{ href: fila.enlaceContenido, texto: "Ver capacitación", principal: true }]
+          : disponibles.slice(0, 1).map((p) => ({ href: p.href!, texto: p.accion!, principal: true }))
       : disponibles.map((p, i) => ({ href: p.href!, texto: p.accion!, principal: i === 0 }));
 
   const detalle = [

@@ -4797,3 +4797,27 @@ body, button, input, textarea, select { font-family: var(--font-cuerpo), sans-se
 .vivo-pulso { font-family: var(--font-cuerpo), sans-serif; letter-spacing: normal; text-transform: none; font-size: .8125rem; }
 .vivo-publico > span:last-child { gap: .2rem; line-height: 1.5; }
 
+/* ---------------------------------------------------------------------
+   Capacitación a ritmo propio (/mis-capacitaciones/<plan>/<capacitación>):
+   tres pasos en orden -presaber, video y material, postsaber- unidos por
+   una línea; el video va embebido.
+   --------------------------------------------------------------------- */
+.cap-paso { position: relative; border-radius: 16px; border: 1px solid var(--border); background: var(--card); padding: 1.1rem 1.25rem 1.25rem; }
+.cap-paso[data-estado="actual"] { border-color: color-mix(in oklch, var(--primary) 60%, transparent); box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 14%, transparent); }
+.cap-paso[data-estado="bloqueado"] { background: color-mix(in oklch, var(--muted) 55%, var(--card)); }
+.cap-paso > header { display: flex; align-items: center; gap: 0.7rem; }
+.cap-paso > header h2 { font-family: var(--font-display); font-size: 1.2rem; font-weight: 800; letter-spacing: -0.01em; color: var(--foreground); }
+.cap-numero { display: inline-flex; height: 2rem; width: 2rem; flex: none; align-items: center; justify-content: center; border-radius: 999px; font-size: 0.95rem; font-weight: 800; color: var(--primary); background: color-mix(in oklch, var(--primary) 14%, transparent); }
+.cap-paso[data-estado="hecho"] .cap-numero { color: var(--success-foreground); background: var(--success); }
+.cap-paso[data-estado="actual"] .cap-numero { color: var(--primary-foreground); background: var(--primary); }
+.cap-paso[data-estado="bloqueado"] .cap-numero { color: var(--muted-foreground); background: var(--muted); }
+.cap-paso-cuerpo { margin-top: 0.8rem; display: grid; gap: 0.8rem; justify-items: start; font-size: 0.95rem; line-height: 1.55; color: var(--foreground); }
+.cap-paso-cuerpo > .space-y-6 { width: 100%; }
+.cap-nota { font-size: 0.9rem; color: var(--muted-foreground); }
+.cap-leccion { display: grid; gap: 0.7rem; }
+.cap-leccion h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; font-size: 1.02rem; font-weight: 700; color: var(--foreground); }
+.cap-leccion h3 span { font-size: 0.85rem; font-weight: 500; color: var(--muted-foreground); }
+.cap-video { overflow: hidden; border-radius: 14px; background: #000; box-shadow: 0 24px 48px -32px color-mix(in oklch, var(--navy) 80%, transparent); }
+.cap-video video { display: block; width: 100%; aspect-ratio: 16 / 9; max-height: 72vh; background: #000; }
+.cap-pdf { overflow: hidden; border-radius: 14px; border: 1px solid var(--border); background: var(--muted); }
+.cap-pdf iframe { display: block; width: 100%; height: min(70vh, 620px); border: 0; }

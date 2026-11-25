@@ -64,6 +64,8 @@ export type FilaAgenda = {
   trimestres: string | null;
   /** Entrada a la sala o al contenido, cuando hay por dónde entrar ahora. */
   enlaceSala: string | null;
+  /** Capacitación con video o material propio: su página, donde se toma a ritmo propio. */
+  enlaceContenido: string | null;
   pasos: PasoAgenda[];
   /** Evaluaciones y encuestas que puede presentar AHORA. */
   pendientes: number;
@@ -145,7 +147,7 @@ export async function getAgendaEstudiante(userId: string): Promise<FilaAgenda[]>
   if (aplicables.length === 0) return [];
 
   const courseIds = [...new Set(aplicables.map((a) => a.courseId).filter((c): c is string => !!c))];
-  const [ciclo, intentos, encuestas] = await Promise.all([
+  const [ciclo, intentos, encuestas, conMaterial] = await Promise.all([
     getStudentCycleInfo(courseIds, userId),
     courseIds.length
       ? prisma.quizAttempt.findMany({
@@ -157,7 +159,15 @@ export async function getAgendaEstudiante(userId: string): Promise<FilaAgenda[]>
       where: { trainingActivityId: { in: aplicables.map((a) => a.id) }, status: "PUBLISHED", isTemplate: false, targetAudience: { in: audiencia } },
       select: { slug: true, trainingActivityId: true, responses: { where: { userId, completed: true }, select: { id: true }, take: 1 } },
     }),
+    // Cursos con video o material (no los contenedores, que solo llevan la evaluación).
+    courseIds.length
+      ? prisma.course.findMany({
+          where: { id: { in: courseIds }, esContenedorCapacitacion: false, modules: { some: { isActive: true, lessons: { some: { isActive: true } } } } },
+          select: { id: true },
+        })
+      : Promise.resolve([]),
   ]);
+  const cursosConMaterial = new Set(conMaterial.map((c) => c.id));
 
   const mejorNota = new Map<string, number>();
   for (const i of intentos) {
@@ -226,7 +236,10 @@ export async function getAgendaEstudiante(userId: string): Promise<FilaAgenda[]>
 
     // Una línea del PIC sin jornada agendada no ofrece evaluaciones: se
     // presentan en la jornada. (Las independientes sí: pueden ser a ritmo propio.)
-    const ofreceEvaluar = momento !== "SIN_FECHA" || a.plan.isIndependent;
+    // Tampoco esperan jornada las que traen su propio video o material: se
+    // toman a ritmo propio desde su página.
+    const ritmoPropio = !!a.courseId && cursosConMaterial.has(a.courseId) && !cerrada;
+    const ofreceEvaluar = momento !== "SIN_FECHA" || a.plan.isIndependent || ritmoPropio;
 
     const pasos: PasoAgenda[] = [];
     if (cyc) {
@@ -284,6 +297,7 @@ export async function getAgendaEstudiante(userId: string): Promise<FilaAgenda[]>
       inicioMs: sesion?.startsAt.getTime() ?? null,
       trimestres: etiquetaTrimestres(a.quarters),
       enlaceSala,
+      enlaceContenido: ritmoPropio ? `/mis-capacitaciones/${a.plan.id}/${a.id}` : null,
       pasos,
       pendientes: pasos.filter((p) => p.estado === "disponible").length,
     });

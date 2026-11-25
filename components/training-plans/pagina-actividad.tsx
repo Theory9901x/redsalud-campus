@@ -441,6 +441,15 @@ export async function PaginaActividad({
       trimestres={activity.plan.isIndependent ? undefined : { opciones: vistaTrimestre.opciones, elegido: filtro.trimestre, enCurso: vistaTrimestre.enCurso }}
       acciones={
         <>
+          {activity.plan.kind === "CAPACITACION" && evaluacion && evaluacion.material.length > 0 && (
+            <Link
+              href={`/mis-capacitaciones/${id}/${activityId}`}
+              target="_blank"
+              className="inline-flex items-center gap-1.5 rounded-[10px] border border-border bg-card px-3.5 py-1.5 text-xs font-bold text-foreground"
+            >
+              Ver como la ve el personal
+            </Link>
+          )}
           {editable && (
             <PanelDeslizable
               centrado

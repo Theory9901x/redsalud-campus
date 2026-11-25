@@ -275,6 +275,11 @@ export function EvaluacionCapacitacionEditor({
                   {m.estimatedMinutes ? ` · ${m.estimatedMinutes} min` : ""}
                   {m.isRequired ? " · obligatorio" : ""}
                 </p>
+                {m.tipo === "VIDEO" && m.fileUrl && (
+                  <div className="mt-3 overflow-hidden rounded-xl bg-black">
+                    <video controls preload="metadata" playsInline src={m.fileUrl} className="aspect-video w-full" />
+                  </div>
+                )}
                 {!bloqueada && (
                   <div className="mt-2.5 space-x-1.5">
                     {m.fileUrl && (
