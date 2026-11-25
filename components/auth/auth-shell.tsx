@@ -1,5 +1,5 @@
 import { Activity, Award, CalendarCheck, Layers, LineChart, MapPin, QrCode, ShieldCheck, Users } from "lucide-react";
-import { Constelacion } from "@/components/auth/constelacion";
+import { FondoWebgl } from "@/components/auth/fondo-webgl";
 import { ThemeToggle } from "@/components/brand/theme-toggle";
 import { prisma } from "@/lib/prisma";
 import { SIN_PRUEBAS } from "@/lib/pruebas";
@@ -127,7 +127,7 @@ export function AuthShell({
           registro, que es largo, el formulario se desplaza y el panel no. */}
       <aside className="auth-panel relative hidden overflow-hidden text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-between lg:px-12 lg:py-12 xl:px-16 xl:py-14">
         <span className="auth-franja" aria-hidden="true" />
-        <Constelacion />
+        <FondoWebgl />
 
         <div className="relative z-10 flex items-start justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
           <BrandMark logoUrl={logoUrl} size="lg" />
@@ -188,7 +188,7 @@ export function AuthShell({
 
       {/* Encabezado compacto institucional, solo en móvil/tablet */}
       <div className="auth-panel relative overflow-hidden px-6 pb-0 pt-7 text-white lg:hidden">
-        <Constelacion />
+        <FondoWebgl />
         <div className="relative z-10">
           <BrandMark logoUrl={logoUrl} size="sm" />
         </div>
