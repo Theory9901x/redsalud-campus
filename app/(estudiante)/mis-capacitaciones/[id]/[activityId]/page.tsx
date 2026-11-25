@@ -35,9 +35,8 @@ function Paso({ numero, titulo, estado, children }: { numero: number; titulo: st
  *                   las lecturas.
  *   3. Postsaber  → la misma evaluación, después.
  *
- * El contenido se abre al presentar el presaber: si la persona ve el video
- * primero, el presaber ya no mide lo que sabía. Quien administra o dicta la
- * capacitación la ve completa siempre, para revisarla.
+ * El video y el material están a la vista desde el principio, aunque el
+ * presaber esté pendiente: se recomienda presentarlo antes, pero no bloquea.
  *
  * Entrar aquí inscribe a la persona y deja su rastro de asistencia, igual que
  * el QR o el enlace (lib/training-plans, ensureEnrollment).
@@ -115,8 +114,10 @@ export default async function CapacitacionPage({ params }: { params: Promise<{ i
   const postHecho = !!ciclo?.postsaberDone;
   const preAbierto = conEvaluacion && !preHecho && !cerrada && (automatico || estadoPresaber(a) === "DISPONIBLE");
   const postAbierto = conEvaluacion && !postHecho && !cerrada && (automatico ? preHecho : estadoPostsaber(a) === "DISPONIBLE");
-  // El contenido se abre con el presaber presentado (o si no hay evaluación).
-  const contenidoAbierto = gestiona || !conEvaluacion || preHecho;
+  // El video y el material se ven SIEMPRE, aunque el presaber esté pendiente
+  // (así lo pidió la entidad el 25-nov-2026): el presaber se recomienda antes,
+  // pero no bloquea el contenido.
+  const contenidoAbierto = true;
 
   const datos = [
     { Icono: CalendarRange, texto: a.plan.isIndependent ? "Capacitación del área" : (etiquetaTrimestres(a.quarters) ?? a.plan.title) },
@@ -162,7 +163,7 @@ export default async function CapacitacionPage({ params }: { params: Promise<{ i
             <p>
               {preHecho
                 ? `Ya lo presentaste${nota("PRESABER") !== null ? `: ${nota("PRESABER")} %` : ""}.`
-                : `Antes de ver el contenido, responde ${quiz!._count.questions} preguntas para saber qué tanto conoces del tema. No afecta tu aprobación.`}
+                : `Preséntalo antes de ver el video: son ${quiz!._count.questions} preguntas para saber qué tanto conoces del tema. No afecta tu aprobación.`}
             </p>
             {preAbierto && (
               <a href={`/c/${activityId}/presaber`} className="btn-agenda" data-variante="principal">
