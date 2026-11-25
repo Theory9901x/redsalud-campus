@@ -112,7 +112,21 @@ export type EvaluacionCapacitacion = {
     }[];
   } | null;
   /** Lecciones del curso vinculado (solo capacitaciones antiguas): material de solo lectura. */
-  material: { modulo: string; titulo: string; tipo: string }[];
+  material: {
+    id: string;
+    modulo: string;
+    titulo: string;
+    tipo: string;
+    descripcion: string | null;
+    contentBody: string | null;
+    videoUrl: string | null;
+    externalUrl: string | null;
+    fileUrl: string | null;
+    isRequired: boolean;
+    estimatedMinutes: number | null;
+  }[];
+  /** Módulo donde se agrega material nuevo (el primero del curso vinculado); null si no aplica. */
+  moduloMaterialId: string | null;
 };
 
 /** La evaluación (y el material, si lo hay) de una capacitación, o null si aún no tiene. */
@@ -161,8 +175,13 @@ export async function getEvaluacionCapacitacion(activityId: string): Promise<Eva
           where: { courseId, isActive: true },
           orderBy: { sortOrder: "asc" },
           select: {
+            id: true,
             title: true,
-            lessons: { where: { isActive: true }, orderBy: { sortOrder: "asc" }, select: { title: true, contentType: true } },
+            lessons: {
+              where: { isActive: true },
+              orderBy: { sortOrder: "asc" },
+              select: { id: true, title: true, contentType: true, description: true, contentBody: true, videoUrl: true, externalUrl: true, fileUrl: true, isRequired: true, estimatedMinutes: true },
+            },
           },
         }),
   ]);
@@ -171,7 +190,22 @@ export async function getEvaluacionCapacitacion(activityId: string): Promise<Eva
     origen: esContenedorCapacitacion ? "contenedor" : "vinculada",
     courseId,
     quiz,
-    material: modulos.flatMap((m) => m.lessons.map((l) => ({ modulo: m.title, titulo: l.title, tipo: l.contentType }))),
+    material: modulos.flatMap((m) =>
+      m.lessons.map((l) => ({
+        id: l.id,
+        modulo: m.title,
+        titulo: l.title,
+        tipo: l.contentType,
+        descripcion: l.description,
+        contentBody: l.contentBody,
+        videoUrl: l.videoUrl,
+        externalUrl: l.externalUrl,
+        fileUrl: l.fileUrl,
+        isRequired: l.isRequired,
+        estimatedMinutes: l.estimatedMinutes,
+      })),
+    ),
+    moduloMaterialId: modulos[0]?.id ?? null,
   };
 }
 

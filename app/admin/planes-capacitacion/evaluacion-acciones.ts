@@ -170,3 +170,66 @@ export async function importarExcelEvaluacionAction(
   refrescar(basePath, planId, activityId);
   return { error: null, agregadas: validas.length };
 }
+
+export type EstadoDatosCapacitacion = { error: string | null; success?: boolean };
+
+/**
+ * Edita los datos básicos de una capacitación desde su propia página: nombre,
+ * trimestres, a quién va dirigida, modalidad, área, si es obligatoria y el
+ * objetivo. El curso que le da contenido (o su contenedor interno) conserva
+ * el mismo nombre, que es el que la persona ve al presentar la evaluación.
+ */
+export async function actualizarDatosCapacitacionAction(
+  basePath: string,
+  activityId: string,
+  _prev: EstadoDatosCapacitacion,
+  formData: FormData
+): Promise<EstadoDatosCapacitacion> {
+  const { session, planId, error } = await accesoParaEditar(activityId);
+  if (error) return { error };
+  const actual = await prisma.trainingActivity.findUniqueOrThrow({
+    where: { id: activityId },
+    select: { title: true, status: true, startDate: true, courseId: true, plan: { select: { isIndependent: true, kind: true } }, course: { select: { title: true } } },
+  });
+  if (actual.plan.kind !== "CAPACITACION") return { error: "Esto solo aplica a capacitaciones." };
+  if (actual.status === "CLOSED") return { error: "La capacitación está cerrada: reábrela para editarla." };
+
+  const title = String(formData.get("title") ?? "").trim().replace(/\s+/g, " ").slice(0, 300);
+  if (title.length < 3) return { error: "Escribe el nombre de la capacitación." };
+  const targetAudience = String(formData.get("targetAudience"));
+  const modality = String(formData.get("modality"));
+  if (!["ADMINISTRATIVO", "ASISTENCIAL", "AMBOS"].includes(targetAudience)) return { error: "Elige a quién va dirigida." };
+  if (!["VIRTUAL", "PRESENCIAL", "MIXTA"].includes(modality)) return { error: "Elige la modalidad." };
+  const delPlan = !actual.plan.isIndependent;
+  const quarters = [...new Set(formData.getAll("quarters").map(Number).filter((t) => [1, 2, 3, 4].includes(t)))].sort();
+  if (delPlan && quarters.length === 0 && !actual.startDate) return { error: "Marca al menos un trimestre." };
+  const areaId = String(formData.get("areaId") ?? "") || null;
+  if (delPlan && areaId && !(await prisma.trainingArea.findUnique({ where: { id: areaId }, select: { id: true } }))) return { error: "El área elegida no existe." };
+  const objective = String(formData.get("objective") ?? "").trim().slice(0, 2000) || null;
+
+  await prisma.trainingActivity.update({
+    where: { id: activityId },
+    data: {
+      title,
+      targetAudience: targetAudience as "ADMINISTRATIVO" | "ASISTENCIAL" | "AMBOS",
+      modality: modality as "VIRTUAL" | "PRESENCIAL" | "MIXTA",
+      isRequired: formData.get("isRequired") === "on",
+      objective,
+      ...(delPlan ? { quarters, areaId } : {}),
+    },
+  });
+  // El curso llevaba el nombre de la capacitación: lo sigue llevando.
+  if (actual.courseId && actual.course?.title === actual.title && title !== actual.title) {
+    await prisma.course.update({ where: { id: actual.courseId }, data: { title } });
+  }
+  await registrarAuditoria({
+    userId: session.user.id,
+    action: "UPDATE",
+    entity: "TrainingActivity",
+    entityId: activityId,
+    description: `Editó los datos de la capacitación «${title}»${title !== actual.title ? ` (antes «${actual.title}»)` : ""}.`,
+  });
+  refrescar(basePath, planId, activityId);
+  revalidatePath(`${basePath}/${planId}`);
+  return { error: null, success: true };
+}

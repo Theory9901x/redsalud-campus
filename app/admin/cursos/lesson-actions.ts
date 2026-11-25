@@ -12,6 +12,22 @@ export type LessonFormState = {
   success?: boolean;
 };
 
+/**
+ * Refresca el constructor del curso y, si el curso es el contenido de una
+ * capacitación del plan, también la página de esa capacitación: el video y
+ * el material se editan desde ahí.
+ */
+async function refrescarCurso(courseId: string) {
+  revalidatePath(`/admin/cursos/${courseId}`);
+  revalidatePath(`/tutor/cursos/${courseId}`);
+  const actividades = await prisma.trainingActivity.findMany({ where: { courseId }, select: { id: true, planId: true } });
+  for (const a of actividades) {
+    for (const base of ["/admin/planes-capacitacion", "/tutor/planes-capacitacion", "/tutor/capacitaciones"]) {
+      revalidatePath(`${base}/${a.planId}/actividades/${a.id}`);
+    }
+  }
+}
+
 async function lessonCourseInfo(lessonId: string) {
   const lesson = await prisma.lesson.findUniqueOrThrow({
     where: { id: lessonId },
@@ -141,8 +157,7 @@ export async function createLessonAction(
     return { error: fileResult.error };
   }
 
-  revalidatePath(`/admin/cursos/${courseId}`);
-  revalidatePath(`/tutor/cursos/${courseId}`);
+  await refrescarCurso(courseId);
   return { error: null, success: true };
 }
 
@@ -180,8 +195,7 @@ export async function updateLessonAction(
     return { error: fileResult.error };
   }
 
-  revalidatePath(`/admin/cursos/${courseId}`);
-  revalidatePath(`/tutor/cursos/${courseId}`);
+  await refrescarCurso(courseId);
   return { error: null, success: true };
 }
 
@@ -191,8 +205,7 @@ export async function deleteLessonAction(lessonId: string) {
 
   await prisma.lesson.delete({ where: { id: lessonId } });
 
-  revalidatePath(`/admin/cursos/${courseId}`);
-  revalidatePath(`/tutor/cursos/${courseId}`);
+  await refrescarCurso(courseId);
 }
 
 export async function reorderLessonsAction(moduleId: string, orderedLessonIds: string[]) {
@@ -217,6 +230,5 @@ export async function reorderLessonsAction(moduleId: string, orderedLessonIds: s
     ),
   ]);
 
-  revalidatePath(`/admin/cursos/${courseId}`);
-  revalidatePath(`/tutor/cursos/${courseId}`);
+  await refrescarCurso(courseId);
 }

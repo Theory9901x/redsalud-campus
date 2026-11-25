@@ -67,6 +67,9 @@ import { PresaberPostsaberPanel } from "@/components/training-plans/presaber-pos
 import { CycleResults } from "@/components/training-plans/cycle-results";
 import { EnlacesGenerales } from "@/components/training-plans/enlaces-generales";
 import { EvaluacionCapacitacionEditor } from "@/components/training-plans/evaluacion-capacitacion-editor";
+import { prisma } from "@/lib/prisma";
+import { FormularioDatosCapacitacion } from "@/components/training-plans/formulario-datos-capacitacion";
+import { actualizarDatosCapacitacionAction } from "@/app/admin/planes-capacitacion/evaluacion-acciones";
 import { ActivityReportPanel } from "@/components/training-plans/activity-report-panel";
 import { RegistroConexiones } from "@/components/training-plans/registro-conexiones";
 import { ExternalParticipantsPanel } from "@/components/training-plans/external-participants-panel";
@@ -154,6 +157,9 @@ export async function PaginaActividad({
     getMunicipioOptions(),
   ]);
   const quiz = evaluacion?.quiz ?? null;
+  // Editar los datos de la capacitación aquí mismo (no aplica a reuniones ni comités).
+  const editable = activity.plan.kind === "CAPACITACION" && !isClosed && !planCerrado;
+  const areasEditables = editable && !activity.plan.isIndependent ? await prisma.trainingArea.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : [];
   const conEvaluacion = !!quiz && quiz.questions.length > 0;
   const [resumenCiclo, resultadosCiclo] = activity.courseId
     ? await Promise.all([getPresaberPostsaberSummary(activityId, filtroDatos), getCycleResults(activityId, filtroDatos)])
@@ -435,6 +441,30 @@ export async function PaginaActividad({
       trimestres={activity.plan.isIndependent ? undefined : { opciones: vistaTrimestre.opciones, elegido: filtro.trimestre, enCurso: vistaTrimestre.enCurso }}
       acciones={
         <>
+          {editable && (
+            <PanelDeslizable
+              centrado
+              etiqueta="Editar capacitación"
+              titulo="Editar capacitación"
+              descripcion="Nombre, trimestres, a quién va dirigida, modalidad y área."
+              className="min-h-0 gap-1.5 rounded-[10px] border border-border bg-card px-3.5 py-1.5 text-xs font-bold text-foreground"
+            >
+              <FormularioDatosCapacitacion
+                action={actualizarDatosCapacitacionAction.bind(null, basePath, activityId)}
+                datos={{
+                  title: activity.title,
+                  quarters: activity.quarters,
+                  targetAudience: activity.targetAudience,
+                  modality: activity.modality,
+                  isRequired: activity.isRequired,
+                  areaId: activity.areaId,
+                  objective: activity.objective ?? "",
+                }}
+                areas={areasEditables}
+                delPlan={!activity.plan.isIndependent}
+              />
+            </PanelDeslizable>
+          )}
           <ActivityLifecycleActions
             status={activity.status}
             closedAtLabel={activity.closedAt ? DATETIME_FORMAT.format(activity.closedAt) : null}

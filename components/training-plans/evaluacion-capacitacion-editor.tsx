@@ -27,6 +27,8 @@ import { cn } from "@/lib/utils";
 import { QuizFormDialog } from "@/components/cursos/quiz-form-dialog";
 import { QuestionFormDialog } from "@/components/cursos/question-form-dialog";
 import { DeleteConfirmButton } from "@/components/cursos/delete-confirm-button";
+import { LessonFormDialog } from "@/components/cursos/lesson-form-dialog";
+import { createLessonAction, updateLessonAction, deleteLessonAction } from "@/app/admin/cursos/lesson-actions";
 import { LESSON_CONTENT_TYPE_LABELS } from "@/components/cursos/labels";
 import { updateQuizAction, updateQuestionAction, deleteQuestionAction, reorderQuestionsAction } from "@/app/admin/cursos/quiz-actions";
 import {
@@ -253,25 +255,75 @@ export function EvaluacionCapacitacionEditor({
         )}
       </section>
 
-      {evaluacion && evaluacion.material.length > 0 && (
-        <section className="barra-modulo space-y-3 p-5" aria-label="Material de la capacitación">
+      {evaluacion && (evaluacion.material.length > 0 || evaluacion.moduloMaterialId) && (
+        <section className="barra-modulo space-y-4 p-5" aria-label="Video y material de la capacitación">
           <div>
-            <h3 className="flex items-center gap-2 font-display text-base font-bold text-foreground">
-              <FileText className="h-4 w-4 text-primary" aria-hidden="true" />
-              Material de la capacitación
+            <h3 className="flex items-center gap-2 font-display text-lg font-bold text-foreground">
+              <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
+              Video y material
             </h3>
-            <p className="mt-1 text-[13px] text-muted-foreground">Presentaciones y lecturas que ya tenía esta capacitación. Solo consulta.</p>
+            <p className="mt-1 text-[13.5px] text-muted-foreground">
+              Lo que la persona ve dentro de la capacitación: el video, las diapositivas y las lecturas.{bloqueada ? " Solo consulta." : " Se edita aquí mismo."}
+            </p>
           </div>
-          <ul className="divide-y divide-border/60 rounded-[14px] border border-border/80 bg-card">
-            {evaluacion.material.map((m, i) => (
-              <li key={i} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">
-                <span className="text-[13.5px] font-medium text-foreground">{m.titulo}</span>
-                <span className="text-[12.5px] text-muted-foreground">
-                  {LESSON_CONTENT_TYPE_LABELS[m.tipo as LessonContentType] ?? m.tipo} · {m.modulo}
-                </span>
+          <ul className="space-y-2.5">
+            {evaluacion.material.map((m) => (
+              <li key={m.id} className="rounded-[14px] border border-border/80 bg-card p-4">
+                <p className="text-[14.5px] font-semibold text-foreground">{m.titulo}</p>
+                <p className="mt-0.5 text-[13px] text-muted-foreground">
+                  {LESSON_CONTENT_TYPE_LABELS[m.tipo as LessonContentType] ?? m.tipo}
+                  {m.estimatedMinutes ? ` · ${m.estimatedMinutes} min` : ""}
+                  {m.isRequired ? " · obligatorio" : ""}
+                </p>
+                {!bloqueada && (
+                  <div className="mt-2.5 space-x-1.5">
+                    {m.fileUrl && (
+                      <a href={m.fileUrl} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-3 text-[13px] font-semibold text-foreground hover:border-primary/60">
+                        Ver archivo
+                      </a>
+                    )}
+                    <DeleteConfirmButton title="¿Quitar este material?" description="Sale de la capacitación junto con el avance que las personas tengan en él." onConfirm={() => deleteLessonAction(m.id)} />
+                    <LessonFormDialog
+                      mode="edit"
+                      action={updateLessonAction.bind(null, m.id)}
+                      defaultValues={{
+                        title: m.titulo,
+                        description: m.descripcion ?? "",
+                        contentType: m.tipo as LessonContentType,
+                        contentBody: m.contentBody ?? "",
+                        videoUrl: m.videoUrl ?? "",
+                        externalUrl: m.externalUrl ?? "",
+                        isRequired: m.isRequired,
+                        estimatedMinutes: m.estimatedMinutes,
+                        fileUrl: m.fileUrl,
+                      }}
+                      trigger={
+                        <Button type="button" variant="outline" size="sm" className="gap-1.5">
+                          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                          Editar
+                        </Button>
+                      }
+                    />
+                  </div>
+                )}
               </li>
             ))}
           </ul>
+          {!bloqueada && evaluacion.moduloMaterialId && (
+            <div>
+              <LessonFormDialog
+                mode="create"
+                action={createLessonAction.bind(null, evaluacion.moduloMaterialId)}
+                defaultValues={{ contentType: "VIDEO" }}
+                trigger={
+                  <Button type="button" variant="outline" className="h-10 gap-2">
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    Agregar video o material
+                  </Button>
+                }
+              />
+            </div>
+          )}
         </section>
       )}
     </div>
