@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { ModuleFormDialog } from "@/components/cursos/module-form-dialog";
 import { LessonFormDialog } from "@/components/cursos/lesson-form-dialog";
 import { QuizFormDialog } from "@/components/cursos/quiz-form-dialog";
-import { QuestionFormDialog } from "@/components/cursos/question-form-dialog";
+import { ConstructorPreguntas } from "@/components/cursos/constructor-preguntas";
 import { DeleteConfirmButton } from "@/components/cursos/delete-confirm-button";
 import {
   LESSON_CONTENT_TYPE_LABELS,
@@ -54,9 +54,9 @@ import {
   createQuizAction,
   updateQuizAction,
   deleteQuizAction,
-  createQuestionAction,
-  updateQuestionAction,
-  deleteQuestionAction,
+  guardarPreguntaQuizAction,
+  analizarExcelQuizAction,
+  importarExcelQuizAction,
   reorderQuestionsAction,
 } from "@/app/admin/cursos/quiz-actions";
 import type { CourseAudience, LessonContentType, QuestionType } from "@prisma/client";
@@ -542,82 +542,15 @@ function QuizCard({
         </div>
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(event) => onQuestionDragEnd(quiz.id, event)}>
-        <SortableContext items={quiz.questions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2">
-            {quiz.questions.length === 0 && (
-              <p className="py-2 text-center text-sm text-muted-foreground">Sin preguntas todavía.</p>
-            )}
-            {quiz.questions.map((question, index) => (
-              <SortableQuestionRow key={question.id} question={question} index={index} />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-
-      <QuestionFormDialog
-        mode="create"
-        action={createQuestionAction.bind(null, quiz.id)}
-        trigger={
-          <Button type="button" variant="outline" size="sm" className="gap-1.5">
-            <Plus className="h-4 w-4" />
-            Añadir pregunta
-          </Button>
-        }
+      <ConstructorPreguntas
+        quizId={quiz.id}
+        preguntas={quiz.questions}
+        acciones={{
+          guardar: guardarPreguntaQuizAction.bind(null, quiz.id),
+          analizar: analizarExcelQuizAction.bind(null, quiz.id),
+          importar: importarExcelQuizAction.bind(null, quiz.id),
+        }}
       />
-    </div>
-  );
-}
-
-function SortableQuestionRow({ question, index }: { question: QuestionItem; index: number }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: question.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.6 : 1,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} className="rounded-lg border border-border bg-background px-3 py-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
-          aria-label="Reordenar pregunta"
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
-        <span className="text-xs font-semibold text-muted-foreground">P{index + 1}</span>
-        <span className="flex-1 text-sm text-foreground">{question.statement}</span>
-        <span className="text-xs text-muted-foreground">{QUESTION_TYPE_LABELS[question.type]}</span>
-        <Badge className="bg-muted text-muted-foreground text-xs">{question.score} pts</Badge>
-        <QuestionFormDialog
-          mode="edit"
-          action={updateQuestionAction.bind(null, question.id)}
-          defaultValues={{
-            type: question.type,
-            statement: question.statement,
-            imageUrl: question.imageUrl,
-            expectedAnswer: question.expectedAnswer,
-            score: question.score,
-            explanation: question.explanation ?? "",
-            options: question.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })),
-          }}
-          trigger={
-            <Button type="button" variant="ghost" size="icon-sm">
-              <Pencil className="h-4 w-4" />
-            </Button>
-          }
-        />
-        <DeleteConfirmButton
-          title="¿Eliminar esta pregunta?"
-          description="Esta acción no se puede deshacer."
-          onConfirm={() => deleteQuestionAction(question.id)}
-        />
-      </div>
     </div>
   );
 }

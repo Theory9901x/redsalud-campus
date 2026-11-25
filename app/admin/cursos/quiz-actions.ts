@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { saveQuestionImage } from "@/lib/storage";
 import { requireCourseAccess } from "@/lib/auth-helpers";
 import { quizSchema, questionSchema } from "@/lib/validations/course";
+import { analizarExcelDePreguntas, guardarPreguntaEnQuiz, importarExcelEnQuiz, type AnalisisExcel, type DatosPregunta } from "@/lib/preguntas-evaluacion";
 
 export type QuizFormState = {
   error: string | null;
@@ -68,12 +69,18 @@ export async function createQuizAction(
     if (!module_ || module_.courseId !== courseId) {
       return { error: "El módulo seleccionado no pertenece a este curso." };
     }
-    // El aula solo muestra el primer cuestionario de cada módulo; un segundo
-    // quedaría oculto e imposible de aprobar, bloqueando el curso para siempre.
-    const existingQuiz = await prisma.quiz.findFirst({ where: { moduleId: data.moduleId }, select: { id: true } });
-    if (existingQuiz) {
-      return { error: "Este módulo ya tiene un cuestionario. Solo se admite uno por módulo." };
-    }
+  }
+
+  // Un módulo puede llevar varias evaluaciones (tema → evaluación): la nueva
+  // queda al final de lo que el módulo tenga hoy, en la misma escala de
+  // posiciones que las lecciones.
+  let sortOrder = 0;
+  if (data.moduleId) {
+    const [l, q] = await Promise.all([
+      prisma.lesson.aggregate({ where: { moduleId: data.moduleId }, _max: { sortOrder: true } }),
+      prisma.quiz.aggregate({ where: { moduleId: data.moduleId }, _max: { sortOrder: true } }),
+    ]);
+    sortOrder = Math.max(l._max.sortOrder ?? 0, q._max.sortOrder ?? 0) + 1;
   }
 
   await prisma.quiz.create({
@@ -88,6 +95,7 @@ export async function createQuizAction(
       randomizeQuestions: data.randomizeQuestions,
       randomizeAnswers: data.randomizeAnswers,
       showResultsNow: data.showResultsNow,
+      sortOrder,
     },
   });
 
@@ -113,13 +121,6 @@ export async function updateQuizAction(
     const module_ = await prisma.courseModule.findUnique({ where: { id: data.moduleId }, select: { courseId: true } });
     if (!module_ || module_.courseId !== courseId) {
       return { error: "El módulo seleccionado no pertenece a este curso." };
-    }
-    const existingQuiz = await prisma.quiz.findFirst({
-      where: { moduleId: data.moduleId, id: { not: quizId } },
-      select: { id: true },
-    });
-    if (existingQuiz) {
-      return { error: "Este módulo ya tiene un cuestionario. Solo se admite uno por módulo." };
     }
   }
 
@@ -320,4 +321,30 @@ export async function reorderQuestionsAction(quizId: string, orderedQuestionIds:
   ]);
 
   await revalidateCourse(courseId);
+}
+
+// ---- Constructor de preguntas (en línea y desde Excel), el mismo de las capacitaciones ----
+
+/** Crea o actualiza una pregunta del cuestionario desde el constructor en línea. */
+export async function guardarPreguntaQuizAction(quizId: string, preguntaId: string | null, datos: DatosPregunta): Promise<{ error: string | null }> {
+  const courseId = await quizCourseId(quizId);
+  await requireCourseAccess(courseId);
+  const r = await guardarPreguntaEnQuiz(quizId, preguntaId, datos);
+  if (!r.error) await revalidateCourse(courseId);
+  return r;
+}
+
+/** Interpreta el Excel y devuelve qué se cargaría. No guarda nada. */
+export async function analizarExcelQuizAction(quizId: string, formData: FormData): Promise<AnalisisExcel> {
+  await requireCourseAccess(await quizCourseId(quizId));
+  return analizarExcelDePreguntas(formData);
+}
+
+/** Guarda las preguntas del Excel en el cuestionario (agregando o reemplazando). */
+export async function importarExcelQuizAction(quizId: string, formData: FormData): Promise<{ error: string | null; agregadas: number }> {
+  const courseId = await quizCourseId(quizId);
+  await requireCourseAccess(courseId);
+  const r = await importarExcelEnQuiz(quizId, formData);
+  if (!r.error) await revalidateCourse(courseId);
+  return { error: r.error, agregadas: r.agregadas };
 }
