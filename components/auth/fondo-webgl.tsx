@@ -8,7 +8,8 @@ import { Constelacion } from "@/components/auth/constelacion";
  * <canvas>.
  *
  *  1. Aurora: un sombreador de pantalla completa con cintas de luz que fluyen
- *     en los colores institucionales (azul marino, azul, cian y verde).
+ *     en los colores de la marca, leídos de los tokens (--primary, el azul
+ *     claro de RedSalud, que domina; --success y un fondo de --navy).
  *  2. Red en 3D: puntos que derivan dentro de un volumen que gira despacio,
  *     unidos por líneas cuando se acercan. Tienen profundidad (los cercanos
  *     son más grandes y brillantes) y la escena acompaña al puntero.
@@ -32,6 +33,9 @@ precision mediump float;
 uniform vec2 uRes;
 uniform float uT;
 uniform vec2 uPuntero;
+uniform vec3 uAzul;   // --primary: el azul claro de RedSalud
+uniform vec3 uVerde;  // --success
+uniform vec3 uMarino; // --navy, solo para dar fondo
 
 float azar(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float ruido(vec2 p) {
@@ -59,19 +63,20 @@ void main() {
   float cinta = pow(smoothstep(0.5, 1.0, onda), 2.2);
   float hilo = pow(smoothstep(0.93, 1.0, onda), 3.0);
 
-  vec3 marino = vec3(0.020, 0.085, 0.170);
-  vec3 azul = vec3(0.030, 0.300, 0.500);
-  vec3 cian = vec3(0.100, 0.620, 0.840);
-  vec3 verde = vec3(0.180, 0.700, 0.300);
+  // Paleta: SOLO los colores de la marca (llegan de los tokens CSS). Domina
+  // el azul claro institucional; el marino apenas da profundidad en las zonas
+  // de sombra, y las cintas van en azul más claro y verde.
+  vec3 hondo = mix(uAzul, uMarino, 0.42);
+  vec3 claro = mix(uAzul, vec3(1.0), 0.26);
 
-  vec3 col = mix(marino, azul, smoothstep(0.25, 0.9, n + (1.0 - uv.y) * 0.22 + uv.x * 0.12));
-  col = mix(col, cian, cinta * 0.42 * smoothstep(0.25, 0.75, q.y));
-  col += verde * cinta * 0.34 * smoothstep(0.42, 0.85, q.x);
-  col += vec3(0.55, 0.85, 1.0) * hilo * 0.16;
+  vec3 col = mix(hondo, uAzul * 0.84, smoothstep(0.2, 0.8, n + (1.0 - uv.y) * 0.22 + uv.x * 0.12));
+  col = mix(col, claro, cinta * 0.34 * smoothstep(0.25, 0.75, q.y));
+  col = mix(col, uVerde, cinta * 0.3 * smoothstep(0.45, 0.85, q.x));
+  col += vec3(1.0) * hilo * 0.08;
 
-  // Más oscuro hacia los bordes: el texto blanco se lee siempre.
+  // Un poco más hondo hacia los bordes: el texto blanco se lee siempre.
   float vi = smoothstep(1.3, 0.2, length(p * vec2(0.85, 1.0)));
-  col *= mix(0.5, 1.0, vi);
+  col *= mix(0.74, 1.0, vi);
   // Grano muy leve contra el bandeado del degradado.
   col += (azar(gl_FragCoord.xy + uT) - 0.5) * 0.012;
   gl_FragColor = vec4(col, 1.0);
@@ -111,7 +116,7 @@ uniform float uLineas;
 varying float vA;
 varying float vVerde;
 void main() {
-  vec3 color = mix(vec3(0.82, 0.94, 1.0), vec3(0.42, 0.95, 0.55), vVerde);
+  vec3 color = mix(vec3(1.0), vec3(0.55, 1.0, 0.62), vVerde);
   float a = vA;
   if (uLineas < 0.5) {
     float d = length(gl_PointCoord - 0.5) * 2.0;
@@ -143,6 +148,26 @@ function programa(gl: WebGLRenderingContext, vert: string, frag: string) {
   gl.attachShader(p, f);
   gl.linkProgram(p);
   return gl.getProgramParameter(p, gl.LINK_STATUS) ? p : null;
+}
+
+/**
+ * Un token de color del tema (oklch en el CSS) como RGB 0–1 para el
+ * sombreador: se pinta en un lienzo de 1 px y se lee el píxel. Así los colores
+ * del fondo son los de la marca y no una copia a mano.
+ */
+function colorDeToken(el: Element, token: string, respaldo: [number, number, number]): [number, number, number] {
+  try {
+    const valor = getComputedStyle(el).getPropertyValue(token).trim();
+    const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+    if (!valor || !ctx) return respaldo;
+    ctx.fillStyle = "#000";
+    ctx.fillStyle = valor;
+    ctx.fillRect(0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    return r + g + b === 0 ? respaldo : [r / 255, g / 255, b / 255];
+  } catch {
+    return respaldo;
+  }
 }
 
 let soporte: boolean | null = null;
@@ -209,7 +234,10 @@ export function FondoWebgl() {
     const bLDato = gl.createBuffer();
 
     const u = (p: WebGLProgram, n: string) => gl.getUniformLocation(p, n);
-    const uF = { res: u(pFondo, "uRes"), t: u(pFondo, "uT"), puntero: u(pFondo, "uPuntero") };
+    const uF = { res: u(pFondo, "uRes"), t: u(pFondo, "uT"), puntero: u(pFondo, "uPuntero"), azul: u(pFondo, "uAzul"), verde: u(pFondo, "uVerde"), marino: u(pFondo, "uMarino") };
+    const azul = colorDeToken(lienzo, "--primary", [0.12, 0.65, 0.88]);
+    const verde = colorDeToken(lienzo, "--success", [0.18, 0.7, 0.27]);
+    const marino = colorDeToken(lienzo, "--navy", [0.04, 0.14, 0.25]);
     const uR = { giro: u(pRed, "uGiro"), inclina: u(pRed, "uInclina"), aspecto: u(pRed, "uAspecto"), escala: u(pRed, "uEscala"), t: u(pRed, "uT"), lineas: u(pRed, "uLineas") };
     const aF = gl.getAttribLocation(pFondo, "aPos");
     const aP = gl.getAttribLocation(pRed, "aPos");
@@ -287,6 +315,9 @@ export function FondoWebgl() {
       gl.uniform2f(uF.res, ancho, alto);
       gl.uniform1f(uF.t, tiempo);
       gl.uniform2f(uF.puntero, puntero.x, puntero.y);
+      gl.uniform3fv(uF.azul, azul);
+      gl.uniform3fv(uF.verde, verde);
+      gl.uniform3fv(uF.marino, marino);
       gl.bindBuffer(gl.ARRAY_BUFFER, cuadro);
       gl.enableVertexAttribArray(aF);
       gl.vertexAttribPointer(aF, 2, gl.FLOAT, false, 0, 0);

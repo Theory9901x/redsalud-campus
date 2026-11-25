@@ -1295,6 +1295,8 @@
  * el mismo en los dos temas (ver DESIGN-SYSTEM.md).
  */
 .auth-panel {
+  /* Sombra suave bajo el texto: se lee sobre las zonas claras del fondo animado. */
+  text-shadow: 0 1px 14px color-mix(in oklch, var(--navy) 60%, transparent);
   background-color: var(--navy);
   background-image:
     radial-gradient(circle 640px at 96% 104%, color-mix(in oklch, var(--primary) 92%, transparent), transparent 68%),
