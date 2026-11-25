@@ -1,5 +1,6 @@
 "use server";
 
+import { asegurarInduccion } from "@/lib/induccion";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { randomBytes } from "node:crypto";
@@ -97,6 +98,8 @@ export async function createUserAction(
     }
     throw error;
   }
+  // Toda cuenta nueva de estudiante nace con el curso de inducción y reinducción asignado.
+  await asegurarInduccion(creado.id).catch(() => 0);
 
   await registrarAuditoria({
     userId: sesionAudit.user.id,

@@ -1,5 +1,6 @@
 "use server";
 
+import { asegurarInduccion } from "@/lib/induccion";
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
@@ -33,8 +34,10 @@ export async function registerAction(_prevState: RegisterState, formData: FormDa
   const data = parsed.data;
   const passwordHash = await bcrypt.hash(data.password, 10);
 
+  let nuevo: { id: string };
   try {
-    await prisma.user.create({
+    nuevo = await prisma.user.create({
+      select: { id: true },
       data: {
         fullName: data.fullName,
         documentType: data.documentType,
@@ -57,6 +60,8 @@ export async function registerAction(_prevState: RegisterState, formData: FormDa
     }
     throw error;
   }
+  // Toda cuenta nueva nace con el curso de inducción y reinducción asignado.
+  await asegurarInduccion(nuevo.id).catch(() => 0);
 
   try {
     await signIn("credentials", {

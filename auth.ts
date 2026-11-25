@@ -1,3 +1,4 @@
+import { asegurarInduccion } from "@/lib/induccion";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
@@ -86,6 +87,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { id: user.id },
           data: { lastLoginAt: new Date() },
         });
+        // Red de seguridad: las cuentas creadas por carga masiva también quedan
+        // con el curso de inducción y reinducción al entrar (lib/induccion.ts).
+        await asegurarInduccion(user.id).catch(() => 0);
 
         return {
           id: user.id,
