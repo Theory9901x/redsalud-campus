@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CalendarClock, MapPin, User2, Video, FileQuestion, ClipboardCheck, UserPlus, Lock } from "lucide-react";
 import { getSesionPorToken, getEstadoPersonaEnSesion, ETIQUETA_FASE } from "@/lib/sesiones-presenciales";
 import { getPersonaIdentificada } from "@/app/s/[token]/acciones";
+import { relevoDeReunion } from "@/lib/jornadas";
 import { PantallaSesion } from "@/components/sesiones/pantalla-sesion";
 import { TRAINING_MODALITY_LABELS } from "@/components/training-plans/labels";
 
@@ -27,6 +28,9 @@ export default async function SesionPublicaPage({ params }: { params: Promise<{ 
   const { token } = await params;
   const sesion = await getSesionPorToken(token);
   if (!sesion) notFound();
+  // Un solo QR para todas las sesiones de una reunión: si esta ya pasó, a la vigente.
+  const relevo = await relevoDeReunion(sesion.activity.id);
+  if (relevo) redirect(`/s/${encodeURIComponent(relevo.tokenPublico)}`);
   if (sesion.audience === "EXTERNAL") redirect(`/invitado/${sesion.activity.id}?s=${encodeURIComponent(token)}`);
 
   // JORNADA VIRTUAL: esta página es la PUERTA de la jornada -sala, presaber y

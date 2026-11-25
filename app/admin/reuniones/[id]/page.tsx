@@ -13,7 +13,7 @@ import { PildoraEstado, escalon } from "@/components/training-plans/plan-visual"
 import { SeccionActividad } from "@/components/training-plans/vista-actividad";
 import { etiquetaJornada } from "@/components/training-plans/labels";
 import { AccesosJornada } from "@/components/training-plans/accesos-jornada";
-import { accesosDeJornada } from "@/lib/jornadas";
+import { accesosDeJornada, accesoUnicoDeReunion } from "@/lib/jornadas";
 import { EliminarReunion, FormularioAgregarSesion, ReprogramarSesion } from "@/components/reuniones/formularios";
 import { EmptyState } from "@/components/brand/empty-state";
 import { buttonVariants } from "@/components/ui/button";
@@ -33,8 +33,10 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
   const puedeEscribir = sesion.user.role !== "SEGUIMIENTO";
   const { puedeEliminar } = await accesoReuniones();
 
+  // Un solo QR para toda la reunión: el de la primera sesión (lleva a la vigente).
+  const unico = await accesoUnicoDeReunion(r.id);
   const accesos = await Promise.all(r.sesiones.map(async (s) => {
-    const enlaces = accesosDeJornada(APP_URL, s.id, s.tokenPublico ?? '', { conEvaluacion: false, modalidad: 'VIRTUAL', audience: s.audience })
+    const enlaces = accesosDeJornada(APP_URL, unico?.activityId ?? s.id, unico?.tokenPublico ?? s.tokenPublico ?? '', { conEvaluacion: false, modalidad: 'VIRTUAL', audience: s.audience })
       .filter((a) => a.clave === 'sala' || a.clave === 'invitados');
     return Promise.all(enlaces.map(async (a) => ({ ...a, qrDataUrl: await QRCode.toDataURL(a.url, { width: 600, margin: 2, errorCorrectionLevel: 'M' }) })));
   }));

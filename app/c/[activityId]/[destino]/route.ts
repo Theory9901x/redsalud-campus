@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { estadoPresaber, estadoPostsaber, cicloEsAutomatico } from "@/lib/presaber-postsaber";
 import { ensureEnrollment, AVISO_POR_BLOQUEO } from "@/lib/training-plans";
 import { registrarAsistenciaSesion } from "@/lib/sesiones-presenciales";
-import { jornadaDeEnlace, jornadaCerrada, jornadaEnCurso, COOKIE_JORNADA, DURACION_COOKIE_JORNADA_S } from "@/lib/jornadas";
+import { jornadaDeEnlace, jornadaCerrada, jornadaEnCurso, relevoDeReunion, COOKIE_JORNADA, DURACION_COOKIE_JORNADA_S } from "@/lib/jornadas";
 
 /**
  * Enlaces cortos y ESTABLES de cada capacitación del plan, pensados para
@@ -56,6 +56,12 @@ export async function GET(
     },
   });
   if (!actividad) return NextResponse.redirect(`${base}/mis-capacitaciones`);
+  // Reunión con varias sesiones y un solo QR: el enlace de una sesión que ya
+  // pasó lleva a la sesión vigente (lib/jornadas, relevoDeReunion).
+  if (actividad.plan.kind === "REUNION") {
+    const relevo = await relevoDeReunion(activityId);
+    if (relevo) return NextResponse.redirect(`${base}/c/${relevo.activityId}/${destino}?s=${relevo.tokenPublico}`);
+  }
   const destinoListado = actividad.plan.isIndependent ? "/mis-capacitaciones/independientes" : `/mis-capacitaciones/${actividad.planId}`;
   const viewer = await auth();
   if (viewer?.user.role === "STUDENT" && actividad.plan.kind === "CAPACITACION" && (actividad.status !== "OPEN" || !coincideAudienciaCapacitacion(actividad.targetAudience, viewer.user.personnelType))) return NextResponse.redirect(`${base}/mis-capacitaciones`);

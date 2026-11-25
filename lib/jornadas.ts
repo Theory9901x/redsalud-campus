@@ -98,6 +98,49 @@ export async function jornadaDeEnlace(activityId: string, token: string | null |
   return { jornada: await resolverJornadaVigente(activityId), explicita: false } as const;
 }
 
+/**
+ * UN SOLO QR PARA TODAS LAS SESIONES DE UNA REUNIÓN.
+ *
+ * Cada sesión de una reunión es una actividad con su propia jornada y su
+ * propio enlace, pero a la gente se le reparte UN código (el de la primera).
+ * Por eso el enlace de una sesión que ya pasó no se queda en ella: releva a
+ * la sesión vigente de la misma reunión -la que está en curso o, si no, la
+ * próxima-. Devuelve a dónde ir, o null si el enlace sigue siendo el bueno
+ * (la sesión está en curso o por venir, no hay otra, o no es una reunión).
+ */
+export async function relevoDeReunion(activityId: string, ahora = new Date()): Promise<{ activityId: string; tokenPublico: string } | null> {
+  const actividad = await prisma.trainingActivity.findUnique({
+    where: { id: activityId },
+    select: { planId: true, plan: { select: { kind: true } }, sessions: { select: { startsAt: true, endsAt: true, status: true, fase: true } } },
+  });
+  if (!actividad || actividad.plan.kind !== "REUNION") return null;
+  const t = ahora.getTime();
+  const sigueVigente = actividad.sessions.some((j) => !cerrada(j) && (jornadaEnCurso(j, ahora) || j.startsAt.getTime() > t));
+  if (sigueVigente) return null;
+
+  const otras = await prisma.trainingSession.findMany({
+    where: { activityId: { not: activityId }, activity: { planId: actividad.planId }, status: { not: "CLOSED" }, fase: { not: "CERRADA" } },
+    orderBy: { startsAt: "asc" },
+    select: { activityId: true, tokenPublico: true, startsAt: true, endsAt: true },
+  });
+  const destino = otras.find((j) => jornadaEnCurso(j, ahora)) ?? otras.find((j) => j.startsAt.getTime() > t);
+  return destino ? { activityId: destino.activityId, tokenPublico: destino.tokenPublico } : null;
+}
+
+/**
+ * La sesión cuyo enlace se reparte como QR de TODA la reunión: la primera.
+ * Las demás sesiones muestran este mismo código (relevoDeReunion lo lleva a
+ * la que toque).
+ */
+export async function accesoUnicoDeReunion(planId: string): Promise<{ activityId: string; tokenPublico: string } | null> {
+  const primera = await prisma.trainingSession.findFirst({
+    where: { activity: { planId, plan: { kind: "REUNION" } } },
+    orderBy: [{ startsAt: "asc" }, { createdAt: "asc" }],
+    select: { activityId: true, tokenPublico: true },
+  });
+  return primera;
+}
+
 export { cerrada as jornadaCerrada };
 
 // ------------------------------------------------------------------

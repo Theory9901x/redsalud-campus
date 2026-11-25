@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   Building2,
   User,
@@ -27,7 +27,7 @@ import { registrarInvitadoAction, getParticipanteDeCookie } from "@/app/invitado
 import { etiquetaJornada } from "@/components/training-plans/labels";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import { cn } from "@/lib/utils";
-import { jornadaDeEnlace } from "@/lib/jornadas";
+import { jornadaDeEnlace, relevoDeReunion } from "@/lib/jornadas";
 import { ControlSalaReunion } from "@/components/reuniones/control-sala";
 import { ContenidoSalaReunion } from "@/components/reuniones/contenido-sala";
 import { getContenidoReunion } from "@/lib/reunion-contenido";
@@ -49,6 +49,9 @@ export default async function InvitadoPage({
 }) {
   const { activityId } = await params;
   const { s: tokenJornada } = await searchParams;
+  // Un solo QR para todas las sesiones de una reunión: si esta ya pasó, a la vigente.
+  const relevo = await relevoDeReunion(activityId);
+  if (relevo) redirect(`/invitado/${relevo.activityId}?s=${encodeURIComponent(relevo.tokenPublico)}`);
 
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },

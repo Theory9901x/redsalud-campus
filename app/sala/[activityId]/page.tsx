@@ -23,7 +23,7 @@ import { SelectorVistaSala } from "@/components/training-plans/selector-vista-sa
 import { getMomentoParaUsuario } from "@/lib/training-plans";
 import { firmarTokenJitsi } from "@/lib/jitsi";
 import { etiquetaJornada } from "@/components/training-plans/labels";
-import { jornadaDeEnlace } from "@/lib/jornadas";
+import { jornadaDeEnlace, relevoDeReunion } from "@/lib/jornadas";
 import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import { getGestionReunion } from "@/lib/reuniones-gestion";
 import { getContenidoReunion } from "@/lib/reunion-contenido";
@@ -52,6 +52,9 @@ export default async function SalaVirtualPage({
   const session = await auth();
   const aqui = `/sala/${activityId}${tokenJornada ? `?s=${encodeURIComponent(tokenJornada)}` : ""}`;
   if (!session?.user) redirect(`/login?callbackUrl=${encodeURIComponent(aqui)}`);
+  // Un solo QR para todas las sesiones de una reunión: si esta ya pasó, a la vigente.
+  const relevo = await relevoDeReunion(activityId);
+  if (relevo) redirect(`/sala/${relevo.activityId}?s=${encodeURIComponent(relevo.tokenPublico)}`);
 
   const actividad = await prisma.trainingActivity.findUnique({
     where: { id: activityId },

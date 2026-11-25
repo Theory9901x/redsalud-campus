@@ -15,7 +15,7 @@ import { VistaActividad, SeccionActividad, type PestanaActividad } from "@/compo
 import { ActivityQrPanel } from "@/components/training-plans/activity-qr-panel";
 import { RegistroDocumentos } from "@/components/documentos/registro-documentos";
 import { etiquetaJornada } from "@/components/training-plans/labels";
-import { accesosDeJornada } from "@/lib/jornadas";
+import { accesosDeJornada, accesoUnicoDeReunion } from "@/lib/jornadas";
 import { EmptyState } from "@/components/brand/empty-state";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { buttonVariants } from "@/components/ui/button";
@@ -46,7 +46,9 @@ export default async function SesionReunionPage({ params, searchParams }: { para
   const aqui = `${base}/${id}/sesiones/${activityId}`;
   const volver = totalSesiones > 1 ? { href: `${base}/${id}`, etiqueta: d.reunion.titulo } : { href: base, etiqueta: "Reuniones" };
   const acta = `/api/reuniones/${id}/sesiones/${activityId}/acta`;
-  const enlaces = d.jornada ? await Promise.all(accesosDeJornada(APP_URL, activityId, d.jornada.tokenPublico, { conEvaluacion: false, modalidad: d.jornada.modality, audience: d.jornada.audience }).filter(a => a.clave === "sala" || a.clave === "invitados").map(async a => ({ ...a, qrDataUrl: await QRCode.toDataURL(a.url, { width: 640, margin: 2, errorCorrectionLevel: 'M' }) }))) : [];
+  // Un solo QR para toda la reunión: el de la primera sesión (lleva a la vigente).
+  const unico = await accesoUnicoDeReunion(id);
+  const enlaces = d.jornada ? await Promise.all(accesosDeJornada(APP_URL, unico?.activityId ?? activityId, unico?.tokenPublico ?? d.jornada.tokenPublico, { conEvaluacion: false, modalidad: d.jornada.modality, audience: d.jornada.audience }).filter(a => a.clave === "sala" || a.clave === "invitados").map(async a => ({ ...a, qrDataUrl: await QRCode.toDataURL(a.url, { width: 640, margin: 2, errorCorrectionLevel: 'M' }) }))) : [];
   const { puedeEliminar, where: alcance } = await accesoReuniones();
   // Agregar sesiones es de quien administra la reunión completa (no del
   // delegado de una sola sesión): el mismo alcance que exige la acción.
