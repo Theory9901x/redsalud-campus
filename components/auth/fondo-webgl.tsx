@@ -14,8 +14,8 @@ import { Constelacion } from "@/components/auth/constelacion";
  *     unidos por líneas cuando se acercan. Tienen profundidad (los cercanos
  *     son más grandes y brillantes) y la escena acompaña al puntero.
  *
- * Se detiene con la pestaña oculta o el panel sin tamaño, pinta un solo
- * cuadro con «reducir movimiento», y si el equipo no tiene WebGL cae a la
+ * Se detiene con la pestaña oculta o el panel sin tamaño, va a media
+ * velocidad con «reducir movimiento», y si el equipo no tiene WebGL cae a la
  * constelación en 2D (components/auth/constelacion.tsx).
  */
 
@@ -201,7 +201,10 @@ export function FondoWebgl() {
       return;
     }
 
-    const quieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Windows con los "efectos de animación" apagados (muy común en equipos de
+    // oficina) reporta «reducir movimiento». El fondo NO se congela por eso: es
+    // lento y ambiental; solo va a media velocidad y sin seguir al puntero.
+    const calmado = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // --- Geometría
     const cuadro = gl.createBuffer();
@@ -260,7 +263,7 @@ export function FondoWebgl() {
       lienzo.width = ancho;
       lienzo.height = alto;
       gl.viewport(0, 0, ancho, alto);
-      if (quieto) pintar(0);
+
     };
 
     const mover = (dt: number) => {
@@ -357,14 +360,14 @@ export function FondoWebgl() {
     const avanzar = (ahora: number) => {
       const dt = previo ? Math.min((ahora - previo) / 1000, 0.05) : 0.016;
       previo = ahora;
-      pintar(dt);
+      pintar(calmado ? dt * 0.5 : dt);
       cuadroId = requestAnimationFrame(avanzar);
     };
 
     const alCambiarVisibilidad = () => {
       cancelAnimationFrame(cuadroId);
       previo = 0;
-      if (!document.hidden && !quieto) cuadroId = requestAnimationFrame(avanzar);
+      if (!document.hidden) cuadroId = requestAnimationFrame(avanzar);
     };
     const alMover = (e: PointerEvent) => {
       puntero.mx = (e.clientX / window.innerWidth) * 2 - 1;
@@ -374,10 +377,8 @@ export function FondoWebgl() {
     const observador = new ResizeObserver(ajustar);
     observador.observe(lienzo);
     ajustar();
-    if (!quieto) {
-      cuadroId = requestAnimationFrame(avanzar);
-      window.addEventListener("pointermove", alMover, { passive: true });
-    }
+    cuadroId = requestAnimationFrame(avanzar);
+    if (!calmado) window.addEventListener("pointermove", alMover, { passive: true });
     document.addEventListener("visibilitychange", alCambiarVisibilidad);
 
     return () => {

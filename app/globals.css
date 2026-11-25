@@ -1483,8 +1483,6 @@
 .btn-acceso:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 .btn-acceso:disabled { pointer-events: none; opacity: 0.6; }
 @media (prefers-reduced-motion: reduce) {
-  .auth-ecg .auth-ecg-pulso { animation: none; stroke-dasharray: none; stroke-dashoffset: 0; opacity: 0.55; }
-  .auth-latido { animation: none; }
   .btn-acceso:hover { transform: none; }
 }
 .accent-tutor { --accent: var(--success); }
