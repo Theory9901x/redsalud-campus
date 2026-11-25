@@ -94,6 +94,14 @@ function agruparPorArea(activities: TrainingActivityTimelineItem[]) {
     .sort((a, b) => a.orden - b.orden);
 }
 
+/** Posición de un trimestre en el cronograma: en curso, siguientes, pasados (reciente primero), sin trimestre. */
+function puesto(t: number) {
+  const hoy = trimestreEnCurso();
+  if (t === 0) return 99;
+  if (t === hoy) return 0;
+  return t > hoy ? t - hoy : 10 + (hoy - t);
+}
+
 /**
  * Agrupa por TRIMESTRE del PIC: cada trimestre es un apartado propio, con
  * el que está en curso marcado. Una capacitación programada en varios
@@ -122,7 +130,10 @@ function agruparPorTrimestre(activities: TrainingActivityTimelineItem[], soloTri
   const porArea = (a: TrainingActivityTimelineItem, b: TrainingActivityTimelineItem) =>
     (a.area?.sortOrder ?? 99) - (b.area?.sortOrder ?? 99) || a.title.localeCompare(b.title, "es");
   return [...grupos.entries()]
-    .sort(([a], [b]) => (a === 0 ? 5 : a) - (b === 0 ? 5 : b))
+    // Primero el trimestre EN CURSO (es el que se está gestionando hoy); después
+    // los que vienen, luego los ya pasados del más reciente al más antiguo, y
+    // al final lo que no tiene trimestre.
+    .sort(([a], [b]) => puesto(a) - puesto(b))
     .map(([t, items]) => ({
       key: `t${t}`,
       label: t === 0 ? "Sin trimestre programado" : nombreTrimestre(t),
