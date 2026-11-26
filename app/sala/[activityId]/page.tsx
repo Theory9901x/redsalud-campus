@@ -28,6 +28,7 @@ import { COURSE_AUDIENCE_LABELS } from "@/components/cursos/labels";
 import { getGestionReunion } from "@/lib/reuniones-gestion";
 import { getContenidoReunion } from "@/lib/reunion-contenido";
 import { ContenidoSalaReunion } from "@/components/reuniones/contenido-sala";
+import { AvisoSala } from "@/components/reuniones/aviso-sala";
 import { ControlSalaReunion } from "@/components/reuniones/control-sala";
 
 /**
@@ -248,6 +249,7 @@ export default async function SalaVirtualPage({
       </header>
 
       {/* ---------------- Sala: video + consola, toda la altura restante ---------------- */}
+      <AvisoSala planId={actividad.plan.id} className="mx-3 mb-2 shrink-0 sm:mx-5" />
       <div className="min-h-0 flex-1 px-3 pb-3 sm:px-5 sm:pb-5">
         <ControlSalaReunion esReunion={esReunion} activityId={activityId} cerradaInicial={actividad.status === "CLOSED"}>
           <SalaVirtual

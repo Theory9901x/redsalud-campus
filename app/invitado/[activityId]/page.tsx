@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { jornadaDeEnlace, relevoDeReunion } from "@/lib/jornadas";
 import { ControlSalaReunion } from "@/components/reuniones/control-sala";
 import { ContenidoSalaReunion } from "@/components/reuniones/contenido-sala";
+import { AvisoSala } from "@/components/reuniones/aviso-sala";
 import { getContenidoReunion } from "@/lib/reunion-contenido";
 
 /**
@@ -183,6 +184,7 @@ export default async function InvitadoPage({
 
         <div className="space-y-3">
           <div className="min-w-0 space-y-3">
+            <AvisoSala planId={actividad.plan.id} />
             <div className="surface-glass surface-accent-top px-5 py-4">
               <h1 className="flex items-center gap-2 font-display text-lg font-extrabold leading-snug text-foreground">
                 <Video className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
