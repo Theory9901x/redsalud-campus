@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { NextFetchEvent, NextRequest } from "next/server";
 import { auth } from "@/auth";
 import type { AdminSection, Role } from "@prisma/client";
 import { soloEncuestas } from "@/lib/admin-sections";
@@ -63,7 +64,7 @@ function roleHome(role: Role) {
 }
 
 // Nota: Next.js 16 renombró "middleware.ts" a "proxy.ts" (misma función, nuevo nombre).
-export default auth((request) => {
+const conSesion = auth((request) => {
   const { pathname } = request.nextUrl;
   const session = request.auth;
 
@@ -94,7 +95,12 @@ export default auth((request) => {
   }
 
   if (pathname === "/login" || pathname === "/registro") {
-    if (session?.user) {
+    // Solo las LECTURAS se desvían al inicio del rol. El envío del formulario
+    // de acceso (POST, acción de servidor) tiene que llegar a /login aunque
+    // quede una sesión: desviarlo con 307 reenvía el POST a /admin, donde esa
+    // acción no existe, y la persona ve "No pudimos cargar esta página". Al
+    // dejarlo pasar, el acceso nuevo simplemente reemplaza la sesión anterior.
+    if (session?.user && ["GET", "HEAD"].includes(request.method)) {
       return NextResponse.redirect(new URL(roleHome(session.user.role), request.url));
     }
     return NextResponse.next();
@@ -162,6 +168,17 @@ export default auth((request) => {
 
   return NextResponse.next();
 });
+
+// Con la configuración de Auth.js en forma de función (auth.ts la necesita
+// para leer la marca de cierre de sesión de cada petición), `auth(...)` ya no
+// devuelve el manejador sino una PROMESA de él, y Next exige que el proxy
+// exporte una función.
+type Manejador = (request: NextRequest, event: NextFetchEvent) => Response | Promise<Response>;
+
+export default async function proxy(request: NextRequest, event: NextFetchEvent) {
+  const manejador = (await conSesion) as unknown as Manejador;
+  return manejador(request, event);
+}
 
 export const config = {
   // Todo menos archivos estáticos: el corte de escrituras del rol de

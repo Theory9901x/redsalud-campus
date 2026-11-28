@@ -6,6 +6,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import type { AdminSection, PersonnelType, Role } from "@prisma/client";
 import type { DefaultSession } from "next-auth";
+import { cookies } from "next/headers";
+import type { NextRequest } from "next/server";
 
 declare module "next-auth" {
   interface User {
@@ -32,6 +34,30 @@ declare module "@auth/core/jwt" {
     personnelType: PersonnelType;
     restrictedAdminSections: AdminSection[];
     revalidatedAt: number;
+    /** Momento del acceso que creó esta sesión (ms). Ver COOKIE_SALIDA. */
+    inicioAt?: number;
+  }
+}
+
+/**
+ * Marca del último cierre de sesión en este navegador (ms).
+ *
+ * Cada respuesta que pasa por el proxy RENUEVA la cookie de sesión. Si al
+ * pulsar "Salir" todavía hay peticiones en vuelo (el panel precarga decenas
+ * de enlaces al abrir), sus respuestas llegan después del cierre y vuelven a
+ * poner la cookie: la persona creía haber salido y la sesión seguía viva.
+ * Con esta marca, una sesión iniciada ANTES del último cierre se descarta
+ * aunque su cookie reaparezca.
+ */
+export const COOKIE_SALIDA = "rs_salida";
+
+async function ultimaSalida(request: NextRequest | undefined): Promise<number> {
+  try {
+    const valor = request ? request.cookies.get(COOKIE_SALIDA)?.value : (await cookies()).get(COOKIE_SALIDA)?.value;
+    return Number(valor) || 0;
+  } catch {
+    // Fuera de una petición (scripts, build): no hay cookie que leer.
+    return 0;
   }
 }
 
@@ -48,7 +74,7 @@ const credentialsSchema = z.object({
 // desactualizado en la sesión (revocaciones, desactivaciones) a como máximo este intervalo.
 const REVALIDATE_INTERVAL_MS = 60_000;
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth, signIn, signOut } = NextAuth((request) => ({
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
@@ -111,7 +137,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.personnelType = user.personnelType;
         token.restrictedAdminSections = user.restrictedAdminSections;
         token.revalidatedAt = Date.now();
+        token.inicioAt = Date.now();
         return token;
+      }
+
+      // Sesión anterior al último "Salir" de este navegador: no vale.
+      const salida = await ultimaSalida(request);
+      if (salida && (token.inicioAt ?? 0) <= salida) {
+        return null;
       }
 
       const revalidatedAt = token.revalidatedAt ?? 0;
@@ -140,4 +173,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
-});
+}));
